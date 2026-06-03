@@ -1,3 +1,0 @@
-This directory is marked 'NOTEST' until #27961 is merged, as it will
-fix a lot of issues which were revealed by some of the tests in this
-directory failing with the C backend.

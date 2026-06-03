@@ -22,3 +22,11 @@ export proc printAndReturn(x: c_ptrConst(int(32))) {
   internalProc(x);
   return x;
 }
+
+// "A pointer to a const int32_t".
+// const int32_t*
+export proc signature0(x: c_ptrConst(int(32))) {}
+
+// "A pointer to a const pointer to a const int64_t".
+// const int64_t * const *
+export proc signature1(x: c_ptrConst(c_ptrConst((int(64))))) {}

@@ -1,2 +1,3 @@
 UnusedTypeQuery.chpl:3: node violates rule UnusedTypeQuery
+UnusedTypeQuery.chpl:6: node violates rule UnattachedCurly
 UnusedTypeQuery.chpl:6: node violates rule UnusedTypeQuery

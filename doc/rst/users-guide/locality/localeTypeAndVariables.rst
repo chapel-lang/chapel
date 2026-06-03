@@ -1,5 +1,3 @@
-:title: Users Guide: The **locale** Type and Variables
-
 .. default-domain:: chpl
 
 The **locale** Type and Variables

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -187,7 +187,7 @@ class TupleDecl final : public Decl {
   const Decl* decl(int i) const {
     CHPL_ASSERT(i >= 0 && i < numDecls());
     const AstNode* ast = this->child(i);
-    CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl());
+    CHPL_ASSERT(ast->isVariable() || ast->isFormal() || ast->isTupleDecl());
     CHPL_ASSERT(ast->isDecl());
     return (const Decl*)ast;
   }

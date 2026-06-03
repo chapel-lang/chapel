@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,6 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::PROC: return "proc";
     case Function::Kind::ITER: return "iter";
     case Function::Kind::OPERATOR: return "operator";
-    case Function::Kind::LAMBDA: return "lambda";
   }
   CHPL_ASSERT(false);
   return "";

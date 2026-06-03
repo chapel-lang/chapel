@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,24 +18,30 @@
  * limitations under the License.
  */
 
+/**/
+module MasonEnv {
+
 use ArgumentParser;
 use List;
 use MasonUtils;
 public use MasonHelp;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
-  const default = getEnv('HOME') + "/.mason";
+  const default = getEnv("HOME") + "/.mason";
   const masonHome = if envHome != "" then envHome else default;
 
   return masonHome;
 }
 
-/* Returns an array of directory strings corresponding to MASON_HOME/name for
-   each name in MASON_REGISTRY.
- */
-proc MASON_CACHED_REGISTRY {
+/*
+  Returns an array of directory strings corresponding to MASON_HOME/name for
+  each name in MASON_REGISTRY.
+*/
+@chplcheck.ignore("CamelCaseFunctions")
+proc MASON_CACHED_REGISTRY throws {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
   var cachedRegistry: list(string);
@@ -45,29 +51,34 @@ proc MASON_CACHED_REGISTRY {
   return cachedRegistry;
 }
 
-/* Returns value of MASON_OFFLINE, environment variable that disales online access.
- */
+/*
+  Returns value of MASON_OFFLINE, environment variable that
+  disables online access.
+*/
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_OFFLINE {
-  const offlineEnv = getEnv('MASON_OFFLINE');
+  const offlineEnv = getEnv("MASON_OFFLINE");
   const default = false;
   var offline = false;
 
-  if (offlineEnv == 'true') || (offlineEnv == 'True') || (offlineEnv == 'TRUE') || (offlineEnv == '1') {
+  if (offlineEnv == "true") || (offlineEnv == "True") ||
+     (offlineEnv == "TRUE") || (offlineEnv == "1") {
     offline = true;
-  }
-  else offline = default;
+  } else offline = default;
 
   return offline;
 }
 
-/* Read the MASON_REGISTRY environment variable.  It should be a comma
-   separated list of registry 'name|location' pairs. Returns an array of
-   tuples containing (name, location). If 'name|' is omitted, it defaults
-   to the text following the final slash in 'location' after removing any
-   trailing slashes. e.g. if location is "/path/to/my/local_registry//"
-   then the default name is "local_registry".
- */
-proc MASON_REGISTRY {
+/*
+  Read the MASON_REGISTRY environment variable.  It should be a comma
+  separated list of registry 'name|location' pairs. Returns an array of
+  tuples containing (name, location). If 'name|' is omitted, it defaults
+  to the text following the final slash in 'location' after removing any
+  trailing slashes. e.g. if location is "/path/to/my/local_registry//"
+  then the default name is "local_registry".
+*/
+@chplcheck.ignore("CamelCaseFunctions")
+proc MASON_REGISTRY throws {
   const env = getEnv("MASON_REGISTRY");
   const default = ("mason-registry",regUrl);
   var registries: list(2*string);
@@ -75,13 +86,13 @@ proc MASON_REGISTRY {
   if env == "" {
     registries.pushBack(default);
   } else {
-    for str in env.split(',') {
-      const regArr = str.split('|');
+    for str in env.split(",") {
+      if str.strip().isEmpty() then continue;
+      const regArr = str.split("|");
       if regArr.size > 2 || regArr.size < 1 {
-        stderr.writeln("expected MASON_REGISTRY to contain a comma " +
-                       "separated list of locations or 'name|location' pairs");
-        stderr.writeln(str);
-        exit(1);
+        const msg = "expected MASON_REGISTRY to contain a comma separated " +
+                    "list of locations or 'name|location' pairs\n" + str;
+        throw new MasonError(msg);
       } else {
         var regTup: 2*string;
 
@@ -101,10 +112,11 @@ proc MASON_REGISTRY {
     for i in registries.indices {
       for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
-          stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
-          stderr.writeln(registries(i)(0), " - ", registries(i)(1));
-          stderr.writeln(registries(j)(0), " - ", registries(j)(1));
-          exit(1);
+          const msg =
+            "registry names specified in MASON_REGISTRY must be unique:\n" +
+            registries(i)(0) + " - " + registries(i)(1) + "\n" +
+            registries(j)(0) + " - " + registries(j)(1);
+          throw new MasonError(msg);
         }
       }
     }
@@ -112,17 +124,19 @@ proc MASON_REGISTRY {
   return registries;
 }
 
-/* Returns the path to use when caching the list of licenses, if provided by the
-   user.  This is useful for systems where internet connectivity can be erratic
-   or slow.
- */
+/*
+  Returns the path to use when caching the list of licenses, if provided by the
+  user. This is useful for systems where internet connectivity can be erratic
+  or slow.
+*/
+@chplcheck.ignore("CamelCaseFunctions")
 proc MASON_LICENSE_CACHE_PATH: string {
   const licenseCache = getEnv("MASON_LICENSE_CACHE_PATH");
 
   return licenseCache;
 }
 
-proc masonEnv(args) {
+proc masonEnv(args) throws {
 
   var parser = new argumentParser(helpHandler=new MasonEnvHelpHandler());
 
@@ -167,13 +181,13 @@ proc masonEnv(args) {
     }
     writeln(star);
   }
-  var offlineString = 'false';
+  var offlineString = "false";
   if MASON_OFFLINE {
-    offlineString = 'true';
+    offlineString = "true";
   }
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
-  printVar('MASON_OFFLINE', offlineString);
+  printVar("MASON_OFFLINE", offlineString);
   printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {
@@ -181,12 +195,11 @@ proc masonEnv(args) {
   }
 }
 
-private proc getRegNameFromLoc(location: string): string {
+private proc getRegNameFromLoc(location: string): string throws {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
   if lastSlashPos == -1 {
-    stderr.writeln("location should be an absolute path or URL");
-    exit(1);
+    throw new MasonError("location should be an absolute path or URL");
   }
   const gitExtension = ".git";
   if strippedLoc.endsWith(gitExtension) {
@@ -195,4 +208,6 @@ private proc getRegNameFromLoc(location: string): string {
   } else {
     return strippedLoc[lastSlashPos+1..];
   }
+}
+
 }

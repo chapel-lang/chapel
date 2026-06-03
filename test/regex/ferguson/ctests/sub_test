@@ -44,18 +44,19 @@ else
 fi
 
 COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
-CC=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CC | cut -d = -f 2-`
-CXX=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CXX | cut -d = -f 2-`
+# don't overwrite the special CC/CXX since printchplenv may be using them
+TEST_CC=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CC | cut -d = -f 2-`
+TEST_CXX=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CXX | cut -d = -f 2-`
 ASAN=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_SANITIZE_EXE | cut -d = -f 2-`
 if [ "$COMP" = "gnu" ]
 then
-  echo C tests will run using gnu compiler $CXX
+  echo C tests will run using gnu compiler $TEST_CXX
 elif [ "$COMP" = "clang" ]
 then
-  echo C tests will run using clang compiler $CXX
+  echo C tests will run using clang compiler $TEST_CXX
 elif [ "$COMP" = "llvm" ]
 then
-  echo C tests will run using clang compiler $CXX
+  echo C tests will run using clang compiler $TEST_CXX
 else
   echo "[Skipping directory $DIR with unknown compiler]"
   exit
@@ -63,16 +64,16 @@ fi
 
 if [ "$ASAN" = "address" ]
 then
-  CC="$CC -fsanitize=address"
-  CXX="$CXX -fsanitize=address"
+  TEST_CC="$TEST_CC -fsanitize=address"
+  TEST_CXX="$TEST_CXX -fsanitize=address"
 fi
 
 # compute the g++ etc command
 DEPS="$OPTS --std=gnu++11 -Wall -DCHPL_RT_UNIT_TEST $DEFS $RE2INCLS"
 LDEPS="$RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regex/bundled/re2-interface.cc $RE2LIB -lpthread"
 
-T1="$CXX $DEPS -g regex_test.cc -o regex_test $LDEPS"
-T2="$CXX $DEPS -g regex_channel_test.cc -o regex_channel_test $LDEPS"
+T1="$TEST_CXX $DEPS -g regex_test.cc -o regex_test $LDEPS"
+T2="$TEST_CXX $DEPS -g regex_channel_test.cc -o regex_channel_test $LDEPS"
 
 
 dotest() {

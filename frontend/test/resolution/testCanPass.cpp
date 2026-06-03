@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,7 +60,7 @@ static bool passesBorrowingSubtype(CanPassResult r) {
          !r.instantiates() &&
          !r.promotes() &&
          r.converts() &&
-         r.conversionKind() == CanPassResult::BORROWS_SUBTYPE;
+         r.conversionKind() == (CanPassResult::BORROWS | CanPassResult::SUBTYPE);
 }
 
 static bool passesSubtype(CanPassResult r) {
@@ -352,11 +352,8 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
-  Context* c = context;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  Context* context = buildStdContext();
+  auto c = context;
 
   // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes

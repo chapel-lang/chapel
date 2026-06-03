@@ -1,0 +1,5 @@
+COMPOPTS <= --baseline
+COMPOPTS <= --fast
+COMPOPTS <= --no-local
+CHPL_COMM!=none
+CHPL_LLVM_VERSION==14

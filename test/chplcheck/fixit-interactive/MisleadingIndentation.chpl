@@ -1,0 +1,92 @@
+module Indentation {
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+
+  @chplcheck.ignore("MisleadingIndentation")
+  for i in 1..10 do
+    writeln(i);
+    writeln("second thing");
+
+  for i in 1..10 do
+writeln(i);
+writeln("second thing");
+
+  // for multiline statements, best we can do is add curly braces.
+  for i in 1..10 do
+    writeln(i);
+    writeln
+    ("second thing");
+
+  // the only fixit here is ignore, don't know the indentation level
+  for i in 1..10 do
+  writeln(i);
+  writeln("second thing");
+
+  proc f() {
+      for 1..10 do
+          writeln("Hello, world!");
+      var unrelated = "hi";
+  }
+
+  on Locale[0] do
+    writeln("Hello, world!");
+    writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      writeln("Hello, world!");
+      writeln("Hello, world!");
+
+  for 1..10 do
+    on Locale[0] do
+      writeln("Hello, world!");
+      writeln("Hello, world!");
+
+  on Locale[0] do
+    for 1..10 do
+      writeln("Hello, world!");
+      writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      writeln("Hello, world!");
+      writeln("Hello, world!");
+
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        writeln("Hello, world!");
+        writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        for 1..10 do
+          writeln("Hello, world!");
+          writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      on Locale[0] do
+        writeln("Hello, world!");
+        writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      on Locale[0] do
+        writeln("Hello, world!");
+        writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        writeln("Hello, world!");
+        writeln(
+            "Hello, world!"
+        );
+        writeln(
+            "Hello, world!"
+        );
+}

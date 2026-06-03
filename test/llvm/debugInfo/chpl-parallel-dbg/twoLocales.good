@@ -1,0 +1,5 @@
+Running on locale 0
+Array on locale 0: 1 2 3 4 5 6 7 8 9 10
+In on-clause on locale 1
+Array on locale 0: 1 2 3 4 5 6 7 8 9 10
+New array on locale 1: 2 3 4 5 6 7 8 9 10 11

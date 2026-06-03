@@ -142,7 +142,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
     }
 
   } else {
-    char *bstr = qt_malloc(strlen(bindstr)+1);
+    char *bstr = qt_malloc(strlen(bindstr) + 1);
     strcpy(bstr, bindstr);
     int i, j;
     sheps.num = 1;

@@ -29,7 +29,7 @@ extern record baz {
   var d: c_int;
 }
 
-param FOOBAR_PADDING: int = 32;
+param FOOBAR_PADDING: int(32) = 32;
 extern record foobar {
   var a: c_double;
   var b: c_double;
@@ -116,7 +116,7 @@ proc test0() {
 
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
-  type P1 = proc(_: int, _: int): int;
+  type P1 = proc(_: c_int, _: c_int): c_int;
 
   const addTwoReturn = try! bin.load("addTwoReturn", P1);
 
@@ -124,7 +124,7 @@ proc test0() {
   writeln();
 
   for loc in Locales do on loc {
-    const n = (here.id : int);
+    const n = (here.id : c_int);
     const x = addTwoReturn(n, n);
     writeln(here, ' got: ', x);
     writeln('---');
@@ -137,10 +137,11 @@ proc test1() {
 
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
-  type P1 = proc(a: real, b: real, c: real, d: real, e: real,
-                 f: real,
-                 g: real,
-                 h: real,
+  type P1 = proc(a: c_double, b: c_double, c: c_double, d: c_double,
+                 e: c_double,
+                 f: c_double,
+                 g: c_double,
+                 h: c_double,
                  x: baz): foobar;
   type P2 = proc(x: foobar): void;
 
@@ -155,8 +156,8 @@ proc test1() {
     writeln(here);
 
     // Create the arguments.
-    const n = (here.id : int);
-    var b = new baz(1*n:int(32), 2*n:int(32), 3*n:int(32), 4*n:int(32));
+    const n = (here.id : c_int);
+    var b = new baz(1*n, 2*n, 3*n, 4*n);
 
     // Perform the extern call.
     const x = createFoobar(n, n, n, n, n, n, n, n, b);
@@ -212,7 +213,7 @@ proc test4() {
 
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
-  type P1 = proc(_: int, _: int): int;
+  type P1 = proc(_: c_int, _: c_int): c_int;
 
   const wideProc0 = try! bin.load("addTwoReturn", P1);
   assert(wideProc0 != nil);
@@ -224,8 +225,9 @@ proc test4() {
     on loc {
       const wideProc = try! bin.load("addTwoReturn", P1);
       assert(wideProc == wideProc0);
-      const x = wideProc(here.id, here.id);
-      assert(x == (here.id * 2));
+      const n = here.id:c_int;
+      const x = wideProc(n, n);
+      assert(x == (n * 2));
     }
   }
 }

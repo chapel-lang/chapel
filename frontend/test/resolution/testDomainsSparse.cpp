@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,15 +24,13 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-static void testRectangularSparse(Context* context,
-                                  std::string domainType,
+static void testRectangularSparse(std::string domainType,
                                   int rank,
                                   std::string idxType,
                                   std::string strides) {
   printf("Testing: sparse subdomain(%s)\n", domainType.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -133,12 +131,10 @@ module M {
 }
 
 int main() {
-  auto context = buildStdContext();
-
-  testRectangularSparse(context, "domain(1)", 1, "int", "one");
-  testRectangularSparse(context, "domain(2)", 2, "int", "one");
-  testRectangularSparse(context, "domain(1, strides=strideKind.one)", 1, "int", "one");
-  testRectangularSparse(context, "domain(2, int(8))", 2, "int(8)", "one");
-  testRectangularSparse(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
-  testRectangularSparse(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  testRectangularSparse("domain(1)", 1, "int", "one");
+  testRectangularSparse("domain(2)", 2, "int", "one");
+  testRectangularSparse("domain(1, strides=strideKind.one)", 1, "int", "one");
+  testRectangularSparse("domain(2, int(8))", 2, "int(8)", "one");
+  testRectangularSparse("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangularSparse("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
 }

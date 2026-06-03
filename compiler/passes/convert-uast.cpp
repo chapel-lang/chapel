@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2468,11 +2468,13 @@ struct Converter final : UastConverter {
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
-    INT_ASSERT(symStack.size() > 0);
-    {
+    if (symStack.size() > 0) {
       SymStackEntry& last = symStack.back();
       INT_ASSERT(last.ast != nullptr);
       decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    } else {
+      decl = parsing::parentAst(context, node)->toAggregateDecl();
       INT_ASSERT(decl);
     }
     // TODO: use the resolved type for the contained declaration
@@ -2722,7 +2724,7 @@ struct Converter final : UastConverter {
         // ignore things like chpl_taskAddCoStmt
         !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
       CHPL_ASSERT(node->id().postOrderId() == -1);
-      fn->cname = astr(node->id().symbolPath());
+      fn->cname = astr(chpl::unescapeStringId(node->id().symbolPath().c_str()));
     }
 
     if (convertedReceiver) {
@@ -2758,9 +2760,6 @@ struct Converter final : UastConverter {
     } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
       fn->addFlag(FLAG_ANONYMOUS_FN);
-      if (node->kind() == uast::Function::LAMBDA) {
-        fn->addFlag(FLAG_LEGACY_LAMBDA);
-      }
     }
 
     Expr* retType = convertTypeExpressionOrNull(node->returnType());
@@ -2957,7 +2956,17 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
+    if (symbolsToIgnore.count(node->id()) != 0) {
+      if (parsing::idIsInBundledModule(context, node->id()) &&
+          parsing::idIsNestedFunction(context, node->id())) {
+        // nested functions in bundled modules need to be converted
+      } else if (node->name() == USTR(":")) {
+        // allow untyped conversion of cast operators, as the typed converter
+        // will strip out type formals, which cannot be used by production.
+      } else {
+        return nullptr;
+      }
+    }
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;

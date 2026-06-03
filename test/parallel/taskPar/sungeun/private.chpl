@@ -1,7 +1,7 @@
 // An example of how to create task private variables.
 //
 // This example should work for forall loop iterating over default
-// arrays/domains (you could drop the dmap), as well as Block, Cyclic,
+// arrays/domains, as well as Block, Cyclic,
 // and probably BlockCyclic arrays/domains.
 //
 use BlockDist, PrivateDist;

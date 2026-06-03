@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 #include "intents.h"
+#include "flags.h"
 
 #include "../../frontend/lib/immediates/num.h"
 
@@ -163,8 +164,6 @@ enum Qualifier {
   // The abstract qualifiers
   QUAL_UNKNOWN,
   QUAL_CONST,
-  QUAL_REF,
-  QUAL_CONST_REF,
   QUAL_PARAM,
 
   // The concrete qualifiers
@@ -179,15 +178,13 @@ enum Qualifier {
   // Something with Qualifier QUAL_VAL is mutable, but
   // something with Qualifier QUAL_CONST_VAL is not.
   QUAL_VAL,
-  QUAL_NARROW_REF,
+  QUAL_REF,
   QUAL_WIDE_REF,
 
   QUAL_CONST_VAL,
-  QUAL_CONST_NARROW_REF,
+  QUAL_CONST_REF,
   QUAL_CONST_WIDE_REF
 };
-
-const char* qualifierToStr(Qualifier q);
 
 // A QualifiedType is basically a tuple of (qualifier, type).
 // Shorter names, such as QualType and QualT have been proposed.
@@ -203,23 +200,31 @@ const char* qualifierToStr(Qualifier q);
 //
 class QualifiedType {
 public:
+  static const char* qualifierToStr(Qualifier q);
+  static Qualifier qualifierForArgIntent(IntentTag intent);
+  static Qualifier qualifierForRetTag(RetTag retTag);
 
-  // Static methods for working with Qualifier
-  static bool qualifierIsConst(Qualifier q)
-  {
+  static bool qualifierIsConst(Qualifier q) {
     return (q == QUAL_CONST ||
             q == QUAL_CONST_REF ||
             q == QUAL_CONST_VAL ||
-            q == QUAL_CONST_NARROW_REF ||
             q == QUAL_CONST_WIDE_REF);
   }
 
-  static Qualifier qualifierToConst(Qualifier q)
-  {
+  static bool qualifierIsRef(Qualifier q) {
+    return q == QUAL_REF        || q == QUAL_CONST_REF        ||
+           q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
+  }
+
+  // TODO: Could be eliminated entirely with the typed converter online.
+  static bool qualifierIsAbstract(Qualifier q) {
+    return q == QUAL_UNKNOWN || q == QUAL_CONST || q == QUAL_PARAM;
+  }
+
+  static Qualifier qualifierToConst(Qualifier q) {
     switch (q) {
       case QUAL_CONST:
       case QUAL_CONST_REF:
-      case QUAL_CONST_NARROW_REF:
       case QUAL_CONST_WIDE_REF:
       case QUAL_CONST_VAL:
       case QUAL_PARAM:
@@ -231,8 +236,6 @@ public:
         return QUAL_CONST_REF;
       case QUAL_VAL:
         return QUAL_CONST_VAL;
-      case QUAL_NARROW_REF:
-        return QUAL_CONST_NARROW_REF;
       case QUAL_WIDE_REF:
         return QUAL_CONST_WIDE_REF;
       // no default: update as Qualifier is updated
@@ -258,8 +261,7 @@ public:
   }
 
   bool isAbstract() const {
-    return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
-            _qual == QUAL_REF || _qual == QUAL_CONST_REF);
+    return qualifierIsAbstract(_qual);
   }
 
   bool isVal() const {
@@ -268,7 +270,6 @@ public:
 
   bool isRef() const {
     return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
-            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
             isRefType());
   }
 
@@ -317,6 +318,14 @@ public:
   // working with parts of the compiler that haven't fully
   // transferred to QualifiedType.
   QualifiedType refToRefType() const;
+
+  bool operator==(const QualifiedType& rhs) const {
+    return this->_type == rhs._type && this->_qual == rhs._qual;
+  }
+
+  bool operator!=(const QualifiedType& rhs) const {
+    return !(*this == rhs);
+  }
 
 private:
   Type*      _type;
@@ -451,8 +460,10 @@ class FunctionType final : public Type {
     Type* type_;
     IntentTag intent_ = INTENT_BLANK;
     const char* name_ = nullptr;
+    FlagSet flags_ = 0;
    public:
-    Formal(Qualifier qual, Type* type, IntentTag intent, const char* name);
+    Formal(Qualifier qual, Type* type, IntentTag intent,
+           const char* name, FlagSet flags);
     bool operator==(const Formal& other) const;
     size_t hash() const;
     bool isGeneric() const;
@@ -461,9 +472,13 @@ class FunctionType final : public Type {
     IntentTag intent() const;
     const char* name() const;
     QualifiedType qualType() const;
-    bool isAnonymous() const;
+    bool isNamed() const;
     bool isRef() const;
+    FlagSet flags() const;
+    bool isRetArg() const;
   };
+
+  using Formals = std::vector<Formal>;
 
  private:
   Kind kind_;
@@ -522,7 +537,9 @@ class FunctionType final : public Type {
   FunctionType* getWithLinkage(Linkage linkage) const;
   FunctionType* getWithLoweredErrorHandling() const;
   FunctionType* getWithLineFileInfo() const;
+  FunctionType* getWithStreamlinedComponents() const;
   FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
+  FunctionType* getWithWidenedComponents() const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
   FunctionType* getAsExtern() const;
@@ -533,6 +550,7 @@ class FunctionType final : public Type {
   int numFormals() const;
   const Formal* formal(int idx) const;
   const Formal* formalByOrdinal(Expr* actual, int* outIdx=nullptr) const;
+  const Formals& formals() const;
   RetTag returnIntent() const;
   Type* returnType() const;
   bool throws() const;
@@ -609,6 +627,8 @@ TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
 TYPE_EXTERN Type*             dtAnyReal;
 TYPE_EXTERN Type*             dtAnyPOD;
+TYPE_EXTERN Type*             dtAnyUnion;
+TYPE_EXTERN Type*             dtAnyProc;
 
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
@@ -666,6 +686,7 @@ void     initCompilerGlobals();
 bool isBoolType(Type*);
 bool isIntType(Type*);
 bool isUIntType(Type*);
+bool isIntegralByteType(Type*);
 bool isSignedType(Type*);
 bool isRealType(Type*);
 bool isImagType(Type*);

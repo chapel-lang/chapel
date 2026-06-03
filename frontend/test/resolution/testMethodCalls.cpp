@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -633,7 +633,9 @@ static void test13() {
     proc SecretlyGeneric type do return owned class;
     proc SecretlyNotGeneric type do return int;
 
-    var myR: r;
+    class C {}
+
+    var myR = new r(x=new C());
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
@@ -835,11 +837,8 @@ static void test17() {
 static void test18() {
   // test sync var method call isFull
   printf("test6\n");
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
       var x : sync int;
@@ -873,12 +872,13 @@ static void test19() {
       var z: wrapper(ClearlyOwnershipGeneric);
     }
 
-    var myR: r(wrapper(wrapper(int)), owned ClearlyOwnershipGeneric, wrapper(owned ClearlyOwnershipGeneric));
+    var myR = new r(new wrapper(wrapper(int)), new ClearlyOwnershipGeneric(), new wrapper(owned ClearlyOwnershipGeneric));
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
   // should resolve without issue
   std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
+  assert(!guard.realizeErrors(/* countWarnings */ false));
 }
 
 // Test warnings for fields with generic memory management

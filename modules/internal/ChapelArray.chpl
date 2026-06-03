@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -674,18 +674,12 @@ module ChapelArray {
   //
   pragma "syntactic distribution"
   @chpldoc.nodoc
-  @unstable("the type 'dmap' is unstable, instead please use distribution factory functions when available")
-  record dmap { }
+  record chpl_dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
     var x: _to_unmanaged(t)?;
     var y = new _distribution(x!);
     return y.type;
-  }
-
-  proc chpl__buildDistType(type t: record) type {
-    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
-    return t;
   }
 
   proc chpl__buildDistType(type t) {
@@ -704,11 +698,6 @@ module ChapelArray {
 
   proc chpl__buildDistValue(x) {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
-  }
-
-  proc chpl__buildDistDMapValue(const ref x: record) const ref {
-    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
-    return chpl__buildDistValue(x);
   }
 
   proc chpl__buildDistDMapValue(x:unmanaged) where isSubtype(x.borrow().type, BaseDist) {
@@ -1538,23 +1527,11 @@ module ChapelArray {
     // method we would incur promotion when trying to print arrays.
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      var arrayStyle = writer.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !writer._binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
-      }
-
       _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      var arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !reader._binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
-      }
-
       _value.dsiSerialRead(reader);
     }
 
@@ -1989,12 +1966,10 @@ module ChapelArray {
     return result;
   }
 
-  // How to cast arrays to strings
   @chpldoc.nodoc
-  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
-    import IO.FormattedIO.string;
-    return try! "%?".format(x);
+    compilerError("Cannot cast an array to a string, use "+
+                  "'try! \"%?\".format(array)' from IO.FormattedIO instead");
   }
 
   pragma "last resort"

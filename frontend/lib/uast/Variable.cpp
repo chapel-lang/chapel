@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,7 +36,7 @@ void Variable::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 owned<Variable>
-Variable::build(Builder* builder, Location loc,
+Variable::build(Builder* builder, Location loc, Location nameLoc,
                 owned<AttributeGroup> attributeGroup,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
@@ -84,6 +84,7 @@ Variable::build(Builder* builder, Location loc,
                                typeExpressionChildNum,
                                initExpressionChildNum);
   builder->noteLocation(ret, loc);
+  builder->noteDeclNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
 

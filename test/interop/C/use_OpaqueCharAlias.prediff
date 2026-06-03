@@ -1,0 +1,3 @@
+#!/bin/bash
+
+perl -0777 -ne 'print "$&\n" while /signature.*?\)/sg' lib/OpaqueCharAlias.h >> $2

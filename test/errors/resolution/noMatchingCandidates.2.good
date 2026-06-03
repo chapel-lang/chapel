@@ -4,17 +4,17 @@
     6 |   fn(x);
       |
   
-  The following candidate didn't match because an actual couldn't be passed to a formal:
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
       |
     2 |   proc fn(const arg) {
       |           ⎺⎺⎺⎺⎺⎺⎺⎺⎺
     3 |     arg;
     4 |   }  
       |
-  The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here:
+  The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here:
       |
     5 |   var x;
-      |       ⎺
+      |   ⎺⎺⎺⎺⎺
       |
   The call to 'fn' occurs before any valid initialization points:
       |

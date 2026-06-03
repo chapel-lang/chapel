@@ -78,7 +78,7 @@ in the ``.vscode`` directory of your project. See the `VSCode documentation on t
 creating tasks. For a good starting point, it is recommended to reconfigure one of
 the default tasks.
 
-If you are working on a mason project, you can use the ``mason`` tasks to
+If you are working on a Mason project, you can use the ``mason`` tasks to
 build, test, and run your project. The extension will automatically detect that
 and create tasks that use ``mason build`` and ``mason run`` instead of ``chpl``
 and ``chpl-run``.

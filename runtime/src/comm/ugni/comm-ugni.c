@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -71,6 +71,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -80,7 +81,7 @@
 #include "comm-ugni-heap-pages.h"
 #include "comm-ugni-mem.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -1938,7 +1939,7 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void)
 {
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
 }
 
 
@@ -1990,6 +1991,9 @@ void chpl_comm_post_task_init(void)
                      "needs HUGETLB_NO_RESERVE set to something",
                      0, 0);
       }
+
+      CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                              CHPL_TARGET_MEM);
 
       if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
@@ -3302,6 +3306,9 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         // Only try to provide a source file if we can give at least some
         // of it, and without using snprintf() in chpl_lookupFilename()).
         //
+        CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                chpl_filenameTableSize);
+
         if (bufi > 10
             && mr_mregs_supplement[mr_i].fn >= 0
             && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
@@ -3907,7 +3914,7 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   //
   // Gather the global variables' wide pointers on node 0 into a
   // buffer, and broadcast the address of that buffer to the other
@@ -3915,6 +3922,9 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   //
   wide_ptr_t* buf;
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
+
     buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
                                            CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
@@ -3926,11 +3936,11 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size)
-{
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
   int i;
 
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_private(%d, %zd)", id, size);
+  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_private_broadcast(%d, %zd)", id, size);
 
   //
   // TODO: Currently this does a PUT and wait for remote completion to
@@ -3940,8 +3950,8 @@ void chpl_comm_broadcast_private(int id, size_t size)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
-                    chpl_rt_priv_bcast_tab[id], size,
+      do_remote_put(chpl_rt_unified_private_broadcast_table[id], i,
+                    chpl_rt_unified_private_broadcast_table[id], size,
                     NULL, may_proxy_true);
     }
   }
@@ -4188,7 +4198,8 @@ void rf_handler(gni_cq_entry_t* ev)
       chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
       if (f_c->comm.fast) {
-        chpl_ftable_call(f_c->comm.fid, f);
+        chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            f_c->comm.fid, f);
         indicate_done2(f_c->comm.caller, (rf_done_t*) f_c->comm.rf_done);
         // doesn't call release_req_buf, because that
         // is handled on the sender side for fast forks
@@ -4198,6 +4209,8 @@ void rf_handler(gni_cq_entry_t* ev)
         if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
         } else {
+          CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  chpl_ftable);
           fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
         }
         chpl_task_startMovedTask(f_c->comm.fid,
@@ -4301,7 +4314,7 @@ static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
   // Call the on body
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, f->comm.fid, f);
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
 
@@ -4343,7 +4356,8 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
   }
 
   // Call the on body
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
 
   // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
@@ -6940,81 +6954,52 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
 }
 
 
-void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size,
-                          int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t* arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
 }
 
 
-void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size,
-                             int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t* arg,
+                                     size_t arg_size,
+                                     int ln,
+                                     int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
 }
 
 
-void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size,
-                               int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t* arg,
+                                       size_t arg_size,
+                                       int ln,
+                                       int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.

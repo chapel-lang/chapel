@@ -146,3 +146,31 @@ remain in the preview until they are deemed sufficiently complete.
 - Casts and printing of complex numbers involving ``nan`` have been adjusted to
   reflect the values of individual components instead of making the entire value
   be ``nan``.
+
+- Return type inference attempts to compute a common parent class type when
+  all branches return a class. This way, two sibling classes ``Child1`` and
+  ``Child2`` can be returned from two different branches, and the return type
+  will be inferred as their parent class ``Parent`` instead of producing
+  an error. See the note in the :ref:`Implicit_Return_Types` section for
+  more details.
+
+- The ``string.contains()`` and ``bytes.contains()`` methods return whether
+  a given pattern is found within the receiver string or bytes value.
+
+- The ``list.find()`` and ``list.contains()`` methods can optionally accept a
+  predicate callable, allowing users to search for elements matching a custom
+  condition rather than only equality comparison.
+
+- The ``FileSystem.listDir()``, ``FileSystem.findFiles()``,
+  and ``FileSystem.walkDirs()`` iterators throw when they encounter an error,
+  rather than just printing the error to stdout.
+
+- Default comparison operators on records (``==``, ``!=``, ``<``,
+  ``<=``, ``>``, ``>=``) are defined as module code accepting two
+  generic arguments of type ``record`` rather than being inserted by
+  the compiler in cases where it believes the user did not define such
+  operators for a given record type.
+
+- Exponentiation operator overloads (``**``) are supported for ``param
+  real`` values taken to ``param real`` or ``integral`` exponents and
+  considered stable.

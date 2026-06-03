@@ -1,1 +1,1 @@
---dyno --verify
+--dyno --verify --no-checks

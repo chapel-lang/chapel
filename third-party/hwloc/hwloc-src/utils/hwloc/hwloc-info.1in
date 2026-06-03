@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2024 Inria.  All rights reserved.
+.\" Copyright © 2009-2025 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -188,12 +188,24 @@ to hwloc-info is used as the initiator.
 
 \fI<name>\fR may be suffixed with flags to tune the selection of best nodes,
 for instance as \fBbandwidth,strict,default\fR.
-\fBdefault\fR means that all local nodes are reported if no best could be found.
+
+\fBdefault\fR means that default nodes are reported if no best could
+be found (see \fI\--default-nodes\fR). If neither best nor default nodes
+could be found, all local nodes are reported.
+
 \fBstrict\fR means that nodes are selected only if their performance is the best
 for all the input CPUs. On a dual-socket machine with HBM in each socket,
 both HBMs are the best for their local socket, but not for the remote socket.
 Hence both HBM are also considered best for the entire machine by default,
 but none if \fBstrict\fR.
+.TP
+\fB\-\-default\-nodes\fR
+Display information about the default NUMA nodes that are local to the given
+object.
+This usually includes DRAM memory nodes (or nodes of the
+same memory tier) rather than nodes with specific characteristics
+(HBM, NVM, CXL, etc).
+See hwloc_topology_get_default_nodeset() for details.
 .TP
 \fB\-\-first\fR
 For each input object, only report the first matching output object

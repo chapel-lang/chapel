@@ -1,5 +1,5 @@
 #
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -34,8 +34,8 @@ bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/c2chapel
 
 # Note, this version is used only for the fake headers,
-# but it should probably match third-party/chpl-venv/c2chapel-requirements.txt
-VERSION=2.20
+# and it should match third-party/chpl-venv/c2chapel-requirements.txt
+VERSION=3.00
 TAR=release_v$(VERSION).tar.gz
 
 RELEASE=https://github.com/eliben/pycparser/archive/$(TAR)
@@ -60,7 +60,7 @@ $(FAKES):
 	mkdir -p $(FAKES)
 	cd $(INSTALL) && \
 	echo "Fetching pycparser release $(VERSION) tarball for fake headers..." && \
-	wget $(RELEASE) -O $(TAR) && \
+	$(CHPL_MAKE_PYTHON) -c "import urllib.request; urllib.request.urlretrieve('$(RELEASE)', '$(TAR)')" && \
 	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
 
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h

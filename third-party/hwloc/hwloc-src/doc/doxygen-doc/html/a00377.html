@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Terms and Definitions</title>
+<title>Hardware Locality (hwloc): Synthetic topologies</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -39,116 +39,60 @@ $(function() {
 <div id="main-nav"></div>
 </div><!-- top -->
 <div><div class="header">
-  <div class="headertitle"><div class="title">Terms and Definitions</div></div>
+  <div class="headertitle"><div class="title">Synthetic topologies</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="termsanddefs_objects"></a>
-Objects</h1>
-<dl>
-<dt>Object </dt>
-<dd><p class="startdd">Interesting kind of part of the system, such as a Core, a L2Cache, a NUMA memory node, etc. The different types detected by hwloc are detailed in the <a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55" title="Type of topology object.">hwloc_obj_type_t</a> enumeration.</p>
-<p class="interdd">Objects are topologically sorted by locality (CPU and node sets) into a tree (see <a class="el" href="a00377.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>). </p>
-<p class="enddd"></p>
-</dd>
-<dt>Object Kind </dt>
-<dd><p class="startdd">There are four kinds of Objects: Memory (NUMA nodes and Memory-side caches), I/O (Bridges, PCI and OS devices), Misc, and Normal (everything else, including Machine, Package, Die, Core, PU, CPU Caches, etc.). Normal and Memory objects have (non-NULL) CPU sets and nodesets, while I/O and Misc don't.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="a00184.html">Kinds of object Type</a>. </dd></dl>
-</dd>
-<dt>Processing Unit (PU) </dt>
-<dd><p class="startdd">The smallest processing element that can be represented by a hwloc object. It may be a single-core processor, a core of a multicore processor, or a single thread in a SMT processor (also sometimes called "Logical processor", not to be confused with "Logical index of a processor"). hwloc's PU acronym stands for Processing Unit. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Package </dt>
-<dd><p class="startdd">A processor Package is the physical package that usually gets inserted into a socket on the motherboard. It is also often called a physical processor or a CPU even if these names bring confusion with respect to cores and processing units. A processor package usually contains multiple cores (and may also be composed of multiple dies). hwloc Package objects were called Sockets up to hwloc 1.10. </p>
-<p class="enddd"></p>
-</dd>
-<dt>NUMA Node </dt>
-<dd><p class="startdd">An object that contains memory that is directly and byte-accessible to the host processors. It is usually close to some cores as specified by its CPU set. Hence it is attached as a memory child of the object that groups those cores together, for instance a Package objects with 4 Core children (see <a class="el" href="a00377.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>). </p>
-<p class="enddd"></p>
-</dd>
-<dt>Memory-side Cache </dt>
-<dd><p class="startdd">A cache in front of a specific memory region (e.g. a range of physical addresses). It caches all accesses to that region without caring about which core issued the request. This is the opposite of usual CPU caches where only accesses from the local cores are cached, without caring about the target memory.</p>
-<p class="enddd">In hwloc, memory-side caches are memory objects placed between their local CPU objects (parent) and the target NUMA node memory (child).  </p>
-</dd>
-</dl>
-<h1><a class="anchor" id="termsanddefs_indexes"></a>
-Indexes and Sets</h1>
-<dl>
-<dt>OS or physical index </dt>
-<dd><p class="startdd">The index that the operating system (OS) uses to identify the object. This may be completely arbitrary, non-unique, non-contiguous, not representative of logical proximity, and may depend on the BIOS configuration. That is why hwloc almost never uses them, only in the default lstopo output (<code>P#x</code>) and cpuset masks. See also <a class="el" href="a00392.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Logical index </dt>
-<dd><p class="startdd">Index to uniquely identify objects of the same type and depth, automatically computed by hwloc according to the topology. It expresses logical proximity in a generic way, i.e. objects which have adjacent logical indexes are adjacent in the topology. That is why hwloc almost always uses it in its API, since it expresses logical proximity. They can be shown (as <code>L#x</code>) by <code>lstopo</code> thanks to the <code>-l</code> option. This index is always linear and in the range [0, num_objs_same_type_same_level-1]. Think of it as ``cousin rank.'' The ordering is based on topology first, and then on OS CPU numbers, so it is stable across everything except firmware CPU renumbering. "Logical index" should not be confused with "Logical processor". A "Logical
-  processor" (which in hwloc we rather call "processing unit" to avoid the confusion) has both a physical index (as chosen arbitrarily by BIOS/OS) and a logical index (as computed according to logical proximity by hwloc). See also <a class="el" href="a00392.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>CPU set </dt>
-<dd><p class="startdd">The set of processing units (PU) logically included in an object (if it makes sense). They are always expressed using physical processor numbers (as announced by the OS). They are implemented as the <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a> opaque structure. hwloc CPU sets are just masks, they do <em>not</em> have any relation with an operating system actual binding notion like Linux' cpusets. I/O and Misc objects do not have CPU sets while all Normal and Memory objects have non-NULL CPU sets.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Node set </dt>
-<dd><p class="startdd">The set of NUMA memory nodes logically included in an object (if it makes sense). They are always expressed using physical node numbers (as announced by the OS). They are implemented with the <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a> opaque structure. as bitmaps. I/O and Misc objects do not have Node sets while all Normal and Memory objects have non-NULL nodesets.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Bitmap </dt>
-<dd><p class="startdd">A possibly-infinite set of bits used for describing sets of objects such as CPUs (CPU sets) or memory nodes (Node sets). They are implemented with the <a class="el" href="a00194.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap.">hwloc_bitmap_t</a> opaque structure. </p>
-<p class="enddd"></p>
-</dd>
-</dl>
-<h1><a class="anchor" id="termsanddefs_tree"></a>
-Hierarchy, Tree and Levels</h1>
-<dl>
-<dt>Parent object </dt>
-<dd><p class="startdd">The object logically containing the current object, for example because its CPU set includes the CPU set of the current object. All objects have a non-NULL parent, except the root of the topology (Machine object). </p>
-<p class="enddd"></p>
-</dd>
-<dt>Ancestor object </dt>
-<dd><p class="startdd">The parent object, or its own parent, and so on.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Children object(s) </dt>
-<dd><p class="startdd">The object (or objects) contained in the current object because their CPU set is included in the CPU set of the current object. Each object may also contain separated lists for Memory, I/O and Misc object children. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Arity </dt>
-<dd><p class="startdd">The number of normal children of an object. There are also specific arities for Memory, I/O and Misc children. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Sibling objects </dt>
-<dd><p class="startdd">Objects in the same children list, which all of them are normal children of the same parent, or all of them are Memory children of the same parent, or I/O children, or Misc. They usually have the same type (and hence are cousins, as well). But they may not if the topology is asymmetric. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Sibling rank </dt>
-<dd><p class="startdd">Index to uniquely identify objects which have the same parent, and is always in the range [0, arity-1] (respectively memory_arity, io_arity or misc_arity for Memory, I/O and Misc children of a parent).</p>
-<p class="enddd"></p>
-</dd>
-<dt>Cousin objects </dt>
-<dd><p class="startdd">Objects of the same type (and depth) as the current object, even if they do not have the same parent.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Level </dt>
-<dd><p class="startdd">Set of objects of the same type and depth. All these objects are cousins.</p>
-<p class="interdd">Memory, I/O and Misc objects also have their own specific levels and (virtual) depth. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Depth </dt>
-<dd><p class="startdd">Nesting level in the object tree, starting from the root object. If the topology is symmetric, the depth of a child is equal to the parent depth plus one, and an object depth is also equal to the number of parent/child links between the root object and the given object. If the topology is asymmetric, the difference between some parent and child depths may be larger than one when some intermediate levels (for instance groups) are missing in only some parts of the machine.</p>
-<p class="interdd">The depth of the Machine object is always 0 since it is always the root of the topology. The depth of PU objects is equal to the number of levels in the topology minus one.</p>
-<p class="interdd">Memory, I/O and Misc objects also have their own specific levels and depth. </p>
-<p class="enddd"></p>
-</dd>
-</dl>
-<p>The following diagram can help to understand the vocabulary of the relationships by showing the example of a machine with two dual core packages (with no hardware threads); thus, a topology with 5 levels. Each box with rounded corner corresponds to one <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d" title="Convenience typedef; a pointer to a struct hwloc_obj.">hwloc_obj_t</a>, containing the values of the different integer fields (depth, logical_index, etc.), and arrows show to which other <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d" title="Convenience typedef; a pointer to a struct hwloc_obj.">hwloc_obj_t</a> pointers point to (first_child, parent, etc.).</p>
-<p>The topology always starts with a Machine object as root (depth 0) and ends with PU objects at the bottom (depth 4 here).</p>
-<p>Objects of the same level (cousins) are listed in red boxes and linked with red arrows. Children of the same parent (siblings) are linked with blue arrows.</p>
-<p>The L2 cache of the last core is intentionally missing to show how asymmetric topologies are handled. See <a class="el" href="a00392.html#faq_asymmetric">What happens if my topology is asymmetric?</a> for more information about such strange topologies.</p>
-<div class="image">
-<img src="diagram.png" alt=""/>
-</div>
- <p>It should be noted that for PU objects, the logical index &ndash; as computed linearly by hwloc &ndash; is not the same as the OS index.</p>
-<p>The NUMA node is on the side because it is not part of the main tree but rather attached to the object that corresponds to its locality (the entire machine here, hence the root object). It is attached as a <em>Memory</em> child (in green) and has a virtual depth (negative). It could also have siblings if there were multiple local NUMA nodes, or cousins if other NUMA nodes were attached somewhere else in the machine.</p>
-<p>I/O or Misc objects could be attached in a similar manner. </p>
+<div class="textblock"><p>hwloc may load fake or remote topologies so as to consult them without having the underlying hardware available. Aside from loading XML topologies, hwloc also enables the building of <em>synthetic</em> topologies that are described by a single string listing the arity of each levels.</p>
+<p>For instance, lstopo may create a topology made of 2 packages, containing a single NUMA node and a L2 cache above two single-threaded cores:</p>
+<pre class="fragment">$ lstopo -i "pack:2 node:1 l2:1 core:2 pu:1" -
+Machine (2048MB)
+  Package L#0
+    NUMANode L#0 (P#0 1024MB)
+    L2 L#0 (4096KB)
+      Core L#0 + PU L#0 (P#0)
+      Core L#1 + PU L#1 (P#1)
+  Package L#1
+    NUMANode L#1 (P#1 1024MB)
+    L2 L#1 (4096KB)
+      Core L#2 + PU L#2 (P#2)
+      Core L#3 + PU L#3 (P#3)
+</pre><p>Replacing <code>-</code> with <code>file.xml</code> in this command line will export this topology to XML as usual.</p>
+<dl class="section note"><dt>Note</dt><dd>Synthetic topologies offer a very basic way to export a topology and reimport it on another machine. It is a lot less precise than XML but may still be enough when only the hierarchy of resources matters.</dd></dl>
+<h1><a class="anchor" id="synthetic_string"></a>
+Synthetic description string</h1>
+<p>Each item in the description string gives the type of the level and the number of such children under each object of the previous level. That is why the above topology contains 4 cores (2 cores times 2 nodes).</p>
+<p>These type names must be written as <code>numanode</code>, <code>package</code>, <code>core</code>, <code>l2u</code>, <code>l1i</code>, <code>pu</code>, <code>group</code> (hwloc_obj_type_sscanf() is used for parsing the type names). They do not need to be written case-sensitively, nor entirely (as long as there is no ambiguity, 2 characters such as <code>ma</code> select a Machine level). Note that I/O and Misc objects are not available.</p>
+<p>Instead of specifying the type of each level, it is possible to just specify the arities and let hwloc choose all types according to usual topologies. The following examples are therefore equivalent: </p><pre class="fragment">$ lstopo -i "2 3 4 5 6"
+$ lstopo -i "Package:2 NUMANode:3 L2Cache:4 Core:5 PU:6"
+</pre><p>NUMA nodes are handled in a special way since they are not part of the main CPU hierarchy but rather attached below it as memory children. Thus, <code>NUMANode:3</code> actually means <code>Group:3</code> where one NUMA node is attached below each group. These groups are merged back into the parent when possible (typically when a single NUMA node is requested below each parent).</p>
+<p>It is also possible the explicitly attach NUMA nodes to specific levels. For instance, a topology similar to a Intel Xeon Phi processor (with 2 NUMA nodes per 16-core group) may be created with: </p><pre class="fragment">$ lstopo -i "package:1 group:4 [numa] [numa] core:16 pu:4"
+</pre><p>The root object does not appear in the synthetic description string since it is always a Machine object. Therefore the Machine type is disallowed in the description as well.</p>
+<p>A NUMA level (with a single NUMA node) is automatically added if needed.</p>
+<p>Each item may be followed parentheses containing a list of space-separated attributes. For instance: </p><ul>
+<li>
+<code>L2iCache:2(size=32kB)</code> specifies 2 children of 32kB level-2 instruction caches. The size may be specified in bytes (without any unit suffix) or as kB, KiB, MB, MiB, etc.  </li>
+<li>
+<code>NUMANode:3(memory=16MB)</code> specifies 3 NUMA nodes with 16MB each. The size may be specified in bytes (without any unit suffix) or as GB, GiB, TB, TiB, etc.  </li>
+<li>
+<code>PU:2(indexes=0,2,1,3)</code> specifies 2 PU children and the full list of OS indexes among the entire set of 4 PU objects.  </li>
+<li>
+<code>PU:2(indexes=numa:core)</code> specifies 2 PU children whose OS indexes are interleaved by NUMA node first and then by package.  </li>
+<li>
+Attributes in parentheses at the very beginning of the description apply to the root object.  </li>
+</ul>
+<p>hwloc command-line tools may modify a synthetic topology, for instance to customize object attributes, or to remove some objects to make the topology heterogeneous or asymmetric. See many examples in <a class="el" href="a00382.html#faq_create_asymmetric">How do I create a custom heterogeneous and asymmetric topology?</a>.</p>
+<h1><a class="anchor" id="synthetic_use"></a>
+Loading a synthetic topology</h1>
+<p>Aside from lstopo, the hwloc programming interface offers the same ability by passing the synthetic description string to <a class="el" href="a00172.html#ga4fab186bb6181a00bcf585825fddd38d" title="Enable synthetic topology.">hwloc_topology_set_synthetic()</a> before <a class="el" href="a00166.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology.">hwloc_topology_load()</a>.</p>
+<p>Synthetic topologies are created by the <code>synthetic</code> component. This component may be enabled by force by setting the HWLOC_SYNTHETIC environment variable to something such as <code>node:2 core:3 pu:4</code>.</p>
+<p>Loading a synthetic topology disables binding support since the topology usually does not match the underlying hardware. Binding may be reenabled as usual by setting HWLOC_THISSYSTEM=1 in the environment or by setting the <a class="el" href="a00173.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running.">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> topology flag.</p>
+<h1><a class="anchor" id="synthetic_export"></a>
+Exporting a topology as a synthetic string</h1>
+<p>The function <a class="el" href="a00187.html#ga24b7864a1c588309c4749f621f03b4c7" title="Export the topology as a synthetic string.">hwloc_topology_export_synthetic()</a> may export a topology as a synthetic string. It offers a convenient way to quickly describe the contents of a machine. The lstopo tool may also perform such an export by forcing the output format.</p>
+<pre class="fragment">$ lstopo --of synthetic --no-io
+Package:1 L3Cache:1 L2Cache:2 L1dCache:1 L1iCache:1 Core:1 PU:2
+</pre><p>The exported string may be passed back to hwloc for recreating another similar topology (see also <a class="el" href="a00382.html#faq_version_synthetic">Are synthetic strings compatible between hwloc releases?</a>). The entire tree will be similar, but some attributes such as the processor model will be missing.</p>
+<p>Such an export is only possible if the topology is totally symmetric. It means that the <code>symmetric_subtree</code> field of the root object is set. Also memory children should be attached in a symmetric way (e.g. the same number of memory children below each Package object, etc.). However, I/O devices and Misc objects are ignored when looking at symmetry and exporting the string. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

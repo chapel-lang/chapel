@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +67,7 @@ static void testCopyElision(const char* test,
   }
 
   std::set<ID> splitIds;
-  std::set<ID> elisionPoints;
+  ElidedCopyInfo elisionPoints;
 
   if (testModule == false) {
     assert(func);
@@ -1377,6 +1377,21 @@ static void test48() {
     {}); // x is mentioned in receiver of method call, so no elision
 }
 
+static void test49() {
+  testCopyElision("test49",
+    R""""(
+        record R { proc foo(){} }
+        proc test(cond: bool) {
+          var x: R;
+          var z = x;
+          on here {
+            x;
+          }
+        }
+    )"""",
+    {}); // x is mentioned in a non-eligible block, so no elision
+}
+
 int main() {
   test1();
   test2();
@@ -1426,5 +1441,7 @@ int main() {
   test46();
   test47();
   test48();
+  test49();
+
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,6 +78,8 @@ class InitResolver {
   //initialization points to guide handling `=` operators
   std::set<const uast::AstNode*> initPoints;
 
+  ResolvedFunction::ImplicitInitMap implicitInits_;
+
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
                const types::Type* recvType)
@@ -105,7 +107,7 @@ class InitResolver {
 
 
   void updateResolverVisibleReceiverType(void);
-  bool implicitlyResolveFieldType(ID id);
+  bool implicitlyResolveFieldType(ID id, const ID initBefore = ID());
 
   bool applyResolvedInitCallToState(const uast::FnCall* node,
                                     const CallResolutionResult* c);
@@ -163,6 +165,10 @@ public:
 
   // Returns true if the AST node is an initialization point
   bool isInitPoint(const uast::AstNode* node);
+
+  ResolvedFunction::ImplicitInitMap& implicitInits() {
+    return implicitInits_;
+  }
 };
 
 } // end namespace resolution

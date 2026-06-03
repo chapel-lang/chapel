@@ -1,0 +1,6 @@
+Helpers.chpl:20: In function 'testCall':
+Helpers.chpl:24: error: unresolved call 'foo("hello")'
+Helpers.chpl:21: note: this candidate did not match: foo(y: uint(8))
+Helpers.chpl:24: note: because actual argument #1 with type 'string'
+Helpers.chpl:21: note: is passed to formal 'y: uint(8)'
+  testCall.chpl:26: called as testCall(param strBytes = "hello", type toType = uint(8))

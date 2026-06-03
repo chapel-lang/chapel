@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -914,20 +914,16 @@ bool evaluateWhereClause(FnSymbol* fn) {
     SymExpr* se = toSymExpr(fn->where->body.last());
 
     if (se == NULL) {
-      USR_FATAL(fn->where, "invalid where clause");
-    }
-
-    if (se->symbol() == gFalse) {
+      INT_FATAL("Unexpected expression type after evaluating 'where' clause");
+    } else if (se->symbol() == gFalse) {
       cleanupWhereClause(fn->where, se);
       return false;
-    }
-
-    if (se->symbol() == gTrue) {
+    } else if (se->symbol() == gTrue) {
       cleanupWhereClause(fn->where, se);
       return true;
+    } else {
+      INT_FATAL("Non-param-bool symbol after evaluating 'where' clause");
     }
-
-    USR_FATAL(fn->where, "invalid where clause");
   }
 
   return true;

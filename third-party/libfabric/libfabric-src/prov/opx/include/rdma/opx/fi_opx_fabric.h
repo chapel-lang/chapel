@@ -33,13 +33,10 @@
 #ifndef _FI_PROV_OPX_FABRIC_H_
 #define _FI_PROV_OPX_FABRIC_H_
 
-
-
 #ifdef FI_OPX_FABRIC_HFI1
 #include "rdma/opx/fi_opx_hfi1_fabric.h"
 
-#define FI_OPX_FABRIC_TX_CONNECT	fi_opx_hfi1_tx_connect
-
+#define FI_OPX_FABRIC_TX_CONNECT fi_opx_hfi1_tx_connect
 
 #endif
 

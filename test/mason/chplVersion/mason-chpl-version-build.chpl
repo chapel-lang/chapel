@@ -34,5 +34,9 @@ proc main() {
 
   var compopts: list(string);
   compopts.pushBack("");
-  buildProgram(false, false, false, false, compopts, "Mason.toml", "Mason.lock");
+  try {
+    buildProgram(false, false, false, false, compopts, "Mason.toml", "Mason.lock");
+  } catch e {
+    writeln(e.message());
+  }
 }

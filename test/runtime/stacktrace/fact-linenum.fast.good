@@ -1,0 +1,4 @@
+fact-linenum.chpl:2: error: halt reached
+Stacktrace
+
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn

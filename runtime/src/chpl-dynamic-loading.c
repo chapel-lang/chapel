@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,14 +18,24 @@
  * limitations under the License.
  */
 
+// Needed to access 'dladdr' and 'Dl_info'.
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE 1
+#endif
+#ifdef __FreeBSD__
+  #include <link.h>
+#endif
+#include <dlfcn.h>
+
 #include "chplrt.h"
 #include "chpl-dynamic-loading.h"
 #include "chplcgfns.h"
-#include <dlfcn.h>
+#include "chpl-prginfo.h"
 
 int CHPL_RTLD_LAZY = RTLD_LAZY;
 
 void** chpl_get_ftable(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, chpl_ftable);
   return (void**) chpl_ftable;
 }
 

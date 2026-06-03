@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+chpl=$3
+
+$chpl runCommandHelper.chpl -o runCommandHelper

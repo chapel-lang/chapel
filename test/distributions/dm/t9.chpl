@@ -18,12 +18,12 @@ hd("new dimensionalDist2D()");
 var ddf = new dimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
-hd("wrapping ddf in dmap");
+hd("taking ref to ddf");
 ref ddfm = ddf;
 tl();
 
 // Wrapping a second time would result in double-deletion of ddf.
-hd("skipping: wrapping ddf in another dmap, without assignment");
+hd("skipping: mentioning ddf without assignment");
 //ddf;
 tl();
 

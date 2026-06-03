@@ -1,0 +1,13 @@
+[brick]
+name="myDep"
+version="0.1.0"
+chplVersion="2.8.0"
+license="None"
+type="library"
+
+[dependencies]
+
+
+[system]
+myWeirdPackage = "*"
+

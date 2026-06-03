@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #define _config_H_
 
 #include "chpltypes.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,11 +46,6 @@ void parseConfigFile(const char* configFilename,
 
 chpl_bool chpl_config_has_value(c_string v, c_string m);
 c_string chpl_config_get_value(c_string v, c_string m);
-
-extern const int mainHasArgs;
-extern const int mainPreserveDelimiter;
-extern const int warnUnstable;
-extern chpl_main_argument chpl_gen_main_arg;
 
 #ifdef __cplusplus
 }

@@ -9,13 +9,14 @@
 # tarball created and sha of the tarball,
 # and run home-brew test-bot commands as homebrew CI does
 
+set -exo pipefail
+
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
 source $UTIL_CRON_DIR/common-tarball.bash
-
 
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.

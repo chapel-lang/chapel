@@ -3,11 +3,32 @@
 /* adds build_id to version if it was defined */
 #undef BUILD_ID
 
+/* Whether libcxi.h has cxil_alloc_trig_cp() support */
+#undef CXI_HAVE_ALLOC_TRIG_CP
+
+/* Whether libcxi.h has cxil_modify_cp() support */
+#undef CXI_HAVE_MODIFY_CP
+
+/* Whether libcxi.h has cxil_svc_get_netns() support */
+#undef CXI_HAVE_SVC_GET_NETNS
+
+/* Whether libcxi.h has cxil_svc_get_vni_range() support */
+#undef CXI_HAVE_SVC_GET_VNI_RANGE
+
 /* EFA unit testing */
 #undef EFA_UNIT_TEST
 
+/* defined to 1 if AddressSanitizer is enabled */
+#undef ENABLE_ASAN
+
 /* dlopen CUDA libraries */
 #undef ENABLE_CUDA_DLOPEN
+
+/* Enable collectives dlopen of curl libraries */
+#undef ENABLE_CXI_CURL_DLOPEN
+
+/* Enable collectives dlopen of json libraries */
+#undef ENABLE_CXI_JSON_DLOPEN
 
 /* defined to 1 if libfabric was configured with --enable-debug, 0 otherwise
    */
@@ -19,11 +40,20 @@
 /* dlopen gdrcopy libraries */
 #undef ENABLE_GDRCOPY_DLOPEN
 
+/* defined to 1 if LeakSanitizer is enabled */
+#undef ENABLE_LSAN
+
 /* Define to 1 to enable memhooks memory monitor */
 #undef ENABLE_MEMHOOKS_MONITOR
 
 /* dlopen ROCR libraries */
 #undef ENABLE_ROCR_DLOPEN
+
+/* defined to 1 if ThreadSanitizer is enabled */
+#undef ENABLE_TSAN
+
+/* defined to 1 if UndefinedBehavior Sanitizer is enabled */
+#undef ENABLE_UBSAN
 
 /* Define to 1 to enable uffd memory monitor */
 #undef ENABLE_UFFD_MONITOR
@@ -34,12 +64,21 @@
 /* define when building with FABRIC_DIRECT support */
 #undef FABRIC_DIRECT_ENABLED
 
+/* Path to the curl install root */
+#undef FI_CXI_CURL_LIB_PATH
+
+/* Path to the json-c install root */
+#undef FI_CXI_JSON_LIB_PATH
+
 /* Define to 1 if you have the <accel-config/libaccel_config.h> header file.
    */
 #undef HAVE_ACCEL_CONFIG_LIBACCEL_CONFIG_H
 
 /* Define to 1 if the linker supports alias attribute. */
 #undef HAVE_ALIAS_ATTRIBUTE
+
+/* Define to 1 if you have the <asm/types.h> header file. */
+#undef HAVE_ASM_TYPES_H
 
 /* Set to 1 to use c11 atomic functions */
 #undef HAVE_ATOMICS
@@ -57,11 +96,17 @@
    atomics */
 #undef HAVE_BUILTIN_MM_INT128_ATOMICS
 
+/* Indicates if EFADV_DEVICE_ATTR_CAPS_CQ_WITH_EXT_MEM_DMABUF is defined */
+#undef HAVE_CAPS_CQ_WITH_EXT_MEM_DMABUF
+
 /* Indicates if EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE is defined */
 #undef HAVE_CAPS_RDMA_WRITE
 
 /* Indicates if EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined */
 #undef HAVE_CAPS_RNR_RETRY
+
+/* Indicates if EFADV_DEVICE_ATTR_CAPS_UNSOLICITED_WRITE_RECV is defined */
+#undef HAVE_CAPS_UNSOLICITED_WRITE_RECV
 
 /* Define to 1 if clock_gettime is available. */
 #undef HAVE_CLOCK_GETTIME
@@ -77,6 +122,9 @@
 
 /* CUDA dmabuf support */
 #undef HAVE_CUDA_DMABUF
+
+/* CUDA dmabuf PCIe BAR1 support */
+#undef HAVE_CUDA_DMABUF_MAPPING_TYPE_PCIE
 
 /* Define to 1 if you have the <cuda_runtime.h> header file. */
 #undef HAVE_CUDA_RUNTIME_H
@@ -129,14 +177,34 @@
 /* efa provider is built */
 #undef HAVE_EFA
 
+/* Indicates if efadv_cq_attr struct has doorbell field */
+#undef HAVE_EFADV_CQ_ATTR_DB
+
 /* Indicates EFA supports extensible CQ */
 #undef HAVE_EFADV_CQ_EX
+
+/* Indicates if efadv_query_cq is available */
+#undef HAVE_EFADV_QUERY_CQ
 
 /* Indicates if efadv_query_mr verbs is available */
 #undef HAVE_EFADV_QUERY_MR
 
+/* Indicates if efadv_query_qp_wqs is available */
+#undef HAVE_EFADV_QUERY_QP_WQS
+
+/* Indicates if efadv_qp_init_attr has sl */
+#undef HAVE_EFADV_SL
+
+/* Indicates if EFA supports CQ notification (requires ibv_create_comp_channel
+   and ibv_get_cq_event) */
+#undef HAVE_EFA_CQ_NOTIFICATION
+
 /* Indicates if EFA supports 128 bytes in-order in writing. */
 #undef HAVE_EFA_DATA_IN_ORDER_ALIGNED_128_BYTES
+
+/* Indicates if data path direct is available (requires both QUERY_QP_WQS and
+   QUERY_CQ) */
+#undef HAVE_EFA_DATA_PATH_DIRECT
 
 /* efa provider is built as DSO */
 #undef HAVE_EFA_DL
@@ -172,6 +240,12 @@
 /* Define to 1 if you have the <habanalabs/synapse_api.h> header file. */
 #undef HAVE_HABANALABS_SYNAPSE_API_H
 
+/* hfi1 direct verbs enabled */
+#undef HAVE_HFI1_DIRECT_VERBS
+
+/* hfisvc support availability */
+#undef HAVE_HFISVC
+
 /* hook_debug provider is built */
 #undef HAVE_HOOK_DEBUG
 
@@ -196,8 +270,17 @@
 /* Indicates if libibverbs has ibv_is_fork_initialized */
 #undef HAVE_IBV_IS_FORK_INITIALIZED
 
+/* Indicates if IBV_QUERY_QP_DATA_IN_ORDER_DEVICE_ONLY flag is available. */
+#undef HAVE_IBV_QUERY_QP_DATA_IN_ORDER_DEVICE_ONLY
+
 /* Define to 1 if you have the <infiniband/efadv.h> header file. */
 #undef HAVE_INFINIBAND_EFADV_H
+
+/* Define to 1 if you have the <infiniband/hfi1dv.h> header file. */
+#undef HAVE_INFINIBAND_HFI1DV_H
+
+/* Define to 1 if you have the <infiniband/hfisvc_client.h> header file. */
+#undef HAVE_INFINIBAND_HFISVC_CLIENT_H
 
 /* Define to 1 if you have the <infiniband/verbs.h> header file. */
 #undef HAVE_INFINIBAND_VERBS_H
@@ -207,6 +290,18 @@
 
 /* Define to 1 if you have the <json-c/json.h> header file. */
 #undef HAVE_JSON_C_JSON_H
+
+/* Define to 1 if kdreg2.h is available. */
+#undef HAVE_KDREG2
+
+/* Define to 1 if kdreg2.h path is not <linux/kdreg2.h>. */
+#undef HAVE_KDREG2_INCLUDE_PATH
+
+/* Define to 1 to enable kdreg2 memory monitor */
+#undef HAVE_KDREG2_MONITOR
+
+/* Define if you have kqueue support. */
+#undef HAVE_KQUEUE
 
 /* Define to 1 if you have the <level_zero/ze_api.h> header file. */
 #undef HAVE_LEVEL_ZERO_ZE_API_H
@@ -245,6 +340,21 @@
 /* Define to 1 if you have the <linux/userfaultfd.h> header file. */
 #undef HAVE_LINUX_USERFAULTFD_H
 
+/* lnx provider is built */
+#undef HAVE_LNX
+
+/* lnx provider is built as DSO */
+#undef HAVE_LNX_DL
+
+/* lpp provider is built */
+#undef HAVE_LPP
+
+/* lpp provider is built as DSO */
+#undef HAVE_LPP_DL
+
+/* Define to 1 for LPP FI_THREAD_SAFE support */
+#undef HAVE_LPP_THREAD_SAFE
+
 /* Build with LTTng userspace tracepoints */
 #undef HAVE_LTTNG
 
@@ -254,11 +364,20 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* monitor provider is built */
+#undef HAVE_MONITOR
+
+/* monitor provider is built as DSO */
+#undef HAVE_MONITOR_DL
+
 /* mrail provider is built */
 #undef HAVE_MRAIL
 
 /* mrail provider is built as DSO */
 #undef HAVE_MRAIL_DL
+
+/* Default memory monitor */
+#undef HAVE_MR_CACHE_MONITOR_DEFAULT
 
 /* Define to 1 if you have the <netlink/netlink.h> header file. */
 #undef HAVE_NETLINK_NETLINK_H
@@ -438,6 +557,9 @@
 /* udp provider is built as DSO */
 #undef HAVE_UDP_DL
 
+/* Define to 1 if platform supports userfault fd thread id */
+#undef HAVE_UFFD_THREAD_ID
+
 /* Define to 1 if platform supports userfault fd unmap */
 #undef HAVE_UFFD_UNMAP
 
@@ -525,9 +647,6 @@
 /* Whether we have CUDA runtime or not */
 #undef PSM3_CUDA
 
-/* PSM3 built with instruction set */
-#undef PSM3_MARCH
-
 /* Whether we have oneAPI Level-Zero runtime or not */
 #undef PSM3_ONEAPI
 
@@ -565,7 +684,7 @@
 #undef typeof
 
 
-#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR && !defined(ENABLE_ASAN)
 #define HAVE_MEMHOOKS_MONITOR 1
 #else
 #define HAVE_MEMHOOKS_MONITOR 0

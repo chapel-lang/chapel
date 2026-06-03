@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,9 +61,6 @@ public use SparseBlockDist;
 //
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
-
-@deprecated("'disableAliasedBulkTransfer' is deprecated and has no effect")
-config const disableAliasedBulkTransfer = true;
 
 config param disableBlockDistBulkTransfer = false;
 config param disableBlockDistArrayViewElision = false;
@@ -144,15 +141,6 @@ distinct locale in a ``targetLocales`` array.  The indices within the
 bounding box are partitioned as evenly as possible across the target
 locales.  An index outside the bounding box is mapped to the same
 locale as the nearest index within the bounding box.
-
-.. Warning::
-
-  The ``blockDist`` distribution was, until recently, a class named
-  ``Block``.  Today, ``Block`` is still supported in a deprecated
-  form, yet is an alias to the ``blockDist`` record here.  In our
-  experience, most uses of ``Block`` in distribution contexts should
-  continue to work, but updating to ``blockDist`` is requested going
-  forward due to the deprecation.
 
 More precisely, an index ``idx`` is mapped to
 ``targetLocales[locIdx]``, where ``locIdx`` is computed as follows.
@@ -479,10 +467,6 @@ operator =(ref a: blockDist(?), b: blockDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'Block' is deprecated, please use 'blockDist' instead")
-type Block = blockDist;
 
 
 @chpldoc.nodoc
@@ -1542,8 +1526,10 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
           locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = _to_nonnil(myLocRAD).RAD;
+      pragma "no copy" pragma "no auto destroy"
+      var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy"
+      var radata = _to_nonnil(myLocRAD).RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
         return radata(rlocIdx).getDataElem(dataIdx);
@@ -1955,7 +1941,7 @@ proc BlockDom.numRemoteElems(viewDom, rlo, rid) {
 }
 
 private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
-  if Src.doiCanBulkTransferRankChange() == false &&
+  if !Src.doiCanBulkTransferRankChange() &&
      Dest.rank != Src.rank then return false;
 
   use Reflection;

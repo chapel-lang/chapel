@@ -1,0 +1,4 @@
+#!/bin/sh
+grep -o 'Copyright 2026, Peter, Paul, Mary\.' $2 > $2.prediff.tmp
+grep -o 'Copyright 2026\.' $2 >> $2.prediff.tmp
+mv $2.prediff.tmp $2

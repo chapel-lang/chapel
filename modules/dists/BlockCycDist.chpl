@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -252,10 +252,6 @@ operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'BlockCyclic' is deprecated, please use 'blockCycDist' instead")
-type BlockCyclic = blockCycDist;
 
 
 class BlockCyclicImpl : BaseDist, writeSerializable {

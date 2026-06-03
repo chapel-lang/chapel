@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3533,6 +3533,9 @@ module HDF5 {
     use FileSystem, List;
 
     var filenames: list(string);
+    // TODO: if a post-2.0 edition is enabled, findFiles will throw and cause
+    // readAllHDF5Files to either need a localized try! for findFiles or to be
+    // marked with throws.
     for f in findFiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {

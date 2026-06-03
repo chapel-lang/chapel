@@ -1,6 +1,13 @@
+use DSIUtil;
+
+record cmoDist {
+  forwarding var _value = new chpl__rectLayoutHelper(new CMODist());
+}
+
 class CMODist : BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool, inds) {
-    const dom = new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, dist=this);
+  proc dsiNewRectangularDom(param rank: int, type idxType,
+                            param strides: strideKind, inds) {
+    const dom = new CMODom(rank, idxType, strides, dist=this);
     dom.dsiSetIndices(inds);
     return dom;
   }
@@ -8,12 +15,9 @@ class CMODist : BaseDist {
   proc dsiClone() do return this;
 }
 
-class CMODom: BaseRectangularDom {
-  param rank : int;
-  type idxType;
-  param stridable: bool;
-  var dist: CMODist;
-  var ranges : rank*range(idxType,boundKind.both,stridable);
+class CMODom: BaseRectangularDom(?) {
+  var dist: borrowed CMODist;
+  var ranges : rank*range(idxType,boundKind.both,strides);
 
   proc dsiGetIndices() do return ranges;
 
@@ -116,17 +120,17 @@ class CMODom: BaseRectangularDom {
   }
 
   proc dsiBuildArray(type eltType) {
-    return new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+    return new CMOArr(eltType=eltType, rank=rank, idxType=idxType, strides=strides, dom=this);
   }
  
   proc buildSubdomain() do
-    return new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    return new CMODom(rank=rank, idxType=idxType, strides=strides, dist=dist);
 
-  proc dsiRankChange(param rank: int, param stridable: bool, args) {
+  proc dsiRankChange(param rank: int, param strides: strideKind, args) {
     proc isRange(r: range(?e,?b,?s)) param do return 1;
     proc isRange(r) param do return 0;
 
-    var d = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    var d = new CMODom(rank=rank, idxType=idxType, strides=strides, dist=dist);
     var i = 1;
     for param j in 0..args.size-1 {
       if isRange(args(j)) {
@@ -138,14 +142,14 @@ class CMODom: BaseRectangularDom {
   }
 
   proc translate(off: rank*int) {
-    var x = new CMODom(rank=rank, idxType=int, stridable = stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, strides = strides, dist=dist);
     for i in 0..#rank do
       x.ranges(i) = dim(i)._translate(off(i));
     return x;
   }
 
   proc interior(off: rank*int) {
-    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, strides=strides, dist=dist);
     for i in 0..#rank do {
       if ((off(i) > 0) && (dim(i).high+1-dim(i) < dim(i)._low) ||
           (off(i) < 0) && (dim(i)._low-1-dim(i) > dim(i).high)) {
@@ -157,14 +161,14 @@ class CMODom: BaseRectangularDom {
   }
 
   proc exterior(off: rank*int) {
-    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, strides=strides, dist=dist);
     for i in 0..#rank do
       x.ranges(i) = dim(i)._exterior(off(i));
     return x;
   }
 
   proc expand(off: rank*int) {
-    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, strides=strides, dist=dist);
     for i in 0..#rank do {
       x.ranges(i) = ranges(i)._expand(off(i));
       if (x.ranges(i)._low > x.ranges(i).high) {
@@ -175,14 +179,14 @@ class CMODom: BaseRectangularDom {
   }  
 
   proc expand(off: int) {
-    var x = new CMODom(rank=rank, idxType=int, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=int, strides=strides, dist=dist);
     for i in 0..#rank do
       x.ranges(i) = ranges(i)._expand(off);
     return x;
   }
 
   proc dsiStrideBy(str : rank*int) {
-    var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    var x = new CMODom(rank=rank, idxType=idxType, strides=strides, dist=dist);
     for i in 0..#rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
@@ -193,9 +197,9 @@ class CMOArr:BaseArr {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
-  var dom: CMODom(rank=rank,idxType=idxType, stridable=stridable);
+  var dom: CMODom(rank=rank,idxType=idxType, strides=strides);
   var off: rank*idxType;
   var blk: rank*idxType;
   var str: rank*int;
@@ -250,7 +254,7 @@ class CMOArr:BaseArr {
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
     var sum = origin;  
-    if stridable {
+    if strides {
       for param i in 1..rank do
         sum = sum + (ind(i) - off(i)) * blk(i) / str(i):idxType;
     } else {
@@ -264,14 +268,14 @@ class CMOArr:BaseArr {
     return dsiAccess( (ind, ));
   }
 
-  proc dsiReindex(d: CMODom) {
+  proc dsiReindex(d: CMODom(?)) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 0..rank-1 do
       if d.dim(i).size != dom.dim(i).size then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, dom=d, noinit_data=true);
-    //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit_data=true);
+    var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, strides=d.strides, dom=d, noinit_data=true);
+    //    was:  (eltType, rank, idxType, d.strides, true, d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size: d.idxType;
@@ -293,8 +297,8 @@ class CMOArr:BaseArr {
     }
   }
 
-  proc dsiSlice(d: CMODom) {
-    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, noinit_data=true);
+  proc dsiSlice(d: CMODom(?)) {
+    var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, strides=d.strides, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
@@ -320,10 +324,10 @@ class CMOArr:BaseArr {
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  proc dsiRankChange(d, param newRank: int, param newStridable: bool, irs) {
+  proc dsiRankChange(d, param newRank: int, param newStrides: strideKind, irs) {
     proc isRange(r: range(?e,?b,?s)) param do return 1;
     proc isRange(r) param do return 0;
-    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, dom=d, noinit_data=true);
+    var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, strides=newStrides, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
@@ -346,9 +350,9 @@ class CMOArr:BaseArr {
  
 
 
-  proc dsiReallocate(d: _domain) {
+  proc dsiReallocate(d: _domain(?)) {
     if (d._value.type == dom.type) {
-      var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d._value.stridable, dom=d._value);
+      var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, strides=d._value.strides, dom=d._value);
       for i in _intersect(d._value, dom) do
         copy(i) = this(i);
       off = copy.off;
@@ -420,8 +424,8 @@ proc CMOArr.dsiSerialWrite(f) {
   }
 }
 
-proc _intersect(a: CMODom, b: CMODom) {
-  var c = new CMODom(rank=a.rank, idxType=a.idxType, stridable=a.stridable, dist=b.dist);
+proc _intersect(a: CMODom(?), b: CMODom(?)) {
+  var c = new CMODom(rank=a.rank, idxType=a.idxType, strides=a.strides, dist=b.dist);
   for param i in 0..a.rank-1 do
     c.ranges(i) = a.ranges(i)(b.ranges(i));
   return c;
@@ -430,7 +434,7 @@ proc _intersect(a: CMODom, b: CMODom) {
 proc main() {
   param n = 5;
   const D = {1..n,1..n};
-  const D2: domain(2) dmapped new dmap(new CMODist()) = {1..n,1..n};
+  const D2: domain(2) dmapped new cmoDist() = {1..n,1..n};
   var A: [D2] real = [ij in D2] ij(1) + (ij(2) - 1)*n;
   var B: [D] real = [ij in D] ij(2) + (ij(1) - 1)*n;
 

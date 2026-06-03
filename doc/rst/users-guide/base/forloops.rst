@@ -1,5 +1,3 @@
-:title: Users Guide: **for**-loops
-
 .. _ug-forloops:
 
 **for**-loops: structured serial iteration

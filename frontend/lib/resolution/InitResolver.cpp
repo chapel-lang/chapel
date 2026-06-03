@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -120,7 +120,7 @@ void InitResolver::resolveImplicitSuperInit() {
   //       -- e.g. class Parent { type T; var x : T; }
 
   if (phase_ == PHASE_NEED_SUPER_INIT &&
-      superType_->isObjectType() == false) {
+      superType_->isRootClass() == false) {
     std::vector<CallInfoActual> actuals;
     auto superCT = ClassType::get(ctx_, superType_, nullptr,
                                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
@@ -180,6 +180,7 @@ void InitResolver::copyState(InitResolver& other) {
   isDescendingIntoAssignment_ = other.isDescendingIntoAssignment_;
   currentRecvType_ = other.currentRecvType_;
   superType_ = other.superType_;
+  implicitInits_ = other.implicitInits_;
 }
 
 InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
@@ -225,6 +226,15 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
     for (auto i = behind.currentFieldIndex_; i < curMax; i++) {
       auto& id = behind.fieldIdsByOrdinal_[i];
       std::ignore = behind.implicitlyResolveFieldType(id);
+    }
+
+    for (auto& [id, keys] : A->implicitInits_) {
+      auto& vec = implicitInits_[id];
+      vec.insert(vec.end(), keys.begin(), keys.end());
+    }
+    for (auto& [id, keys] : B->implicitInits_) {
+      auto& vec = implicitInits_[id];
+      vec.insert(vec.end(), keys.begin(), keys.end());
     }
 
     // Update field states
@@ -665,6 +675,7 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated,
+                              ret->formalsErroredBitmap(),
                               /* outerVariables */ {});
   return ret;
 }
@@ -752,12 +763,16 @@ void InitResolver::updateResolverVisibleReceiverType(void) {
   }
 }
 
-bool InitResolver::implicitlyResolveFieldType(ID id) {
+bool InitResolver::implicitlyResolveFieldType(ID id, const ID initBefore) {
   auto state = fieldStateFromId(id);
   if (!state || !state->initPointId.isEmpty()) return false;
 
   auto ct = currentRecvType_->getCompositeType();
-  auto& rf = resolveFieldDecl(initResolver_.rc, ct, id, DefaultsPolicy::USE_DEFAULTS);
+  auto& rr = resolveFieldResults(initResolver_.rc, ct, id,
+                                 DefaultsPolicy::USE_DEFAULTS,
+                                 /* syntaxOnly */ false,
+                                 /* fieldTypesOnly */ false);
+  auto& rf = resolvedFieldsFromResults(initResolver_.rc, rr);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
     auto state = fieldStateFromId(id);
@@ -777,6 +792,8 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
     state->qt = rf.fieldType(i);
     state->isInitialized = true;
   }
+
+  implicitInits_[initBefore].push_back(std::make_pair(ct, id));
 
   return true;
 }
@@ -811,7 +828,7 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
 
     if (auto opCall = parent->toOpCall())
       if (opCall->op() == USTR("="))
-        if (prior && opCall->actual(0) == prior)
+        if (prior && opCall->lhs() == prior)
           return true;
     prior = parent;
   }
@@ -853,6 +870,13 @@ bool InitResolver::isFieldInitialized(ID fieldId) {
 }
 
 void InitResolver::handleInitMarker(const uast::AstNode* node) {
+  int start = currentFieldIndex_;
+  int stop = fieldIdsByOrdinal_.size();
+  for (int i = start; i < stop; i++) {
+    auto id = fieldIdsByOrdinal_[i];
+    std::ignore = implicitlyResolveFieldType(id, node->id());
+  }
+
   // TODO: Better/more appropriate user facing error message for this?
   if (thisCompleteIds_.size() > 0) {
     CHPL_ASSERT(phase_ == PHASE_COMPLETE);
@@ -907,14 +931,16 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
 }
 
 void InitResolver::updateSuperType(const CallResolutionResult* c) {
-  if (auto& msc = c->mostSpecific().only()) {
-    auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
+  if (c) {
+    if (auto& msc = c->mostSpecific().only()) {
+      auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
 
-    this->superType_ = superThis->getCompositeType()->toBasicClassType();
+      this->superType_ = superThis->getCompositeType()->toBasicClassType();
 
-    // Only update the current receiver if the parent was generic.
-    if (superType_->instantiatedFromCompositeType() != nullptr) {
-      updateResolverVisibleReceiverType();
+      // Only update the current receiver if the parent was generic.
+      if (superType_->instantiatedFromCompositeType() != nullptr) {
+        updateResolverVisibleReceiverType();
+      }
     }
   }
 
@@ -964,6 +990,8 @@ bool InitResolver::handleCallToInit(const FnCall* node,
         receiver->toIdentifier()->name() != USTR("this")) {
       return false;
     }
+  } else if (calledExpr->isOpCall()) {
+    return false;
   }
 
   // It's a call to 'this.init', which means any initialized fields are
@@ -1018,6 +1046,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   auto lhs = node->actual(0);
   auto rhs = node->actual(1);
 
+  // TODO: Handle assignment to fields via tuple destructuring assignment
   // TODO: Is 'field' or 'this.field' too strict of a pattern?
   auto [fieldId, isSuperField] = fieldIdFromPossibleMentionOfField(lhs);
 
@@ -1038,9 +1067,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     currentFieldIndex_ = state->ordinalPos + 1;
     for (int i = old; i < state->ordinalPos; i++) {
         auto id = fieldIdsByOrdinal_[i];
-
-        // TODO: Anything to do if this doesn't hold?
-        std::ignore = implicitlyResolveFieldType(id);
+        std::ignore = implicitlyResolveFieldType(id, node->id());
     }
 
     // TODO: Anything to do if the opposite is true?

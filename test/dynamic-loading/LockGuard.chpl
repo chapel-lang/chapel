@@ -33,8 +33,13 @@ proc test1() {
     g2.add(i);
   }
 
+  manage g1.read() as x do
+    assert(x == g2.read());
+
   manage g1.write() as x do
     assert(x == g2.read());
+
+  assert(g1.unsafeAccess() == g2.read());
 }
 
 proc test2() {

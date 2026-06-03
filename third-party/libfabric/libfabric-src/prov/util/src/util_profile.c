@@ -51,11 +51,17 @@
 		(dest)->desc = (src)->desc;		  \
 	} while (0)
 
+enum fi_prof_var_scope {
+	FI_PROV_VAR,
+	FI_SYS_VAR,
+};
+
 struct fi_profile_desc  ofi_common_vars[] = {
 	{
 	 .id = FI_VAR_UNEXP_MSG_CNT,
 	 .datatype_sel = fi_primitive_type,
 	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
 	 .size = 8,
 	 .name = "pvar_unexp_msg_cnt",
 	 .desc = "Unexpected Receive Message Count"
@@ -64,9 +70,64 @@ struct fi_profile_desc  ofi_common_vars[] = {
 	 .id = FI_VAR_UNEXP_MSG_QUEUE,
 	 .datatype_sel = fi_defined_type,
 	 .datatype.defined = FI_TYPE_CQ_ERR_ENTRY,
+	 .flags = 0,
 	 .size = sizeof(struct fi_cq_err_entry),
 	 .name = "pvar_unexp_msg_queue",
 	 .desc = "Unexpected Receive Message Queue"
+	},
+	{
+	 .id = FI_VAR_MSG_QUEUE_CNT,
+	 .datatype_sel = fi_primitive_type,
+	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
+	 .size = 8,
+	 .name = "pvar_msg_queue_cnt",
+	 .desc = "Number of message queues created"
+	},
+	{
+	 .id = FI_VAR_CONNECTION_CNT,
+	 .datatype_sel = fi_primitive_type,
+	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
+	 .size = 8,
+	 .name = "pvar_connection_cnt",
+	 .desc = "Number of connection established"
+	},
+	{
+	 .id = FI_VAR_CONN_REQUEST,
+	 .datatype_sel = fi_primitive_type,
+	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
+	 .size = 8,
+	 .name = "pvar_conn_request",
+	 .desc = "Number of connection requests issued"
+	},
+	{
+	 .id = FI_VAR_CONN_ACCEPT,
+	 .datatype_sel = fi_primitive_type,
+	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
+	 .size = 8,
+	 .name = "pvar_conn_accept",
+	 .desc = "Number of connection requests accepted"
+	},
+	{
+	 .id = FI_VAR_CONN_REJECT,
+	 .datatype_sel = fi_primitive_type,
+	 .datatype.primitive = FI_UINT64,
+	 .flags = 0,
+	 .size = 8,
+	 .name = "pvar_conn_reject",
+	 .desc = "Number of connection requests rejected"
+	},
+	{
+	 .id = FI_VAR_OFI_MEM,
+	 .datatype_sel = fi_defined_type,
+	 .datatype.defined = FI_TYPE_ATOMIC_TYPE,
+	 .flags = FI_SYS_VAR,
+	 .size = 8,
+	 .name = "pvar_ofi_mem_alloc(MB)",
+	 .desc = "Memory pools allocated by OFI"
 	},
 };
 
@@ -75,6 +136,7 @@ struct fi_profile_desc  ofi_common_events[] = {
 	 .id = FI_EVENT_UNEXP_MSG_RECVD,
 	 .datatype_sel = fi_defined_type,
 	 .datatype.defined = FI_TYPE_CQ_ERR_ENTRY,
+	 .flags = 0,
 	 .size = sizeof(struct fi_cq_err_entry),
 	 .name = "pevent_unexp_msg_recd",
 	 .desc = "Unexpected Message Received"
@@ -83,6 +145,7 @@ struct fi_profile_desc  ofi_common_events[] = {
 	 .id = FI_EVENT_UNEXP_MSG_MATCHED,
 	 .datatype_sel = fi_defined_type,
 	 .datatype.defined = FI_TYPE_CQ_ERR_ENTRY,
+	 .flags = 0,
 	 .size = sizeof(struct fi_cq_err_entry),
 	 .name = "pevent_unexp_msg_matched",
 	 .desc = "Unexpected Message Matched"
@@ -91,6 +154,88 @@ struct fi_profile_desc  ofi_common_events[] = {
 
 size_t ofi_common_var_count = ARRAY_SIZE(ofi_common_vars);
 size_t ofi_common_event_count = ARRAY_SIZE(ofi_common_events);
+
+enum {
+	SYS_VAR_MEM = 0,
+};
+
+static ofi_atomic64_t  ofi_sys_vars[1];
+size_t ofi_sys_var_count = ARRAY_SIZE(ofi_sys_vars);
+
+static bool ofi_sys_var_enabled = false;
+
+static inline int
+ofi_prof_var2_sys_idx(uint32_t var_id)
+{
+	if (ofi_sys_var_enabled) {
+		switch (var_id) {
+		case FI_VAR_OFI_MEM:
+			return SYS_VAR_MEM;
+		default:
+			break;
+		}
+	}
+
+	return -1;
+}
+
+struct fi_profile_desc *
+ofi_prof_var2_desc(struct util_profile *prof, uint32_t var_id)
+{
+        int idx;
+
+        idx = ofi_prof_id2_idx(var_id, ofi_common_var_count);
+	if (!prof) { // common var, not specified on an profile instance
+		if (idx < ofi_common_var_count)
+			return &(ofi_common_vars[var_id]);
+		else
+			return NULL;
+	}
+
+        if ((idx < prof->varlist_size) &&
+            (OFI_VAR_ENABLED(&(prof->varlist[idx])))) {
+                return &(prof->varlist[idx]);
+        } else {
+                return NULL;
+        }
+}
+
+struct fi_profile_desc *
+ofi_prof_event2_desc(struct util_profile *prof, uint32_t event_id)
+{
+        int idx = ofi_prof_id2_idx(event_id, ofi_common_event_count);
+        if ((idx < prof->eventlist_size) &&
+            (OFI_EVENT_ENABLED(&(prof->eventlist[idx])))) {
+                return &(prof->eventlist[idx]);
+        } else {
+                return NULL;
+        }
+}
+
+void ofi_prof_sys_init()
+{
+	for (int i = 0; i < ofi_sys_var_count; i++)
+                ofi_atomic_initialize64(&ofi_sys_vars[i], 0);
+
+	ofi_sys_var_enabled = true;
+}
+
+void ofi_prof_inc_sys_var(uint32_t var_id, int64_t val)
+{
+	int idx = ofi_prof_var2_sys_idx(var_id);
+	if (idx >= 0)
+		ofi_atomic_add64(&(ofi_sys_vars[idx]), val);
+}
+
+uint64_t ofi_prof_read_sys_var(uint32_t var_id)
+{
+	int idx = ofi_prof_var2_sys_idx(var_id);
+
+	if (idx >= 0)
+		return (uint64_t)ofi_atomic_get64(&(ofi_sys_vars[idx]));
+
+	return 0;
+}
 
 int ofi_prof_pcb_noop(struct fid_profile *prof_fid,
 		      struct fi_profile_desc *event,
@@ -231,6 +376,7 @@ void ofi_prof_add_common_events(struct util_profile *prof)
 int ofi_prof_add_var(struct util_profile *prof, uint32_t var_id,
 		     struct fi_profile_desc *desc, void *var)
 {
+	int sys_idx;
 	int idx = ofi_prof_id2_idx(var_id, ofi_common_var_count);
 
 	if (!desc) {
@@ -266,7 +412,13 @@ int ofi_prof_add_var(struct util_profile *prof, uint32_t var_id,
 		OFI_PROF_DESC_SET(&prof->varlist[idx], desc);
 		prof->var_count++;
 	}
-	prof->vars[idx] = var;
+
+	if ((desc->flags & 0x01) && !var ) {
+		sys_idx = (desc->flags >> 32);
+		prof->vars[idx] = (void *)&(ofi_sys_vars[sys_idx]);
+	} else  {
+		prof->vars[idx] = var;
+	}
 
 	return 0;
 }

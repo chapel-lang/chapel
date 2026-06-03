@@ -9,15 +9,22 @@ MASON_OFFLINE: false
 SPACK_ROOT: $PWD/mason_home/spack *
 ----------
 MASON_HOME: $PWD *
-MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_REGISTRY: foobar|foobar *
 MASON_OFFLINE: true *
 SPACK_ROOT: $PWD/mason_home/spack *
 ---------
 MASON_HOME: $PWD *
-MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
+MASON_REGISTRY: foobar|foobar *
 MASON_OFFLINE: false
 SPACK_ROOT: $PWD/mason_home/spack *
-MASON_CACHED_REGISTRY: $PWD/mason-registry
+MASON_CACHED_REGISTRY: $PWD/foobar
+----------
+MasonError: expected MASON_REGISTRY to contain a comma separated list of locations or 'name|location' pairs
+foo|bar|baz
+----------
+MasonError: registry names specified in MASON_REGISTRY must be unique:
+foo - /tmp/registry1
+foo - /tmp/registry2
 ----------
 Print environment variables recognized by mason
 

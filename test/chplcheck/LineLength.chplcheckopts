@@ -1,0 +1,4 @@
+ # Base
+--setting LineLength.Max=20
+--setting LineLength.IgnoreDocStrings=true
+--setting LineLength.Max=20 --setting LineLength.IgnoreDocStrings=true

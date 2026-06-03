@@ -5,8 +5,30 @@
 #   to implement environment modifications in Bash than Make.
 #
 
+if [ "$DEBUG" == "1" ]; then
+  echo "Building Mason in debug mode"
+else
+  echo "Building Mason in release mode"
+fi
+
 export CHPL_COMM=none
-export CHPL_LAUNCHER=none
+export CHPL_RE2=bundled
+export CHPL_LOCALE_MODEL=flat
+
+echo "Using CHPL_COMPILER: ${CHPL_COMPILER}"
+MASON_CHPL_HOME=$($CHPL_COMPILER --print-chpl-home)
+echo "Using CHPL_HOME: ${MASON_CHPL_HOME}"
+
+if ! $MASON_CHPL_HOME/util/printchplenv --diagnose-lib=runtime >/dev/null 2>/dev/null; then
+  cat<<EOF
+  Cannot build mason with this configuration.
+  Check that you have built a Chapel configuration that supports:
+  CHPL_COMM=none
+  CHPL_RE2=bundled
+  CHPL_LOCALE_MODEL=flat
+EOF
+  exit 1
+fi
 
 if command -v module > /dev/null 2>&1 ; then
   HUGEPAGES=$(module list 2>&1 | grep craype-hugepage | sed -e"s:[0-9]*)::g")
@@ -16,12 +38,28 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-if ! $chplBinDir/chpl mason.chpl -o $chplBinDir/mason; then
+COMPOPTS=""
+PRE_COMPOPTS="--launcher=none"
+POST_COMPOPTS="--checks"
+if [ "$DEBUG" == "1" ]; then
+  # TODO add --debug-safe-optimizations-only once https://github.com/chapel-lang/chapel/issues/28165 is resolved
+  # for now, use a limited subset of what --debug-safe-optimizations-only
+  # would do
+  COMPOPTS="$COMPOPTS -g --no-devel --no-inline --no-copy-propagation"
+else
+  # avoid specialization to prevent micro-architectural optimizations that
+  # could break mason in cross platform scenarios
+  # this is probably overcautious
+  COMPOPTS="$COMPOPTS --fast --no-specialize"
+fi
+ALL_COMPOPTS="$PRE_COMPOPTS $COMPOPTS $POST_COMPOPTS"
+
+COMMAND="$CHPL_COMPILER $ALL_COMPOPTS Mason.chpl -o $outputFile"
+echo "Building Mason: $COMMAND"
+
+if ! $COMMAND; then
   cat<<EOF
-  Error building mason. Check that you have built a runtime configuration that supports:
-  CHPL_COMM=none
-  CHPL_LAUNCHER=none
-  CHPL_RE2=bundled
+  Error building mason.
 EOF
   exit 1
 fi

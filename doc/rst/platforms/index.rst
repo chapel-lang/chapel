@@ -15,6 +15,7 @@ Major Platforms
    windows
    aws
    raspberrypi
+   riscv
 
 
 .. _platforms-networks:

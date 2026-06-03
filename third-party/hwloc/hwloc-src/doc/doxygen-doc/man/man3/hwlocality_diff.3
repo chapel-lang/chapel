@@ -1,4 +1,4 @@
-.TH "hwlocality_diff" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_diff" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -207,7 +207,7 @@ Export a list of topology differences to a XML file\&. If not \fCNULL\fP, \fCref
 .PP
 Export a list of topology differences to a XML buffer\&. If not \fCNULL\fP, \fCrefname\fP defines an identifier string for the reference topology which was used as a base when computing this difference\&. This identifier is usually the name of the other XML file that contains the reference topology\&. This attribute is given back when reading the diff from XML\&.
 .PP
-The returned buffer ends with a \\0 that is included in the returned length\&.
+The returned buffer ends with a \fC\\0\fP that is included in the returned length\&.
 .PP
 \fBReturns\fP
 .RS 4
@@ -239,7 +239,7 @@ the pointer returned in refname should later be freed by the caller\&.
 .SS "int hwloc_topology_diff_load_xmlbuffer (const char * xmlbuffer, int buflen, \fBhwloc_topology_diff_t\fP * diff, char ** refname)"
 
 .PP
-Load a list of topology differences from a XML buffer\&. Build a list of differences from the XML memory buffer given at \fCxmlbuffer\fP and of length \fCbuflen\fP (including an ending \\0)\&. This buffer may have been filled earlier with \fBhwloc_topology_diff_export_xmlbuffer()\fP\&.
+Load a list of topology differences from a XML buffer\&. Build a list of differences from the XML memory buffer given at \fCxmlbuffer\fP and of length \fCbuflen\fP (including an ending \fC\\0\fP)\&. This buffer may have been filled earlier with \fBhwloc_topology_diff_export_xmlbuffer()\fP\&.
 .PP
 If not \fCNULL\fP, \fCrefname\fP will be filled with the identifier string of the reference topology for the difference file, if any was specified in the XML file\&. This identifier is usually the name of the other XML file that contains the reference topology\&.
 .PP

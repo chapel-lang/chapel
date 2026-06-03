@@ -1,0 +1,7 @@
+signature0(char x)
+signature1(char * x)
+signature2(char * * x)
+signature3(char x)
+signature4(int x)
+signature5(int argc,
+               char * * argv)

@@ -1,5 +1,3 @@
-:title: Users Guide: *Locales*
-
 *Locales*: representing architectural locality
 ==============================================
 

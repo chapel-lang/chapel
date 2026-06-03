@@ -1,2 +1,0 @@
-buffer2.chpl:1: In function 'main':
-buffer2.chpl:5: error: cannot initialize a value of type 'uint(8)' from an 'int(64)'

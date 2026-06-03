@@ -1,0 +1,10 @@
+language design: Should type fields with runtime type be compared with '=='
+
+Here, the static types of the record's fields are equal, but their
+dynamic types may or may not be.  In one case because the indices
+described by the domains are different; in the other because the two
+arrays might be interpreted as being defined over different anonymous
+domains.  How should the compiler-generated ==/!= operators behave in
+a case like this?
+
+#28755

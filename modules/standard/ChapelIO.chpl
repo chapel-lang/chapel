@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ module ChapelIO {
   use ChapelLocale;
 
   use IO;
-  import CTypes.{c_int};
+  import CTypes.{c_ptr, c_ptrConst, c_int, c_char};
 
     private
     proc isIoField(x, param i) param {
@@ -58,8 +58,8 @@ module ChapelIO {
       param n = __primitive("num fields", t);
       var ret = 0;
       pragma "no init"
-      var dummy : t;
-      for param i in 1..n {
+      var dummy: t;
+      for param i in 0..<n {
         if isIoField(dummy, i) then
           ret += 1;
       }
@@ -74,12 +74,12 @@ module ChapelIO {
       // print out just the set field for a union.
       writer.writeLiteral("(");
       param num_fields = __primitive("num fields", t);
-      var id = __primitive("get_union_id", x);
-      for param i in 1..num_fields {
+      var id = x.getActiveIndex();
+      for param i in 0..<num_fields {
         if isIoField(x, i) && i == id {
           const eq = __primitive("field num to name", t, i) + " = ";
           writer.writeLiteral(eq);
-          writer.write(__primitive("field by num", x, i));
+          writer.write(x(i));
         }
       }
       writer.writeLiteral(")");
@@ -109,11 +109,10 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
-          ser.writeField(name,
-                         __primitive("field by num", x, i));
+          param name : string = __primitive("field num to name", t, i);
+          ser.writeField(name, __primitive("field by num", x, i));
         }
       }
 
@@ -138,9 +137,9 @@ module ChapelIO {
       }
 
       param num_fields = __primitive("num fields", t);
-      for param i in 1..num_fields {
+      for param i in 0..<num_fields {
         if isIoField(x, i) {
-          param name : string = __primitive("field num to name", x, i);
+          param name : string = __primitive("field num to name", t, i);
           ref field = __primitive("field by num", x, i);
           des.readField(name, field);
         }
@@ -443,6 +442,47 @@ module ChapelIO {
   //
   @chpldoc.nodoc
   operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
-    return chpl_stringify_wrapper(x);
+    if useProcedurePointers then try! {
+      // In LLVM 14, we encounter bugs when indexing into chpl_finfo directly
+      // from module code, so we use this shim.
+      extern proc chpl_rt_finfo_name(idx: c_int): c_ptrConst(c_char);
+
+      extern const chpl_ftableSize: int(64);
+      extern proc chpl_get_ftable(): c_ptr(c_ptr(void));
+      const chpl_ftable = chpl_get_ftable();
+      const xPtr = x : c_ptr(void);
+      var name : string;
+      for idx in 0..<chpl_ftableSize {
+        if xPtr == chpl_ftable[idx] : c_ptr(void) {
+          name = string.createBorrowingBuffer(chpl_rt_finfo_name(idx:c_int));
+        }
+      }
+
+      // TODO: handle dynamically loaded procs
+      if name == "" then name = "<unknown procedure>";
+      if name.startsWith("chpl_anon_proc") then name = "";
+
+      const typeName = t1:string;
+
+      var start : byteIndex;
+      if typeName.startsWith("proc") then start = 4;
+      else if (typeName.startsWith("wide proc")) then start = 9;
+      else if typeName.startsWith("extern proc") then start = 11;
+      else assert(false, "Unexpected function format: " + typeName);
+
+      if name != "" then name = " " + name;
+
+      const parenIndex = typeName.find("(");
+      const ret = typeName[..<start] + name + typeName[parenIndex..] + " { ... }";
+      return ret;
+    } else {
+      return chpl_stringify_wrapper(x);
+    }
   }
+
+  @chpldoc.nodoc
+  proc const chpl_anyProc.serialize(writer, ref serializer) throws {
+    writer.write(this:string);
+  }
+  implements writeSerializable(chpl_anyProc);
 }

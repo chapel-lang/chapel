@@ -85,9 +85,7 @@ proc main() {
 
   masonEnv(["env"]);
 
-  var args1: list(string);
-  for x in ["search"] do args1.pushBack(x);
-  masonSearch(args1);
+  masonSearch(["search"]);
 
   assert(isDir(altRegistry));
   assert(isDir(tempHome));

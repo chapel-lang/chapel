@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -113,6 +113,7 @@ introspectParsedFiles(Context* context);
  */
 const uast::BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setSymbolPath=nullptr,
                                      UniqueString* setParentSymbolPath=nullptr);
 
 /**
@@ -301,8 +302,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 
   The 'moduleRoot' argument allows overriding the default module root. If
   'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
-  used. Regardless, if 'minimalModules' is true '/minimal' is appended to the
-  'moduleRoot'.
+  used.
 
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
@@ -318,7 +318,6 @@ void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
                   const std::string& moduleRoot,
-                  bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
                   const std::string& chplTasks,
@@ -337,7 +336,6 @@ void setupModuleSearchPaths(
 */
 void setupModuleSearchPaths(Context* context,
                             const std::string& moduleRoot,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);
@@ -348,7 +346,6 @@ void setupModuleSearchPaths(Context* context,
   arguments.
 */
 void setupModuleSearchPaths(Context* context,
-                            bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames);
@@ -472,24 +469,6 @@ struct IdAndName {
   UniqueString name;
 };
 
-
-/**
- Given a particular (presumably standard) module, return the ID of a
- symbol with the given name in that module. Beyond creating the ID, this also
- ensures that the standard module is parsed, and thus, that 'idToAst' on the
- returned ID will return a non-null value.
- */
-ID getSymbolIdFromTopLevelModule(Context* context,
-                                 const char* modName,
-                                 const char* symName);
-
-/**
- Like getSymbolId..., but return also contains the name of the given symbol for
- convenience.
- */
-IdAndName getSymbolFromTopLevelModule(Context* context,
-                                      const char* modName,
-                                      const char* symName);
 
 /**
  This query parses a submodule for 'include submodule'.
@@ -641,10 +620,10 @@ ID idToContainingMultiDeclId(Context* context, ID id);
 
 /**
   Given an ID for a Record/Union/Class Decl,
-  returns 'true' if the passed name is the name of a field contained in it.
+  returns the declaration with the given name, if any.
  */
-bool idContainsFieldWithName(Context* context, ID typeDeclId,
-                             UniqueString fieldName);
+const uast::VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId,
+                                           UniqueString fieldName);
 
 /**
   Given an AST node for a (multi-)declaration, find a Variable
@@ -779,6 +758,23 @@ bool isSpecialMethodName(UniqueString name);
   Given a function call, determine if it is a call to a class manager.
 */
 bool isCallToClassManager(const uast::FnCall* call);
+
+/*
+ For all internal types required by the compiler, define getters that produce
+ their ID and UniqueString name.
+
+ Given a particular standard module, return the ID of a
+ symbol with the given name in that module. Beyond creating the ID, this also
+ ensures that the standard module is parsed, and thus, that 'idToAst' on the
+ returned ID will return a non-null value.
+
+ This is guaranteed to succeed, even if modules haven't been configured,
+ because Dyno provides stubs for all internal types.
+ */
+#define INTERNAL_TYPE(modname__, camelname__, name__, content__)\
+  ID get##camelname__##IdFromTopLevel##modname__##Module(Context* context); \
+  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(Context* context);
+#include "chpl/resolution/all-internal-types-list.h"
 
 } // end namespace parsing
 } // end namespace chpl

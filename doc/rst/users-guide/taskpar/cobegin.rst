@@ -1,5 +1,3 @@
-:title: Users Guide: **cobegin** Statements
-
 .. _ug-cobegin:
 
 **cobegin** Statements: creating groups of tasks

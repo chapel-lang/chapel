@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -918,11 +918,11 @@ static void testIndexScope1() {
   assert(rr.byAst(use2).toId() == idx2->id());
 }
 
-static void testIterSigDetection(Context* context) {
+static void testIterSigDetection() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   std::string program =
     R""""(
 
@@ -973,11 +973,11 @@ static void testIterSigDetection(Context* context) {
     assert(m["d"].type()->isStringType());
 }
 
-static void testExplicitTaggedIter(Context* context) {
+static void testExplicitTaggedIter() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   std::string program =
     R""""(
 
@@ -1134,11 +1134,11 @@ assertLoopMatches(Context* context, const std::string& program,
   }
 }
 
-static void testSerialZip(Context* context) {
+static void testSerialZip() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these() do yield 0;
@@ -1181,11 +1181,11 @@ static void testSerialZip(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-static void testParallelZip(Context* context) {
+static void testParallelZip() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -1246,11 +1246,11 @@ static void testParallelZip(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-static void testForallStandaloneThese(Context* context) {
+static void testForallStandaloneThese() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.standalone do yield 0;
@@ -1261,11 +1261,11 @@ static void testForallStandaloneThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-static void testForallStandaloneRedirect(Context* context) {
+static void testForallStandaloneRedirect() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
                   forall i in foo() do i;
@@ -1274,11 +1274,11 @@ static void testForallStandaloneRedirect(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-static void testForallLeaderFollowerThese(Context* context) {
+static void testForallLeaderFollowerThese() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -1291,11 +1291,11 @@ static void testForallLeaderFollowerThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-static void testForallLeaderFollowerRedirect(Context* context) {
+static void testForallLeaderFollowerRedirect() {
   printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
@@ -1315,11 +1315,11 @@ static void testForallLeaderFollowerRedirect(Context* context) {
 // the ability to store loop expressions into variables.
 template <typename Predicate>
 static void pairIteratorInLoopExpression(
-    Context* context, const char* iterators, const char* iterCall,
+    const char* iterators, const char* iterCall,
     std::array<const char*, 2> loopExprType, std::array<const char*, 2> loopType,
     Predicate&& pred, int expectErrors = 0) {
+  auto context = buildStdContext();
   ErrorGuard guard(context);
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
   std::string program = std::string(iterators) + "\n";
   program = program + "var r1: _iteratorRecord = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
@@ -1347,10 +1347,8 @@ static void pairIteratorInLoopExpression(
   assert(vars.at("j") == yieldedType);
 }
 
-static void testForLoopExpression(Context* context) {
-
+static void testForLoopExpression() {
   printf("%s\n", __FUNCTION__);
-
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1359,22 +1357,24 @@ static void testForLoopExpression(Context* context) {
     iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"for", "do"},
+  pairIteratorInLoopExpression(iters, "i1()", {"for", "do"}, {"for", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testForallLoopExpressionStandalone(Context* context) {
+static void testForallLoopExpressionStandalone() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+  pairIteratorInLoopExpression(iters, "i1()", {"forall", "do"}, {"forall", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testForallLoopExpressionLeaderFollower(Context* context) {
+static void testForallLoopExpressionLeaderFollower() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1383,42 +1383,46 @@ static void testForallLoopExpressionLeaderFollower(Context* context) {
     iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+  pairIteratorInLoopExpression(iters, "i1()", {"forall", "do"}, {"forall", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testBracketLoopExpressionStandalone(Context* context) {
+static void testBracketLoopExpressionStandalone() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "i1()", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testBracketLoopExpressionStandaloneZipperedSingleton(Context* context) {
+static void testBracketLoopExpressionStandaloneZipperedSingleton() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "zip(i1())", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip(i1())", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testBracketLoopExpressionStandaloneZippered(Context* context) {
+static void testBracketLoopExpressionStandaloneZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { assert(false && "should not be called"); return true; },
                                /* expectErrors */ 1);
 }
 
-static void testBracketLoopExpressionZippered(Context* context) {
+static void testBracketLoopExpressionZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
@@ -1426,14 +1430,15 @@ static void testBracketLoopExpressionZippered(Context* context) {
     iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) {
     return t.type()->isTupleType() &&
            t.type()->toTupleType()->starType().type()->isRealType();
   });
 }
 
-static void testBracketLoopExpressionLeaderFollower(Context* context) {
+static void testBracketLoopExpressionLeaderFollower() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1443,11 +1448,12 @@ static void testBracketLoopExpressionLeaderFollower(Context* context) {
     )"""";
 
   // Follower iterator yields tuples of ints, so expect tuples of ints.
-  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "i1()", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testBracketLoopExpressionSerial(Context* context) {
+static void testBracketLoopExpressionSerial() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1455,11 +1461,12 @@ static void testBracketLoopExpressionSerial(Context* context) {
     )"""";
 
   // Follower iterator yields tuples of ints, so expect tuples of ints.
-  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "i1()", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testForLoopExpressionInForall(Context* context) {
+static void testForLoopExpressionInForall() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1470,12 +1477,13 @@ static void testForLoopExpressionInForall(Context* context) {
 
   // You can't iterate in paralell over a serial loop expression, even if
   // the overloads for the iterands are present.
-  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"forall", "do"},
+  pairIteratorInLoopExpression(iters, "i1()", {"for", "do"}, {"forall", "do"},
                                [](const QualifiedType& t) { return true; },
                                /* expectErrors */ 1);
 }
 
-static void testForLoopExpressionInBracketLoop(Context* context) {
+static void testForLoopExpressionInBracketLoop() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1485,7 +1493,7 @@ static void testForLoopExpressionInBracketLoop(Context* context) {
     )"""";
 
   // Bracket loop falls back to serial, so it's okay to give it a for expression.
-  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "i1()", {"for", "do"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
@@ -1494,7 +1502,8 @@ static void testForLoopExpressionInBracketLoop(Context* context) {
 // However, since we are not liking the idea of changing the return type based
 // on context, the loop yield type is still the one from the parallel loop.
 // This probably won't compile if we were to add type compatibility checks.
-static void testForallExpressionInForLoop(Context* context) {
+static void testForallExpressionInForLoop() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
@@ -1504,11 +1513,12 @@ static void testForallExpressionInForLoop(Context* context) {
     )"""";
 
   // Bracket loop falls back to serial, so it's okay to give it a for expression.
-  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"for", "do"},
+  pairIteratorInLoopExpression(iters, "i1()", {"forall", "do"}, {"for", "do"},
                                [](const QualifiedType& t) { return t.type()->toRealType(); });
 }
 
-static void testBracketLoopSerialFallback(Context* context) {
+static void testBracketLoopSerialFallback() {
+  printf("%s\n", __FUNCTION__);
   // Test that a bracket loop expression falls back to the serial iterator
   // if a leader is present, but one of the followers is not.
   auto iters =
@@ -1522,7 +1532,7 @@ static void testBracketLoopSerialFallback(Context* context) {
     )"""";
 
   // Follower iterator yields tuples of ints, so expect tuples of ints.
-  pairIteratorInLoopExpression(context, iters, "zip(i1(), i2())", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip(i1(), i2())", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) {
     if (auto tt = t.type()->toTupleType()) {
       if (!tt->isStarTuple()) return false;
@@ -1532,7 +1542,9 @@ static void testBracketLoopSerialFallback(Context* context) {
   });
 }
 
-static void testUnpackingFromIterator(Context* context) {
+static void testUnpackingFromIterator() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1541,7 +1553,6 @@ static void testUnpackingFromIterator(Context* context) {
     for (a, b) in i1() {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
 
   assert(types.at("a").type());
@@ -1550,7 +1561,9 @@ static void testUnpackingFromIterator(Context* context) {
   assert(types.at("b").type()->isStringType());
 }
 
-static void testBasicUnpacking(Context* context) {
+static void testBasicUnpacking() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1561,7 +1574,6 @@ static void testBasicUnpacking(Context* context) {
     for (a, b) in zip(i1(), i2()) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
 
   assert(types.at("a").type());
@@ -1570,7 +1582,9 @@ static void testBasicUnpacking(Context* context) {
   assert(types.at("b").type()->isStringType());
 }
 
-static void testBasicUnpackingFailure(Context* context) {
+static void testBasicUnpackingFailure() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1579,7 +1593,6 @@ static void testBasicUnpackingFailure(Context* context) {
     for (a, b) in i1() {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
 
   assert(types.at("a").isUnknown());
@@ -1590,7 +1603,9 @@ static void testBasicUnpackingFailure(Context* context) {
   guard.realizeErrors();
 }
 
-static void testForallUnpacking(Context* context) {
+static void testForallUnpacking() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1602,7 +1617,6 @@ static void testForallUnpacking(Context* context) {
     forall (a, b) in zip(i1(), i2()) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
 
   assert(!guard.realizeErrors());
@@ -1613,7 +1627,9 @@ static void testForallUnpacking(Context* context) {
   assert(types.at("b").type()->isStringType());
 }
 
-static void testLoopExprZipUnpacking(Context* context) {
+static void testLoopExprZipUnpacking() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1623,7 +1639,6 @@ static void testLoopExprZipUnpacking(Context* context) {
                                 foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(!guard.realizeErrors());
@@ -1638,7 +1653,9 @@ static void testLoopExprZipUnpacking(Context* context) {
   assert(types.at("d").type()->isBoolType());
 }
 
-static void testLoopExprZipUnpackingTooFewInner(Context* context) {
+static void testLoopExprZipUnpackingTooFewInner() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1648,15 +1665,16 @@ static void testLoopExprZipUnpackingTooFewInner(Context* context) {
                                foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
-static void testLoopExprZipUnpackingTooManyInner(Context* context) {
+static void testLoopExprZipUnpackingTooManyInner() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1666,15 +1684,16 @@ static void testLoopExprZipUnpackingTooManyInner(Context* context) {
                                 foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
-static void testLoopExprZipUnpackingTooFewOuter(Context* context) {
+static void testLoopExprZipUnpackingTooFewOuter() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1685,15 +1704,16 @@ static void testLoopExprZipUnpackingTooFewOuter(Context* context) {
                                 dummy()) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
-static void testLoopExprZipUnpackingTooManyOuter(Context* context) {
+static void testLoopExprZipUnpackingTooManyOuter() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1703,17 +1723,18 @@ static void testLoopExprZipUnpackingTooManyOuter(Context* context) {
                                 foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
 
   assert(guard.numErrors() > 0);
-  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   assert(guard.realizeErrors());
 }
 
-static void testSingletonZip(Context* context){
+static void testSingletonZip(){
+  printf("%s\n", __FUNCTION__);
   // In production, a single-iterator zip does not create a tuple.
   // Make sure we do the same.
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto prog =
     R""""(
@@ -1722,7 +1743,6 @@ static void testSingletonZip(Context* context){
     for a in zip(dummy()) {}
     )"""";
 
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto types = resolveTypesOfVariables(context, prog, {"a"});
 
   assert(!guard.realizeErrors());
@@ -1731,34 +1751,34 @@ static void testSingletonZip(Context* context){
   assert(types.at("a").type()->isIntType());
 }
 
-static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(Context* context) {
+static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "zip((...(i1(),)))", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip((...(i1(),)))", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testBracketLoopExpressionUnpackedZippered(Context* context) {
+static void testBracketLoopExpressionUnpackedZippered() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
     iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "zip((...(i1(), i1())))", {"[", "]"}, {"[", "]"},
+  pairIteratorInLoopExpression(iters, "zip((...(i1(), i1())))", {"[", "]"}, {"[", "]"},
                                [](const QualifiedType& t) {
     return t.type()->isTupleType() &&
            t.type()->toTupleType()->starType().type()->isRealType();
   });
 }
 
-static void testForLoopExpressionTypeMethod(Context* context) {
-
+static void testForLoopExpressionTypeMethod() {
   printf("%s\n", __FUNCTION__);
-
   auto iters =
     R""""(
     class C {
@@ -1769,11 +1789,12 @@ static void testForLoopExpressionTypeMethod(Context* context) {
     }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "C.i1()", {"for", "do"}, {"for", "do"},
+  pairIteratorInLoopExpression(iters, "C.i1()", {"for", "do"}, {"for", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testForallLoopExpressionStandaloneTypeMethod(Context* context) {
+static void testForallLoopExpressionStandaloneTypeMethod() {
+  printf("%s\n", __FUNCTION__);
   auto iters =
     R""""(
     class C {
@@ -1782,11 +1803,12 @@ static void testForallLoopExpressionStandaloneTypeMethod(Context* context) {
     }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+  pairIteratorInLoopExpression(iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
-static void testForallLoopExpressionLeaderFollowerTypeMethod(Context* context) {
+static void testForallLoopExpressionLeaderFollowerTypeMethod() {
+  printf("%s\n", __FUNCTION__);
   // Note: compred to the previous test, no standalone iterator is available
   auto iters =
     R""""(
@@ -1797,7 +1819,7 @@ static void testForallLoopExpressionLeaderFollowerTypeMethod(Context* context) {
     }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+  pairIteratorInLoopExpression(iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
@@ -1822,49 +1844,47 @@ int main() {
   testIndexScope0();
   testIndexScope1();
 
-  // Use a single context instance to avoid re-resolving internal modules.
-  auto context = buildStdContext();
-  testIterSigDetection(context);
-  testExplicitTaggedIter(context);
-  testSerialZip(context);
-  testParallelZip(context);
-  testForallStandaloneThese(context);
-  testForallStandaloneRedirect(context);
-  testForallLeaderFollowerThese(context);
-  testForallLeaderFollowerRedirect(context);
+  testIterSigDetection();
+  testExplicitTaggedIter();
+  testSerialZip();
+  testParallelZip();
+  testForallStandaloneThese();
+  testForallStandaloneRedirect();
+  testForallLeaderFollowerThese();
+  testForallLeaderFollowerRedirect();
 
-  testForLoopExpression(context);
-  testForallLoopExpressionStandalone(context);
-  testForallLoopExpressionLeaderFollower(context);
-  testBracketLoopExpressionStandalone(context);
-  testBracketLoopExpressionStandaloneZippered(context);
-  testBracketLoopExpressionStandaloneZipperedSingleton(context);
-  testBracketLoopExpressionZippered(context);
-  testBracketLoopExpressionLeaderFollower(context);
-  testBracketLoopExpressionSerial(context);
-  testForLoopExpressionInForall(context);
-  testForLoopExpressionInBracketLoop(context);
-  testForallExpressionInForLoop(context);
+  testForLoopExpression();
+  testForallLoopExpressionStandalone();
+  testForallLoopExpressionLeaderFollower();
+  testBracketLoopExpressionStandalone();
+  testBracketLoopExpressionStandaloneZippered();
+  testBracketLoopExpressionStandaloneZipperedSingleton();
+  testBracketLoopExpressionZippered();
+  testBracketLoopExpressionLeaderFollower();
+  testBracketLoopExpressionSerial();
+  testForLoopExpressionInForall();
+  testForLoopExpressionInBracketLoop();
+  testForallExpressionInForLoop();
 
-  testBracketLoopSerialFallback(context);
+  testBracketLoopSerialFallback();
 
-  testUnpackingFromIterator(context);
-  testBasicUnpacking(context);
-  testBasicUnpackingFailure(context);
-  testForallUnpacking(context);
-  testLoopExprZipUnpacking(context);
-  testLoopExprZipUnpackingTooFewInner(context);
-  testLoopExprZipUnpackingTooManyInner(context);
-  testLoopExprZipUnpackingTooFewOuter(context);
-  testLoopExprZipUnpackingTooManyOuter(context);
-  testSingletonZip(context);
+  testUnpackingFromIterator();
+  testBasicUnpacking();
+  testBasicUnpackingFailure();
+  testForallUnpacking();
+  testLoopExprZipUnpacking();
+  testLoopExprZipUnpackingTooFewInner();
+  testLoopExprZipUnpackingTooManyInner();
+  testLoopExprZipUnpackingTooFewOuter();
+  testLoopExprZipUnpackingTooManyOuter();
+  testSingletonZip();
 
-  testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(context);
-  testBracketLoopExpressionUnpackedZippered(context);
+  testBracketLoopExpressionStandaloneUnpackedZipperedSingleton();
+  testBracketLoopExpressionUnpackedZippered();
 
-  testForLoopExpressionTypeMethod(context);
-  testForallLoopExpressionStandaloneTypeMethod(context);
-  testForallLoopExpressionLeaderFollowerTypeMethod(context);
+  testForLoopExpressionTypeMethod();
+  testForallLoopExpressionStandaloneTypeMethod();
+  testForallLoopExpressionLeaderFollowerTypeMethod();
 
   return 0;
 }

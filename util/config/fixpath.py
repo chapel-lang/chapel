@@ -38,9 +38,10 @@ import os
 import re
 import sys
 
+
 def escape_path(p, delim):
     """Wrap fish paths in quotes to prevent splitting on spaces in paths"""
-    if delim == ' ':
+    if delim == " ":
         return '"{}"'.format(p)
     return p
 
@@ -52,17 +53,19 @@ def remove_chpl_from_path(path_val, delim):
     :returns: new path with $CHPL_HOME components removed
     """
 
-    chpl_home = os.getenv('CHPL_HOME')
+    chpl_home = os.getenv("CHPL_HOME")
 
     if not chpl_home or chpl_home not in path_val:
         return path_val
 
     # Find delims that are not escaped
-    pattern = r'(?<!\\)\{0}'.format(delim)
+    pattern = r"(?<!\\)\{0}".format(delim)
 
     # Split path by non-escaped delims, and sieve chpl_home
     # Fish input includes hanging quotation marks, so we drop those here
-    newpath = [escape_path(p, delim) for p in re.split(pattern, path_val) if p != '"']
+    newpath = [
+        escape_path(p, delim) for p in re.split(pattern, path_val) if p != '"'
+    ]
     newpath = [p for p in newpath if chpl_home not in p]
 
     return delim.join(newpath)
@@ -71,28 +74,30 @@ def remove_chpl_from_path(path_val, delim):
 def update_path_env():
     os.environ["PATH"] = remove_chpl_from_path(os.environ["PATH"], ":")
 
+
 def main():
     parser = optparse.OptionParser(usage=__doc__)
-    parser.add_option('--shell', dest='shell', default='bash',
-                      help='shell being used')
+    parser.add_option(
+        "--shell", dest="shell", default="bash", help="shell being used"
+    )
 
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
-    if options.shell == 'fish':
-        delim = ' '
+    if options.shell == "fish":
+        delim = " "
     else:
-        delim = ':'
+        delim = ":"
 
     if len(args) == 0:
-        sys.stderr.write('Error: path-value must be supplied\n\n')
+        sys.stderr.write("Error: path-value must be supplied\n\n")
         parser.print_help()
         sys.exit(1)
 
     path = delim.join(args)
 
     newpath = remove_chpl_from_path(path, delim)
-    sys.stdout.write('{0}'.format(newpath))
+    sys.stdout.write("{0}".format(newpath))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

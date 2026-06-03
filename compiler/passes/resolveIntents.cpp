@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -361,16 +361,22 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
 }
 
+static bool shouldSkipArgType(Type* t) {
+  return t == dtMethodToken       ||
+         t == dtTypeDefaultToken  ||
+         t == dtNothing           ||
+         t == dtUnknown;
+}
+
+static bool shouldSkipArg(ArgSymbol* arg) {
+  return shouldSkipArgType(arg->type)     ||
+         arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+         arg->hasFlag(FLAG_PARAM);
+}
+
 void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
-    if (arg->type == dtMethodToken ||
-        arg->type == dtTypeDefaultToken ||
-        arg->type == dtNothing ||
-        arg->type == dtUnknown ||
-        arg->hasFlag(FLAG_TYPE_VARIABLE) ||
-        arg->hasFlag(FLAG_PARAM)) {
-      return; // Leave these alone during resolution.
-    }
+    if (shouldSkipArg(arg)) return;
   }
 
   IntentTag intent = concreteIntentForArg(arg);
@@ -415,7 +421,14 @@ void resolveArgIntent(ArgSymbol* arg) {
   if (arg->intent != intent) {
     arg->originalIntent = arg->intent;
   }
+
   arg->intent = intent;
+
+  auto qt = arg->qualType();
+  arg->qual = qt.getQual();
+
+  // These should not have changed, else there was some desync somewhere...
+  INT_ASSERT(qt.type() == arg->type);
 }
 
 static void resolveVarIntent(VarSymbol* sym) {
@@ -429,6 +442,105 @@ static void resolveVarIntent(VarSymbol* sym) {
     // TODO also check sym->isConstant() and set one of CONST qualifiers
   }
 }
+
+static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
+  FunctionType* ret = ft;
+  std::vector<FunctionType::Formal> newFormals;
+  bool changed = false;
+
+  // TODO: See how 'concreteIntentForArg' handles method receivers. Also need
+  //       to basically rewrite 'resolveArgIntent' to be a type computation,
+  //       because it has logic related to whether or not there are temporaries
+  //       that can change intents from e.g., 'IN' to 'REF'.
+  //
+  for (auto& formal : ft->formals()) {
+    if (shouldSkipArgType(formal.type())) continue;
+
+    auto newIntent = formal.intent();
+    auto newQual = formal.qual();
+
+    if (ft->hasForeignLinkage() && formal.intent() == INTENT_BLANK) {
+      // In general, the blank intent for extern functions is 'CONST_IN'.
+      newIntent = blankIntentForExternFnArg(formal.type());
+
+    } else if (ft->hasForeignLinkage()) {
+      // TODO: Any sanitation for non-blank intents on foreign types?
+      newIntent = concreteIntent(formal.intent(), formal.type());
+
+    } else {
+      // In the common case, just compute based on the old intent and type.
+      newIntent = concreteIntent(formal.intent(), formal.type());
+    }
+
+    if (newIntent == INTENT_OUT ||
+        newIntent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      newIntent = INTENT_REF;
+    } else if (newIntent == INTENT_IN) {
+      // Replicates and merges some of the logic from `resolveArgIntent`
+      auto type = formal.type()->getValType();
+      bool addedTmp = (isRecord(type) || isUnion(type) ||
+                       isConstrainedType(type));
+
+      // How can we anticipate this for procedure pointers?
+      if (ft->isExtern())
+        addedTmp = false;
+
+      if (addedTmp &&
+          ft->returnIntent() != RET_PARAM &&
+          formalRequiresTemp(formal)) {
+          newIntent = INTENT_REF;
+      }
+    }
+
+    bool isFormal = true;
+    auto qualForIntent = QualifiedType::qualifierForArgIntent(newIntent);
+    bool isConst = QualifiedType::qualifierIsConst(qualForIntent);
+    auto qt = Symbol::computeQualifiedType(isFormal, newIntent,
+                                           formal.type(),
+                                           qualForIntent,
+                                           isConst);
+
+    // Set the 'qual' from the qualifier that was computed.
+    newQual = qt.getQual();
+
+    if (newIntent != formal.intent() || newQual != formal.qual()) {
+      FunctionType::Formal newFormal(newQual, formal.type(), newIntent,
+                                     formal.name(), formal.flags());
+      newFormals.push_back(std::move(newFormal));
+      changed = true;
+
+    } else {
+      newFormals.push_back(formal);
+    }
+  }
+
+  if (changed) {
+    SET_LINENO(ft->symbol);
+    ret = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                            std::move(newFormals),
+                            ft->returnIntent(),
+                            ft->returnType(),
+                            ft->throws());
+  }
+
+  return ret;
+}
+
+// NOTE (dlongnecke): This is a new-style compiler pass that is just defined
+// in this file, but that is OK. When the typed converter comes online we'll
+// be getting rid of this code.
+class ResolveIntentsForProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  Type* computeAdjustedType(Type* t) const override {
+    if (auto ft = toFunctionType(t->getValType());
+        ft && !ft->isGeneric()) {
+      auto ret = computeConcreteIntentsForFunctionType(ft);
+      return ret;
+    }
+    return t;
+  };
+};
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
@@ -445,6 +557,9 @@ void resolveIntents() {
   forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
     resolveVarIntent(sym);
   }
+
+  PassManager pm;
+  runPassOverAllSymbols(pm, ResolveIntentsForProcPtrTypes());
 
   intentsResolved = true;
 }

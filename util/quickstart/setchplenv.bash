@@ -4,6 +4,7 @@
 if [ -n "${BASH_VERSION}" ]; then
     filepath=${BASH_SOURCE[0]}
 elif [ -n "${ZSH_VERSION}" ]; then
+    # shellcheck disable=SC2296
     filepath=${(%):-%N}
 else
     echo "Error: setchplenv.bash can only be sourced from bash and zsh"
@@ -18,7 +19,7 @@ DIR=$(cd "$(dirname "${filepath}")" && pwd)
 # indicating that we are probably in a Chapel root directory.
 chpl_home=$( cd $DIR/../../ && pwd )
 if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl_home/runtime" ] || [ ! -d "$chpl_home/modules" ]; then
-    # Chapel home is assumed to be one directory up from setenvchpl.bash script
+    # Chapel home is assumed to be one directory up from setchplenv.bash script
     echo "Error: \$CHPL_HOME is not where it is expected"
     return 1
 fi
@@ -70,6 +71,10 @@ export CHPL_GMP=none
 
 echo "Setting CHPL_RE2 to none"
 export CHPL_RE2=none
+
+USE_UNWIND=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_unwind.py --quickstart`
+echo "Setting CHPL_UNWIND to $USE_UNWIND"
+export CHPL_UNWIND=$USE_UNWIND
 
 USE_LLVM=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to $USE_LLVM"

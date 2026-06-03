@@ -3,25 +3,25 @@ module unitTest {
 
   inline proc f(s0, s1, useExpr=false) {
     if useExpr {
-      writeMe(s0==s1);
-      writeMe(s0!=s1);
-      writeMe(s0<s1);
-      writeMe(s0<=s1);
-      writeMe(s0>s1);
-      writeMe(s0>=s1);
+      writeMe("'",s0,"' == '", s1, "': ", s0==s1);
+      writeMe("'",s0,"' != '", s1, "': ", s0!=s1);
+      writeMe("'",s0,"' <  '", s1, "': ", s0<s1);
+      writeMe("'",s0,"' <= '", s1, "': ", s0<=s1);
+      writeMe("'",s0,"' >  '", s1, "': ", s0>s1);
+      writeMe("'",s0,"' >= '", s1, "': ", s0>=s1);
     } else {
       var b = s0==s1;
-      writeMe(b);
+      writeMe("'",s0,"' == '", s1, "': ", b);
       b = s0!=s1;
-      writeMe(b);
+      writeMe("'",s0,"' != '", s1, "': ", b);
       b = s0<s1;
-      writeMe(b);
+      writeMe("'",s0,"' <  '", s1, "': ", b);
       b = s0<=s1;
-      writeMe(b);
+      writeMe("'",s0,"' <= '", s1, "': ", b);
       b = s0>s1;
-      writeMe(b);
+      writeMe("'",s0,"' >  '", s1, "': ", b);
       b = s0>=s1;
-      writeMe(b);
+      writeMe("'",s0,"' >= '", s1, "': ", b);
     }
   }
 

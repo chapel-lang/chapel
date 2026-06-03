@@ -1,0 +1,259 @@
+checktoml() {
+  PKGNAME=$1
+  TYPE=$2
+  grep "name=" Mason.toml | grep "\"$PKGNAME\""
+  grep "version=" Mason.toml | grep "\"0.1.0\""
+  grep "type=" Mason.toml | grep "\"$TYPE\""
+}
+checkappsrc() {
+  PKGNAME=$1
+  grep "module $PKGNAME" src/$PKGNAME.chpl
+  grep "proc main()" src/$PKGNAME.chpl
+}
+checklibsrc() {
+  PKGNAME=$1
+  grep "module $PKGNAME" src/$PKGNAME.chpl
+  grep -v "proc main()" src/$PKGNAME.chpl
+}
+checklight() {
+  test ! -d src
+}
+checkgitfiles() {
+  test -d .git
+  grep "target/" .gitignore
+  grep "Mason.lock" .gitignore
+  grep "doc/" .gitignore
+}
+checknogitfiles() {
+  test ! -d .git
+  test ! -f .gitignore
+}
+
+
+#
+# test basic init
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init
+checktoml "testingPkg" "application"
+checkappsrc "testingPkg"
+checkgitfiles
+mason run --build
+cd ..
+
+
+#
+# test init with an existing file structure
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+touch placeholder.chpl
+mason init
+checktoml "testingPkg" "application"
+checkappsrc "testingPkg"
+checkgitfiles
+ls | grep placeholder.chpl
+mason run --build
+cd ..
+
+
+#
+# test init with lib
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init --lib
+checktoml "testingPkg" "library"
+checklibsrc "testingPkg"
+checkgitfiles
+mason build
+cd ..
+
+
+#
+# test init with light
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+touch Makefile
+mkdir src/ && touch src/placeholder.chpl
+mason init --light
+checktoml "testingPkg" "light"
+ls src | grep placeholder.chpl
+ls | grep Makefile
+checknogitfiles
+cd ..
+
+
+#
+# test init with no git
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init --no-vcs
+checktoml "testingPkg" "application"
+checkappsrc "testingPkg"
+checknogitfiles
+cd ..
+
+
+#
+# test init in a non-empty directory
+#
+rm -rf testingPkg && mkdir testingPkg
+touch testingPkg/placeholder.chpl
+mason init testingPkg --lib
+cd testingPkg
+checktoml "testingPkg" "library"
+checklibsrc "testingPkg"
+ls | grep placeholder.chpl
+checkgitfiles
+mason build
+cd ..
+
+#
+# test init in a non-empty directory with no git
+#
+rm -rf testingPkg && mkdir testingPkg
+touch testingPkg/placeholder.chpl
+mason init testingPkg --app --no-vcs
+cd testingPkg
+checktoml "testingPkg" "application"
+checkappsrc "testingPkg"
+checknogitfiles
+mason run --build
+cd ..
+
+
+#
+# test init with a different name
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init --name myNewPkg
+checktoml "myNewPkg" "application"
+checkappsrc "myNewPkg"
+checkgitfiles
+mason run --build
+cd ..
+
+#
+# test init with a different name and no git
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init --name=myNewPkg --no-vcs
+checktoml "myNewPkg" "application"
+checkappsrc "myNewPkg"
+checknogitfiles
+mason run --build
+cd ..
+
+#
+# test init with an existing dir and a different name
+#
+rm -rf testingPkg && mkdir testingPkg
+touch testingPkg/placeholder.chpl
+mason init testingPkg --name myNewPkg --lib
+cd testingPkg
+checktoml "myNewPkg" "library"
+checklibsrc "myNewPkg"
+ls | grep placeholder.chpl
+checkgitfiles
+mason build
+cd ..
+
+#
+# test init with an existing dir and a different name and no git
+#
+rm -rf testingPkg && mkdir testingPkg
+touch testingPkg/placeholder.chpl
+mason init testingPkg --name=myNewPkg --lib --no-vcs
+cd testingPkg
+checktoml "myNewPkg" "library"
+checklibsrc "myNewPkg"
+ls | grep placeholder.chpl
+checknogitfiles
+mason build
+cd ..
+
+#
+# test init with a different name
+#
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+mason init --name=myNewPkg --light
+checktoml "myNewPkg" "light"
+checklight
+checknogitfiles
+cd ..
+
+#
+# test init with an existing dir and a different name
+#
+rm -rf testingPkg && mkdir testingPkg
+touch testingPkg/placeholder.chpl
+mason init testingPkg --name myNewPkg --light
+cd testingPkg
+checktoml "myNewPkg" "light"
+checklight
+ls | grep placeholder.chpl
+checknogitfiles
+cd ..
+
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir --name myNewPkg --lib
+cd testingPkg/subdir
+checktoml "myNewPkg" "library"
+checklibsrc "myNewPkg"
+checkgitfiles
+mason build
+cd ../..
+
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir
+cd testingPkg/subdir
+checktoml "subdir" "application"
+checkappsrc "subdir"
+checkgitfiles
+mason build
+cd ../..
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir --light
+cd testingPkg/subdir
+checktoml "subdir" "light"
+checklight "subdir"
+checknogitfiles
+cd ../..
+
+
+#
+# test init with a path with dashes
+#
+rm -rf testing-Pkg && mkdir testing-Pkg && mkdir testing-Pkg/sub-dir
+mason init testing-Pkg/sub-dir --name mySubPkg --no-vcs
+cd testing-Pkg/sub-dir
+checktoml "mySubPkg" "application"
+checkappsrc "mySubPkg"
+checknogitfiles
+cd ../..
+rm -rf testing-Pkg
+
+
+#
+# test init with a path with dashes
+#
+rm -rf testing-Pkg && mkdir testing-Pkg && mkdir testing-Pkg/subdir
+mason init testing-Pkg/subdir
+cd testing-Pkg/subdir
+checktoml "subdir" "application"
+checkappsrc "subdir"
+checkgitfiles
+cd ../..
+rm -rf testing-Pkg
+

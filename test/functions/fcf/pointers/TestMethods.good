@@ -1,0 +1,12 @@
+TestMethods.chpl:14: In function 'test':
+TestMethods.chpl:15: warning: function 'procA' is mentioned but not called, so it is being captured as a first-class function
+TestMethods.chpl:15: note: 'procA' is a parenful function, so it needs '(...)' to be called
+TestMethods.chpl:15: warning: function 'procB' is mentioned but not called, so it is being captured as a first-class function
+TestMethods.chpl:15: note: 'procB' is a parenful function, so it needs '(...)' to be called
+foobar
+foobar
+void
+int(64)
+1*bool
+(int(64),real(64),string)
+proc multi(x: int, y: real, z: string) { ... }

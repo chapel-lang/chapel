@@ -1,5 +1,5 @@
 #
-# Copyright © 2018-2024 Inria.  All rights reserved.
+# Copyright © 2018-2025 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 #
 
@@ -175,6 +175,7 @@ _hwloc_info(){
 		   --local-memory
 		   --local-memory-flags
 		   --best-memattr
+		   --default-nodes
 		   --first
 		   -n
 		   --restrict
@@ -248,6 +249,7 @@ _hwloc_bind(){
 		   --membind
 		   --mempolicy
 		   --best-memattr
+		   --default-nodes
 		   --logical -l
 		   --physical -p
 		   --single
@@ -335,6 +337,7 @@ _hwloc_calc(){
 		   --input -i
 		   --input-format --if
 		   --no-smt --no-smt=N
+		   --default-nodes
 		   -q --quiet
 		   -v --verbose
 		   --version
@@ -379,7 +382,7 @@ _hwloc_calc(){
 		COMPREPLY=( "<name>=<value>" "<n>" "" )
 		;;
 	    --cpuset-input-format | --cif | --cpuset-output-format | --cof)
-	        COMPREPLY=( "hwloc" "list" "taskset" )
+	        COMPREPLY=( "hwloc" "list" "taskset" "systemd-dbus-api" )
 		;;
 	esac
     fi

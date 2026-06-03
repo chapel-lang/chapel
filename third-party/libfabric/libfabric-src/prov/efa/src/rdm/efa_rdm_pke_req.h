@@ -17,7 +17,7 @@ void efa_rdm_pke_init_req_hdr_common(struct efa_rdm_pke *pkt_entry,
 
 void *efa_rdm_pke_get_req_raw_addr(struct efa_rdm_pke *pkt_entry);
 
-int64_t efa_rdm_pke_get_req_cq_data(struct efa_rdm_pke *pkt_entry);
+uint64_t efa_rdm_pke_get_req_cq_data(struct efa_rdm_pke *pkt_entry);
 
 uint32_t *efa_rdm_pke_get_req_connid_ptr(struct efa_rdm_pke *pkt_entry);
 

@@ -447,6 +447,24 @@ OPTIONS
     If enabled, hints will always be generated, but the effects on performance
     (and in some cases correctness) will vary based on the target compiler.
 
+.. _man-vector-library:
+.. index:: --vector-library
+
+**\--vector-library <lib>**
+
+    Select a vectorization library to use. Supported values are `none` (the
+    default), `libmvec`, `darwinLibSystemM`, or a valid vectorization library
+    for the current backend. This option is only supported with the
+    LLVM backend, or when using the C backend with Clang or GCC.
+
+    If an unsupported/unknown library is used, the compiler will just pass the
+    flag through to the backend compiler.
+
+    When using the LLVM backend or Clang, see
+    https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fveclib
+    for supported libraries. When using GCC, see
+    https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-mveclibabi-1.
+
 .. _man-optimize-on-clauses:
 .. index:: --optimize-on-clauses, --no-optimize-on-clauses
 
@@ -664,6 +682,14 @@ OPTIONS
 
     Enable [disable] run-time checking for stack overflow.
 
+.. _man-union-checks:
+.. index:: --union-checks, --no-union-checks
+
+**\--[no-]union-checks**
+
+    Enable [disable] run-time checking for accessing uninitialized fields of
+    unions.
+
 *Code Generation Options*
 
 .. _man-codegen:
@@ -874,6 +900,14 @@ OPTIONS
     Saves the compiler passes and the amount of wall clock time required for
     the pass to <filename>. An error is displayed if the file cannot be
     opened but no recovery attempt is made.
+
+.. _man-print-passes-memory:
+.. index:: --print-passes-memory
+
+**\--[no-]print-passes-memory**
+
+    Prints the memory usage in addition to time usage for each compiler pass.
+    Implies **\--print-passes**. See **\--print-passes** for more information.
 
 *Miscellaneous Options*
 
@@ -1154,6 +1188,16 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     the $CHPL\_RE2 environment variable (defaults to 'none' or 'bundled' if
     you've installed the re2 package in the third-party *directory*).
 
+.. _man-sanitize-exe:
+.. index:: --sanitize-exe
+
+**\--sanitize-exe <sanitizer>**
+
+    Specify the sanitizer to use for the generated executable and runtime. This
+    flag corresponds with and overrides the $CHPL\_SANITIZE\_EXE environment
+    variable.
+
+
 .. _man-target-arch:
 .. index:: --target-arch
 
@@ -1317,5 +1361,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

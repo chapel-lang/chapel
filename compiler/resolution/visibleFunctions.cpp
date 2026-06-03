@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,6 +86,13 @@ static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
           call->get(1)->typeInfo() == dtMethodToken)
           || typeHelperNames.count(name) || isAstrOpName(name);
+}
+
+static inline bool symbolExcludedBasedOnEdition(Symbol* sym) {
+  return sym->hasFlag(FLAG_HAS_EDITION) &&
+          !isEditionApplicable(sym->getFirstEdition(),
+                               sym->getLastEdition(),
+                               sym);
 }
 
 
@@ -240,6 +247,7 @@ static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
+      if (symbolExcludedBasedOnEdition(fn)) continue;
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) {
         block = theProgram->block;
@@ -381,6 +389,21 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
     // We haven't checked before, so recurse, save, and include what we found
     reexportEntry.first = true;
     buildReexportVec(block, name, call, &reexportEntry.second);
+
+    // Remove functions from re-exports that are already directly defined
+    // in this module to avoid duplicates in circular public use scenarios.
+    if (Vec<FnSymbol*>* directFns = vfb->visibleFunctions.get(name)) {
+      std::vector<FnSymbol*>& reexportedFns = reexportEntry.second;
+      auto newEnd = std::remove_if(reexportedFns.begin(), reexportedFns.end(),
+        [directFns](FnSymbol* fn) {
+          // Remove if this function is in the directly defined functions
+          forv_Vec(FnSymbol, directFn, *directFns) {
+            if (fn == directFn) return true;
+          }
+          return false;
+        });
+      reexportedFns.erase(newEnd, reexportedFns.end());
+    }
   }
 }
 
@@ -410,8 +433,6 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
                             PtrSet<BlockStmt*>& visited,
                             Vec<FnSymbol*>&       visibleFns);
-
-static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
 
 static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
                                    BlockStmt* instantiationPt);
@@ -559,14 +580,7 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         // Don't allow operators that aren't methods to be found unless they're
         // publicly visible
@@ -610,14 +624,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         // When private methods and fields are supported, we'll need to extend
         // this
@@ -1039,7 +1046,7 @@ void getVisibleFunctions(const char*      name,
                           visited, visibleFns, false);
 }
 
-static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
+BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
   BlockStmt* instantiationPt = NULL;
 
   // We check for an instantiation point only at FnSymbols'
@@ -1113,14 +1120,7 @@ static void getVisibleFnsFirstVisit(const char*       name,
       bool privateOkay = false;
 
       forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->hasFlag(FLAG_HAS_EDITION)) {
-          // Only allow functions with a specified edition if that edition
-          // matches
-          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
-                                   fn)) {
-            continue;
-          }
-        }
+        if (symbolExcludedBasedOnEdition(fn)) continue;
 
         if (fn->hasFlag(FLAG_PRIVATE)) {
           // Ensure that private functions are not used outside of their

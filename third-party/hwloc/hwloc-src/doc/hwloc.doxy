@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2024 Inria.  All rights reserved.
+ * Copyright © 2009-2025 Inria.  All rights reserved.
  * Copyright © 2009-2013 Université Bordeaux
  * Copyright © 2009-2020 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
@@ -491,6 +491,7 @@ The hwloc core may also benefit from the following development packages:
 <li>the oneAPI Level Zero library.
   The relevant development package is usually <tt>level-zero-dev</tt>
   or <tt>level-zero-devel</tt>.
+  The implementation must be recent enough to support <tt>zesDriverGetDeviceByUuidExp()</tt>
 </li>
 <li>libxml2 for full XML import/export support (otherwise, the
     internal minimalistic parser will only be able to import
@@ -581,33 +582,18 @@ Here's an example de <tt>CMakeLists.txt</tt> which shows variables
 obtained from <tt>pkg-config</tt> and how to use them:
 
 \verbatim
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.6)
 project(TEST_HWLOC C)
+
 include(FindPkgConfig)
-if(PKG_CONFIG_EXECUTABLE)
-  unset(HWLOC_FOUND CACHE)
-  pkg_search_module(HWLOC hwloc)
-  if(HWLOC_FOUND)
-    message(STATUS "HWLOC_LIBRARIES=${HWLOC_LIBRARIES}")
-    message(STATUS "HWLOC_LINK_LIBRARIES=${HWLOC_LINK_LIBRARIES}")
-    message(STATUS "HWLOC_LIBRARY_DIRS=${HWLOC_LIBRARY_DIRS}")
-    message(STATUS "HWLOC_LDFLAGS=${HWLOC_LDFLAGS}")
-    message(STATUS "HWLOC_LDFLAGS_OTHERS=${HWLOC_LDFLAGS_OTHERS}")
-    message(STATUS "HWLOC_INCLUDE_DIRS=${HWLOC_INCLUDE_DIRS}")
-    message(STATUS "HWLOC_CFLAGS=${HWLOC_CFLAGS}")
-    message(STATUS "HWLOC_CFLAGS_OTHER=${HWLOC_CFLAGS_OTHER}")
-  else()
-    message(FATAL_ERROR "HWLOC not found with pkg-config, add the path to hwloc.pc in PKG_CONFIG_PATH.")
-  endif()
-else()
-  message(FATAL_ERROR "PKG_CONFIG_EXECUTABLE: not found.")
-endif()
+if(PKG_CONFIG_FOUND)
+  pkg_search_module(HWLOC REQUIRED IMPORTED_TARGET hwloc)
+else(PKG_CONFIG_FOUND)
+  message(FATAL_ERROR "FindHWLOC needs pkg-config program and PKG_CONFIG_PATH must contain the path to hwloc.pc file.")
+endif(PKG_CONFIG_FOUND)
 
 add_executable(hwloc-hello hwloc-hello.c)
-target_include_directories(hwloc-hello PRIVATE ${HWLOC_INCLUDE_DIRS})
-target_compile_options(hwloc-hello PRIVATE ${HWLOC_CFLAGS})
-target_link_libraries(hwloc-hello PRIVATE ${HWLOC_LINK_LIBRARIES})
-target_link_options(hwloc-hello PRIVATE ${HWLOC_LDFLAGS})
+target_link_libraries(hwloc-hello PRIVATE PkgConfig::HWLOC)
 \endverbatim
 
 The project may be built with:
@@ -1091,6 +1077,10 @@ following environment variables.
   Note that additional verbose messages may be enabled with
   other variables such as HWLOC_GROUPING_VERBOSE.
   </dd>
+<!-- since 2.12.1, not stable yet, hence not documented but internally used in hwloc-bind
+ HWLOC_SHOW_ERRORS=bind
+  show binding errors as if HWLOC_HIDE_ERRORS=0 for them
+-->
 
 <dt>HWLOC_USE_NUMA_DISTANCES=7</dt>
   <dd>enables or disables the use of NUMA distances.
@@ -1903,7 +1893,7 @@ subtype <tt>DRAM</tt> (for usual main memory),
 <tt>SPM</tt> (specific-purpose memory, usually reserved for some custom applications),
 <tt>NVM</tt> (non-volatile memory when used as main memory),
 <tt>MCDRAM</tt> (on KNL),
-<tt>GPUMemory</tt> (on POWER architecture with NVIDIA GPU memory shared over NVLink),
+<tt>GPUMemory</tt> (NVIDIA GPU memory shared over NVLink on POWER, over NVLink-C2C on Grace Hopper, etc.),
 <tt>CXL-DRAM</tt> or <tt>CXL-NVM</tt> for CXL DRAM or non-volatile memory.
 Note that some of these subtypes are guessed by the library,
 they might be missing or slightly wrong in some corner cases.
@@ -2463,7 +2453,7 @@ as reported by some <tt>cpufreq</tt> or ACPI drivers on Linux
 </dd>
 <dt>CoreType (x86)</dt>
 <dd>A string describing the kind of core,
-currently <tt>IntelAtom</tt> or <tt>IntelCore</tt>,
+currently <tt>IntelAtom</tt>, <tt>IntelCore</tt> or <tt>IntelLowPower</tt>,
 as reported by the x86 CPUID instruction and Linux PMU on some Intel processors.
 </dd>
 <dt>LinuxCapacity (Linux)</dt>
@@ -2485,6 +2475,15 @@ and <tt>apple,firestorm;ARM,v8</tt> on performance cores on Apple M1 CPU.
 </dd>
 </dl>
 
+The hwloc-calc tool may be used to query the number of cpukinds
+or which ones exist in some cores:
+\verbatim
+$ hwloc-calc -N cpukind all
+2
+$ hwloc-calc -I cpukind package:0
+0,1
+\endverbatim
+
 See \ref hwlocality_cpukinds for details.
 
 
@@ -2501,15 +2500,16 @@ CXL memory connected to the entire machine.
 \image html heteromem.png
 \image latex heteromem.png "" width=\textwidth
 
-The hardware usually exposes "normal" memory first because it is
+The hardware usually exposes "default" memory first because it is
 where "normal" data buffers should be allocated by default.
+
 However there is no guarantee about whether HBM, NVM, CXL will appear
 second.
 Hence there is a need to explicit memory technologies and performance
 to help users decide where to allocate.
 
 
-\section heteromem_memtiers Memory Tiers
+\section heteromem_memtiers Memory Tiers and Default nodes
 
 hwloc builds <i>Memory Tiers</i> to identify different kinds of
 NUMA nodes.
@@ -2545,10 +2545,19 @@ is ranked first, etc.
 If hwloc fails to build tiers properly, see <tt>HWLOC_MEMTIERS</tt>
 and <tt>HWLOC_MEMTIERS_GUESS</tt> in \ref envvar.
 
+<br/>
+
+hwloc also tries to identify "default" memory nodes.
+They usually correspond the tier containing DRAM nodes.
+These are where normal data buffers should be allocated from,
+but they may also be used when placing tasks per NUMA domain
+(to hide NUMA nodes with overlapping localities,
+ e.g. HBM and CXL in our example above).
+
 
 \section heteromem_use_cli Using Heterogeneous Memory from the command-line
 
-Tiers may be specified in location filters when using NUMA nodes
+Specific kinds or tiers of memory may be specified in location filters when using NUMA nodes
 in hwloc command-line tools.
 For instance, binding memory on the first HBM node (<tt>numa[hbm]:0</tt>)
 is actually equivalent to binding on the second node (<tt>numa:1</tt>)
@@ -2564,16 +2573,33 @@ $ hwloc-calc -N 'numa[dram]' package:0
 $ hwloc-calc -N 'numa' package:0
 2
 \endverbatim
+
+To list all default NUMA nodes:
+\verbatim
+$ hwloc-calc --default-nodes all
+0,2
+\endverbatim
+
 To list all the physical indexes of Tier-0 NUMA nodes (HBM P\#2 and P\#3 not shown on the figure):
 \verbatim
 $ hwloc-calc -I 'numa[tier=0]' -p all
 2,3
 \endverbatim
+To find the memory kind of a NUMA node, one may look at its info attribute
+or use hwloc-calc:
+\verbatim
+$ hwloc-info --get-attr "info MemoryTier" numa:1
+1
+$ hwloc-calc -I memorytier numa:1
+1
+\endverbatim
 
 The number of tiers may be retrieved by looking at topology attributes
-in the root object:
+in the root object, of by counting tiers inside it:
 \verbatim
 $ hwloc-info --get-attr "info MemoryTiersNr" topology
+2
+$ hwloc-calc --N memorytier all
 2
 \endverbatim
 
@@ -2618,15 +2644,24 @@ or for finding a node that is local to some objects.
 With heterogeneous memory, one should remember that multiple nodes may
 now have the same locality (HBM and DRAM above) or overlapping localities
 (e.g. DRAM and CXL above).
+<ul>
+<li>
 Checking NUMA node subtype or tier attributes is a good way to avoid
 this issue by ignoring nodes of different kinds.
-
-Another solution consists in ignoring nodes whose cpuset overlap the
+</li>
+<li>
+Another solution consists in ignoring nodes whose CPU set overlap the
 previously selected ones.
 For instance, in the above example, one could first select DRAM L\#0
 but ignore HBM L\#1 (because it overlaps with DRAM L\#0),
 then select DRAM L\#2 but ignore HBM L\#3 and CXL L\#4
 (overlap wih DRAM L\#2).
+</li>
+</ul>
+<b>hwloc set of default nodes</b> (returned by hwloc_topology_get_default_nodeset())
+<b>was designed for this purpose</b>: it ignores NUMA nodes with overlapping
+CPU set (only the first one is kept), and also tries to return nodes with
+similar subtypes.
 
 <br/>
 
@@ -3813,7 +3848,8 @@ hwloc currently uses Groups for the following reasons:
  but these objects are usually merged with the L3 caches or Dies.</li>
 <li>AMD Bulldozer dual-core compute units (<tt>subtype</tt> is <tt>ComputeUnit</tt>, in the x86 backend),
  but these objects are usually merged with the L2 caches.</li>
-<li>Intel Extended Topology Enumeration levels (in the x86 backend).</li>
+<li>Intel Extended Topology Enumeration levels such as Module and Tile
+ (in the x86 and Windows backends).</li>
 <li>Windows processor groups when HWLOC_WINDOWS_PROCESSOR_GROUP_OBJS=1 is set in the environment
   (except if they contain exactly a single NUMA node, or a single Package, etc.).</li>
 <li>IBM S/390 "Books" on Linux (<tt>subtype</tt> is <tt>Book</tt>).</li>

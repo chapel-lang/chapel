@@ -7,21 +7,22 @@ import subprocess
 import re
 
 if "CHPL_HOME" in os.environ:
-  pass
+    pass
 else:
-  print("CHPL_HOME must be set to run this script", file=sys.stderr)
-  exit(-1)
+    print("CHPL_HOME must be set to run this script", file=sys.stderr)
+    exit(-1)
 
-chpl_home=os.environ["CHPL_HOME"]
+chpl_home = os.environ["CHPL_HOME"]
+
 
 def gatherFlags(command):
-    ret = [ ]
+    ret = []
     lines = subprocess.check_output(command)
     for line in lines.splitlines():
-        s=line.decode("utf-8").strip()
+        s = line.decode("utf-8").strip()
         if s.startswith("-"):
             # Split on spaces and on commas
-            toks = re.split(r',| +', s)
+            toks = re.split(r",| +", s)
             for t in toks:
                 st = t.strip()
                 # Ignore the strip characters
@@ -39,18 +40,19 @@ def gatherFlags(command):
 
     return ret
 
-devel=gatherFlags(["chpl", "--devel", "--help"])
-nodevel=gatherFlags(["chpl", "--no-devel", "--help"])
+
+devel = gatherFlags(["chpl", "--devel", "--help"])
+nodevel = gatherFlags(["chpl", "--no-devel", "--help"])
 devel.sort()
 nodevel.sort()
 
 # The separator for joining the arrays
-sep=" \\\n"
+sep = " \\\n"
 
-template=chpl_home+"/util/devel/chpl-bash-completion-template"
+template = chpl_home + "/util/devel/chpl-bash-completion-template"
 with open(template) as f:
     for line in f:
-        line=line.rstrip()
-        line=line.replace("OPTS_DEVEL", sep.join(devel))
-        line=line.replace("OPTS_NODEVEL", sep.join(nodevel))
+        line = line.rstrip()
+        line = line.replace("OPTS_DEVEL", sep.join(devel))
+        line = line.replace("OPTS_NODEVEL", sep.join(nodevel))
         print(line)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,8 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
+#include "chpl-prginfo.h"
+#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,26 +60,6 @@ extern int32_t chpl_numNodes; // number of nodes
 
 ssize_t chpl_comm_getenvMaxHeapSize(void);
 
-
-//
-// Shared interface (implemented in the compiler generated code)
-//
-extern void chpl__heapAllocateGlobals(void);
-
-//
-// chpl_globals_registry is an array of size chpl_numGlobalsOnHeap
-// storing ptr_wide_ptr_t, that is, local addresses of wide pointers.
-// It is filled in and used by chpl_comm_register_global_var() and
-// chpl_comm_broadcast_global_vars(), respectively, declared below.
-//
-extern const int chpl_numGlobalsOnHeap;
-extern ptr_wide_ptr_t chpl_globals_registry[];
-
-extern void* const chpl_private_broadcast_table[];
-extern int const chpl_private_broadcast_table_len;
-
-extern void* const chpl_global_serialize_table[];
-
 //
 // Comm layer-specific interface
 //
@@ -92,6 +74,7 @@ typedef struct {
   chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
+  chpl_rt_prg_id prg_id;
   uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 
@@ -110,20 +93,18 @@ chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
 // we have function table indices rather than function pointers.
 //
 static inline
-void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              chpl_comm_on_bundle_t* arg,// function arg
-                              size_t arg_size,        // length of arg in bytes
-                              c_sublocid_t subloc,    // desired sublocale
-                              int lineno,             // source line
-                              int32_t filename) {     // source filename
+void chpl_rt_comm_task_ftable_call(
+                      chpl_rt_prginfo* prg,
+                      chpl_fn_int_t fid,            // ftable[] entry to call
+                      chpl_comm_on_bundle_t* arg,   // function arg
+                      size_t arg_size,              // length of arg in bytes
+                      c_sublocid_t subloc,          // desired sublocale
+                      int lineno,                   // source line
+                      int32_t filename) {           // source filename
     arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
-    chpl_task_taskCallFTable(fid,
-                             arg, arg_size,
-                             subloc,
-                             lineno, filename);
+    chpl_rt_task_task_ftable_call(prg, fid, arg, arg_size, subloc,
+                                  lineno, filename);
 }
-
-
 
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
@@ -356,29 +337,32 @@ chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
   return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
 }
 
+// Helper to register a global variable to be broadcasted later.
+// TODO: Move this entirely to module code.
+static inline
+void chpl_rt_comm_register_global_var(chpl_rt_prginfo* prg,
+                                      int32_t idx,
+                                      wide_ptr_t* ptr_to_wide_ptr) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+  chpl_globals_registry[idx] = ptr_to_wide_ptr;
+}
+
 //
-// These routines are used by the Chapel runtime to broadcast the
-// locations of module-level ("global") variables to all locales
-// so that all locales can put/get the value of a global variable
-// directly, knowing where it lives remotely.
+// This routine is used by the Chapel runtime to broadcast the locations of
+// module-level ("global") variables within a program to all locales so that
+// all locales can put/get the value of a global variable directly, knowing
+// where it lives remotely.
 //
-// The named symbol for a global var is a wide pointer referring to
-// that global's heap-allocated space on node 0.  At program start,
-// all of these wide pointers must be communicated from node 0 to
-// all the other nodes.  To achieve this, the compiler-emitted code
-// first calls chpl_comm_register_global_var() on every node for
-// each global (passing a global var index which starts at 0 and
-// increments each time, and the address of the global's named
-// symbol), then finally calls chpl_comm_broadcast_global_vars().
-// The implementation of these two could either broadcast the wide
-// pointer values one by one in the 'register' calls and then do
-// nothing in the 'broadcast' call, or batch up the wide pointers
-// in the 'register' calls and actually do a broadcast in the
-// 'broadcast' call.  Currently we do the latter in order to
-// reduce startup overhead.
+// The named symbol for a global var is a wide pointer referring to that
+// global's heap-allocated space on node 0. At program start, all of these
+// wide pointers must be communicated from node 0 to all the other nodes.
 //
-void chpl_comm_register_global_var(int i, wide_ptr_t* ptr_to_wide_ptr);
-void chpl_comm_broadcast_global_vars(int numGlobals);
+// To achieve this, the compiler-emitted code first prepares an array on
+// every locale that contains addresses of wide pointers for every global
+// on that locale. Then, the compiler invokes this function in order to
+// broadcast and set the wide pointers on each locale.
+//
+void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg);
 
 //
 // This routine is used by the generated Chapel code to broadcast
@@ -403,7 +387,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // values, and during execution to do things like enabling and disabling
 // memory tracking/reporting and comm diagnostics.
 //
-void chpl_comm_broadcast_private(int id, size_t size);
+void chpl_rt_comm_private_broadcast(chpl_rt_prginfo* prg, int32_t id,
+                                    size_t size);
 
 //
 // Barrier for synchronization between all top-level locales; currently
@@ -527,28 +512,37 @@ void chpl_comm_getput_unordered_task_fence(void);
 // notes:
 //   multiple executeOns to the same locale should be handled concurrently
 //
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size,
-                          int ln, int32_t fn);
+void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
+                             c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg,
+                             size_t arg_size,
+                             int ln,
+                             int32_t fn);
 
 //
 // non-blocking execute_on
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size,
-                             int ln, int32_t fn);
+void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                c_sublocid_t subloc,
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t *arg,
+                                size_t arg_size,
+                                int ln,
+                                int32_t fn);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size,
-                               int ln, int32_t fn);
+void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn);
 
 //
 // Ensure that the communication layer makes progress if there are any

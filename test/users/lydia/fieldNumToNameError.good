@@ -1,1 +1,3 @@
-fieldNumToNameError.chpl:7: error: '3' is not a valid field number for R
+$CHPL_HOME/modules/standard/Reflection.chpl:68: In function 'getFieldName':
+$CHPL_HOME/modules/standard/Reflection.chpl:69: error: '4' is not a valid field number for R
+  fieldNumToNameError.chpl:8: called as getFieldName(type t = R, param idx = 4)

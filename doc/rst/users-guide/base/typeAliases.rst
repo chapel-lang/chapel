@@ -1,5 +1,3 @@
-:title: Users Guide: Type Aliases
-
 .. _ug-typeAliases:
 
 Type Aliases

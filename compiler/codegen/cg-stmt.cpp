@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,11 +58,14 @@ void codegenStmt(Expr* stmt) {
       info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
-    if (debugInfo && stmt->linenum() > 0) {
+    if (debugInfo &&
+        stmt->linenum() > 0 &&
+        (!stmt->parentSymbol ||
+          debugInfo->shouldAddDebugInfoFor(stmt->parentSymbol))) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 
-      if(auto fn = toFnSymbol(stmt->parentSymbol); stmt->inTree()) {
+      if (auto fn = toFnSymbol(stmt->parentSymbol); stmt->inTree()) {
         scope = debugInfo->getFunction(fn);
       } else {
         scope = info->irBuilder->getCurrentDebugLocation().getScope();

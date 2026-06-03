@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -663,7 +663,6 @@ static void test18internal() {
     setupModuleSearchPaths(context,
                            chplHomeStr,
                            "",
-                           false,
                            chplEnv->at("CHPL_LOCALE_MODEL"),
                            false,
                            chplEnv->at("CHPL_TASKS"),
@@ -687,6 +686,7 @@ static void test18internal() {
         red, green, blue
       }
       var tmp = color.red;
+      var tmpStr = "red", tmpStrBytes = b"red";
       param tmpParam = color.red;
       var a = chpl__enumToOrder(tmp);
       param b = chpl__enumToOrder(tmp); // error
@@ -694,13 +694,17 @@ static void test18internal() {
       param d = chpl__enumToOrder(color.red);
       param e = chpl__enumToOrder(color.green);
       param f = chpl__enumToOrder(color.blue);
+      var g = tmp : string;
+      var h = tmp : bytes;
+      var i = tmpStr : color;
+      var j = tmpStrBytes : color;
       )""");
 
   auto& br = parseFileToBuilderResultAndCheck(context, path, {});
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   auto vars = resolveTypesOfVariables(context, mod,
-      {"a", "b", "c", "d", "e", "f"});
+      {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isIntType());
@@ -726,8 +730,42 @@ static void test18internal() {
   assert(vars.at("f").param());
   assert(vars.at("f").param()->isIntParam());
   assert(vars.at("f").param()->toIntParam()->value() == 2);
+  assert(vars.at("g").type());
+  assert(vars.at("g").type()->isStringType());
+  assert(vars.at("h").type());
+  assert(vars.at("h").type()->isBytesType());
+  assert(vars.at("i").type());
+  assert(vars.at("i").type()->isEnumType());
+  assert(vars.at("j").type());
+  assert(vars.at("j").type()->isEnumType());
 
-  assert(guard.realizeErrors() == 1);
+  assert(guard.realizeErrors(/*countWarnings*/false) == 1);
+}
+
+// regression test: we used to generate `e : e` formals, which was not valid.
+static void test18e() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum e {
+        red, green, blue
+      }
+      var tmp = e.red;
+      param tmpParam = e.red;
+      var a = chpl__enumToOrder(tmp);
+      param c = chpl__enumToOrder(tmpParam);
+      )""", {"a","c" });
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
 }
 
 static void test19() {
@@ -786,7 +824,7 @@ static void test20() {
 
   std::ostringstream oss;
   vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
-  assert(oss.str() == "R(green)");
+  assert(oss.str() == "R(colors.green)");
 }
 
 // Non-param cast to string
@@ -1064,7 +1102,7 @@ static void test30() {
 
   std::ostringstream oss;
   vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
-  assert(oss.str() == "R(green)");
+  assert(oss.str() == "R(colors.green)");
 }
 
 // Param cast bytes to enum
@@ -1123,6 +1161,7 @@ int main() {
   test17();
   test18();
   test18internal();
+  test18e();
   test19();
   test20();
   test21();

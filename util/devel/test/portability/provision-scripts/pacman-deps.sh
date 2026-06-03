@@ -12,4 +12,4 @@ pacman --noconfirm -Syu
 pacman --noconfirm -S base-devel
 
 # install additional packages
-pacman --noconfirm -S cmake git python
+pacman --noconfirm -S cmake git python libunwind

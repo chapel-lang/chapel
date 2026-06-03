@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+
+# This test verifies that the values in the program data make sense.
+
+import os, subprocess as sp, sys
+import re
+from io import StringIO
+from pathlib import Path
+
+script_dir = Path(__file__).resolve().parent
+target = sys.argv[1]
+output_file = sys.argv[2]
+program_id = 0
+
+chplenv_lines = (
+    sp.check_output(
+        [
+            os.environ["CHPL_HOME"] + "/util/printchplenv",
+            "--all",
+            "--internal",
+            "--simple",
+        ]
+    )
+    .decode()
+    .splitlines()
+)
+
+chplenv = {k: v for k, v in [line.split("=", 1) for line in chplenv_lines]}
+
+with open(output_file, "r") as fp:
+    original_output = fp.read()
+
+# Prepare some constants for use later.
+pattern_0 = r"-nl (\d+)"
+pattern_1 = r"^Data entries.*?\b([^@\s]+)@([^(\s]+).*?\(([^)]+)\)"
+pattern_2 = r"([^:]+):([^=]+)=(.*)"
+is_multilocale = chplenv["CHPL_COMM"] != "none"
+program_name = sys.argv[1] + "_real" if is_multilocale else sys.argv[1]
+binary_path = Path(os.path.join(script_dir, program_name)).absolute()
+lines = original_output.splitlines()
+execution_flags = sys.argv[-1]
+compilation_flags = sys.argv[-2]
+is_fast_flag_thrown = "--fast" in compilation_flags
+
+# Get the number of locales by searching the execution flags.
+match = re.search(pattern_0, execution_flags)
+num_locales = int(match.group(1)) if match else 1
+assert num_locales >= 1
+
+
+expected_value_map = {
+    "mainHasArgs": 0,
+    "mainPreserveDelimiter": 0,
+    "warnUnstable": 0,
+    "CHPL_INTERLEAVE_MEM": 0,
+    "CHPL_STACK_CHECKS": (0 if is_fast_flag_thrown else 1),
+}
+
+
+class ProgramField(object):
+    def __init__(self, name, c_type, val):
+        self._name = name
+        self._c_type = c_type
+        self._val = val
+
+    def name(self):
+        return self._name
+
+    def is_callback(self):
+        return "(*)" in self._c_type
+
+    def is_c_string_type(self):
+        return self._c_type == "const char*"
+
+    def is_pointer_type(self):
+        return not self.is_callback() and "*" in self._c_type
+
+    def _expect_val(self, out, expected_val):
+        passed = True
+        t = type(expected_val)
+        if t(self._val) != expected_val:
+            print(
+                "Bad value {} for '{}', expected {}".format(
+                    self._val, self._name, expected_val
+                ),
+                file=out,
+            )
+            passed = False
+        return passed
+
+    def verify(self, out, chplenv):
+        passed = True
+        env_val = chplenv[self._name] if self._name in chplenv else None
+        # If the value maps to one in the chplenv, make sure they match.
+        if env_val and env_val != self._val:
+            print(
+                "Mismatched value for {}, had {} vs {}".format(
+                    self._name, self._val, env_val
+                ),
+                file=out,
+            )
+            passed = False
+        # If the value is a callback, then the pointer should be set.
+        if self.is_callback() and self._val != "non-nil":
+            print(
+                "Bad value for callback {} is {}".format(self._name, self._val),
+                file=out,
+            )
+            passed = False
+        # If the value is a ppointer type, then the pointer should be set.
+        if self.is_pointer_type() and not self.is_c_string_type():
+            if self._val != "non-nil":
+                print(
+                    "Bad value for pointer type {} : {} = {}".format(
+                        self._name, self._c_type, self._val
+                    ),
+                    file=out,
+                )
+        # Verify fields that should have a known, specific value.
+        name = self._name
+        if name in expected_value_map:
+            val = expected_value_map[name]
+            passed = self._expect_val(out, val) and passed
+        return passed
+
+
+class ProgramData(object):
+    def __init__(self, program, locale, path):
+        self._program = program
+        self._locale = locale
+        self._path = Path(path).absolute()
+        self._data = {}
+
+    def add_field(self, field):
+        self._data[field.name()] = field
+
+    def verify(self, out, locale_id, binary_path, chplenv):
+        passed = True
+        if self._locale != locale_id:
+            passed = False
+            print(
+                "Mismatched locale id {} vs {}".format(self._locale, locale_id),
+                file=out,
+            )
+        if self._path != binary_path:
+            passed = False
+            print(
+                "Mismatched path {} vs {}".format(self._path, binary_path),
+                file=out,
+            )
+        for k, v in self._data.items():
+            if not v.verify(out, chplenv):
+                print("Failed to verify {}".format(k), file=out)
+                passed = False
+        return passed
+
+
+# Build the data entries per-locale.
+data_per_locales = []
+data = None
+
+for line in original_output.splitlines():
+    match_header = re.search(pattern_1, line)
+    if match_header:
+        program = int(match_header.group(1)[1])
+        locale = int(match_header.group(2)[1])
+        path = match_header.group(3)
+        data = ProgramData(program, locale, path)
+        data_per_locales.append(data)
+    match = re.search(pattern_2, line)
+    if match:
+        if not data:
+            # Make something in the event that we didn't parse a header yet.
+            data = ProgramData(None, None, None)
+            data_per_locales.append(data)
+        name = match.group(1).strip()
+        c_type = match.group(2).strip()
+        val = match.group(3).strip()
+        d = ProgramField(name, c_type, val)
+        data.add_field(d)
+
+out = StringIO()
+passed = True
+
+if len(data_per_locales) != num_locales:
+    passed = False
+    print(
+        "Expected {} locales, parsed {}",
+        num_locales,
+        len(data_per_locales),
+        file=out,
+    )
+
+for i in range(0, len(data_per_locales)):
+    data = data_per_locales[i]
+    if not data.verify(out, i, binary_path, chplenv):
+        passed = False
+
+with open(output_file, "w") as fp:
+    if not passed:
+        print("FAILED (original output first)", file=fp)
+        print(original_output, file=fp)
+        print("------------------------------", file=fp)
+        print("Followed by test output...", file=fp)
+        print(out.getvalue(), file=fp)
+    else:
+        print("PASS", file=fp)

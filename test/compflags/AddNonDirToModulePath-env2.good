@@ -1,0 +1,1 @@
+<command line>: error: path provided by CHPL_MODULE_PATH is not a directory: AddNonDir-file.txt

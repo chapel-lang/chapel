@@ -1,0 +1,8 @@
+mason clean
+mason build --example
+mason run --example depExample.chpl
+mason run --example example.chpl
+mason run --example nomodule.chpl
+mason run --example examplesubdir/subdirExample.chpl
+mason run --example withOpts.chpl
+CHPL_RT_UNWIND=0 mason run --example badExit.chpl

@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -105,12 +105,25 @@ lint-standard-modules: chplcheck FORCE
 		--disable-rule ControlFlowParentheses \
 		--disable-rule UnusedFormal \
 		--disable-rule LineLength \
+		--disable-rule UnattachedElse \
+		--disable-rule UnattachedCatch \
+		--disable-rule UnattachedCurly \
 		$(MODULES_TO_LINT)
+
+MASON_MODULES_TO_LINT = $(shell find $(CHPL_MAKE_HOME)/tools/mason -name '*.chpl' -not -path '$(CHPL_MAKE_HOME)/tools/mason/ThirdParty/*')
+lint-mason: chplcheck FORCE
+	tools/chplcheck/chplcheck --add-rules $(CHPL_MAKE_HOME)/tools/mason/rules.py --enable-rule UseExplicitModules --setting IncorrectIndentation.UnindentedModule=true $(MASON_MODULES_TO_LINT)
+
+mason-deps: FORCE
+	cd tools/mason && $(MAKE) deps
 
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
 run-dyno-linters: run-frontend-linters FORCE
+
+chpl-completion: FORCE
+	CHPL_HOME=$(CHPL_MAKE_HOME) ./util/devel/gen-chpl-bash-completion > util/chpl-completion.bash
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

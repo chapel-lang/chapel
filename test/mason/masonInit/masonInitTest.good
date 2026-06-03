@@ -1,3 +1,0 @@
-Created new application project: masonInit
-Tip: To convert existing code to a mason project, move the driver application to the `src/masonInit.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
-Init is correctly done

@@ -2,12 +2,14 @@ proc test(hay, needle) {
   writeln("count: ", hay.count(needle));
   writeln("find: ", hay.find(needle));
   writeln("rfind: ", hay.rfind(needle));
+  writeln("contains: ", hay.contains(needle));
   writeln();
 }
 proc test(hay, needle, r) {
   writeln("count: ", hay.count(needle, r));
   writeln("find: ", hay.find(needle, r));
   writeln("rfind: ", hay.rfind(needle, r));
+  writeln("contains: ", hay.contains(needle, r));
   writeln();
 }
 

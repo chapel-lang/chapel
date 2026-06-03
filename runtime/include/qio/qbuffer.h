@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -562,6 +562,8 @@ static inline intptr_t qio_ptr_diff(void* a, void* b)
     represent the boundary.)
    Takes into account the possibility that cur or end might be NULL;
    returns 0 if either is NULL and nbytes > 0.
+
+   This does NOT handle the case where cur and end are NULL and nbytes == 0;
     */
 static inline int qio_space_in_ptr_diff(intptr_t nbytes, void* end, void* cur)
 {

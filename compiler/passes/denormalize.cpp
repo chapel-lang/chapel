@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,12 +88,18 @@ void denormalize(void) {
   std::set<Symbol*> deferredSyms;
   SafeExprAnalysis analysisData;
 
-  if(fDenormalize) {
+  if (fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
       if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG))
         undoReturnByRef(fn);
+
+      // skip the rest of denormalization if we are only doing
+      // debug safe optimizations
+      if (fDebugSafeOptOnly)
+        continue;
+
 
       bool isFirstRound = true;
       do {
@@ -117,8 +123,8 @@ void denormalize(void) {
         isFirstRound = false;
       } while(deferredSyms.size() > 0);
     }
-
-    collapseTrivialMoves();
+    if (!fDebugSafeOptOnly)
+      collapseTrivialMoves();
   }
 }
 
@@ -351,6 +357,9 @@ static bool isValPassedByRef(CallExpr* ce, SymExpr* se)
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut, Type** castTo,
     SafeExprAnalysis& analysisData) {
+  // The rest of denormalize/codegen is not well-equipped to handle
+  // procedure pointers, so let's keep things simple.
+  if (sym && isFunctionType(sym->type->getValType())) return false;
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
     if(sym->name != astrThis) { //avoid issue with --baseline

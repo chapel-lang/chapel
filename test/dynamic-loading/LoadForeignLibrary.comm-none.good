@@ -1,5 +1,5 @@
 test0
-extern proc(_: int, _: int): int
+extern proc(_: int(32), _: int(32)): int(32)
 
 LOCALE0 got: 0
 ---

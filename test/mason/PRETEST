@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# download the mason deps if they don't yet exist
+if [ ! -f "$CHPL_HOME/tools/mason/ThirdParty/downloaded.txt" ]; then
+  (cd $CHPL_HOME && make mason-deps)
+fi

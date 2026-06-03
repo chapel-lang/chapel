@@ -7,11 +7,11 @@ from utils import memoize
 
 @memoize
 def get():
-    debug_val = overrides.get('CHPL_COMM_DEBUG')
+    debug_val = overrides.get("CHPL_COMM_DEBUG")
     if not debug_val:
-        debug_val = 'nodbg'
+        debug_val = "nodbg"
     else:
-        debug_val = 'debug'
+        debug_val = "debug"
     return debug_val
 
 
@@ -20,5 +20,5 @@ def _main():
     sys.stdout.write("{0}\n".format(debug_val))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

@@ -1,0 +1,38 @@
+b myFunc
+b functionCalls.chpl:4
+b getString
+b functionCalls.chpl:10
+b getMyRec
+b functionCalls.chpl:20
+b getMyRec2
+b functionCalls.chpl:31
+b getMyClass
+b functionCalls.chpl:38
+r
+# testing breaking in myFunc
+c
+p ret
+c
+# testing breaking in getString
+c
+p ret
+c
+# testing breaking in getMyRec
+c
+p ret
+c
+# testing breaking in getMyRec2
+c
+p ret
+c
+# testing breaking in getMyClass
+c
+p ret
+c
+# testing calls
+p myFunc(10)
+# p getString()
+# p getMyRec(10, 11.5)
+# p getMyRec2(1, 2.3, true)
+p getMyClass()
+q

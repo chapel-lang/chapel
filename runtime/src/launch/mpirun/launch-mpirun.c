@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,8 @@
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chplcgfns.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #define CHPL_SPMD "--spmd"
 
@@ -42,7 +43,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   if (numLocales != 1) {
     chpl_error("For mpirun, specify number of SPMD images via --spmd <#> instead of -nl", 0, 0);
   }
-  if (strcmp(CHPL_COMM, "none") != 0) {
+  if (strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  CHPL_COMM), "none") != 0) {
     chpl_error("mpirun only supports CHPL_COMM=none", 0, 0);
   }
   // Get the number of ranks

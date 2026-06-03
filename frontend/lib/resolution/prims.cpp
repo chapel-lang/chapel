@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,9 +39,16 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+enum TypeReq {
+  IS,
+  IS_NOT,
+  EITHER,
+};
+
 static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
-                                                  bool shouldBeType = true) {
-  if ((type.kind() == QualifiedType::TYPE) == shouldBeType) {
+                                                  TypeReq req = TypeReq::IS) {
+  bool matches = (type.kind() == QualifiedType::TYPE) == (req == TypeReq::IS);
+  if (req == TypeReq::EITHER || matches) {
     if (auto t = type.type()) {
       if (auto ct = t->getCompositeType()) {
         return ct;
@@ -54,8 +61,8 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
 static const ResolvedFields*
 toCompositeTypeActualFields(ResolutionContext* rc,
                             const QualifiedType& type,
-                            bool shouldBeType = true) {
-  if (auto ct = toCompositeTypeActual(type, shouldBeType)) {
+                            TypeReq req = TypeReq::IS) {
+  if (auto ct = toCompositeTypeActual(type, req)) {
     auto& resolvedFields = fieldsForTypeDecl(rc, ct,
                                              DefaultsPolicy::IGNORE_DEFAULTS);
     return &resolvedFields;
@@ -149,13 +156,12 @@ static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& c
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
-    int64_t fieldNum = 0;
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual, TypeReq::EITHER)) {
+    int64_t fieldNum = -1;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
-    // Fields in these primitives are 1-indexed.
-    if (fieldNum > fields->numFields() || fieldNum < 1) return type;
+    if (fieldNum >= fields->numFields() || fieldNum < 0) return type;
 
-    auto fieldName = fields->fieldName(fieldNum - 1);
+    auto fieldName = fields->fieldName(fieldNum);
     type = QualifiedType::makeParamString(rc->context(), fieldName);
   }
   return type;
@@ -167,8 +173,7 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  bool foundField = false;
-  int field = 0;
+  int field = -1;
   if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
@@ -176,9 +181,7 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
     // TODO move this into a method on fields?
     for (int i = 0; i < fields->numFields(); i++) {
       if (fields->fieldName(i) == fieldName) {
-        foundField = true;
-        // Fields in these primitives are 1-indexed.
-        field = i + 1;
+        field = i;
         break;
       }
     }
@@ -190,13 +193,10 @@ static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& c
 
     if (fieldName == "_shape_" &&
         shapeForIterator(rc->context(), firstActual.type()->toIteratorType())) {
-      foundField = true;
-      // Fields in these primitives are 1-indexed.
-      field = 1;
+      field = 0;
     }
   }
 
-  if (!foundField) field = -1;
   return QualifiedType::makeParamInt(rc->context(), field);
 }
 
@@ -207,14 +207,13 @@ static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
   auto secondActual = ci.actual(1).type();
   auto fields = toCompositeTypeActualFields(rc,
                                             firstActual,
-                                            /* shouldBeType */ false);
+                                            /* req */ TypeReq::IS_NOT);
   if (!fields) return QualifiedType();
   int64_t fieldNum = 0;
   if (!toParamIntActual(secondActual, fieldNum)) return QualifiedType();
 
-  // Fields in these primitives are 1-indexed.
-  if (fieldNum > fields->numFields() || fieldNum < 1) return QualifiedType();
-  return fields->fieldType(fieldNum - 1);;
+  if (fieldNum >= fields->numFields() || fieldNum < 0) return QualifiedType();
+  return fields->fieldType(fieldNum);
 }
 
 static QualifiedType primCallResolves(ResolutionContext* rc,
@@ -813,7 +812,7 @@ static QualifiedType primFamilyIsSubtype(Context* context,
 
   auto prim = call->prim();
   auto& parentQT = ci.actual(0).type();
-  auto& subQT = ci.actual(1).type();
+  auto subQT = ci.actual(1).type();
 
   bool parentIsType = parentQT.isType();
   bool subIsType = subQT.isType();
@@ -827,9 +826,39 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     if (!parentIsType || !subIsType) return QualifiedType();
   }
 
-  // Note: omitted here is the special logic for distributions
-  // (if parent is a distribution class, retrieve the child distribution's
-  // _instance). It's unclear if we need this logic in Dyno.
+  // in production, _distribution(someDistClass) is unwrapped to
+  // someDistClass (via resolving the _instance field), but only if
+  // the parent type inherits from a distribution base class.
+  auto subT = subQT.type();
+  if (subT && subT->hasPragma(context, pragmatags::PRAGMA_DISTRIBUTION)) {
+
+    bool foundDistBase = false;
+    auto parentT = parentQT.type();
+    if (parentT && parentT->getCompositeType()) {
+      auto parentCT = parentT->getCompositeType()->toBasicClassType();
+      while (parentCT) {
+        if (parentCT->hasPragma(context, pragmatags::PRAGMA_BASE_DIST)) {
+          foundDistBase = true;
+          break;
+        }
+        parentCT = parentCT->parentClassType();
+      }
+    }
+
+    if (foundDistBase) {
+      auto ct = subT->getCompositeType();
+      CHPL_ASSERT(ct != nullptr);
+
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+      for (int i = 0; i < fields.numFields(); i++) {
+        if (fields.fieldName(i) == USTR("_instance")) {
+          subQT = fields.fieldType(i);
+          break;
+        }
+      }
+    }
+  }
 
   auto newParentQT = QualifiedType(QualifiedType::TYPE, parentQT.type());
   auto newSubQT = QualifiedType(QualifiedType::TYPE, subQT.type());
@@ -844,11 +873,9 @@ static QualifiedType primFamilyIsSubtype(Context* context,
   } else {
     // TODO: Don't count borrowing conversion as implying subtype, since that's
     // not what the spec does.
-    bool isSubType = cpr.passes() &&
-                     (cpr.conversionKind() == CanPassResult::NONE ||
-                      cpr.conversionKind() == CanPassResult::SUBTYPE ||
-                      cpr.conversionKind() == CanPassResult::BORROWS ||
-                      cpr.conversionKind() == CanPassResult::BORROWS_SUBTYPE);
+    bool isSubType =
+      cpr.passes() &&
+      (cpr.conversionKind() & ~(CanPassResult::SUBTYPE | CanPassResult::BORROWS)) == 0;
     if (prim == PRIM_IS_SUBTYPE) {
       result = isSubType;
     } else {
@@ -1250,13 +1277,17 @@ static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc, const CallInfo&
 static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
-  auto qtFrom = ci.actual(0).type();
-  auto qtTo = ci.actual(1).type();
-  auto canPass = CanPassResult::canPassScalar(context, qtFrom, qtTo);
-  bool eval = canPass.passes() &&
-              (canPass.instantiates() || canPass.converts()) &&
-              !canPass.promotes();
-  return QualifiedType::makeParamBool(context, eval);
+
+  // Adjust arguments to have 'INIT_RECEIVER' and 'IN' intents, since coercions between
+  // 'TYPE' formals have different rules (e.g., disallow borrowing coercions).
+  // We use 'INIT_RECEIVER' because we want to allow the actual to be generic,
+  // so that 'childClass' is coercible to 'parentClass' even if the ownership
+  // is not known.
+  auto qtToAdj = QualifiedType(QualifiedType::IN, ci.actual(0).type().type());
+  auto qtFromAdj = QualifiedType(QualifiedType::INIT_RECEIVER, ci.actual(1).type().type());
+
+  auto canPass = CanPassResult::canPassScalar(context, qtFromAdj, qtToAdj);
+  return QualifiedType::makeParamBool(context, canPass.passes());
 }
 
 static std::string typeToString(Context* context, const Type* t);
@@ -1877,7 +1908,14 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         auto chplenv = context->getChplEnv();
         auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
         auto it = chplenv->find(varName);
-        auto ret = (it != chplenv->end()) ? it->second : "";
+        std::string ret;
+        if (it != chplenv->end()) {
+          ret = it->second;
+        } else if (varName == "CHPL_DYNO") {
+          ret = "on";
+        } else {
+          context->error(call, "primitive string does not match any environment variable");
+        }
 
         type = QualifiedType::makeParamString(context, ret);
       }

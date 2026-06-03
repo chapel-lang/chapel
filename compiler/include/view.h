@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,6 +66,7 @@ void nprint_view(int id);
 void nprint_view(BaseAST* ast);
 void nprint_view(GenRet& gen); // defined in codegen/codegen.cpp
 void nprint_view_noline(BaseAST* ast);
+void nprint_view(astlocT loc);
 
 // Add overloads for 'dyno' stuff, as needed.
 void nprint_view(const chpl::uast::AstNode* x);

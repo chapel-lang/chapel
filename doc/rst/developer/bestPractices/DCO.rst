@@ -131,17 +131,29 @@ If you've pushed your changes to GitHub already you'll need to force
 push your branch after this with ``git push -f``.
 
 If your Pull Request fails the DCO check, it will be necessary to fix
-the entire commit history for the PR. Best practice is to squash the
-commit history to a single commit, append the DCO sign-off as
-described above, and force push. For example, if you have 2 commits in
-your history (Note the ~2):
+the entire commit history for the PR. The best practice is to rebase the commit
+history while signing off individual commits. Assuming the name of the upstream
+Chapel repo is ``upstream`` (you can check with ``git remote -v``), the
+following will rebase your entire commit history on the upstream commit where
+you started off while adding the sign off message at the end of each commit
+message:
+
 
 .. code-block:: bash
 
-     git rebase -i HEAD~2
-     (interactive squash + DCO append)
-     git push origin -f
+     git rebase --signoff $(git merge-base HEAD upstream/main)
+     git push origin --force-with-lease
 
 Note that, in general, rewriting history in this way may introduce
 issues to the review process and this should only be done to correct a
-DCO mistake.
+DCO mistake. In more detail:
+
+* Your commit tree will "look" the same. Your commits will be based off on the
+  same SHA on the ``upstream/main`` branch. However:
+
+* Your commits themselves will have different SHAs, and
+
+* Their dates will be updated.
+
+It is a good practice to inform your reviewer of your rebase and force-push.
+Particularly if they had started reviewing already.

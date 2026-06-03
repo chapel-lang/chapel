@@ -1,0 +1,14 @@
+UnattachedElse.chpl:18: node violates rule UnattachedElse
+UnattachedElse.chpl:21: node violates rule UnattachedElse
+UnattachedElse.chpl:28: node violates rule UnattachedElse
+UnattachedElse.chpl:35: node violates rule UnattachedElse
+UnattachedElse.chpl:41: node violates rule UnattachedElse
+UnattachedElse.chpl:43: node violates rule UnattachedElse
+UnattachedElse.chpl:49: node violates rule UnattachedElse
+UnattachedElse.chpl:51: node violates rule UnattachedElse
+UnattachedElse.chpl:59: node violates rule UnattachedElse
+UnattachedElse.chpl:62: node violates rule UnattachedElse
+UnattachedElse.chpl:71: node violates rule UnattachedElse
+UnattachedElse.chpl:75: node violates rule ThenKeywordAndBlock
+UnattachedElse.chpl:77: node violates rule ThenKeywordAndBlock
+[Success matching fixit for UnattachedElse]

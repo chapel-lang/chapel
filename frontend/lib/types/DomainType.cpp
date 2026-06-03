@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,16 +56,16 @@ void DomainType::stringify(std::ostream& ss,
     ss << ")";
   } else if (kind_ == Kind::Rectangular) {
     ss << "domain(";
-    rank().param()->stringify(ss, stringKind);
-    ss << ",";
+    CompositeType::stringifyParamSubstitution(ss, rank());
+    ss << ", ";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
-    strides().param()->stringify(ss, stringKind);
+    ss << ", ";
+    CompositeType::stringifyParamSubstitution(ss, strides());
     ss << ")";
   } else if (kind_ == Kind::Associative) {
     ss << "domain(";
     idxType().type()->stringify(ss, stringKind);
-    ss << ",";
+    ss << ", ";
     parSafe().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Unknown) {
@@ -76,8 +76,7 @@ void DomainType::stringify(std::ostream& ss,
 }
 
 static ID getDomainID(Context* context) {
-  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelDomain",
-                                                "_domain");
+  return parsing::getDomainIdFromTopLevelChapelDomainModule(context);
 }
 
 const owned<DomainType>&

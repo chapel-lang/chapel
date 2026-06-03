@@ -19,7 +19,7 @@ proc gamma() { }
 /* This symbol is not deprecated, but it shouldn't affect anything */
 proc foe() { }
 
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated proc uno() { }

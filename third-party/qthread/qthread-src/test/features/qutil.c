@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sys/time.h> /* for gettimeofday() */
-#include <time.h>     /* for gettimeofday() */
-
 #include "argparsing.h"
 #include <qthread/qthread.h>
 #include <qthread/qutil.h>
@@ -19,16 +16,15 @@
 aligned_t *ui_array;
 aligned_t ui_out, ui_sum_authoritative = 0, ui_mult_authoritative = 1,
                   ui_max_authoritative = 0, ui_min_authoritative = UINT_MAX;
-size_t ui_len = 1000000;
+size_t ui_len = 10000;
 saligned_t *i_array;
 saligned_t i_out, i_sum_authoritative = 0, i_mult_authoritative = 1,
                   i_max_authoritative = INT_MIN, i_min_authoritative = INT_MAX;
-size_t i_len = 1000000;
+size_t i_len = 10000;
 double *d_array;
 double d_out, d_sum_authoritative = 0.0, d_mult_authoritative = 1.0,
               d_max_authoritative = DBL_MIN, d_min_authoritative = DBL_MAX;
-size_t d_len = 1000000;
-struct timeval start, stop;
+size_t d_len = 10000;
 
 static aligned_t qmain(void *junk) {
   size_t i;
@@ -59,9 +55,8 @@ static aligned_t qmain(void *junk) {
   ui_out = qutil_uint_min(ui_array, ui_len, 0);
   test_check(ui_out == ui_min_authoritative);
   iprintf(" - qutil_uint_min is correct\n");
-  gettimeofday(&start, NULL);
+
   qutil_aligned_qsort(ui_array, ui_len);
-  gettimeofday(&stop, NULL);
   iprintf("done sorting, checking correctness...\n");
   for (i = 0; i < ui_len - 1; i++) {
     if (ui_array[i] > ui_array[i + 1]) {
@@ -82,10 +77,7 @@ static aligned_t qmain(void *junk) {
       abort();
     }
   }
-  iprintf("[qutil] aligned_t sorting %lu numbers took: %f seconds\n",
-          (unsigned long)d_len,
-          (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
-            (start.tv_sec + (start.tv_usec * 1.0e-6)));
+  iprintf("%lu\n", (unsigned long)d_len);
   free(ui_array);
 
   i_array = (saligned_t *)calloc(i_len, sizeof(saligned_t));
@@ -166,9 +158,7 @@ static aligned_t qmain(void *junk) {
    * } */
 
   // printf("[qutil] sorting...\n");
-  gettimeofday(&start, NULL);
   qutil_qsort(d_array, d_len);
-  gettimeofday(&stop, NULL);
   iprintf("done sorting, checking correctness...\n");
   for (i = 0; i < d_len - 1; i++) {
     if (fabs(d_array[i] - d_array[i + 1]) >
@@ -192,10 +182,6 @@ static aligned_t qmain(void *junk) {
       abort();
     }
   }
-  iprintf("[qutil] sorting %lu numbers took: %f seconds\n",
-          (unsigned long)d_len,
-          (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
-            (start.tv_sec + (start.tv_usec * 1.0e-6)));
   free(d_array);
   return 0;
 }

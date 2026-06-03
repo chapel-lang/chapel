@@ -43,7 +43,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(7)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===========================MyClass(int(64),real(64))============================
 DW_TAG_pointer_type
@@ -76,28 +75,26 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(17)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
-  NULL
 ================================================================================
 =======================shared MyClass(int(64),real(64))?========================
 DW_TAG_structure_type
               DW_AT_name	("shared MyClass(int(64),real(64))?")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x20)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("chpl_p")
-                DW_AT_type	("nothingTypes::MyClass(int(64),real(64)) *")
+                DW_AT_type	("wide(MyClass(int(64),real(64)))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(125)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("chpl_pn")
-                DW_AT_type	("ReferenceCount *")
+                DW_AT_type	("wide(ReferenceCount)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(131)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
+                DW_AT_data_member_location	(0x10)
 ================================================================================
 =====================================myVar2=====================================
 DW_TAG_variable
@@ -141,28 +138,26 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(13)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ========================shared MyClass(nothing,nothing)?========================
 DW_TAG_structure_type
               DW_AT_name	("shared MyClass(nothing,nothing)?")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x20)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("chpl_p")
-                DW_AT_type	("nothingTypes::MyClass(nothing,nothing) *")
+                DW_AT_type	("wide(MyClass(nothing,nothing))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(125)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("chpl_pn")
-                DW_AT_type	("ReferenceCount *")
+                DW_AT_type	("wide(ReferenceCount)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(131)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
+                DW_AT_data_member_location	(0x10)
 ================================================================================
 =====================================myVar3=====================================
 DW_TAG_variable
@@ -195,7 +190,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(6)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ============================MyClass(int(64),nothing)============================
 DW_TAG_pointer_type
@@ -221,28 +215,26 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(16)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ========================shared MyClass(int(64),nothing)?========================
 DW_TAG_structure_type
               DW_AT_name	("shared MyClass(int(64),nothing)?")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x20)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("chpl_p")
-                DW_AT_type	("nothingTypes::MyClass(int(64),nothing) *")
+                DW_AT_type	("wide(MyClass(int(64),nothing))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(125)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("chpl_pn")
-                DW_AT_type	("ReferenceCount *")
+                DW_AT_type	("wide(ReferenceCount)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(131)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
+                DW_AT_data_member_location	(0x10)
 ================================================================================
 =====================================myVar4=====================================
 DW_TAG_variable
@@ -275,7 +267,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(7)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
-  NULL
 ================================================================================
 ==================myRecord(myRecord(nothing,real(64)),int(64))==================
 DW_TAG_structure_type
@@ -298,7 +289,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(7)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 ===========================MyClass(nothing,real(64))============================
 DW_TAG_pointer_type
@@ -324,7 +314,6 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(17)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
-  NULL
 ================================================================================
 =============MyClass(unmanaged MyClass(nothing,real(64))?,int(64))==============
 DW_TAG_pointer_type
@@ -332,7 +321,7 @@ DW_TAG_pointer_type
               DW_AT_name	("MyClass(unmanaged MyClass(nothing,real(64))?,int(64))")
 DW_TAG_structure_type
               DW_AT_name	("MyClass(unmanaged MyClass(nothing,real(64))?,int(64))")
-              DW_AT_byte_size	(0x18)
+              DW_AT_byte_size	(0x20)
               DW_AT_decl_file	("./nothingTypes.chpl")
               DW_AT_decl_line	(13)
               DW_AT_alignment	(8)
@@ -345,7 +334,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("nothingTypes::MyClass(nothing,real(64)) *")
+                DW_AT_type	("wide(MyClass(nothing,real(64)))")
                 DW_AT_decl_file	("./nothingTypes.chpl")
                 DW_AT_decl_line	(16)
                 DW_AT_alignment	(8)
@@ -356,49 +345,46 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("./nothingTypes.chpl")
                 DW_AT_decl_line	(17)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x10)
-  NULL
+                DW_AT_data_member_location	(0x18)
 ================================================================================
 ===========shared MyClass(shared MyClass(nothing,real(64))?,int(64))?===========
 DW_TAG_structure_type
               DW_AT_name	("shared MyClass(shared MyClass(nothing,real(64))?,int(64))?")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x20)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("chpl_p")
-                DW_AT_type	("nothingTypes::MyClass(shared MyClass(nothing,real(64))?,int(64)) *")
+                DW_AT_type	("wide(MyClass(shared MyClass(nothing,real(64))?,int(64)))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(125)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("chpl_pn")
-                DW_AT_type	("ReferenceCount *")
+                DW_AT_type	("wide(ReferenceCount)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(131)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
+                DW_AT_data_member_location	(0x10)
 ================================================================================
 =======================shared MyClass(nothing,real(64))?========================
 DW_TAG_structure_type
               DW_AT_name	("shared MyClass(nothing,real(64))?")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x20)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("chpl_p")
-                DW_AT_type	("nothingTypes::MyClass(nothing,real(64)) *")
+                DW_AT_type	("wide(MyClass(nothing,real(64)))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(125)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("chpl_pn")
-                DW_AT_type	("ReferenceCount *")
+                DW_AT_type	("wide(ReferenceCount)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/SharedObject.chpl")
-                DW_AT_decl_line	(131)
+                DW_AT_decl_line (INTERNAL_LINENO)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  NULL
+                DW_AT_data_member_location	(0x10)
 ================================================================================
 Success!!

@@ -1,0 +1,10 @@
++ mason clean
++ mason run --example
+--- available examples ---
+ --- depExample.chpl
+ --- example.chpl
+ --- nomodule.chpl
+ --- examplesubdir/subdirExample.chpl
+ --- withOpts.chpl
+ --- badExit.chpl
+--------------------------

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,8 +49,13 @@ std::error_code writeFile(const char* path, const std::string& data);
 
 /**
   Checks to see if a file exists at path. Returns 'true' if it does.
- */
-bool fileExists(const char* path);
+*/
+bool pathExists(std::string_view path);
+
+/**
+   Checks to see if a directory exists at path. Returns 'true' if it does.
+*/
+bool directoryExists(std::string_view path);
 
 /**
  * create the directory specified by argument dirname

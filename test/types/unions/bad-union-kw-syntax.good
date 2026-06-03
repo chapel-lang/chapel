@@ -1,0 +1,2 @@
+bad-union-kw-syntax.chpl:3: syntax error: near 'union'
+bad-union-kw-syntax.chpl:6: syntax error: near ';'

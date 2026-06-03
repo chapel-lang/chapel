@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,7 +39,11 @@ ERROR_CLASS(AmbiguousIdentifier, const uast::Identifier*, bool, resolution::Matc
 ERROR_CLASS(AmbiguousVisibilityIdentifier, UniqueString, ID, resolution::MatchingIdsWithName)
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
 ERROR_CLASS(AssignFieldBeforeInit, const uast::FnCall*, std::vector<std::pair<const uast::VarLikeDecl*, ID>>)
+ERROR_CLASS(CallToThrowingFunctionRelaxed, const uast::FnCall*, const resolution::UntypedFnSignature*)
+ERROR_CLASS(CallToThrowingFunctionStrict, const uast::FnCall*, const resolution::UntypedFnSignature*)
+ERROR_CLASS(CallToThrowingFunctionFromNon, const uast::FnCall*, const resolution::UntypedFnSignature*)
 ERROR_CLASS(ConstRefCoercion, const uast::AstNode*, resolution::MostSpecificCandidate)
+WARNING_CLASS(DeprecatedSyncRead, const types::Type*, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
 ERROR_CLASS(DotTypeOnType, const uast::Dot*, const types::Type*, ID)
@@ -74,7 +78,7 @@ ERROR_CLASS(InvalidSubdomainCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidSparseSubdomainCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
 ERROR_CLASS(InvalidParamCast, const uast::AstNode*, types::QualifiedType, types::QualifiedType)
-ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
+ERROR_CLASS(InvalidSuper, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(InvalidTupleCast, const uast::AstNode*, const types::TupleType*, const types::TupleType*, const types::Type*, const types::Type*)
 ERROR_CLASS(IteratorsInOtherScopes, const uast::AstNode*, const resolution::TypedFnSignature*, std::vector<const resolution::TypedFnSignature*>)
 ERROR_CLASS(LoopLabelOutsideBreakOrContinue, const uast::AstNode*, ID)
@@ -100,6 +104,7 @@ ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal, const uast::Function*, const uast::Formal*)
 ERROR_CLASS(ProcTypeUnannotatedFormal, const uast::FunctionSignature*, const uast::AnonFormal*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
+ERROR_CLASS(RaceyOutInoutInPromotion, const uast::AstNode*, resolution::MostSpecificCandidate)
 ERROR_CLASS(Recursion, UniqueString)
 ERROR_CLASS(RecursionFieldDecl, const uast::AstNode*, const uast::AggregateDecl*, const types::CompositeType*, std::vector<TraceElement>)
 ERROR_CLASS(RecursionModuleStmt, const uast::AstNode*, const uast::Module*, std::vector<TraceElement>)
@@ -116,7 +121,10 @@ ERROR_CLASS(SuperFromTopLevelModule, const uast::AstNode*, const uast::Module*, 
 ERROR_CLASS(SyntacticGenericityMismatch, const uast::Decl*, const types::Type::Genericity, const types::Type::Genericity, types::QualifiedType)
 WARNING_CLASS(FieldWithGenericManagement, const uast::Decl*)
 WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, resolution::VisibilityStmtKind)
-ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
+ERROR_CLASS(ThrowInNonThrowingFunction, const uast::Throw*, const uast::Function*)
+ERROR_CLASS(ThrowUnhandled, const uast::FnCall*, const resolution::UntypedFnSignature*)
+ERROR_CLASS(TryNoCatchAll, const uast::Try*)
+ERROR_CLASS(TupleDeclAssignMismatchedElems, const uast::AstNode*, const types::TupleType*)
 ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
 ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)

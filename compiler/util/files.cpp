@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -746,7 +746,9 @@ static std::string genMakefileEnvCache() {
     INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
     std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
     std::string chpl_make_key = newPrefix + keySuffix;
-    result += chpl_make_key + "=" + std::string(env->second) + "|";
+    result += chpl_make_key + "=";
+    result += std::string(env->second);
+    result += "|";
   }
 
   return result;
@@ -775,6 +777,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
+
+  const char* runtimeLinkStyle = fBuiltinRuntime ? "static" : "shared";
+
+  fprintf(makefile.fptr, "RUNTIME_LINK_STYLE = %s\n\n", runtimeLinkStyle);
 
   // Store chapel environment variables in a cache.
   makeallvars = genMakefileEnvCache();
@@ -806,7 +812,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     // name with a trailing underscore just to guarantee that it's different
     // from the file name.
     //
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       server = astr(executableFilename.c_str(), "_server");
       fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
@@ -823,7 +829,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     const char* pfx = startsWithLib ? "/" : "/lib";
     tmpbin = astr(tmpDirName, pfx, strippedExeFilename, ".tmp", exeExt);
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server");
     }
   } else {
@@ -847,7 +853,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   //
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     fprintf(makefile.fptr, "TMPSERVERNAME = %s\n\n", tmpserver);
   }
 
@@ -858,7 +864,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
     fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
   }
@@ -872,7 +878,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Compiler flags for each deliverable.
   fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
-  if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
+  if (fLibraryCompile && !fClientServerLibrary && dyn) {
     fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
   fprintf(makefile.fptr, "%s %s%s\n",
@@ -894,7 +900,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     case LS_STATIC:
       lmode = "$(GEN_STATIC_FLAG)"; break;
     }
-  } else if (fLibraryCompile && !fMultiLocaleInterop) {
+  } else if (fLibraryCompile && !fClientServerLibrary) {
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
@@ -919,7 +925,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "\n\n");
 
   // List source files needed to compile this deliverable.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
 
     const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
     const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
@@ -983,7 +989,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Figure out the appropriate base Makefile to include.
   std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     incpath += dyn ? "Makefile.mli-shared" : "Makefile.mli-static";
   } else if (fLibraryCompile) {
     incpath += dyn ? "Makefile.shared" : "Makefile.static";
@@ -1105,14 +1111,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
     expandInstallationPaths(s);
     args[i] = s;
   }
-}
-
-bool isDirectory(std::string_view path) {
-  return llvm::sys::fs::is_directory(path);
-}
-
-bool pathExists(std::string_view path) {
-  return llvm::sys::fs::exists(path);
 }
 
 // would just use realpath, but it is not supported on all platforms.

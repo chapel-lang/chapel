@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "chpl-tasks-callbacks.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -166,8 +167,15 @@ void chpl_vdebug_start (const char *fileroot, double now) {
 
   // Dump directory names, file names and function names
   if (chpl_nodeID == 0) {
-    int ix;
-    int numFIDnames;
+    int ix = 0;
+    int numFIDnames = 0;
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_compileDirectory);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_saveCDir);
+    CHPL_RT_PRGINFO_DECLARE(prg, CHPL_HOME);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenameTableSize);
 
     chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
     chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
@@ -185,6 +193,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                       chpl_filenameTable[ix]);
       }
     }
+
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_finfo);
+
     for (numFIDnames = 0; chpl_finfo[numFIDnames].name != NULL; numFIDnames++);
     chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
     for (ix = 0; ix < numFIDnames; ix++)
@@ -645,4 +656,10 @@ void cb_task_end (const chpl_task_cb_info_t *info) {
                   (long long) info->nodeID, (unsigned long) info->iu.id_only.id);
 
   }
+}
+
+const char* chpl_rt_finfo_name(int idx) {
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_finfo);
+    return chpl_finfo[idx].name;
 }

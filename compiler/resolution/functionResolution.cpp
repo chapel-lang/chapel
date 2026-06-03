@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -899,6 +899,14 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyUnion && isUnion(actualType)) {
+    return true;
+  }
+
+  if (formalType == dtAnyProc && isFunctionType(actualType)) {
+    return true;
+  }
+
   if (formalType == dtNumeric &&
       (isIntType(actualType)  ||
        isUIntType(actualType) ||
@@ -1739,7 +1747,8 @@ bool doCanDispatch(Type*     actualType,
                    FnSymbol* fn,
                    bool*     promotes,
                    bool*     paramNarrows,
-                   bool      paramCoerce) {
+                   bool      paramCoerce,
+                   FunctionType* fnType) {
 
   if (actualType == formalType)
     return true;
@@ -1794,18 +1803,31 @@ bool doCanDispatch(Type*     actualType,
     return true;
 
   // check if promotion is possible
-  if (fn                              != NULL        &&
-      fn->name                        != astrSassign &&
-      strcmp(fn->name, "these")       != 0           &&
-      fn->retTag                      != RET_TYPE    &&
-      fn->retTag                      != RET_PARAM   &&
-      actualType->scalarPromotionType != NULL        &&
-      doCanDispatch(actualType->scalarPromotionType, NULL,
+  // Note: Assumes that if `fn` is null and we have a `fnType`, that we're
+  // dealing with a proc ptr. In this case, `=` and `these` cannot be captured
+  // and so do not need to be accounted for.
+  bool badName = fn && (fn->name == astrSassign || strcmp(fn->name, "these") == 0);
+  auto scalar = actualType->isRef() ?
+                  actualType->getValType()->scalarPromotionType :
+                  actualType->scalarPromotionType;
+  bool okReturnIntent = false;
+  if (fn) {
+    okReturnIntent = fn->retTag != RET_TYPE &&
+                     fn->retTag != RET_PARAM;
+  } else if (fnType) {
+    okReturnIntent = fnType->returnIntent() != RET_TYPE &&
+                     fnType->returnIntent() != RET_PARAM;
+  }
+  if (!badName &&
+      okReturnIntent &&
+      scalar != NULL        &&
+      doCanDispatch(scalar, NULL,
                     formalType, formalSym,
                     fn,
                     promotes,
                     paramNarrows,
-                    false)) {
+                    false,
+                    fnType)) {
     *promotes = true;
     return true;
   }
@@ -1822,7 +1844,8 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn,
                  bool*     promotes,
                  bool*     paramNarrows,
-                 bool      paramCoerce) {
+                 bool      paramCoerce,
+                 FunctionType* fnType) {
   bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
   bool retval          = doCanDispatch(actualType, actualSym,
@@ -1830,7 +1853,8 @@ bool canDispatch(Type*     actualType,
                                        fn,
                                        &tmpPromotes,
                                        &tmpParamNarrows,
-                                       paramCoerce);
+                                       paramCoerce,
+                                       fnType);
 
   if (promotes     != NULL) {
     *promotes = tmpPromotes;
@@ -2500,42 +2524,6 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
   return parent && isConstructorLikeFunction(parent);
 }
 
-// Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or initialize's 'this'
-// as the receiver actual.
-static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
-  if (stackIdx > 0) {
-    CallExpr* call2 = callStack.v[stackIdx - 1];
-    if (FnSymbol* parent2 = toFnSymbol(call2->parentSymbol))
-     if (isConstructorLikeFunction(parent2))
-      if (call2->numActuals() >= 2)
-        if (SymExpr* thisArg2 = toSymExpr(call2->get(2)))
-          if (thisArg2->symbol()->hasFlag(FLAG_ARG_THIS))
-            return true;
-  }
-  return false;
-}
-
-// Check whether the actual comes from accessing a const field of 'this'
-// and the call is in a function invoked directly from this's constructor.
-// In such case, fields of 'this' are not considered 'const',
-// so we remove the const-ness flag.
-static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual,
-                                             FnSymbol*& nonTaskFnParent) {
-  int stackIdx;
-  findNonTaskFnParent(call, nonTaskFnParent, stackIdx); // sets the args
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
-      if (isInvokedFromConstructorLikeFunction(stackIdx)) {
-          // Yes, this is the case we are looking for.
-          se->symbol()->removeFlag(FLAG_REF_TO_CONST);
-          return true;
-      }
-
-  return false;
-}
-
 
 // little helper
 static Symbol* getBaseSymForConstCheck(CallExpr* call) {
@@ -2870,7 +2858,6 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
-static bool resolveFunctionPointerCall(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 static void resolveInitRef(CallExpr* call);
@@ -2950,7 +2937,7 @@ void resolveCall(CallExpr* call) {
     if (resolveClassBorrowMethod(call))
       return;
 
-    if (resolveFunctionPointerCall(call))
+    if (resolveFunctionPointerCall(call, false))
       return;
 
     if (call->isNamedAstr(astr_coerceCopy)) {
@@ -2992,18 +2979,18 @@ static void resolveRefDeserialization(CallExpr* call) {
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode=PoiSearchMode::NORMAL);
 
 FnSymbol* resolveNormalCall(CallExpr* call) {
   return resolveNormalCall(call, CHECK_NORMAL_CALL);
 }
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin, PoiSearchMode poiMode) {
   check_state_t checkState = CHECK_CALLABLE_ONLY;
   if (checkWithin)
       checkState = CHECK_BODY_RESOLVES;
 
-  return resolveNormalCall(call, checkState);
+  return resolveNormalCall(call, checkState, poiMode);
 }
 
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
@@ -3391,7 +3378,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // TODO: Ideally, we would be able to leverage the existing machinery for
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
-static bool resolveFunctionPointerCall(CallExpr* call) {
+bool resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved) {
+  if (resolved) *resolved = false; // set this in case of early return
+
   auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
@@ -3399,10 +3388,12 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // TODO: Support default arguments?
   if (call->numActuals() != ft->numFormals()) {
-    USR_FATAL(call, "incorrect number of arguments - expected '%d', "
-                    "but found '%d'",
-                    ft->numFormals(),
-                    call->numActuals());
+    if (!checkOnly) {
+      USR_FATAL(call, "incorrect number of arguments - expected '%d', "
+                      "but found '%d'",
+                      ft->numFormals(),
+                      call->numActuals());
+    }
     return true;
   }
 
@@ -3413,18 +3404,22 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
       auto se = toSymExpr(base);
       const char* name = se ? se->symbol()->name : nullptr;
 
-      if (name) {
-        USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
-                               "case) do not support named arguments yet",
-                               name);
-      } else {
-        USR_FATAL_CONT(actual, "calls to function values do not support "
-                               "named arguments yet");
+      if (!checkOnly) {
+        if (name) {
+          USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
+                                 "case) do not support named arguments yet",
+                                 name);
+        } else {
+          USR_FATAL_CONT(actual, "calls to function values do not support "
+                                 "named arguments yet");
+        }
       }
     }
   }
 
   bool onceForErrorHeader = true;
+
+  bool anyPromotes = false;
 
   // TODO: Can we rework 'ResolutionCandidate' to operate in terms of
   // function types? That might enable us to use that machinery here.
@@ -3444,18 +3439,65 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     bool ok = canDispatch(actualType, actualSym, formalType, formalSym, fn,
                           &promotes,
                           &paramNarrows,
-                          paramCoerce);
+                          paramCoerce,
+                          ft);
+    anyPromotes = anyPromotes || promotes;
     if (!ok) {
-      if (onceForErrorHeader) {
-        USR_FATAL_CONT(call, "failed to resolve call");
-        onceForErrorHeader = false;
+      if (!checkOnly) {
+        if (onceForErrorHeader) {
+          USR_FATAL_CONT(call, "failed to resolve call");
+          onceForErrorHeader = false;
+        }
+
+        USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
+                               "passed to formal '%s'",
+                               toString(actualType),
+                               toString(formalType));
       }
 
-      USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
-                             "passed to formal '%s'",
-                             toString(actualType),
-                             toString(formalType));
+      return true;
     }
+  }
+
+  if (resolved) *resolved = true;
+
+  if (checkOnly) return true;
+
+  // Instead of refactoring wrapper machinery, create a wrapper for
+  // this particular call and resolve it normally.
+  static int wrapperId = 0;
+  auto name = astr("chpl_fnptr_wrapper_", std::to_string(wrapperId++).c_str());
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  if (ft->throws()) fn->throwsErrorInit();
+  CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
+    fn->insertFormalAtTail(arg);
+    wrappedCall->insertAtTail(new SymExpr(arg));
+  }
+
+  fn->retType = ft->returnType();
+  fn->retTag = ft->returnIntent();
+  if (ft->returnType() != dtVoid) {
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
+  } else {
+    fn->body->insertAtTail(wrappedCall);
+  }
+
+  call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  normalize(fn);
+
+  auto old = call->baseExpr;
+  call->baseExpr->replace(new SymExpr(fn));
+  resolveNormalCall(call);
+
+  if (!anyPromotes) {
+    // Then replace the call to the wrapper with the call to the procedure
+    // pointer, so long as there is no promotion.
+    call->baseExpr->replace(old);
+    fn->defPoint->remove();
   }
 
   return true;
@@ -3526,16 +3568,60 @@ static void resolveCoerceCopyMove(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+//
+// We gather a list of last-resort candidates as we go.
+// The last-resort candidates visible from the call are followed by a NULL
+// to separate them from those visible from the point of instantiation.
+//
+using LastResortCandidates = std::vector<FnSymbol*>;
+
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
-static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode);
 
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                     CallInfo&                  info,
-                                     VisibilityInfo&            visInfo,
-                                     Vec<FnSymbol*>&            visibleFns,
-                                     Vec<ResolutionCandidate*>& candidates);
+// State for candidate search. Tracks seen, most applicable, etc. candidates,
+// and other information like the current POI scope.
+struct CandidateSearchState {
+  CallInfo& info;
+  VisibilityInfo visInfo; // note: contains state as to the current POI scope.
+  PtrSet<BlockStmt*> visited;
+  BlockStmt* scopeUsed = nullptr; // scope last searched for candidates
+
+  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
+  // so that we can revisit them for error reporting. The lists (
+  // visible -> most applicable -> candidates) trickle down into the next.
+  // All of them only ever grow, with numVisitedVis and numVisitedMA tracking
+  // the point up to which all candiddates have been moved to the successive list
+  // if they needed to be. The flow is as follows:
+  //   1. In each potential scope (call and POI(s)), visible functions get
+  //      placed into `visibleFns`.
+  //   2. From those, we find the most applicable functions (coarse, early
+  //      filtering, which removes functions on unrelated objects as best as
+  //      I can tell) and move them into `mostApplicable`.
+  //   3. From those, we either move candidates into the last resort group
+  //      (if they are last resort candidates) or into `candidates`.
+  // In this way, 'numVisited*' keeps track of where we left off with the
+  // previous POI / scope to avoid revisiting those functions for the next POI.
+  int numVisitedVis = 0, numVisitedMA = 0;
+  Vec<FnSymbol*> visibleFns;
+  Vec<FnSymbol*> mostApplicable;
+  Vec<ResolutionCandidate*> candidates;
+  LastResortCandidates lrc;
+
+  CandidateSearchState(CallInfo& info)
+    : info(info), visInfo(info) {
+    visInfo.currStart = getVisibilityScope(info.call);
+    INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
+  }
+
+  bool tryFindVisibileCandidatesForExplicitFn();
+  void searchOnePoiLevel();
+  void skipOnePoiLevel();
+  void findVisibleFunctionsAndCandidates();
+  void considerLastResortCandidates();
+  void explainGatherCandidate();
+};
 
 static int       disambiguateByMatch(CallInfo&                  info,
                                      BlockStmt*                 searchScope,
@@ -3991,7 +4077,7 @@ static void maybeWarnGenericActuals(CallExpr* call) {
 }
 
 static
-FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchMode poiMode) {
   CallInfo  info;
   FnSymbol* retval = NULL;
 
@@ -4017,7 +4103,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkState);
+      retval = resolveNormalCall(info, checkState, poiMode);
     }
 
   } else if (checkState != CHECK_NORMAL_CALL) {
@@ -4255,47 +4341,100 @@ static bool overloadSetsOK(CallExpr* call,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
-  Vec<FnSymbol*>            mostApplicable;
-  Vec<ResolutionCandidate*> candidates;
-
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
   ResolutionCandidate*      bestVal    = NULL;
 
-  VisibilityInfo            visInfo(info);
   int                       numMatches = 0;
 
   FnSymbol*                 retval     = NULL;
 
-  BlockStmt* scopeUsed = nullptr;
+  CandidateSearchState searchState(info);
+  auto& visInfo = searchState.visInfo;
+  auto& mostApplicable = searchState.mostApplicable;
+  auto& candidates = searchState.candidates;
+  auto& scopeUsed = searchState.scopeUsed;
 
-  scopeUsed = findVisibleFunctionsAndCandidates(info, visInfo,
-                                                mostApplicable, candidates);
+  bool considerNonPoi = (poiMode != PoiSearchMode::POI_ONLY);
+  bool considerPoi = (poiMode != PoiSearchMode::NON_POI_ONLY);
+
+  if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
+    /* the function was explicitly specified via FnSymbol*. Don't search
+       for others and don't consider POI */
+    poiMode = PoiSearchMode::NON_POI_ONLY;
+  } else if (!considerNonPoi) {
+    /* This function was previously used to search for non-POI, and now, it's
+       being used to search for only POI. Skip past the non-POI scope. */
+    searchState.skipOnePoiLevel();
+  } else {
+    /* At this point, the top-level POI level is the regular scope of the call
+       (so it's not really POI). This was configured as part of searchState's
+       constructor. So, this brach is the non-POI candidate search, which
+       always happens. */
+    searchState.searchOnePoiLevel();
+  }
+
+  // If no non-POI candidates were found and it's a method, try forwarding.
+  // Forwarded methods are treated as if they were defined directly on the type,
+  // so they take precedence over POI candidates. This is crucial for correctness.
+  //
+  // See https://github.com/chapel-lang/chapel/issues/28246
+  bool forwardingEligible =
+    candidates.n                  == 0 &&
+    info.call->numActuals()       >= 1 &&
+    info.call->get(1)->typeInfo() == dtMethodToken &&
+    isUnresolvedSymExpr(info.call->baseExpr);
+  Type* receiverType;
+  bool usesForwarding = false;
+
+  // While searching for forwarding candidates, do not consider _their_ POI.
+  // That's because we haven't looked at the POI candidates for the original type,
+  // and returning the impl type's POI candidates here would be strange.
+  if (forwardingEligible) {
+    receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
+    if ((usesForwarding = typeUsesForwarding(receiverType))) {
+      if (considerNonPoi) {
+        if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::NON_POI_ONLY)) {
+          return fn;
+        }
+      }
+    }
+  }
+
+  // At this point, we have found no non-POI candidates, neither in the
+  // original type nor in any fields it forwards. Time to move on to POI.
+  if (considerPoi) {
+    // Ok, no forwaring candidates found without POI. Now move on to
+    // our POI candidates.
+    if (candidates.n == 0 && visInfo.currStart != nullptr && scopeUsed != visInfo.currStart) {
+      searchState.findVisibleFunctionsAndCandidates();
+    }
+
+    // If we have not found any candidates after traversing all POIs,
+    // look at "last resort" candidates, if any.
+    if (candidates.n == 0) {
+      searchState.considerLastResortCandidates();
+    }
+  }
+  searchState.explainGatherCandidate();
 
   numMatches = disambiguateByMatch(info, scopeUsed, candidates,
                                    bestRef, bestCref, bestVal);
 
-  if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
+  if (numMatches > 0 && visInfo.inPOI())
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 
-  // If no candidates were found and it's a method, try forwarding
-  if (candidates.n                  == 0 &&
-      info.call->numActuals()       >= 1 &&
-      info.call->get(1)->typeInfo() == dtMethodToken &&
-      isUnresolvedSymExpr(info.call->baseExpr)) {
-    Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
-    if (typeUsesForwarding(receiverType)) {
-      FnSymbol* fn = resolveForwardedCall(info, checkState);
-      if (fn) {
-        return fn;
-      }
-      // otherwise error is printed below
+  // Now, try forwarding again, this time considering POI
+  if (candidates.n == 0 && forwardingEligible && usesForwarding && considerPoi) {
+    if (auto fn = resolveForwardedCall(info, checkState, PoiSearchMode::POI_ONLY)) {
+      return fn;
     }
+    // otherwise error is printed below
   }
 
   if (numMatches > 0) {
@@ -4698,18 +4837,6 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
 static void resolveNormalCallFinalChecks(CallExpr* call) {
   FnSymbol* fn = call->resolvedFunction();
 
-  if (fn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
-    // Not allowed if it is not called directly from a constructor.
-    if (isInConstructorLikeFunction(call)                     == false ||
-        getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
-      USR_FATAL_CONT(call,
-                     "illegal call to %s() - it modifies 'const' fields "
-                     "of 'this', therefore it can be invoked only directly "
-                     "from a constructor on the object being constructed",
-                     fn->name);
-    }
-  }
-
   lvalueCheck(call);
 
   checkForStoringIntoTuple(call, fn);
@@ -4925,6 +5052,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                          "Cannot assign to %s from %s",
                          toString(info.actuals.v[0]->type),
                          toString(info.actuals.v[1]->type));
+          maybeSuggestToByteCall(info.actuals.v[1], info.actuals.v[1]->type,
+                                 info.actuals.v[0]->type, call);
         }
       }
 
@@ -5365,13 +5494,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// We gather a list of last-resort candidates as we go.
-// The last-resort candidates visible from the call are followed by a NULL
-// to separate them from those visible from the point of instantiation.
-//
-typedef std::vector<FnSymbol*> LastResortCandidates;
-
 // add a null separator
 static void markEndOfPOI(LastResortCandidates& lrc) {
   lrc.push_back(NULL);
@@ -5511,17 +5633,11 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-// Returns the POI scope used to find the candidates
-static BlockStmt* findVisibleFunctionsAndCandidates(
-                                CallInfo&                  info,
-                                VisibilityInfo&            visInfo,
-                                Vec<FnSymbol*>&            mostApplicable,
-                                Vec<ResolutionCandidate*>& candidates) {
+bool CandidateSearchState::tryFindVisibileCandidatesForExplicitFn() {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
-
-  if (fn != NULL) {
+  if (fn != nullptr) {
     visibleFns.add(fn);
     mostApplicable.add(fn); // for better error reporting
 
@@ -5530,41 +5646,54 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     // no need for trimVisibleCandidates() and findVisibleCandidates()
     gatherCandidates(info, visInfo, fn, candidates);
 
-    explainGatherCandidate(info, candidates);
-
-    return getVisibilityScope(call);
+    scopeUsed = getVisibilityScope(call);
+    return true;
   }
+  return false;
+}
 
+// when looking for function candidates, we first check the current scope,
+// then walk through the POI scopes. For each scope, we execute searchOnePoiLevel(),
+// which checks for visible functions and gathers candidates. We stop if
+// we find any candidates.
+void CandidateSearchState::searchOnePoiLevel() {
+  // CG TODO: no POI for CG functions
+  visInfo.poiDepth++;
+
+  findVisibleFunctions(info, &visInfo, &visited,
+                       &numVisitedVis, visibleFns);
+
+  trimVisibleCandidates(info, mostApplicable,
+                        numVisitedVis, visibleFns);
+
+  gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
+                                lrc, candidates);
+
+  // save the scope used for disambiguation
+  scopeUsed = visInfo.currStart;
+
+  advanceCurrStart(visInfo);
+}
+
+void CandidateSearchState::skipOnePoiLevel() {
+  visInfo.poiDepth++;
+  scopeUsed = visInfo.currStart;
+  visInfo.nextPOI = getVisibleFnsInstantiationPt(scopeUsed);
+  visInfo.visitedScopes.push_back(scopeUsed);
+  visited.insert(scopeUsed);
+  advanceCurrStart(visInfo);
+}
+
+// Returns the POI scope used to find the candidates
+void CandidateSearchState::findVisibleFunctionsAndCandidates() {
   // CG TODO: pull all visible interface functions, if within a CG context
 
-  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
-  // so that we can revisit them for error reporting.
-  // Keep track in 'numVisited*' of where we left off with the previous POI
-  // to avoid revisiting those functions for the next POI.
-  int numVisitedVis = 0, numVisitedMA = 0;
-  LastResortCandidates lrc;
-  PtrSet<BlockStmt*> visited;
-  visInfo.currStart = getVisibilityScope(call);
-  INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
   BlockStmt* scopeUsed = nullptr;
 
   do {
     // CG TODO: no POI for CG functions
-    visInfo.poiDepth++;
 
-    findVisibleFunctions(info, &visInfo, &visited,
-                         &numVisitedVis, visibleFns);
-
-    trimVisibleCandidates(info, mostApplicable,
-                          numVisitedVis, visibleFns);
-
-    gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
-                                  lrc, candidates);
-
-    // save the scope used for disambiguation
-    scopeUsed = visInfo.currStart;
-
-    advanceCurrStart(visInfo);
+    searchOnePoiLevel();
 
     // prevent infinite loop
     if (scopeUsed == visInfo.currStart) {
@@ -5573,9 +5702,9 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
   }
   while
     (candidates.n == 0 && visInfo.currStart != NULL);
+}
 
-  // If we have not found any candidates after traversing all POIs,
-  // look at "last resort" candidates, if any.
+void CandidateSearchState::considerLastResortCandidates() {
   if (candidates.n == 0 && haveAnyLRCs(lrc, visInfo.poiDepth)) {
     visInfo.poiDepth = -1;
     int numVisitedLRC = 0;
@@ -5586,10 +5715,10 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     while
       (candidates.n == 0 && haveMoreLRCs(lrc, numVisitedLRC));
   }
+}
 
-  explainGatherCandidate(info, candidates);
-
-  return scopeUsed;
+void CandidateSearchState::explainGatherCandidate() {
+  ::explainGatherCandidate(info, candidates);
 }
 
 // run filterCandidate() on 'fn' if appropriate
@@ -5736,7 +5865,7 @@ static const char* getForwardedMethodName(const char* calledName,
   return methodName;
 }
 
-static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
+static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName, PoiSearchMode poiMode) {
 
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
@@ -5778,7 +5907,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
     }
 
     resolveCall(setTgt);
-    ret = tryResolveCall(call);
+    ret = tryResolveCall(call, /* checkWithin */ false, poiMode);
   }
 
   return ret;
@@ -5787,7 +5916,7 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
 llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState, PoiSearchMode poiMode) {
   CallExpr* call = info.call;
   const char* calledName = astr(info.name);
   const char* inFnName = astr(call->getFunction()->name);
@@ -5869,7 +5998,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName, poiMode);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
@@ -5901,7 +6030,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
       const char* methodName = getForwardedMethodName(calledName, bestDelegate);
       INT_ASSERT(methodName);
 
-      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName);
+      bestFn = adjustAndResolveForwardedCall(call, bestDelegate, methodName, poiMode);
     } else {
       // Replace actuals in call with those from bestCall
       // Note that the above path could be used instead, but
@@ -7011,6 +7140,14 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     return 2;
 
   } else {
+
+    if (nArgsIncomparable > 0 ||
+        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
+        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
+      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
+      return -1;
+    }
+
     // Note: exists to support the typed converter. We don't want to resolve to
     // the early-resolved function if the other candidate is not early-resolved.
     bool early1 = candidate1->fn->hasFlag(FLAG_RESOLVED_EARLY);
@@ -7022,13 +7159,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     } else if (!early1 && early2) {
       EXPLAIN("\nFn %d is not resolved early, Fn %d is\n", i, j);
       return 1;
-    }
-
-    if (nArgsIncomparable > 0 ||
-        (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
-        (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
-      EXPLAIN("\nW: Fn %d and Fn %d are incomparable\n", i, j);
-      return -1;
     }
 
     EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n", i, j);
@@ -7481,6 +7611,12 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
           shouldCapture = true;
         formal->type = getManagedPtrBorrowType(varActual->getValType());
         formal->intent = INTENT_CONST_IN;
+
+        // This call computes the 'qualType' but does not set 'qual'.
+        auto qt = formal->qualType();
+
+        // So set it.
+        formal->qual = qt.getQual();
       }
 
       if (shouldCapture) {
@@ -7590,18 +7726,28 @@ static void captureTaskIntentValues(int        argNum,
 
 // Ensure 'parent' is the block before which we want to do the capturing.
 static void verifyTaskFnCall(BlockStmt* parent, CallExpr* call) {
-  if (call->isNamed("coforall_fn") == true ||
-      call->isNamed("on_fn")       == true) {
+
+  auto isTaskFuncCall = [](CallExpr* call, const char* prefix) {
+    if (SymExpr* base = toSymExpr(call->baseExpr))
+      return startsWith(base->symbol()->name, prefix);
+    else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
+      return startsWith(base->unresolved, prefix);
+    else
+      return false;
+  };
+
+  if (isTaskFuncCall(call, "coforall_fn") ||
+      isTaskFuncCall(call, "on_fn")) {
     INT_ASSERT(parent->isForLoop());
 
-  } else if (call->isNamed("cobegin_fn") == true) {
+  } else if (isTaskFuncCall(call, "cobegin_fn")) {
     DefExpr* first = toDefExpr(parent->getFirstExpr());
 
     // just documenting the current state
     INT_ASSERT(first && !strcmp(first->sym->name, "_cobeginCount"));
 
   } else {
-    INT_ASSERT(call->isNamed("begin_fn"));
+    INT_ASSERT(isTaskFuncCall(call, "begin_fn"));
   }
 }
 
@@ -7728,13 +7874,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
   FnSymbol* nonTaskFnParent = NULL;
 
-  if (errorMsg &&
-      // sets nonTaskFnParent
-      checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
-    errorMsg = false;
-
-    nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
-  }
+  int ignoredStackIdx;
+  findNonTaskFnParent(call, nonTaskFnParent, ignoredStackIdx); // sets the args
 
   if (errorMsg == true) {
     if (nonTaskFnParent &&
@@ -10655,14 +10796,12 @@ static bool errorIfFunctionCapturesAnyOuterVars(FnSymbol* fn, Expr* use) {
   // Check to make sure the function does not refer to any outer variables.
   if (!env.isEmpty()) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
       USR_FATAL_CONT(use, "cannot capture %s because it refers to "
                           "outer variables",
                           kindStr);
     } else {
-      INT_ASSERT(!fn->hasFlag(FLAG_LEGACY_LAMBDA));
       USR_FATAL_CONT(use, "cannot capture %s '%s' because it refers "
                           "to outer variables",
                           kindStr,
@@ -10782,7 +10921,6 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 
   if (ft->isGeneric() || ft->returnType() == dtUnknown) {
     auto kindStr = FunctionType::kindToString(ft->kind());
-    if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     // TODO: Maybe use 'iterator'/'procedure' instead of 'proc'/'iter'?
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
@@ -12209,8 +12347,7 @@ static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
 
   // try to resolve concrete functions when using --dyno-gen-lib
-  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib) &&
-                      !fMinimalModules;
+  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib);
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -12788,9 +12925,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, astr_autoDestroy);
-    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
-    if (fn)
-      fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    INT_ASSERT(fn);
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
   }
 }
@@ -12961,14 +13097,9 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void resolveOther() {
-  //
-  // When compiling with --minimal-modules, gPrintModuleInitFn is not
-  // defined.
-  //
-  if (gPrintModuleInitFn) {
-    // Resolve the function that will print module init order
-    resolveFunction(gPrintModuleInitFn);
-  }
+  // Resolve the function that will print module init order
+  INT_ASSERT(gPrintModuleInitFn);
+  resolveFunction(gPrintModuleInitFn);
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
@@ -13092,21 +13223,19 @@ static void insertReturnTemps() {
                                           tmp,
                                           contextCallOrCall->remove()));
 
-            if (fMinimalModules == false) {
-              if (isIteratorOrForwarder(fn)) {
-                handleStatementLevelIteratorCall(def, tmp);
+            if (isIteratorOrForwarder(fn)) {
+              handleStatementLevelIteratorCall(def, tmp);
 
-              } else
-              if ((fn->retType->getValType() &&
-                   isSyncType(fn->retType->getValType())) ||
-                  isSyncType(fn->retType))
-              {
-                CallExpr* sls = new CallExpr(
-                    astr_chpl_statementLevelSymbol, tmp);
+            } else
+            if ((fn->retType->getValType() &&
+                 isSyncType(fn->retType->getValType())) ||
+                isSyncType(fn->retType))
+            {
+              CallExpr* sls = new CallExpr(
+                  astr_chpl_statementLevelSymbol, tmp);
 
-                def->next->insertAfter(sls);
-                resolveCallAndCallee(sls);
-              }
+              def->next->insertAfter(sls);
+              resolveCallAndCallee(sls);
             }
 
             if (isTypeExpr(contextCallOrCall)) {
@@ -13233,6 +13362,33 @@ static void printUnusedFunctions() {
 #endif
 }
 
+static bool shouldProcessForCallGraph(CallExpr* call, FnSymbol* fn) {
+  bool isCallOrFnInUserModule = fn->getModule()->modTag == MOD_USER ||
+                                call->getModule()->modTag == MOD_USER;
+  bool isFnInternal = fn->getModule()->modTag == MOD_INTERNAL;
+  bool isInitCmdLineModulesFn =
+    fn->name == astr("chpl_initProgramCommandLineModules") && isFnInternal;
+
+  if (isInitCmdLineModulesFn ||
+      (isCallOrFnInUserModule && !isFnInternal &&
+       !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+       !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+
+    if (!strncmp("chpl_", fn->name, 5) &&
+        !fn->hasFlag(FLAG_MODULE_INIT) &&
+        !isInitCmdLineModulesFn) {
+      // skip any functions that are internal (start with "chpl_")
+      // except for the init function for the module, which needs
+      // to be traversed to find top-level calls in the module
+      return false;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 //
 // Print a representation of the call graph of the program.
 // This needs to be done after function resolution so we can follow calls
@@ -13271,20 +13427,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->resolvedFunction()) {
-        if ((fn->getModule()->modTag == MOD_USER ||
-             call->getModule()->modTag == MOD_USER) &&
-            fn->getModule()->modTag != MOD_INTERNAL &&
-            !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
-
-          if (strncmp("chpl_", fn->name, 5) == 0 &&
-              !fn->hasFlag(FLAG_MODULE_INIT)) {
-            // skip any functions that are internal (start with "chpl_")
-            // except for the init function for the module, which needs
-            // to be traversed to find top-level calls in the module
-            continue;
-          }
-
+        if (shouldProcessForCallGraph(call, fn)) {
           FnSymbol* instFn = fn;
           if (FnSymbol* gfn = fn->instantiatedFrom) {
             instFn = gfn;

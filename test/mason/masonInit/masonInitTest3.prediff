@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-# remove the path after 'git init -q '
-cat $2 | sed 's|git init -q .*/masonInit|git init -q /path/to/masonInit|' > $2.prediff.tmp
-mv $2.prediff.tmp $2
-
-# depending on the platform, the error message may be different
-cat $2 | sed 's/Command not found:/Command failed:/' > $2.prediff.tmp
-mv $2.prediff.tmp $2

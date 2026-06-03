@@ -1,0 +1,1 @@
+--target-cpu=native --fast --no-ieee-float --llvm-print-ir ifMask --llvm-print-ir-stage full --llvm-print-ir-file ifMask-vectorCheck.ll --ccflags -fno-discard-value-names

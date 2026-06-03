@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -150,6 +150,10 @@ void buildDefaultFunctions() {
           // really shouldn't have 'init=' (etc) generated for them...
           continue;
         }
+      } else if (ct->instantiatedFrom != nullptr) {
+        // We create the same intermediate instantiations during typed
+        // conversion, which should not have default functions.
+        continue;
       }
 
       buildFieldAccessorFunctions(ct);
@@ -197,7 +201,7 @@ void buildDefaultFunctions() {
         // compiler-generated '==' operator
         buildRecordHashFunction(ct);
 
-        if (!isRecordWrappedType(ct)) {
+        if (fEdition != "preview" && !isRecordWrappedType(ct)) {
           buildRecordComparisonFunc(ct, "==");
           buildRecordComparisonFunc(ct, "!=");
           buildRecordComparisonFunc(ct, "<");
@@ -253,6 +257,11 @@ typedef enum {
   FIND_NOT_REF
 } functionExistsKind;
 
+typedef enum {
+  FIND_REC_EITHER = 0, /* no receiver or any receiver intent */
+  FIND_REC_NONTYPE /* receiver with non-type intent. */
+} functionExistsRecKind;
+
 // functionExists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals
@@ -263,7 +272,8 @@ template<bool useCache, typename V, size_t numFormals>
 static FnSymbol* functionExists(const char *nameAstr,
                                 const V &fns,
                                 std::array<Type*, numFormals> formalTypes,
-                                functionExistsKind kind) {
+                                functionExistsKind kind,
+                                functionExistsRecKind recKind) {
   for (FnSymbol *fn : fns) {
     if (!useCache) {
       if (fn->name != nameAstr)
@@ -271,6 +281,10 @@ static FnSymbol* functionExists(const char *nameAstr,
     }
 
     if (numFormals != fn->numFormals())
+      continue;
+
+    if (recKind == FIND_REC_NONTYPE &&
+        (!fn->_this || fn->_this->hasFlag(FLAG_TYPE_VARIABLE)))
       continue;
 
     if (kind == FIND_REF && fn->retTag != RET_REF)
@@ -300,39 +314,43 @@ static FnSymbol* functionExists(const char *nameAstr,
 template<size_t numFormals>
 static FnSymbol* functionExists(const char* name,
                                 std::array<Type*, numFormals> formalTypes,
-                                functionExistsKind kind) {
+                                functionExistsKind kind,
+                                functionExistsRecKind recKind) {
   const char *nameAstr = astr(name);
   if (sFnSymbolIndex) {
     sFnSymbolIndex->update();
     return functionExists<true>(
-        name, sFnSymbolIndex->get(nameAstr), formalTypes, kind);
+        name, sFnSymbolIndex->get(nameAstr), formalTypes, kind, recKind);
   } else {
-    return functionExists<false>(nameAstr, gFnSymbols, formalTypes, kind);
+    return functionExists<false>(nameAstr, gFnSymbols, formalTypes, kind, recKind);
   }
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<1>(name, {{formalType1}}, kind);
+  return functionExists<1>(name, {{formalType1}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<2>(name, {{formalType1, formalType2}}, kind);
+  return functionExists<2>(name, {{formalType1, formalType2}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
-                                 functionExistsKind kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER,
+                                 functionExistsRecKind recKind=FIND_REC_EITHER)
 {
-  return functionExists<3>(name, {{formalType1, formalType2, formalType3}}, kind);
+  return functionExists<3>(name, {{formalType1, formalType2, formalType3}}, kind, recKind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -340,8 +358,9 @@ static FnSymbol* functionExists(const char* name,
                                 Type* formalType2,
                                 Type* formalType3,
                                 Type* formalType4,
-                                functionExistsKind kind=FIND_EITHER) {
-  return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind);
+                                functionExistsKind kind=FIND_EITHER,
+                                functionExistsRecKind recKind=FIND_REC_EITHER) {
+  return functionExists<4>(name, {{formalType1, formalType2, formalType3, formalType4}}, kind, recKind);
 }
 
 static FnSymbol* operatorExists(const char* name,
@@ -472,6 +491,12 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->unstableMsg = field->unstableMsg;
   }
 
+  if (field->hasFlag(FLAG_HAS_EDITION)) {
+    fn->addFlag(FLAG_HAS_EDITION);
+    fn->firstEdition = field->firstEdition;
+    fn->lastEdition = field->lastEdition;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
@@ -556,16 +581,14 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
       fn->insertAtTail(new CondStmt(idDiffers, resetBlock));
 
     } else {
-      // Check the union ID in the getter.
-      CallExpr* idDiffers = new CallExpr("!=",
-                              new CallExpr(PRIM_GET_UNION_ID, _this),
-                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                                           ct->symbol,
-                                           fieldNameSym));
-      CallExpr* halt = new CallExpr("halt",
-                                    new_StringSymbol("illegal union access"));
-
-      fn->insertAtTail(new CondStmt(idDiffers, halt));
+      if (!fNoUnionChecks) {
+        CallExpr* check = new CallExpr("_checkUnionAccess",
+                                       _this,
+                                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                    ct->symbol,
+                                                    fieldNameSym));
+        fn->insertAtTail(check);
+      }
     }
   }
 
@@ -629,6 +652,38 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   return fn;
 }
 
+static void build_union_field_index_accessor(AggregateType* at, Symbol* field) {
+  SET_LINENO(field);
+  // add a parenless proc for the field name that returns the field index
+  FnSymbol*  fn = new FnSymbol(field->name);
+  fn->addFlag(FLAG_NO_IMPLICIT_COPY);
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->addFlag(FLAG_NO_PARENS);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->setMethod(true);
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  fn->_this = _this;
+
+  fn->retTag = RET_PARAM;
+  auto toReturn = new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                          at->symbol,
+                          new_CStringSymbol(field->name));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
+
+  DefExpr* def = new DefExpr(fn);
+  at->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(fn, field);
+  at->methods.add(fn);
+
+  fn->cname = astr("chpl_get_", at->symbol->cname, "_index_", fn->cname);
+}
+
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
@@ -641,9 +696,10 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
                                 field->hasFlag(FLAG_TYPE_VARIABLE);
 
   FnSymbol *setter = functionExists(field->name,
-                                     dtMethodToken, ct, FIND_REF);
+                                     dtMethodToken, ct, FIND_REF, FIND_REC_NONTYPE);
   FnSymbol *getter = functionExists(field->name,
-                                     dtMethodToken, ct, FIND_NOT_REF);
+                                     dtMethodToken, ct, FIND_NOT_REF, FIND_REC_NONTYPE);
+
   if (setter)
     fixupAccessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)
@@ -657,6 +713,9 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
     // Unions need a special getter and setter.
     build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
     build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
+    // add a parenless proc for the field name that returns the field index
+    build_union_field_index_accessor(ct, field);
+
   } else {
     // Otherwise, only build one version for records and classes.
     // This is normally the 'ref' version.
@@ -666,7 +725,7 @@ static void buildAccessors(AggregateType* ct, Symbol *field) {
 
   // If the field is type/param, add a type-method accessor.
   if (fieldTypeOrParam) {
-    build_accessor(ct, field, /* getter? */ false, /* type method? */ true);
+    build_accessor(ct, field, /* setter? */ false, /* type method? */ true);
   }
 }
 
@@ -738,6 +797,34 @@ static FnSymbol* chplGenMainExists() {
   return matchFn;
 }
 
+static FnSymbol* buildInitProgramCommandLineModulesFn() {
+  auto mainModule = ModuleSymbol::mainModule();
+  auto fnName = astr("chpl_initProgramCommandLineModules");
+
+  auto ret = new FnSymbol(fnName);
+  ret->addFlag(FLAG_EXPORT);
+  ret->addFlag(FLAG_LOCAL_ARGS);
+  ret->retType = dtVoid;
+  ret->cname = fnName;
+  ret->addFlag(FLAG_COMPILER_GENERATED);
+
+  // Insert into an internal module to restrict user visibility.
+  theProgram->block->insertAtTail(new DefExpr(ret));
+
+  ret->insertAtTail(new CallExpr(mainModule->initFn));
+
+  // also init other modules mentioned on command line
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+        mod != mainModule) {
+      ret->insertAtTail(new CallExpr(mod->initFn));
+    }
+  }
+
+  normalize(ret);
+
+  return ret;
+}
 
 static void buildChplEntryPoints() {
   //
@@ -815,35 +902,21 @@ static void buildChplEntryPoints() {
 
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
 
-  //
-  // In --minimal-modules compilation mode, we won't have any
-  // parallelism, so no need for end counts (or atomic/sync types to
-  // support them).
-  //
-  if (fMinimalModules == false) {
-    endCount = newTemp("_endCount");
-    chpl_gen_main->insertAtTail(new DefExpr(endCount));
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
-                                             endCount,
-                                             new CallExpr("_endCountAlloc",
-                                                          gFalse)));
+  endCount = newTemp("_endCount");
+  chpl_gen_main->insertAtTail(new DefExpr(endCount));
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           endCount,
+                                           new CallExpr("_endCountAlloc",
+                                                        gFalse)));
 
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
-  }
-
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  if (!fMultiLocaleInterop) {
-    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
-    // also init other modules mentioned on command line
-    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
-          mod != mainModule) {
-        chpl_gen_main->insertAtTail(new CallExpr(mod->initFn));
-      }
-    }
+  if (!fClientServerLibrary) {
+    auto initCmdModsFn = buildInitProgramCommandLineModulesFn();
+    chpl_gen_main->insertAtTail(new CallExpr(initCmdModsFn));
 
   } else {
     // Create an extern definition for the multilocale library server's main
@@ -913,16 +986,8 @@ static void buildChplEntryPoints() {
   }
 
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
-
-  //
-  // In --minimal-modules compilation mode, we won't be waiting on an
-  // endcount (see comment above)
-  //
-  if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
-    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
-  }
-
+  chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
 
   normalize(chpl_gen_main);
@@ -1572,7 +1637,7 @@ static void buildUnionAssignmentFunction(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(0)));
+  fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(-1)));
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (!tmp->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -1755,7 +1820,6 @@ FnSymbol* buildSerializeFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
   FnSymbol* fn = new FnSymbol("serialize");
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
   if (ct->isClass() && ct != dtObject) {
     fn->addFlag(FLAG_OVERRIDE);
   } else {
@@ -1800,7 +1864,6 @@ static FnSymbol* buildDeserializeFnSymbol(AggregateType* ct, ArgSymbol** filearg
   FnSymbol* fn = new FnSymbol("deserialize");
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
   if (ct->isClass() && ct != dtObject)
     fn->addFlag(FLAG_OVERRIDE);
   else
@@ -1847,14 +1910,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Always build for 'object' to satisfy 'override' keyword in some cases.
   bool makeSerialize            = ct == dtObject || !fNoIOGenSerialization;
-
-  //
-  // We have no QIO when compiling with --minimal-modules, so no need
-  // to build default R/W functions.
-  //
-  if (fMinimalModules == true) {
-    return;
-  }
 
   // This is a workaround - want Error objects to overload message()
   // to build their own description.
@@ -2059,7 +2114,7 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     FnSymbol* fn = new FnSymbol("deinit");
 
-    fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
+    fn->cname = astr("chpl__auto_destroy_", ct->symbol->cname);
 
     fn->setMethod(true);
     fn->addFlag(FLAG_METHOD_PRIMARY);

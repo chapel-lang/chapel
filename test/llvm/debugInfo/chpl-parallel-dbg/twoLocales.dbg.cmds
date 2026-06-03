@@ -1,0 +1,8 @@
+on 0
+c
+on 1
+c
+f
+p myArr
+p localArr
+q

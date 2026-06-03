@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "chpl-linefile-defs.h"
+
 namespace {
   // As a means of abbreviation.
   using Pass = InsertLineNumbers;
@@ -72,8 +74,7 @@ int Pass::addFilenameTableEntry(const std::string& name) {
 
 int Pass::getFilenameTableIndex(const std::string& name) {
   if (auto optIdx = gFilenameTable.index(name)) return *optIdx;
-  INT_FATAL("Entry not in table!");
-  return -1;
+  return CHPL_FILE_IDX_UNKNOWN;
 }
 
 const std::vector<std::string>& Pass::getFilenameTable() {
@@ -147,6 +148,7 @@ Pass::LineAndFile Pass::makeASTLine(CallExpr* call) {
 
   if (call->isResolved() &&
       call->resolvedFunction()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
+    // TODO: can this just use CHPL_FILE_IDX_COMMAND_LINE_ARG?
     // Make up pretend line numbers for errors with command line
     // configuration variables.
     Symbol* line = new_IntSymbol(0);
@@ -217,8 +219,8 @@ void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
       DefExpr* bundleArg = toDefExpr(fn->formals.tail);
       Expr* bundleActual = call->argList.tail;
       AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
-      Symbol* lineField = bundleType->getField("_ln");
-      Symbol* fileField = bundleType->getField("_fn");
+      Symbol* lineField = bundleType->getField(astr__ln);
+      Symbol* fileField = bundleType->getField(astr__fn);
       call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
                                       lineField, lineAndFile.line));
       call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
@@ -441,13 +443,7 @@ void Pass::process(FnSymbol *fn, CallExpr* call) {
 // Contains the old 'insertLineNumbers' pass.
 void insertLineNumbers() {
   PassManager pm;
-
-  // TODO: "Run pass on multiple lists...".
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gArgSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gFnSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gVarSymbols);
-  // No need to adjust type symbols at present...
-  // pm.runPass<Symbol*>(pass, gTypeSymbols);
+  runPassOverAllSymbols(pm, AddLineFileInfoToProcPtrTypes());
 
   // TODO It's pretty apparent in this refactoring that we don't actually need
   // to recompute all call sites, but only the subset we'll be working on, which

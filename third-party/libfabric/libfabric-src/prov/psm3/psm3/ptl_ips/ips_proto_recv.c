@@ -224,8 +224,8 @@ pio_dma_ack_valid(struct ips_proto *proto, struct ips_flow *flow,
 
 
 /* NAK post process for any flow where an scb may describe more than 1 packet
- * (OPA dma flow or GSO PIO flow). In which case we may need to resume in
- * middle of scb.
+ * (verbs  send dma flow or GSO PIO flow). In which case we may need to
+ * resume in middle of scb.
  */
 void psm3_ips_segmentation_nak_post_process(struct ips_proto *proto,
 				  struct ips_flow *flow)
@@ -315,6 +315,9 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	ips_scb_t *scb;
 
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
+#ifdef USE_RC
+	ipsaddr->verbs.remote_recv_psn = ack_seq_num.psn_num;
+#endif
 	// check actual psn acked (ack_seq_num-1), we only want to process acks
 	// for packets we never got an ack for
 	if ((flowid = ips_proto_flowid(p_hdr)) < EP_NUM_FLOW_ENTRIES) {
@@ -392,21 +395,18 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
 
-		if (!(scb->scb_flags & IPS_SEND_FLAG_PERSISTENT))
-			psm3_ips_scbctrl_free(scb);
+		psm3_ips_scbctrl_free(scb);
 
 		/* set all index pointer to NULL if all frames have been
 		 * acked */
 		if (STAILQ_EMPTY(unackedq)) {
-			psmi_timer_cancel(proto->timerq, flow->timer_ack);
-			flow->timer_ack = NULL;
-			psmi_timer_cancel(proto->timerq, flow->timer_send);
-			flow->timer_send = NULL;
+			psmi_timer_cancel(proto->timerq, &flow->timer_ack);
+			psmi_timer_cancel(proto->timerq, &flow->timer_send);
 
 			SLIST_FIRST(scb_pend) = NULL;
 			psmi_assert(flow->scb_num_pending == 0);
 			/* Reset congestion window - all packets ACK'd */
-			flow->credits = flow->cwin = proto->flow_credits;
+			flow->credits = flow->max_credits;
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
 #ifdef PSM_BYTE_FLOW_CREDITS
 			flow->credit_bytes = proto->flow_credit_bytes;
@@ -418,55 +418,10 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 				flow->credits);
 #endif
 			goto ret;
-		} else if (flow->timer_ack == scb->timer_ack) {
-			/*
-			 * Exchange timers with last scb on unackedq.
-			 * timer in scb is used by flow, cancelling current
-			 * timer and then requesting a new timer takes more
-			 * time, instead, we exchange the timer between current
-			 * freeing scb and the last scb on unacked queue.
-			 */
-			psmi_timer *timer;
-			ips_scb_t *last = STAILQ_LAST(unackedq, ips_scb, nextq);
-
-			timer = scb->timer_ack;
-			scb->timer_ack = last->timer_ack;
-			last->timer_ack = timer;
-			timer = scb->timer_send;
-			scb->timer_send = last->timer_send;
-			last->timer_send = timer;
-
-			scb->timer_ack->context = scb;
-			scb->timer_send->context = scb;
-			last->timer_ack->context = last;
-			last->timer_send->context = last;
 		}
 	}
 
 	psmi_assert(!STAILQ_EMPTY(unackedq));	/* sanity for above loop */
-
-	{
-		/* Increase congestion window if flow is not congested */
-		if_pf(flow->cwin < proto->flow_credits) {
-			// this only happens for OPA, so we don't have to
-			// increase ack_interval_bytes and flow_credit_bytes
-			// since we never decrease them for congestion
-			flow->credits +=
-			    min(flow->cwin << 1,
-				proto->flow_credits) - flow->cwin;
-			flow->cwin = min(flow->cwin << 1, proto->flow_credits);
-			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
-#ifdef PSM_BYTE_FLOW_CREDITS
-			//flow->credit_bytes += TBD
-			//flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
-			_HFI_VDBG("after grow cwin: flow_credits %d bytes %d\n",
-				flow->credits, flow->credit_bytes);
-#else
-			_HFI_VDBG("after grow cwin: flow_credits %d\n",
-				flow->credits);
-#endif
-		}
-	}
 
 	/* Reclaimed some credits - attempt to flush flow */
 	if (!SLIST_EMPTY(scb_pend))
@@ -478,7 +433,7 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	 * has self-acked all those packets, we may get here with unackedq empty.
 	 */
 	if ((scb = STAILQ_FIRST(unackedq)) && scb->abs_timeout == TIMEOUT_INFINITE)
-		psmi_timer_cancel(proto->timerq, flow->timer_ack);
+		psmi_timer_cancel(proto->timerq, &flow->timer_ack);
 
 ret:
 	return IPS_RECVHDRQ_CONTINUE;
@@ -495,18 +450,22 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 	struct ips_scb_unackedq *unackedq;
 	struct ips_scb_pendlist *scb_pend;
 	psmi_seqnum_t ack_seq_num, last_seq_num;
-	psm_protocol_type_t protocol;
+	//psm_protocol_type_t protocol;
 	ips_epaddr_flow_t flowid;
 	ips_scb_t *scb;
 
 	INC_TIME_SPEND(TIME_SPEND_USER3);
 
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
+#ifdef USE_RC
+	ipsaddr->verbs.remote_recv_psn = ack_seq_num.psn_num;
+#endif
+
 	// we are likely to get a previous ack_seq_num in NAK, in which case
 	// we need to resend unacked packets starting with ack_seq_num.  So check
 	// psn of 1st NAK would like us to retransmit (e.g. don't -1 before check)
 	if ((flowid = ips_proto_flowid(p_hdr)) < EP_NUM_FLOW_ENTRIES) {
-		protocol = PSM_PROTOCOL_GO_BACK_N;
+		//protocol = PSM_PROTOCOL_GO_BACK_N;
 		psmi_assert(flowid < EP_NUM_FLOW_ENTRIES);
 		flow = &ipsaddr->flows[flowid];
 		if (!pio_dma_ack_valid(proto, flow, ack_seq_num))
@@ -576,20 +535,17 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
 
-		if (!(scb->scb_flags & IPS_SEND_FLAG_PERSISTENT))
-			psm3_ips_scbctrl_free(scb);
+		psm3_ips_scbctrl_free(scb);
 
 		/* set all index pointer to NULL if all frames has been acked */
 		if (STAILQ_EMPTY(unackedq)) {
-			psmi_timer_cancel(proto->timerq, flow->timer_ack);
-			flow->timer_ack = NULL;
-			psmi_timer_cancel(proto->timerq, flow->timer_send);
-			flow->timer_send = NULL;
+			psmi_timer_cancel(proto->timerq, &flow->timer_ack);
+			psmi_timer_cancel(proto->timerq, &flow->timer_send);
 
 			SLIST_FIRST(scb_pend) = NULL;
 			psmi_assert(flow->scb_num_pending == 0);
 			/* Reset congestion window if all packets acknowledged */
-			flow->credits = flow->cwin = proto->flow_credits;
+			flow->credits = flow->max_credits;
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
 #ifdef PSM_BYTE_FLOW_CREDITS
 			flow->credit_bytes = proto->flow_credit_bytes;
@@ -601,41 +557,16 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 				flow->credits);
 #endif
 			goto ret;
-		} else if (flow->timer_ack == scb->timer_ack) {
-			/*
-			 * Exchange timers with last scb on unackedq.
-			 * timer in scb is used by flow, cancelling current
-			 * timer and then requesting a new timer takes more
-			 * time, instead, we exchange the timer between current
-			 * freeing scb and the last scb on unacked queue.
-			 */
-			psmi_timer *timer;
-			ips_scb_t *last = STAILQ_LAST(unackedq, ips_scb, nextq);
-
-			timer = scb->timer_ack;
-			scb->timer_ack = last->timer_ack;
-			last->timer_ack = timer;
-			timer = scb->timer_send;
-			scb->timer_send = last->timer_send;
-			last->timer_send = timer;
-
-			scb->timer_ack->context = scb;
-			scb->timer_send->context = scb;
-			last->timer_ack->context = last;
-			last->timer_send->context = last;
 		}
 	}
 
 	psmi_assert(!STAILQ_EMPTY(unackedq));	/* sanity for above loop */
 
-	if (protocol == PSM_PROTOCOL_TIDFLOW)
-		// we don't put TID (aka RDMA) pkts on UD, shouldn't get NAKs about it
-		_HFI_ERROR("post processing, Got nak for TID flow, not allowed for UD\n");
-	else if (scb->nfrag > 1)
+	if (scb->nfrag > 1)
 		psm3_ips_segmentation_nak_post_process(proto, flow);
 
 	/* Always cancel ACK timer as we are going to restart the flow */
-	psmi_timer_cancel(proto->timerq, flow->timer_ack);
+	psmi_timer_cancel(proto->timerq, &flow->timer_ack);
 
 	/* What's now pending is all that was unacked */
 	SLIST_FIRST(scb_pend) = scb;
@@ -665,19 +596,16 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 	{
 		int num_resent = 0;
 
-		/* Reclaim all credits upto congestion window only */
-		flow->credits = flow->cwin;
+		/* Reclaim all credits */
+		flow->credits = flow->max_credits;
 		flow->ack_interval = max((flow->credits >> 2) - 1, 1);
 #ifdef PSM_BYTE_FLOW_CREDITS
-		// TBD cwin not implemented for UD and UDP so can predict
-		// credit_bytes here
-		psmi_assert(flow->cwin == proto->flow_credits);
 		flow->credit_bytes = proto->flow_credit_bytes;
 		flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
-		_HFI_VDBG("after reclaim cwin: flow_credits %d\n",
-				flow->credits);
+		_HFI_VDBG("after reclaim credits: flow->credits %d credit_bytes %u\n",
+				flow->credits, flow->credit_bytes);
 #else /* PSM_BYTE_FLOW_CREDITS */
-		_HFI_VDBG("after reclaim cwin: flow_credits %d\n",
+		_HFI_VDBG("after reclaim credits: flow_credits %d\n",
 				flow->credits);
 #endif /* PSM_BYTE_FLOW_CREDITS */
 
@@ -776,8 +704,9 @@ psm3_ips_proto_connect_disconnect(struct ips_recvhdrq_event *rcv_ev)
 					paylen);
 	if (err != PSM2_OK)
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			"Process connect/disconnect error: %d, opcode %x\n",
-			err, _get_proto_hfi_opcode(rcv_ev->p_hdr));
+			"Process connect/disconnect error: %s (%d), opcode %x\n",
+			psm3_error_get_string(err), err,
+			_get_proto_hfi_opcode(rcv_ev->p_hdr));
 
 	return IPS_RECVHDRQ_CONTINUE;
 }

@@ -13,3 +13,14 @@ proc foo(const args...?n) {
 foo(x);
 foo(x, y);
 foo(x, y, z);
+
+proc helper(args...) {
+   foo((...args));
+}
+helper(1, 2, 3);
+
+proc unpacker() {
+  var x = (4, 5, 6);
+  foo((...x));
+}
+unpacker();

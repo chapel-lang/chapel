@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -36,12 +36,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 2)
-set(CHPL_MINOR_VERSION 7)
+set(CHPL_MINOR_VERSION 9)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
 set(CHPL_PREV_MAJOR_VERSION 2)
-set(CHPL_PREV_MINOR_VERSION 6)
+set(CHPL_PREV_MINOR_VERSION 8)
 set(CHPL_PREV_PATCH_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
@@ -130,8 +130,14 @@ set(CHPL_HOST_MIMALLOC CACHE INTERNAL "Description")
 set(CHPL_TARGET_COMPILER_PRGENV CACHE INTERNAL "Description")
 set(CHPL_TARGET_BUNDLED_COMPILE_ARGS CACHE INTERNAL "Description")
 set(CHPL_TARGET_SYSTEM_COMPILE_ARGS CACHE INTERNAL "Description")
-set(CHPL_TARGET_BUNDLED_LINK_ARGS CACHE INTERNAL "Description")
-set(CHPL_TARGET_SYSTEM_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS CACHE INTERNAL "Description")
+set(CHPL_TARGET_STATIC_RUNTIME_LIB_PATH CACHE INTERNAL "Description")
+set(CHPL_TARGET_SHARED_RUNTIME_LIB_PATH CACHE INTERNAL "Description")
 set(CHPL_TARGET_MEM CACHE INTERNAL "Description")
 set(CHPL_TARGET_JEMALLOC CACHE INTERNAL "Description")
 set(CHPL_TARGET_MIMALLOC CACHE INTERNAL "Description")

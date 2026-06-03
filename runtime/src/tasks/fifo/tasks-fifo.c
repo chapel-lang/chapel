@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,8 @@
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -489,16 +490,20 @@ void dequeue_task(task_pool_p ptask) {
 }
 
 
-void chpl_task_addTask(chpl_fn_int_t fid,
-                       chpl_task_bundle_t* arg, size_t arg_size,
-                       c_sublocid_t subloc,
-                       int lineno, int32_t filename) {
+void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                           chpl_task_bundle_t* arg,
+                           size_t arg_size,
+                           c_sublocid_t subloc,
+                           int lineno,
+                           int32_t filename) {
   assert(subloc == c_sublocid_none);
 
   arg->kind = CHPL_ARG_BUNDLE_KIND_TASK;
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
+
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
 
   (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
                           false, lineno, filename);
@@ -508,10 +513,13 @@ void chpl_task_addTask(chpl_fn_int_t fid,
 }
 
 
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,
-                        void* arg, size_t arg_size,
-                        c_sublocid_t subloc,
-                        int lineno, int32_t filename) {
+void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                                   void* arg,
+                                   size_t arg_size,
+                                   c_sublocid_t subloc,
+                                   int lineno,
+                                   int32_t filename) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 

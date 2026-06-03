@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 namespace chpl {
 namespace resolution {
 
+using ElidedCopyInfo = std::set<ID>;
 
 /* Computes the set of IDs of initialization points
    that can be 'move's rather than '=' or 'copy-init'.
@@ -47,7 +48,7 @@ namespace resolution {
 
    allSplitInitedVars can be computed by computeSplitInits.
  */
-std::set<ID>
+ElidedCopyInfo
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,

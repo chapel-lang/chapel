@@ -1,2 +1,3 @@
 # Skip with --no-local because we were getting false positives
 COMPOPTS <= --no-local
+CHPL_TEST_VGRND_EXE == on

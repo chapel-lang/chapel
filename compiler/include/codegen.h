@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -246,6 +246,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 GenRet codegenCallExprWithArgs(const char* fnName,
                                std::vector<GenRet> & args,
                                FnSymbol* fnSym = nullptr,
+                               astlocT callLoc = astlocT::unknownLoc(),
                                ClangFunctionDeclPtr FD = nullptr,
                                bool defaultToValues = true);
 GenRet codegenGetLocaleID(void);

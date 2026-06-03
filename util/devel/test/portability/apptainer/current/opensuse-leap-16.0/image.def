@@ -1,0 +1,12 @@
+BootStrap: docker
+From: opensuse/leap:16.0
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/zypper-deps.sh
+    /provision-scripts/zypper-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

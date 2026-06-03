@@ -43,8 +43,8 @@ module SimpleBoolConditional {
   }
 
   proc arrayVersion(x) {
-    var y = [i in 1..x] i%2 == 0;
-    var z = [i in 1..x] true;
+    var y = [i in 1..x] i%2 == 0,
+        z = [i in 1..x] true;
     return [i in 1..x] !(i%2 == 0);
   }
 

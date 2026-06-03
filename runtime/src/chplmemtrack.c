@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,8 +30,9 @@
 #include "chpl-comm-internal.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include "chpl-comm-compiler-macros.h"
 
@@ -419,6 +420,8 @@ static void printMemAllocsByType(_Bool forLeaks,
   memTableEntry* me;
   int i;
   const int numberWidth   = 9;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_mem_numDescs);
   const int numEntries = CHPL_RT_MD_NUM+chpl_mem_numDescs;
 
   if (!chpl_memTrack) {
@@ -481,6 +484,9 @@ void chpl_printMemAllocsByType(int32_t lineno, int32_t filename) {
 static chpl_mem_descInt_t
 find_desc(const char* descString)
 {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_mem_numDescs);
+
   const int numEntries = CHPL_RT_MD_NUM+chpl_mem_numDescs;
   for (chpl_mem_descInt_t i = 0; i < numEntries; ++i)
     if (! strcmp(descString, chpl_mem_descString(i)))
@@ -668,6 +674,11 @@ void chpl_reportMemInfo(void) {
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);
   if (memLeaksLog && strcmp(memLeaksLog, "")) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_executionCommand);
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_compileCommand);
+
     memLogFile = fopen(memLeaksLog, "a");
     fprintf(memLogFile, "\nCompiler Command : %s\n", chpl_compileCommand);
     fprintf(memLogFile, "Execution Command: %s\n\n", chpl_executionCommand);
@@ -787,12 +798,12 @@ void chpl_track_realloc_post(void* newMemAlloc,
 
 void chpl_startVerboseMem(void) {
   chpl_verbose_mem = 1;
-  chpl_comm_bcast_rt_private(chpl_verbose_mem);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_mem);
 }
 
 void chpl_stopVerboseMem(void) {
   chpl_verbose_mem = 0;
-  chpl_comm_bcast_rt_private(chpl_verbose_mem);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_mem);
 }
 
 void chpl_startVerboseMemHere(void) {

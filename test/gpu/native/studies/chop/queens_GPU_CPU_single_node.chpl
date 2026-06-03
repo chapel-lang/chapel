@@ -1,0 +1,1 @@
+ChOp/queens_GPU_CPU_single_node.chpl

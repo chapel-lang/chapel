@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 #include "chpl/util/break.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
+#include "llvmDebug.h"
 #include "symbol.h"
 #include "llvm/Support/Format.h"
 
@@ -114,9 +115,19 @@ llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
     irBuilder->SetInsertPoint(&func->getEntryBlock());
   }
 
+  // reset the current debug location to avoid accidentally attaching it to the alloca
+  llvm::DebugLoc currentDebugLocation;
+  if (debugInfo) {
+    currentDebugLocation = irBuilder->getCurrentDebugLocation();
+    irBuilder->SetCurrentDebugLocation(llvm::DebugLoc());
+  }
+
   llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, nullptr, name);
   trackLLVMValue(tempVar);
+
   irBuilder->SetInsertPoint(&func->back());
+  if (debugInfo)
+    irBuilder->SetCurrentDebugLocation(currentDebugLocation);
   return tempVar;
 }
 
@@ -508,8 +519,8 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
-      llvm::Type* curPtrType = llvm::PointerType::getUnqual(curType);
-      llvm::Type* newPtrType = llvm::PointerType::getUnqual(newType);
+      auto curPtrType = getPointerType(curType);
+      auto newPtrType = getPointerType(newType);
       // Now get cast pointers
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       trackLLVMValue(tmp_cur);
@@ -849,6 +860,13 @@ llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS) {
   return irBuilder->getPtrTy(AS);
 #else
   return irBuilder->getInt8PtrTy(AS);
+#endif
+}
+llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS) {
+#if LLVM_VERSION_MAJOR < 21
+  return llvm::PointerType::get(eltType, AS);
+#else
+  return llvm::PointerType::get(eltType->getContext(), AS);
 #endif
 }
 

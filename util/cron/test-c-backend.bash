@@ -8,7 +8,7 @@ source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-c-backend.bash
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
-nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args) -asserts"
+nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args 8) -asserts"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="c-backend"
 

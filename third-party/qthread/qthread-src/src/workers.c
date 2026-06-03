@@ -32,7 +32,8 @@ int API_FUNC qthread_disable_worker(qthread_worker_id_t const w) {
     return QTHREAD_NOT_ALLOWED;
   }
 
-  (void)QT_CAS(qlib->shepherds[shep].workers[worker].active, 1, 0);
+  atomic_store_explicit(
+    &qlib->shepherds[shep].workers[worker].active, 0, memory_order_relaxed);
   qlib->nworkers_active--; // decrement active count
 
   if (worker == 0) { qthread_disable_shepherd(shep); }
@@ -52,7 +53,8 @@ void API_FUNC qthread_enable_worker(qthread_worker_id_t const w) {
   if (worker < qlib->nworkerspershep) {
     qthread_internal_incr(
       &(qlib->nworkers_active), &(qlib->nworkers_active_lock), 1);
-    (void)QT_CAS(qlib->shepherds[shep].workers[worker].active, 0, 1);
+    atomic_store_explicit(
+      &qlib->shepherds[shep].workers[worker].active, 1, memory_order_relaxed);
   }
 }
 

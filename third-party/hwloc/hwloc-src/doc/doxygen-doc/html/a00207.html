@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Windows-specific helpers</title>
+<title>Hardware Locality (hwloc): Interoperability with OpenFabrics</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -41,37 +41,48 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Windows-specific helpers</div></div>
+  <div class="headertitle"><div class="title">Interoperability with OpenFabrics</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaa4376a1969660a344911d117f645d3dd" id="r_gaa4376a1969660a344911d117f645d3dd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00207.html#gaa4376a1969660a344911d117f645d3dd">hwloc_windows_get_nr_processor_groups</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned long flags)</td></tr>
-<tr class="separator:gaa4376a1969660a344911d117f645d3dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga167d1f28d3bd9defe1ffa940c14e8dd1" id="r_ga167d1f28d3bd9defe1ffa940c14e8dd1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00207.html#ga167d1f28d3bd9defe1ffa940c14e8dd1">hwloc_windows_get_processor_group_cpuset</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned pg_index, <a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> cpuset, unsigned long flags)</td></tr>
-<tr class="separator:ga167d1f28d3bd9defe1ffa940c14e8dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5f7559c1d4024c6a4dcbae2cba0555ad" id="r_ga5f7559c1d4024c6a4dcbae2cba0555ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00207.html#ga5f7559c1d4024c6a4dcbae2cba0555ad">hwloc_ibv_get_device_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, struct ibv_device *ibdev, <a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
+<tr class="separator:ga5f7559c1d4024c6a4dcbae2cba0555ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga14a0d0b26f3a9ac79e7d9565eaa6b9b4" id="r_ga14a0d0b26f3a9ac79e7d9565eaa6b9b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00207.html#ga14a0d0b26f3a9ac79e7d9565eaa6b9b4">hwloc_ibv_get_device_osdev_by_name</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *ibname)</td></tr>
+<tr class="separator:ga14a0d0b26f3a9ac79e7d9565eaa6b9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa2694b74b6155121c3a7bab52a5f048e" id="r_gaa2694b74b6155121c3a7bab52a5f048e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00207.html#gaa2694b74b6155121c3a7bab52a5f048e">hwloc_ibv_get_device_osdev</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, struct ibv_device *ibdev)</td></tr>
+<tr class="separator:gaa2694b74b6155121c3a7bab52a5f048e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>These functions query Windows processor groups. These groups partition the operating system into virtual sets of up to 64 neighbor PUs. Threads and processes may only be bound inside a single group. Although Windows processor groups may be exposed in the hwloc hierarchy as hwloc Groups, they are also often merged into existing hwloc objects such as NUMA nodes or Packages. This API provides explicit information about Windows processor groups so that applications know whether binding to a large set of PUs may fail because it spans over multiple Windows processor groups. </p>
+<p>This interface offers ways to retrieve topology information about OpenFabrics devices (InfiniBand, Omni-Path, usNIC, etc). </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gaa4376a1969660a344911d117f645d3dd" name="gaa4376a1969660a344911d117f645d3dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa4376a1969660a344911d117f645d3dd">&#9670;&#160;</a></span>hwloc_windows_get_nr_processor_groups()</h2>
+<a id="ga5f7559c1d4024c6a4dcbae2cba0555ad" name="ga5f7559c1d4024c6a4dcbae2cba0555ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5f7559c1d4024c6a4dcbae2cba0555ad">&#9670;&#160;</a></span>hwloc_ibv_get_device_cpuset()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_windows_get_nr_processor_groups </td>
+          <td class="memname">int hwloc_ibv_get_device_cpuset </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
+          <td class="paramtype">struct ibv_device *&#160;</td>
+          <td class="paramname"><em>ibdev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -79,45 +90,44 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Get the number of Windows processor groups. </p>
-<p><code>flags</code> must be 0 for now.</p>
-<dl class="section return"><dt>Returns</dt><dd>at least <code>1</code> on success. </dd>
+<p>Get the CPU set of processors that are physically close to device <code>ibdev</code>. </p>
+<p>Store in <code>set</code> the CPU-set describing the locality of the OpenFabrics device <code>ibdev</code> (InfiniBand, etc).</p>
+<p>Topology <code>topology</code> and device <code>ibdev</code> must match the local machine. I/O devices detection is not needed in the topology.</p>
+<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00207.html#gaa2694b74b6155121c3a7bab52a5f048e" title="Get the hwloc OS device object corresponding to the OpenFabrics device ibdev.">hwloc_ibv_get_device_osdev()</a> and <a class="el" href="a00207.html#ga14a0d0b26f3a9ac79e7d9565eaa6b9b4" title="Get the hwloc OS device object corresponding to the OpenFabrics device named ibname.">hwloc_ibv_get_device_osdev_by_name()</a>.</p>
+<p>This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
 <dd>
--1 on error, for instance if the topology does not match the current system (e.g. loaded from another machine through XML). </dd></dl>
+-1 on error, for instance if device information could not be found. </dd></dl>
 
 </div>
 </div>
-<a id="ga167d1f28d3bd9defe1ffa940c14e8dd1" name="ga167d1f28d3bd9defe1ffa940c14e8dd1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga167d1f28d3bd9defe1ffa940c14e8dd1">&#9670;&#160;</a></span>hwloc_windows_get_processor_group_cpuset()</h2>
+<a id="gaa2694b74b6155121c3a7bab52a5f048e" name="gaa2694b74b6155121c3a7bab52a5f048e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa2694b74b6155121c3a7bab52a5f048e">&#9670;&#160;</a></span>hwloc_ibv_get_device_osdev()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_windows_get_processor_group_cpuset </td>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_ibv_get_device_osdev </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>pg_index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00172.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>cpuset</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
+          <td class="paramtype">struct ibv_device *&#160;</td>
+          <td class="paramname"><em>ibdev</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -125,14 +135,63 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Get the CPU-set of a Windows processor group. </p>
-<p>Get the set of PU included in the processor group specified by <code>pg_index</code>. <code>pg_index</code> must be between <code>0</code> and the value returned by <a class="el" href="a00207.html#gaa4376a1969660a344911d117f645d3dd" title="Get the number of Windows processor groups.">hwloc_windows_get_nr_processor_groups()</a> minus 1.</p>
-<p><code>flags</code> must be 0 for now.</p>
-<dl class="section return"><dt>Returns</dt><dd><code>0</code> on success. </dd>
+<p>Get the hwloc OS device object corresponding to the OpenFabrics device <code>ibdev</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenFabrics device <code>ibdev</code> (InfiniBand, etc). </dd>
 <dd>
-<code>-1</code> on error, for instance if <code>pg_index</code> is invalid, or if the topology does not match the current system (e.g. loaded from another machine through XML). </dd></dl>
+<code>NULL</code> if none could be found.</dd></dl>
+<p>Topology <code>topology</code> and device <code>ibdev</code> must match the local machine. I/O devices detection must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00207.html#ga5f7559c1d4024c6a4dcbae2cba0555ad" title="Get the CPU set of processors that are physically close to device ibdev.">hwloc_ibv_get_device_cpuset()</a>.</p>
+<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object. </dd></dl>
+
+</div>
+</div>
+<a id="ga14a0d0b26f3a9ac79e7d9565eaa6b9b4" name="ga14a0d0b26f3a9ac79e7d9565eaa6b9b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga14a0d0b26f3a9ac79e7d9565eaa6b9b4">&#9670;&#160;</a></span>hwloc_ibv_get_device_osdev_by_name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_ibv_get_device_osdev_by_name </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>ibname</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the hwloc OS device object corresponding to the OpenFabrics device named <code>ibname</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenFabrics device (InfiniBand, Omni-Path, usNIC, etc) whose name is <code>ibname</code> (mlx5_0, hfi1_0, usnic_0, qib0, etc). </dd>
+<dd>
+<code>NULL</code> if none could be found.</dd></dl>
+<p>The name <code>ibname</code> is usually obtained from ibv_get_device_name().</p>
+<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection must be enabled in the topology.</p>
+<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object. </dd></dl>
 
 </div>
 </div>

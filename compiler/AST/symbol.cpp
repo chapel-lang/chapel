@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,48 +173,26 @@ bool Symbol::inTree() {
     return false;
 }
 
-
-static Qualifier qualifierForArgIntent(IntentTag intent)
-{
-  switch (intent) {
-    case INTENT_IN:        return QUAL_VAL;
-    case INTENT_OUT:       return QUAL_REF;
-    case INTENT_INOUT:     return QUAL_REF;
-    case INTENT_CONST:     return QUAL_CONST;
-    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
-    case INTENT_REF:       return QUAL_REF;
-    case INTENT_CONST_REF: return QUAL_CONST_REF;
-    case INTENT_PARAM:     return QUAL_PARAM; // TODO
-    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
-    case INTENT_BLANK:     return QUAL_UNKNOWN;
-    case INTENT_REF_MAYBE_CONST:
-           return QUAL_REF; // a white lie until cullOverReferences
-
-    // no default to get compiler warning if other intents are added
-  }
-  INT_FATAL("unknown intent");
-  return QUAL_UNKNOWN;
-}
-
 QualifiedType
 Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
                              Qualifier qual,
                              bool isConst) {
   QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
+
   if (isFormal) {
-    Qualifier q = qualifierForArgIntent(intent);
+    Qualifier q = QualifiedType::qualifierForArgIntent(intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
+      // Preserve wide ref'ness if needed...
       q = QUAL_WIDE_REF;
-      // MPF: Should this be CONST_WIDE_REF in some cases?
     }
     ret = QualifiedType(type, q);
   } else {
     ret = QualifiedType(type, qual);
-    if (isConst) ret = ret.toConst();
   }
 
-  return ret;
+  if (isConst) ret = ret.toConst();
 
+  return ret;
 }
 
 QualifiedType Symbol::qualType() {
@@ -1540,10 +1518,6 @@ void createInitStringLiterals() {
 
   initStringLiteralsEpilogue = initStringLiterals->getOrCreateEpilogueLabel();
 
-  if (fMinimalModules) {
-    return;
-  }
-
   // accumulate the string/bytes and prepare to sort them
   std::vector<std::pair<std::string, VarSymbol*>> literals;
 
@@ -2175,6 +2149,8 @@ const char* astr_initCopy = NULL;
 const char* astr_coerceCopy = NULL;
 const char* astr_coerceMove = NULL;
 const char* astr_autoDestroy = NULL;
+const char* astr__ln = NULL;
+const char* astr__fn = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2222,6 +2198,9 @@ void initAstrConsts() {
   astr_coerceMove = astr("chpl__coerceMove");
 
   astr_autoDestroy = astr("chpl__autoDestroy");
+
+  astr__ln = astr("_ln");
+  astr__fn = astr("_fn");
 }
 
 bool isAstrOpName(const char* name) {

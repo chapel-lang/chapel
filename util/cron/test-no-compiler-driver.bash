@@ -8,4 +8,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="no-compiler-driver"
 
-$UTIL_CRON_DIR/nightly -cron -compopts --no-compiler-driver $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -compopts --no-compiler-driver $(get_nightly_paratest_args 8)

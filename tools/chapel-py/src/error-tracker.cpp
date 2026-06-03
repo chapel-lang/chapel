@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,6 @@ void PythonErrorHandler::report(chpl::Context* context, const chpl::ErrorBase* e
   }
 
   // There's an error list! Create an error object and store it into the list.
-  auto errObj = ErrorObject::create((ContextObject*) contextObject, err->clone());
+  auto errObj = wrapGeneratedType((ContextObject*) contextObject, err);
   PyList_Append(errorLists.back(), (PyObject*) errObj);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -598,6 +598,54 @@ bool isRelationalOperator(CallExpr* call) {
 
 }
 
+static constexpr int DEF = 1;
+static constexpr int USE = 2;
+static constexpr int DEF_USE = 3;
+
+static int computeDefAndOrUseDirectCall(FnSymbol* fn, SymExpr* se) {
+  auto ret = USE;
+
+  if (auto arg = actual_to_formal(se)) {
+    if (arg->intent == INTENT_REF   ||
+        arg->intent == INTENT_INOUT ||
+        (fn->name == astrSassign &&
+         fn->getFormal(1) == arg &&
+         isRecord(arg->type))) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (arg->intent == INTENT_OUT) {
+      ret = DEF;
+    }
+  }
+
+  // OK to fall through.
+  return ret;
+}
+
+static int computeDefAndOrUseFromFunctionType(CallExpr* call, SymExpr* se) {
+  auto fn = call->resolvedFunction();
+  auto ft = call->functionType();
+  INT_ASSERT(ft);
+
+  auto ret = USE;
+
+  int zeroBasedFormalIdx = -1;
+  if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
+    if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
+        isRecord(formal->type())) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_INOUT ||
+               formal->intent() == INTENT_REF) {
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_OUT) {
+      ret = DEF;
+    }
+  }
+
+  // OK to fall through.
+  return ret;
+}
 
 //
 // TODO this should be fixed to include PRIM_SET_MEMBER
@@ -616,13 +664,14 @@ bool isRelationalOperator(CallExpr* call) {
 // normalize, a DefExpr itself does not set a variable, and so it does not
 // count as a Def.
 int isDefAndOrUse(SymExpr* se) {
-  const int DEF = 1;
-  const int USE = 2;
-  const int DEF_USE = 3;
-
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
     auto fn = call->resolvedFunction();
+
+    if (se->symbol() == fn && call->baseExpr == se) {
+      // The use is of a function that is called.
+      return USE;
+    }
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -658,9 +707,13 @@ int isDefAndOrUse(SymExpr* se) {
       // ^-def    ^-use
       return DEF_USE;
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      // actual_to_formal() breaks if passed the cid argument
-      if (se == call->get(2))
+
+      if (se == call->get(1) || se == call->get(2)) {
+        // actual_to_formal() breaks if passed the cid argument, or the
+        // 'FnSymbol' representing the static method type.
         return USE;
+      }
+
       // same as for resolvedFunction()
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
@@ -669,46 +722,20 @@ int isDefAndOrUse(SymExpr* se) {
       else if (arg->intent == INTENT_OUT)
         return DEF;
 
-    } else if (fn || call->isIndirectCall()) {
-      auto ft = call->functionType();
-      INT_ASSERT(ft);
-
-      auto ret = USE;
-
-      int zeroBasedFormalIdx = -1;
-      if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
-        if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
-            isRecord(formal->type())) {
-          // BHARSH TODO: get rid of this 'isRecord' special case
-          ret = DEF_USE;
-        } else if (formal->intent() == INTENT_INOUT ||
-                   formal->intent() == INTENT_REF) {
-          ret = DEF_USE;
-        } else if (formal->intent() == INTENT_OUT) {
-          ret = DEF;
-        }
-      }
+    } else if ((fn && fn->isUsedAsValue()) || call->isIndirectCall()) {
+      auto ret = computeDefAndOrUseFromFunctionType(call, se);
 
       if (fVerify && fn) {
-        auto check = USE;
-
         // This is the old code, but we keep it around in a '--verify' branch
         // to make sure that we're computing the correct result above.
-        ArgSymbol* arg = actual_to_formal(se);
-        if (arg->intent == INTENT_REF ||
-            arg->intent == INTENT_INOUT ||
-            (fn->name == astrSassign &&
-             fn->getFormal(1) == arg &&
-             isRecord(arg->type))) {
-          check = DEF_USE;
-        } else if (arg->intent == INTENT_OUT) {
-          check = DEF;
-        }
-
+        auto check = computeDefAndOrUseDirectCall(fn, se);
         INT_ASSERT(check == ret);
       }
 
       return ret;
+
+    } else if (fn) {
+      return computeDefAndOrUseDirectCall(fn, se);
     }
   }
 
@@ -939,6 +966,10 @@ bool isExternType(Type* t) {
   if (t->isWideRef())
     return false;
 
+  if (isFunctionType(t) && fcfs::usePointerImplementation()) {
+    return false;
+  }
+
   ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
   // unmanaged or borrowed classes are OK
   if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
@@ -1162,11 +1193,9 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   if (chpl_gen_main)
     pruneVisit(chpl_gen_main, fns, types);
 
-  // When present, the printModuleInitOrder function is always visible;
-  // it will be NULL for --minimal-modules compilations
-  if (gPrintModuleInitFn) {
-    pruneVisit(gPrintModuleInitFn, fns, types);
-  }
+  // printModuleInitOrder function is always visible
+  INT_ASSERT(gPrintModuleInitFn);
+  pruneVisit(gPrintModuleInitFn, fns, types);
 
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,
@@ -1512,28 +1541,102 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
   }
 }
 
-static void setQualRef(Symbol* sym) {
-  if (sym->isRefOrWideRef() && sym->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) {
-    Qualifier q = sym->qualType().getQual();
-    const bool isRef = q == QUAL_REF        || q == QUAL_CONST_REF        ||
-                       q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
-                       q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
-    if (isRef == false) {
-      if (sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+static QualifiedType computeFlattenedRefType(QualifiedType qt) {
+  Qualifier retQual = qt.getQual();
+  Type* retType = qt.type();
+
+  bool isRefType = qt.type()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+
+  if (qt.isRefOrWideRef() && isRefType) {
+    Qualifier q = qt.getQual();
+    const bool isRefQual = QualifiedType::qualifierIsRef(q);
+
+    if (!isRefQual) {
+      if (qt.isWideRefType()) {
         q = QUAL_WIDE_REF;
       } else {
         q = QUAL_REF;
       }
-      sym->qual = q;
+      retQual = q;
+    }
+
+    retType = retType->getValType();
+  }
+
+  QualifiedType ret = { retQual, retType };
+
+  return ret;
+}
+
+static void setQualRef(Symbol* sym) {
+  auto qt1 = sym->qualType();
+  auto qt2 = computeFlattenedRefType(qt1);
+
+  if (qt1 != qt2) {
+    // Only write on a change.
+    if (qt1.getQual() != qt2.getQual()) sym->qual = qt2.getQual();
+
+    // Only write on a change.
+    if (qt1.type() != qt2.type()) sym->type = qt2.type();
+
+    if (qt2.isRefOrWideRef()) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
-        if (arg->intent != INTENT_CONST_REF) {
-          arg->intent = INTENT_REF;
+        // Invariant should already be maintained, so just assert.
+        if (qt2.isConst()) {
+          INT_ASSERT(arg->intent == INTENT_CONST_REF);
+        } else {
+          // TODO: Tuple types are weird here...
+          INT_ASSERT(arg->intent == INTENT_REF_MAYBE_CONST ||
+                     arg->intent == INTENT_REF);
         }
       }
     }
-    sym->type = sym->getValType();
   }
 }
+
+// TODO: At this point I've written this pattern enough that we could use a
+//       more general purpose component-transformer sort of utility...
+static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
+  FunctionType* ret = ft;
+
+  std::vector<FunctionType::Formal> newFormals;
+  bool changed = false;
+
+  for (auto& formal : ft->formals()) {
+    auto qt1 = formal.qualType();
+    auto qt2 = computeFlattenedRefType(qt1);
+
+    newFormals.push_back({ qt2.getQual(), qt2.type(),
+                           formal.intent(),
+                           formal.name(), formal.flags() });
+    changed = changed || qt1 != qt2;
+  }
+
+  if (changed) {
+    // If any formal type changed, then recompute the function type.
+    SET_LINENO(ft->symbol);
+    auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                                   std::move(newFormals),
+                                   ft->returnIntent(),
+                                   ft->returnType(),
+                                   ft->throws());
+    INT_ASSERT(ft != newFt);
+    ret = newFt;
+  }
+
+  return ret;
+}
+
+class FlattenRefsInProcPtrTypes : public AdjustSymbolTypes {
+ public:
+  Type* computeAdjustedType(Type* t) const override {
+    if (auto ft = toFunctionType(t->getValType())) {
+      auto ret = flattenRefsForFunctionTypes(ft);
+      return ret;
+    }
+    return t;
+  };
+};
 
 void convertToQualifiedRefs() {
 #define fixRefSymbols(SymType) \
@@ -1544,6 +1647,10 @@ void convertToQualifiedRefs() {
   fixRefSymbols(VarSymbol);
   fixRefSymbols(ArgSymbol);
   fixRefSymbols(ShadowVarSymbol);
+
+  // TODO: Merge the above traversal with this pass to save a walk.
+  PassManager pm;
+  runPassOverAllSymbols(pm, FlattenRefsInProcPtrTypes());
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_ADDR_OF)) {
@@ -1625,10 +1732,10 @@ bool symExprIsUsedAsRef(
 }
 
 static Type*
-computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
-                    AdjustTypeFn adjustTypeFn,
-                    bool preserveRefLevels,
-                    Type* t) {
+computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                     AdjustTypeFn adjustTypeFn,
+                     bool preserveRefLevels,
+                     Type* t) {
   // This is a helper function that memoizes the result of performing the
   // caller's type adjustment function. Additionally, if the type returned
   // by the caller's function is a function type, this function will
@@ -1638,24 +1745,19 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   auto it = alreadyAdjusted.find(t);
   if (it != alreadyAdjusted.end()) return it->second;
 
-  Type* ret = nullptr;
-  if (preserveRefLevels && isReferenceType(t)) {
+  Type* ret = t;
+  if (preserveRefLevels && t != t->getValType()) {
     // For reference types, unpack and adjust the value type instead.
     auto vt1 = t->getValType();
-    auto vt2 = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
-                                   preserveRefLevels, vt1);
+    auto vt2 = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                    preserveRefLevels, vt1);
     INT_ASSERT(vt2);
 
-    // Constructing new reference types as needed.
-    if (!vt2->refType) makeRefType(vt2);
-    INT_ASSERT(vt2->refType);
-
-    // The result is the final reference type.
-    ret = vt2->refType;
+    // TODO: Do wide classes need any sort of special treatment?
+    ret = matchRefLevel(vt2, t);
 
   } else {
-    // For value types (or if we are not preserving reference levels),
-    // perform the caller-given adjustment function.
+    // Otherwise, just perform the caller-given adjustment function.
     ret = adjustTypeFn(t);
   }
 
@@ -1670,20 +1772,20 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
 
     for (int i = 0; i < ft->numFormals(); i++) {
       auto f = ft->formal(i);
-      auto newT = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
-                                      preserveRefLevels,
-                                      f->type());
+      auto newT = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                       preserveRefLevels,
+                                       f->type());
       if (newT != f->type()) {
-        newFormals.push_back({ f->qual(), newT, f->intent(), f->name() });
+        newFormals.push_back({ f->qual(), newT, f->intent(), f->name(), f->flags() });
         anyChanged = true;
       } else {
         newFormals.push_back(*f);
       }
     }
 
-    auto newRetType = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
-                                          preserveRefLevels,
-                                          ft->returnType());
+    auto newRetType = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                           preserveRefLevels,
+                                           ft->returnType());
     anyChanged = anyChanged || newRetType != ft->returnType();
 
     if (anyChanged) {
@@ -1699,94 +1801,157 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     }
   }
 
-  // Cache the result.
+  // Emplace the result.
   alreadyAdjusted.emplace_hint(it, t, ret);
 
   return ret;
 }
 
-void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
-                      bool preserveRefLevels) {
+static SymbolNameVec* ptrToSubsOrNull(Symbol* sym) {
+  if (auto ts = toTypeSymbol(sym)) {
+    return &ts->type->substitutionsPostResolve;
+  } else if (auto fn = toFnSymbol(sym)) {
+    return &fn->substitutionsPostResolve;
+  }
+  return nullptr;
+}
+
+static
+Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                         Symbol* sym,
+                         AdjustTypeFn adjustTypeFn,
+                         bool preserveRefLevels) {
+  // Wrapper that computes what the new type of the symbol should be.
+  auto doComputeType = [&](Type* t) {
+    return computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
+                                preserveRefLevels, t);
+  };
+
+  Type* oldType = sym->type;
+  Type* ret = doComputeType(sym->type);
+  bool canModifySubstitutions = true;
+  bool setType = true;
+
+  if (isTypeSymbol(sym)) {
+    // Do not set the 'type' field of a type symbol.
+    setType = false;
+  }
+
+  if (ret->symbol->hasFlag(FLAG_WIDE_REF) ||
+      ret->symbol->hasFlag(FLAG_REF)) {
+    // Do not modify substitutions in reference types. Compute a new type.
+    canModifySubstitutions = false;
+  }
+
+  if (auto vs = toVarSymbol(sym)) {
+    auto parent = vs->defPoint->parentSymbol;
+    if (parent && isTypeSymbol(parent)) {
+      if (parent->hasFlag(FLAG_REF) || parent->hasFlag(FLAG_WIDE_REF)) {
+        // Do not modify fields in 'ref' or 'wide-ref' formals.
+        //
+        // TODO: In general, modifying fields and substitutions ends up making
+        //       the AST super wonky and hard to follow. The reason is because
+        //       we do not recompute certain properties such as the 'name' of
+        //       aggregates after we change things in them. For 'ref' types
+        //       this is extra egregious because they are used everywhere.
+        setType = false;
+      }
+    }
+  }
+
+  if (auto fn = toFnSymbol(sym)) {
+    // Recompute the return type.
+    Type* newRetT = doComputeType(fn->retType);
+    if (newRetT != fn->retType) fn->retType = newRetT;
+
+    if (fn->iteratorInfo && !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
+      // Recompute the yielded type, but only if this is a 'host' function
+      // that owns its 'IteratorInfo' and not a e.g., 'on_fn' that inherits
+      // the info from a parent function.
+      Type* newYieldT = doComputeType(fn->iteratorInfo->yieldedType);
+      if (newYieldT != fn->iteratorInfo->yieldedType)
+        fn->iteratorInfo->yieldedType = newYieldT;
+    }
+
+    if (!fn->isUsedAsValue()) {
+      // Clear types for functions not used as values.
+      ret = dtUnknown;
+    }
+  }
+
+  if (canModifySubstitutions) {
+    // TODO: Either we shouldn't be modifying subs at all, or we should be
+    //       recomputing certain properties of a type like the name after
+    //       we do so, because this leads to desync. E.g., for a tuple type,
+    //       if we change the component type 2*int -> 2*real, the name will
+    //       still print out at '2*int'. This is confusing when debugging
+    //       and from a structural perspective. I think we ought to make
+    //       entirely new, immutable types and deal with the consequences,
+    //       or do a better job of using (recomputable) properties e.g.,
+    //       '->name()' instead of just precomputing.
+    if (auto subsPtr = ptrToSubsOrNull(sym)) {
+      auto& subs = *subsPtr;
+
+      size_t n = subs.size();
+      for (size_t i = 0; i < n; i++) {
+        auto& ns = subs[i];
+        if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
+          Type* newT = doComputeType(ets->type);
+          if (newT != ets->type) {
+            TypeSymbol* newTS = newT->symbol;
+            ns.value = newTS;
+          }
+        }
+      }
+    }
+  }
+
+  // Skip unnecessary writes to avoid triggering watchpoints.
+  if (setType && oldType != ret) sym->type = ret;
+
+  return ret;
+}
+
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> empty;
-  Type* t1 = sym->type;
-  Type* t2 = computeAdjustedType(empty, adjustTypeFn, preserveRefLevels, t1);
-  if (t1 != t2) sym->type = t2;
+  auto ret = doAdjustSymbolType(empty, sym, adjustTypeFn, preserveRefLevels);
+  return ret;
 }
 
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> alreadyAdjusted;
 
-  // Wrapper around a helper function that performs the adjustment.
-  auto doAdjust = [&](Type* t) {
-    return computeAdjustedType(alreadyAdjusted, adjustTypeFn,
-                               preserveRefLevels, t);
+  auto adjust = [&](Symbol* sym) {
+    return doAdjustSymbolType(alreadyAdjusted, sym, adjustTypeFn,
+                              preserveRefLevels);
   };
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    Type* newT = doAdjust(var->type);
-    if (newT != var->type) var->type = newT;
+    adjust(var);
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    Type* newT = doAdjust(arg->type);
-    if (newT != arg->type) arg->type = newT;
+    adjust(arg);
   }
 
   forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
-    Type* newT = doAdjust(sv->type);
-    if (newT != sv->type) sv->type = newT;
-  }
-
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    Type* newT = doAdjust(ts->type);
-
-    if (newT != ts->type) {
-      TypeSymbol* newTS = newT->symbol;
-      for_SymbolSymExprs(se, ts) {
-        se->setSymbol(newTS);
-      }
-    }
-
-    size_t n = ts->type->substitutionsPostResolve.size();;
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = doAdjust(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
-    }
+    adjust(sv);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Type* newRetT = doAdjust(fn->retType);
-    if (newRetT != fn->retType) fn->retType = newRetT;
+    adjust(fn);
+  }
 
-    if (fn->iteratorInfo) {
-      Type* newYieldT = doAdjust(fn->iteratorInfo->yieldedType);
-      if (newYieldT != fn->iteratorInfo->yieldedType)
-        fn->iteratorInfo->yieldedType = newYieldT;
-    }
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    Type* newType = adjust(ts);
 
-    if (fn->type && fn->type != dtUnknown) {
-      // Adjust also the function type if it was previously computed.
-      Type* newFnT = doAdjust(fn->type);
-      if (newFnT != fn->type) fn->type = newFnT;
-      INT_ASSERT(isFunctionType(newFnT));
-    }
-
-    size_t n = fn->substitutionsPostResolve.size();
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = doAdjust(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
+    // NOTE: Type symbols are the only class of symbol for which 'sym->type'
+    //       is not actually changed (it doesn't really make sense). Instead,
+    //       we loop and re-target all uses of the old type to point to the
+    //       new type instead.
+    if (newType != ts->type) {
+      for_SymbolSymExprs(se, ts) se->setSymbol(newType->symbol);
     }
   }
 
@@ -1797,8 +1962,9 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
     if (auto ts = kt->symbol) {
       // Otherwise, try to remove the key type from the tree.
       if (!ts->inTree()) continue;
-      bool noUses = ts->firstSymExpr() == nullptr;
-      if (noUses) ts->defPoint->remove();
+      if (!ts->isUsed()) {
+        ts->defPoint->remove();
+      }
     }
   }
 }
@@ -1809,19 +1975,40 @@ bool isUseOfProcedureAsValue(SymExpr* se) {
   if (!fn) return false;
 
   if (auto call = toCallExpr(se->parentExpr)) {
+    // TODO: Detect/reject virtual calls if needed.
+
     if (call->baseExpr != se) {
       auto formal = call->resolvedFunction() ? actual_to_formal(se) : nullptr;
+      bool isMoveOrAssign = call->isPrimitive(PRIM_ASSIGN) ||
+                            call->isPrimitive(PRIM_MOVE);
 
-      if (call->isPrimitive(PRIM_MOVE) && call->get(2) == se) {
-        // Ok, being moved into a variable.
+      if (isMoveOrAssign && call->get(2) == se) {
+        // Ok, being moved or assigned into a variable.
         return true;
 
-      } else if (formal && isFunctionType(formal)) {
-        // Ok, being passed.
+      } else if (formal) {
+        // Ok, being passed (assume that the type matches).
         return true;
       }
     }
   }
 
   return false;
+}
+
+Type* matchRefLevel(Type* t, Type* match) {
+  auto vt = t->getValType();
+  auto ret = t;
+
+  if (match->isRef() && !t->isRef()) {
+    if (!vt->refType) makeRefType(vt);
+    ret = vt->refType;
+
+  } else if (match->isWideRef() && !t->isWideRef()) {
+    ret = vt->getWideRefType();
+  }
+
+  INT_ASSERT(ret);
+
+  return ret;
 }

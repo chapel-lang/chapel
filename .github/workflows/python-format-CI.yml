@@ -1,20 +1,17 @@
 name: CI Format Check
 
-on:
-  pull_request:
-    paths:
-      - 'tools/chapel-py/**/*.py'
-      - 'tools/chplcheck/**/*.py'
-      - 'tools/chpl-language-server/**/*.py'
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   check-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: psf/black@stable
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
-          options: "--check --verbose --line-length 80"
-          src: "./tools/chapel-py ./tools/chplcheck ./tools/chpl-language-server"
-          version: "24.4.0"
+          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
+          src: "."
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "--check --verbose --line-length 80 --extend-exclude '(install|build)/'"
+          src: "third-party/chpl-venv"

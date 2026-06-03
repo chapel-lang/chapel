@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,6 +50,7 @@ module ChapelStandard {
   public use ChapelReduce;
   public use ChapelSyncvar;
   public use ChapelTaskDataHelp;
+  public use ChapelRuntimeInterface;
   public use LocaleModel;
   public use ChapelLocale;
   public use ChapelPrivatization;
@@ -78,6 +79,7 @@ module ChapelStandard {
   public use ChapelStaticVars;
   public use ChapelRemoteVars;
   public use ChapelArrayViewElision;
+  public use ChapelUnion;
 
   // Standard modules.
   public use Types as Types;
@@ -85,5 +87,9 @@ module ChapelStandard {
   public use AutoGpu as AutoGpu;
 
   use stopInitCommDiags;      // Internal, but uses standard/CommDiagnostics
-  use ChapelDynamicLoading;   // Internal, but the compiler uses this
+
+  // These need to be compiled but do not need to be in the global namespace.
+  use ChapelDynamicLoading;
+  use ChapelProgramEntrypoints;
+  use ChapelProgramRegistration;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -810,6 +810,8 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
           INT_ASSERT(expr);
         } break;
       }
+    } else if (call->isIndirectCall()) {
+      resolveFunctionPointerCall(call, true, &didResolveExpr);
 
     // Otherwise, it is a normal call, so rely on 'tryResolveCall'.
     } else {
@@ -900,8 +902,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
                                           testType,
                                           call)) {
+                auto prim = fcfs::usePointerImplementation() ? PRIM_CAPTURE_FN :
+                              PRIM_CAPTURE_FN_TO_CLASS;
                 // TODO: Replace me with a function pointer.
-                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                auto capture = new CallExpr(prim,
                                             new SymExpr(fn));
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);
@@ -1166,18 +1170,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1217,15 +1220,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
-    int            num        = 0;
+    int            num        = -1;
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (strcmp(field->name, fieldName) == 0) {
           num = fieldCount;
         }
+        fieldCount++;
       }
     }
 
@@ -1252,11 +1254,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
@@ -1265,7 +1266,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1294,7 +1295,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new SymExpr(new_StringSymbol(envMap[envKey]));
 
       call->replace(retval);
-
+    } else if (envKey == "CHPL_DYNO") {
+      auto str = fDynoResolver || fDynoResolveOnly ? "on" : "off";
+      retval = new SymExpr(new_StringSymbol(str));
+      call->replace(retval);
     } else {
       USR_FATAL(call,
                 "primitive string does not match any environment variable");
@@ -1992,12 +1996,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_FOLLOWER: {
     FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* followerCall = NULL;
 
     if (FnSymbol* f2 = findForallexprFollower(iterator)) {
       followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
+
+      if (parentMod && !iterator->isMethod()) {
+        // The "to follower" call can be happening outside of the scope in which
+        // the original iterator is defined, so we may not be able to find the
+        // corresponding leader function in the current scope. To make sure it's
+        // found, explicitly add the module of the original iterator.
+        followerCall->insertAtTail(gModuleToken);
+        followerCall->insertAtTail(parentMod);
+      }
     }
 
     for_formals(formal, iterator) {
@@ -2035,7 +2049,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* leaderCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to leader" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      leaderCall->insertAtTail(gModuleToken);
+      leaderCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -2061,7 +2084,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_STANDALONE: {
     FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* standaloneCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to standalone" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      standaloneCall->insertAtTail(gModuleToken);
+      standaloneCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -3125,6 +3157,24 @@ static Expr* preFoldNamed(CallExpr* call) {
     // Handle a reference to an interface associated type, if applicable.
     if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
+    } else if (auto ft = toFunctionType(call->get(2)->getValType())) {
+      if (call->isNamed("retType")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'retType' method is unstable");
+        }
+        retval = new SymExpr(ft->returnType()->symbol);
+        call->replace(retval);
+      } else if (call->isNamed("argTypes")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'argTypes' method is unstable");
+        }
+        CallExpr* expr = new CallExpr("_build_tuple");
+        for (auto& formal : ft->formals()) {
+          expr->insertAtTail(formal.type()->symbol);
+        }
+        retval = expr;
+        call->replace(expr);
+      }
     }
   }
 

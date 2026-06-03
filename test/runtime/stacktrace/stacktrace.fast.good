@@ -1,0 +1,6 @@
+stacktrace.chpl:2: error: halt reached
+Stacktrace
+
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn
+
+Disable full stacktrace by setting 'CHPL_RT_UNWIND=0'

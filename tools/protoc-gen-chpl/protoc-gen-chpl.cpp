@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 #include <google/protobuf/compiler/plugin.h>
 
-#include <generator.h>
+#include "generator.h"
 
 int main(int argc, char *argv[]) {
   chapel::Generator generator;

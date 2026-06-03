@@ -87,16 +87,21 @@ struct fi_provider vrb_prov = {
 	.cleanup = vrb_fini
 };
 
+/* mutex for guarding the initialization of vrb_util_prov.info */
+ofi_mutex_t vrb_info_mutex;
+
 struct util_prov vrb_util_prov = {
 	.prov = &vrb_prov,
 	.info = NULL,
+	.info_lock = &vrb_info_mutex,
 	/* The support of the shared recieve contexts
 	 * is dynamically calculated */
 	.flags = 0,
 };
 
-/* mutex for guarding the initialization of vrb_util_prov.info */
+/* mutex for guarding concurrent calls to protect provider initialization */
 ofi_mutex_t vrb_init_mutex;
+DEFINE_LIST(vrb_devs);
 
 int vrb_sockaddr_len(struct sockaddr *addr)
 {
@@ -126,6 +131,7 @@ vrb_get_rdmacm_rai(const char *node, const char *service, uint64_t flags,
 		rai_hints.ai_flags |= RAI_PASSIVE;
 	}
 
+	vrb_prof_func_start("rdma_getaddrinfo");
 	ret = rdma_getaddrinfo((char *) node, (char *) service, &rai_hints, &_rai);
 	if (ret) {
 		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_getaddrinfo");
@@ -133,6 +139,7 @@ vrb_get_rdmacm_rai(const char *node, const char *service, uint64_t flags,
 			ret = -errno;
 		goto out;
 	}
+	vrb_prof_func_end("rdma_getaddrinfo");
 
 	/*
 	 * Remove ib_rai entries added by IBACM to
@@ -275,8 +282,10 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	if (ret)
 		return ret;
 
+	vrb_prof_func_start("rdma_create_id");
 	ret = rdma_create_id(NULL, id, NULL, vrb_get_port_space(hints ? hints->addr_format:
 					FI_FORMAT_UNSPEC));
+	vrb_prof_func_end("rdma_create_id");
 	if (ret) {
 		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_create_id");
 		ret = -errno;
@@ -296,8 +305,10 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	}
 
 	if (node || (hints && hints->dest_addr)) {
+		vrb_prof_func_start("rdma_resolve_addr1");
 		ret = rdma_resolve_addr(*id, (*rai)->ai_src_addr,
 					(*rai)->ai_dst_addr, VERBS_RESOLVE_TIMEOUT);
+		vrb_prof_func_end("rdma_resolve_addr1");
 		if (ret) {
 			VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_resolve_addr");
 			ofi_straddr_log(&vrb_prov, FI_LOG_INFO, FI_LOG_FABRIC,
@@ -332,11 +343,13 @@ int vrb_create_ep(struct vrb_ep *ep, enum rdma_port_space ps,
 		return ret;
 	}
 
+	vrb_prof_func_start("rdma_create_id");
 	if (rdma_create_id(NULL, id, NULL, ps)) {
 		ret = -errno;
 		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_create_id");
 		goto err1;
 	}
+	vrb_prof_func_end("rdma_create_id");
 
 	rdma_freeaddrinfo(rai);
 	return 0;
@@ -361,12 +374,9 @@ static int vrb_param_define(const char *param_name, const char *param_str,
 		switch (type) {
 		case FI_PARAM_STRING:
 			if (*(char **)param_default != NULL) {
-				param_default_sz =
-					MIN(strlen(*(char **)param_default),
-					    254);
-				strncpy(param_default_str, *(char **)param_default,
-					param_default_sz);
-				param_default_str[param_default_sz + 1] = '\0';
+				strncpy(param_default_str, *(char **)param_default, 255);
+				param_default_str[255] = '\0';
+				param_default_sz = strlen(param_default_str);
 			}
 			break;
 		case FI_PARAM_INT:
@@ -469,9 +479,11 @@ int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 	struct ibv_cq *cq;
 	int max_inline = 2;
 	int rst = 0;
+	int pos, neg;
 	const char *dev_name = ibv_get_device_name(context->device);
 	uint8_t i;
 
+	vrb_prof_func_start(__func__);
 	for (i = 0; i < count_of(verbs_dev_presets); i++) {
 		if (!strncmp(dev_name, verbs_dev_presets[i].dev_name_prefix,
 			     strlen(verbs_dev_presets[i].dev_name_prefix)))
@@ -492,6 +504,21 @@ int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 		qp_attr.cap.max_recv_sge = 1;
 	}
 	qp_attr.sq_sig_all = 1;
+
+	if (vrb_gl_data.def_inline_size >= max_inline) {
+		qp_attr.cap.max_inline_data = vrb_gl_data.def_inline_size;
+		qp = ibv_create_qp(pd, &qp_attr);
+		if (qp) {
+			rst = qp_attr.cap.max_inline_data;
+			goto out;
+		}
+
+		/*
+		 * Truescale and iWarp will not reach here.
+		 */
+		max_inline = vrb_gl_data.def_inline_size;
+		goto backwards_query;
+	}
 
 	do {
 		if (qp)
@@ -518,7 +545,8 @@ int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 	} while (qp && (max_inline < INT_MAX / 2) && (max_inline *= 2));
 
 	if (rst != 0) {
-		int pos = rst, neg = max_inline;
+backwards_query: ;
+		pos = rst, neg = max_inline;
 		do {
 			max_inline = pos + (neg - pos) / 2;
 			if (qp)
@@ -536,6 +564,7 @@ int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 		rst = pos;
 	}
 
+out:
 	if (qp) {
 		ibv_destroy_qp(qp);
 	}
@@ -543,6 +572,8 @@ int vrb_find_max_inline(struct ibv_pd *pd, struct ibv_context *context,
 	if (cq) {
 		ibv_destroy_cq(cq);
 	}
+
+	vrb_prof_func_end(__func__);
 
 	return rst;
 }
@@ -605,7 +636,7 @@ static int vrb_get_param_str(const char *param_name,
 	return 0;
 }
 
-int vrb_read_params(void)
+static int vrb_read_params(void)
 {
 	/* Common parameters */
 	if (vrb_get_param_int("tx_size", "Default maximum tx context size",
@@ -632,9 +663,14 @@ int vrb_read_params(void)
 		VRB_WARN(FI_LOG_CORE, "Invalid value of rx_iov_limit\n");
 		return -FI_EINVAL;
 	}
-	if (vrb_get_param_int("inline_size", "Default maximum inline size. "
-			      "Actual inject size returned in fi_info may be "
-			      "greater", &vrb_gl_data.def_inline_size) ||
+	if (vrb_get_param_int("inline_size", "Maximum inline size for the "
+			      "verbs device. Actual inline size returned may "
+			      "be different depending on device capability. "
+			      "This value will be returned by fi_info as the "
+			      "inject size for the application to use. Set to "
+			      "0 for the maximum device inline size to be "
+			      "used. (default: 256).",
+			      &vrb_gl_data.def_inline_size) ||
 	    (vrb_gl_data.def_inline_size < 0)) {
 		VRB_WARN(FI_LOG_CORE, "Invalid value of inline_size\n");
 		return -FI_EINVAL;
@@ -733,21 +769,25 @@ int vrb_read_params(void)
 	return FI_SUCCESS;
 }
 
-static void verbs_devs_free(void)
+int vrb_init()
 {
-	struct verbs_dev_info *dev;
-	struct verbs_addr *addr;
-
-	while (!dlist_empty(&verbs_devs)) {
-		dlist_pop_front(&verbs_devs, struct verbs_dev_info, dev, entry);
-		while (!dlist_empty(&dev->addrs)) {
-			dlist_pop_front(&dev->addrs, struct verbs_addr, addr, entry);
-			rdma_freeaddrinfo(addr->rai);
-			free(addr);
-		}
-		free(dev->name);
-		free(dev);
+	if (vrb_os_ini()) {
+		FI_WARN(&vrb_prov, FI_LOG_FABRIC,
+			"failed in OS specific device initialization\n");
+		return -FI_ENODATA;
 	}
+
+	vrb_prof_func_start("vrb_os_mem_support");
+	vrb_os_mem_support(&vrb_gl_data.peer_mem_support,
+				&vrb_gl_data.dmabuf_support);
+	vrb_prof_func_end("vrb_os_mem_support");
+
+	if (vrb_read_params()) {
+		VRB_INFO(FI_LOG_FABRIC, "failed to read parameters\n");
+		return -FI_ENODATA;
+	}
+
+	return FI_SUCCESS;
 }
 
 static void vrb_fini(void)
@@ -757,9 +797,9 @@ static void vrb_fini(void)
 	ofi_hmem_cleanup();
 	ofi_mem_fini();
 #endif
+	ofi_mutex_destroy(&vrb_info_mutex);
 	ofi_mutex_destroy(&vrb_init_mutex);
-	fi_freeinfo((void *)vrb_util_prov.info);
-	verbs_devs_free();
+	fi_freeinfo(vrb_util_prov.info);
 	vrb_os_fini();
 	vrb_util_prov.info = NULL;
 }
@@ -770,11 +810,12 @@ VERBS_INI
 	ofi_mem_init();
 	ofi_hmem_init();
 	ofi_monitors_init();
+	ofi_params_init();
 #endif
+	ofi_mutex_init(&vrb_info_mutex);
 	ofi_mutex_init(&vrb_init_mutex);
 
-	if (vrb_os_ini())
-		return NULL;
+	vrb_prof_init();
 
 	return &vrb_prov;
 }

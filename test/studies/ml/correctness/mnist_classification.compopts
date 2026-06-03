@@ -1,4 +1,13 @@
--snetworkNum=1 # mnist_classification.1.good
--snetworkNum=2 # mnist_classification.2.good
--snetworkNum=3 # mnist_classification.3.good
--snetworkNum=4 # mnist_classification.4.good
+#!/usr/bin/env python3
+
+import os
+
+for i in range(1, 5):
+    # The fourth model is a big'un, for memory leaks it can
+    # time out. Skip it. Fortunately, for the purposes of
+    # memory leaks, we've tested the model loading path
+    # in configs 1-3.
+    if os.getenv('CHPL_MEM_LEAK_TESTING') == 'true' and i == 4:
+        continue
+
+    print(f"-snetworkNum={i} # mnist_classification.{i}.good")

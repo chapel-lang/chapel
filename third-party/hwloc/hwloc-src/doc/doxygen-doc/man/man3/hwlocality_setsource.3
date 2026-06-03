@@ -1,4 +1,4 @@
-.TH "hwlocality_setsource" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_setsource" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -149,7 +149,7 @@ If an invalid XML input file is given, the error may be reported either here or 
 .SS "int hwloc_topology_set_xmlbuffer (\fBhwloc_topology_t\fP restrict topology, const char *restrict buffer, int size)"
 
 .PP
-Enable XML based topology using a memory buffer (instead of a file, as with \fBhwloc_topology_set_xml()\fP)\&. Gather topology information from the XML memory buffer given at \fCbuffer\fP and of length \fCsize\fP (including an ending \\0)\&. This buffer may have been filled earlier with \fBhwloc_topology_export_xmlbuffer()\fP in \fBhwloc/export\&.h\fP\&.
+Enable XML based topology using a memory buffer (instead of a file, as with \fBhwloc_topology_set_xml()\fP)\&. Gather topology information from the XML memory buffer given at \fCbuffer\fP and of length \fCsize\fP (including an ending \fC\\0\fP)\&. This buffer may have been filled earlier with \fBhwloc_topology_export_xmlbuffer()\fP in \fBhwloc/export\&.h\fP\&.
 .PP
 Note that this function does not actually load topology information; it just tells hwloc where to load it from\&. You'll still need to invoke \fBhwloc_topology_load()\fP to actually load the topology information\&.
 .PP

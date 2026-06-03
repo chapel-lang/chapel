@@ -17,4 +17,14 @@ extern struct util_prov efa_util_prov;
 	EFA_WARN(subsys, fn ": %s(%d)\n", strerror(errno), errno)
 #define EFA_DBG(subsys, ...) FI_DBG(&efa_prov, subsys, __VA_ARGS__)
 
+static inline
+int efa_prov_info_set_fabric_name(struct fi_info *prov_info, char *fabric_name)
+{
+	prov_info->fabric_attr->name = calloc(1, strlen(fabric_name) + 1);
+	if (!prov_info->fabric_attr->name)
+		return -FI_ENOMEM;
+	strcpy(prov_info->fabric_attr->name, fabric_name);
+	return FI_SUCCESS;
+}
+
 #endif

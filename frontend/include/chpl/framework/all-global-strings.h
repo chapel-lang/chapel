@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,6 +72,7 @@ X(deserialize         , "deserialize")
 X(dmapped             , "dmapped")
 X(domain              , "domain")
 X(enterContext        , "enterContext")
+X(enum_               , "enum")
 X(exitContext         , "exitContext")
 X(false_              , "false")
 X(follower            , "follower")
@@ -113,6 +114,7 @@ X(owned               , "owned")
 X(owned_              , "_owned")
 X(postinit            , "postinit")
 X(real_               , "real")
+X(record              , "record")
 X(reduce              , "reduce")
 X(reduceAssign        , "reduce=")
 X(RootClass           , "RootClass")
@@ -136,9 +138,11 @@ X(true_               , "true")
 X(type                , "type")
 X(tuple_              , "_tuple")
 X(uint_               , "uint")
+X(union_              , "union")
 X(unmanaged           , "unmanaged")
 X(void_               , "void")
 X(range               , "range")
+X(valType             , "valType")
 
 X(atMark              , "@")
 X(equals              , "=")
@@ -206,6 +210,7 @@ X(stringId            , "String._string")
 X(bytesId             , "Bytes._bytes")
 X(localeId            , "ChapelLocale._locale")
 X(rangeId             , "ChapelRange._range")
+X(syncvarId           , "ChapelSyncvar._syncvar")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

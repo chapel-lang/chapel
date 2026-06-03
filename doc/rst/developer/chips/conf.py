@@ -1,46 +1,47 @@
 import sys
 import os
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.0'
+needs_sphinx = "1.0"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.todo',
-    'sphinxcontrib.chapeldomain',
+    "sphinx.ext.todo",
+    "sphinxcontrib.chapeldomain",
 ]
 
 # The suffix of source filenames.
-source_suffix = {'.rst' : 'restructuredtext'}
+source_suffix = {".rst": "restructuredtext"}
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = u'CHIP'
+project = "CHIP"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['Makefile',
-                    'README.md',
-                    'README.md.in',
-                   ]
+exclude_patterns = [
+    "Makefile",
+    "README.md",
+    "README.md.in",
+]
 
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+# modindex_common_prefix = []
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
-#keep_warnings = False
+# keep_warnings = False
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -49,10 +50,11 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 if not on_rtd:
     import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
+
+    html_theme = "sphinx_rtd_theme"
 
     html_theme_options = {
-        'sticky_navigation': True,
+        "sticky_navigation": True,
     }
 
 html_show_copyright = False

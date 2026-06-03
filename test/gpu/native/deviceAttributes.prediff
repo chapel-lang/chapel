@@ -1,3 +1,11 @@
 #!/bin/sh
 
-./deviceAttributes -nl 1 --runBaseline=true > deviceAttributes.good
+output=$2
+
+# remove warnings for CPU device mode
+sed '/querying gpu attributes is currently unsupported in cpu-as-device mode/d' $2 > $2.tmp && mv $2.tmp $2
+
+# everything after "GOOD FILE STARTS HERE" goes to the good file
+sed -n '/GOOD FILE STARTS HERE/,$p' $2 | sed '1d' > deviceAttributes.good
+# remove the "GOOD FILE STARTS HERE" line and everything after it from the output file
+sed '/GOOD FILE STARTS HERE/,$d' $2 > $2.tmp && mv $2.tmp $2

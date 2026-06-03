@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.6.0
+        export CHPL_HOME=~/chapel-2.8.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -333,6 +333,14 @@ CHPL_TARGET_CPU
    result in an invalid binary that will not run on the intended machine.
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
+
+   ``CHPL_TARGET_CPU`` affects what runtime the Chapel compiler will use, so to
+   switch between different ``CHPL_TARGET_CPU`` settings you must rebuild the
+   runtime. However, it is possible to instead set ``CHPL_RUNTIME_CPU`` when
+   building Chapel, which will affect only the runtime used, and not the
+   specialization of user code. If both are set, ``CHPL_RUNTIME_CPU`` will
+   select the runtime build and ``CHPL_TARGET_CPU`` will select the specialization
+   of user code.
 
    The default value for this setting will vary based on settings in your
    environment, in order of application these rules are:
@@ -955,23 +963,25 @@ CHPL_LLVM_GCC_INSTALL_DIR
 
 CHPL_UNWIND
 ~~~~~~~~~~~
-   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
-   an unwind library for stack tracing. Current options are:
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to enable
+   stack tracing support with libunwind. Current options are:
 
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       bundled   use the libunwind bundled with Chapel in third-party
        system    assume libunwind is already installed on the system
-       none      don't use an unwind library, disabling stack tracing
+       bundled   use the libunwind bundled with Chapel in third-party
+       none      don't use libunwind, disabling stack tracing
        ========= =======================================================
 
-   If unset, ``CHPL_UNWIND`` defaults to ``none``
+   If unset, ``CHPL_UNWIND`` has the following defaults:
 
-   .. note::
+      * If libunwind is detected on the system, ``CHPL_UNWIND`` defaults to ``system``.
 
-      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
-      ``CHPL_UNWIND=system`` should be used instead on that system.
+      * Otherwise, ``CHPL_UNWIND`` defaults to ``bundled`` on linux64.
+
+      * On MacOS, ``CHPL_UNWIND`` always defaults to ``system``.
+        ``CHPL_UNWIND=bundled`` is not supported on MacOS.
 
 .. _readme-chplenv.CHPL_LIB_PIC:
 

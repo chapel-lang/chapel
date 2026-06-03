@@ -67,18 +67,6 @@
 /* Default size of path group hash table */
 #define DF_PATH_GRP_HASH_SIZE 255
 
-/* Default size of CCT table. Must be multiple of 64 */
-#define DF_CCT_TABLE_SIZE 128
-
-/* CCT max IPD delay. */
-#define DF_CCT_MAX_IPD_DELAY_US 21
-
-/* CCA divisor shift */
-#define CCA_DIVISOR_SHIFT 14
-
-/* CCA ipd mask */
-#define CCA_IPD_MASK 0x3FFF
-
 /* A lot of these are IBTA specific defines that are available in other header
  * files. To minimize dependencies with PSM build process they are listed
  * here. Most of this is used to implement IBTA compliance features with PSM

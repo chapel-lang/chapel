@@ -1,5 +1,3 @@
-:title: Users Guide: Const/Param Declarations
-
 .. _ug-constParam:
 
 Constant Declarations

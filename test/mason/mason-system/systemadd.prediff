@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+OUTFILE=$2
+
+sed -e "/PKG_CONFIG_PATH=/d" $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE

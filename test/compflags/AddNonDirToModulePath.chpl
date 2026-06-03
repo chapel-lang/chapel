@@ -1,0 +1,3 @@
+import UsefulModule;
+
+UsefulModule.hello();

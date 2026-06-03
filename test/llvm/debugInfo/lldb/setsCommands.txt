@@ -1,0 +1,35 @@
+r
+
+p myIntSet
+v myIntSet[1]
+e -- myIntSet.add(10)
+p myIntSet
+c
+
+p myRealSet
+v myRealSet[1]
+e -- myRealSet.add(8.8)
+p myRealSet
+c
+
+p myRecSet
+v myRecSet[2]
+v myRecSet[2].y
+c
+
+p myStrSet
+v myStrSet[0]
+c
+
+p myOwnedClassSet
+v myOwnedClassSet[2]
+v myOwnedClassSet[2].b
+c
+
+p myClassSet
+v myClassSet[2]
+v *myClassSet[2]
+v myClassSet[2]->b
+c
+
+q

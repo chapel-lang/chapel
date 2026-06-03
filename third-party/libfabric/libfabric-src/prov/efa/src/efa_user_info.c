@@ -4,81 +4,6 @@
 #include "efa.h"
 #include "efa_prov_info.h"
 
-static
-int efa_check_hints_dgram(uint32_t version, const struct fi_info *hints,
-			  const struct fi_info *info)
-{
-	uint64_t prov_mode;
-	size_t size;
-	int ret;
-
-	if (hints->caps & ~(info->caps)) {
-		EFA_INFO(FI_LOG_CORE, "Unsupported capabilities\n");
-		OFI_INFO_CHECK(&efa_prov, info, hints, caps, FI_TYPE_CAPS);
-		return -FI_ENODATA;
-	}
-
-	prov_mode = ofi_mr_get_prov_mode(version, hints, info);
-
-	if ((hints->mode & prov_mode) != prov_mode) {
-		EFA_INFO(FI_LOG_CORE, "Required hints mode bits not set\n");
-		OFI_INFO_MODE(&efa_prov, prov_mode, hints->mode);
-		return -FI_ENODATA;
-	}
-
-	if (hints->fabric_attr) {
-		ret = ofi_check_fabric_attr(&efa_prov, info->fabric_attr,
-					    hints->fabric_attr);
-
-		if (ret)
-			return ret;
-	}
-
-	switch (hints->addr_format) {
-	case FI_FORMAT_UNSPEC:
-	case FI_ADDR_EFA:
-		size = EFA_EP_ADDR_LEN;
-		break;
-	default:
-		EFA_INFO(FI_LOG_CORE,
-			 "Address format not supported: hints[%u], supported[%u,%u]\n",
-			 hints->addr_format, FI_FORMAT_UNSPEC, FI_ADDR_EFA);
-		return -FI_ENODATA;
-	}
-
-	if (hints->src_addr && hints->src_addrlen < size)
-		return -FI_ENODATA;
-
-	if (hints->dest_addr && hints->dest_addrlen < size)
-		return -FI_ENODATA;
-
-	if (hints->domain_attr) {
-		ret = ofi_check_domain_attr(&efa_prov, version, info->domain_attr, hints);
-		if (ret)
-			return ret;
-	}
-
-	if (hints->ep_attr) {
-		ret = ofi_check_ep_attr(&efa_util_prov, info->fabric_attr->api_version, info, hints);
-		if (ret)
-			return ret;
-	}
-
-	if (hints->rx_attr) {
-		ret = ofi_check_rx_attr(&efa_prov, info, hints->rx_attr, hints->mode);
-		if (ret)
-			return ret;
-	}
-
-	if (hints->tx_attr) {
-		ret = ofi_check_tx_attr(&efa_prov, info->tx_attr, hints->tx_attr, hints->mode);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-}
-
 /**
  * @brief set the desc_addr field of user info
  *
@@ -156,88 +81,106 @@ int efa_user_info_check_hints_addr(const char *node, const char *service,
 }
 
 /**
- * @brief get a list of dgram info the fit user's requirements
+ * @brief check if user-provided fabric object is valid and assign it
  *
- * @param	node[in]	node from user's call to fi_getinfo()
- * @param	service[in]	service from user's call to fi_getinfo()
- * @param	flags[in]	flags from user's call to fi_getinfo()
  * @param	hints[in]	hints from user's call to fi_getinfo()
- * @param	info[out]	a linked list of user_info that met user's requirements
+ * @param	dupinfo[out]	provider info object to update
+ * @param	prov_info[in]	provider info object for validation
+ * @return	0 if valid, negative libfabric error code on failure
  */
-int efa_user_info_get_dgram(uint32_t version, const char *node, const char *service,
-			    uint64_t flags, const struct fi_info *hints, struct fi_info **user_info)
+int efa_user_info_check_fabric_object(const struct fi_info *hints,
+				      struct fi_info *dupinfo,
+				      const struct fi_info *prov_info)
 {
-	int ret, i;
-	struct fi_info *prov_info_dgram, *dupinfo, *tail;
+	struct util_fabric *util_fabric;
+	struct fi_fabric_attr fabric_attr;
+	int ret;
 
-	ret = efa_user_info_check_hints_addr(node, service, flags, hints);
+	if (!hints || !hints->fabric_attr || !hints->fabric_attr->fabric)
+		return 0;
+
+	if (hints->fabric_attr->fabric->fid.fclass != FI_CLASS_FABRIC) {
+		EFA_WARN(FI_LOG_CORE, "Invalid fabric object\n");
+		return -FI_EINVAL;
+	}
+
+	util_fabric = container_of(hints->fabric_attr->fabric, struct util_fabric, fabric_fid);
+	fabric_attr.prov_name = (char *)util_fabric->prov->name;
+	fabric_attr.prov_version = util_fabric->prov->version;
+	fabric_attr.api_version = hints->fabric_attr->fabric->api_version;
+
+	if (strcmp(util_fabric->name, prov_info->fabric_attr->name))
+		return -FI_EINVAL;
+
+	ret = ofi_check_fabric_attr(efa_util_prov.prov, 
+				    prov_info->fabric_attr, 
+				    &fabric_attr);
 	if (ret) {
-		*user_info = NULL;
+		EFA_WARN(FI_LOG_CORE, "Fabric attributes validation failed\n");
 		return ret;
 	}
 
-	*user_info = NULL;
-	dupinfo = NULL;
-	tail = NULL;
-	for (i = 0; i < g_device_cnt; ++i) {
-		prov_info_dgram = g_device_list[i].dgram_info;
-
-		ret = efa_prov_info_compare_src_addr(node, flags, hints, prov_info_dgram);
-		if (ret)
-			continue;
-
-		ret = efa_prov_info_compare_domain_name(hints, prov_info_dgram);
-		if (ret)
-			continue;
-
-		ret = efa_prov_info_compare_pci_bus_id(hints, prov_info_dgram);
-		if (ret)
-			continue;
-
-		EFA_INFO(FI_LOG_FABRIC, "found match for interface %s %s\n",
-			 node, prov_info_dgram->fabric_attr->name);
-		if (hints) {
-			ret = efa_check_hints_dgram(version, hints, prov_info_dgram);
-			if (ret)
-				continue;
-		}
-
-		dupinfo = fi_dupinfo(prov_info_dgram);
-		if (!dupinfo) {
-			ret = -FI_ENOMEM;
-			goto err_free;
-		}
-
-		dupinfo->fabric_attr->api_version = version;
-
-		if (!*user_info)
-			*user_info = dupinfo;
-		else
-			tail->next = dupinfo;
-		tail = dupinfo;
-		dupinfo = NULL;
-	}
-
-	if (!*user_info) {
-		ret = -FI_ENODATA;
-		goto err_free;
-	}
-
-	ret = efa_user_info_set_dest_addr(node, service, flags, hints, *user_info);
-	if (ret)
-		goto err_free;
-
-	ofi_alter_info(*user_info, hints, version);
+	dupinfo->fabric_attr->fabric = hints->fabric_attr->fabric;
 	return 0;
-
-err_free:
-	fi_freeinfo(dupinfo);
-	fi_freeinfo(*user_info);
-	*user_info = NULL;
-	return -FI_ENODATA;
 }
 
-#if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
+/**
+ * @brief check if user-provided domain object is valid and assign it
+ *
+ * @param	hints[in]	hints from user's call to fi_getinfo()
+ * @param	dupinfo[out]	provider info object to update
+ * @return	0 if valid, negative libfabric error code on failure
+ */
+int efa_user_info_check_domain_object(const struct fi_info *hints,
+				      struct fi_info *dupinfo)
+{
+	struct util_domain *util_domain;
+	struct util_fabric *util_fabric;
+	struct dlist_entry *item;
+	bool domain_found = false;
+
+	if (!hints || !hints->domain_attr || !hints->domain_attr->domain)
+		return 0;
+
+	if (hints->domain_attr->domain->fid.fclass != FI_CLASS_DOMAIN) {
+		EFA_WARN(FI_LOG_CORE, "Invalid domain object\n");
+		return -FI_EINVAL;
+	}
+
+	util_domain = container_of(hints->domain_attr->domain, struct util_domain, domain_fid);
+	util_fabric = util_domain->fabric;
+
+	if (strcmp(util_fabric->name, dupinfo->fabric_attr->name))
+		return -FI_EINVAL;
+
+	if (strcmp(util_domain->name, dupinfo->domain_attr->name))
+		return -FI_EINVAL;
+
+	ofi_mutex_lock(&util_fabric->lock);
+	dlist_foreach(&util_fabric->domain_list, item) {
+		struct util_domain *list_domain = container_of(item, struct util_domain, list_entry);
+		if (list_domain == util_domain) {
+			domain_found = true;
+			break;
+		}
+	}
+	ofi_mutex_unlock(&util_fabric->lock);
+
+	if (!domain_found) {
+		EFA_WARN(FI_LOG_CORE, "Domain object does not exist\n");
+		return -FI_EINVAL;
+	}
+
+	dupinfo->domain_attr->domain = hints->domain_attr->domain;
+
+	util_domain->info_domain_caps |= dupinfo->caps | dupinfo->domain_attr->caps;
+	util_domain->info_domain_mode |= dupinfo->mode | dupinfo->domain_attr->mode;
+	util_domain->mr_mode |= dupinfo->domain_attr->mr_mode;
+
+	return 0;
+}
+
+#if EFA_HAVE_NON_SYSTEM_HMEM
 /**
  * @brief determine if EFA provider should claim support of FI_HMEM in info
  * @param[in]	version		libfabric API version used by user
@@ -248,7 +191,7 @@ bool efa_user_info_should_support_hmem(int version)
 {
 	bool any_hmem, rdma_allowed;
 	char *extra_info = "";
-	int i;
+	enum fi_hmem_iface iface;
 
 	/* Note that the default behavior of EFA provider is different between
 	 * libfabric API version when CUDA is used as HMEM system.
@@ -282,12 +225,11 @@ bool efa_user_info_should_support_hmem(int version)
 	}
 
 	any_hmem = false;
-	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(i) {
-		enum fi_hmem_iface hmem_iface = efa_hmem_ifaces[i];
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(iface) {
 		/* Note that .initialized doesn't necessarily indicate there are
 		   hardware devices available, only that the libraries are
 		   available. */
-		if (hmem_ops[hmem_iface].initialized) {
+		if (hmem_ops[iface].initialized) {
 			any_hmem = true;
 		}
 	}
@@ -343,7 +285,7 @@ bool efa_user_info_should_support_hmem(int version)
 
 #endif
 /**
- * @brief update an info to match user hints
+ * @brief update RDM info to match user hints
  *
  * the input info is a duplicate of prov info, which matches
  * the capability of the EFA device. This function tailor it
@@ -358,8 +300,6 @@ bool efa_user_info_should_support_hmem(int version)
 static
 int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_info *hints)
 {
-	uint64_t atomic_ordering;
-
 	if (hints && (hints->caps & FI_HMEM)) {
 		/*
 		 * FI_HMEM is a primary capability, therefore only check
@@ -408,18 +348,37 @@ int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_i
 	 */
 	if (hints) {
 		if (hints->tx_attr) {
-			atomic_ordering = FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |
-					  FI_ORDER_ATOMIC_WAR | FI_ORDER_ATOMIC_WAW;
-			if (!(hints->tx_attr->msg_order & atomic_ordering)) {
+			/* efa device doesn't have ordering,
+			 * if apps request an ordering that is relaxed than
+			 * what provider supports, we should respect that.
+			 * If no ordering is specified,
+			 * the default message order supported by the provider is returned.
+			 */
+			info->tx_attr->msg_order &= hints->tx_attr->msg_order;
+
+			/* If no atomic ordering is requested, set the max_order_*_size as 0 */
+			if (!(hints->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW))
 				info->ep_attr->max_order_raw_size = 0;
-			}
+			if (!(hints->tx_attr->msg_order & FI_ORDER_ATOMIC_WAR))
+				info->ep_attr->max_order_war_size = 0;
+			if (!(hints->tx_attr->msg_order & FI_ORDER_ATOMIC_WAW))
+				info->ep_attr->max_order_waw_size = 0;
 		}
 
-		/* We only support manual progress for RMA operations */
-		if (hints->caps & FI_RMA) {
-			info->domain_attr->control_progress = FI_PROGRESS_MANUAL;
-			info->domain_attr->data_progress = FI_PROGRESS_MANUAL;
+		if (hints->rx_attr) {
+			/* efa device doesn't have ordering,
+			 * if apps request an ordering that is relaxed than
+			 * what provider supports, we should respect that.
+			 * If no ordering is specified,
+			 * the default message order supported by the provider is returned.
+			 */
+			info->rx_attr->msg_order &= hints->rx_attr->msg_order;
 		}
+
+		if (info->tx_attr->msg_order != info->rx_attr->msg_order)
+			EFA_INFO(FI_LOG_EP_CTRL, "Inconsistent tx/rx msg order. Tx msg order: %lu, Rx msg order: %lu. "
+						 "Libfabric can proceed but it is recommended to align the tx and rx msg order.\n",
+						 info->tx_attr->msg_order, info->rx_attr->msg_order);
 
 		/*
 		 * The provider does not force applications to register buffers
@@ -451,12 +410,11 @@ int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_i
 		}
 	}
 
-	/* Use a table for AV if the app has no strong requirement */
-	if (!hints || !hints->domain_attr ||
-	    hints->domain_attr->av_type == FI_AV_UNSPEC)
-		info->domain_attr->av_type = FI_AV_TABLE;
-	else
-		info->domain_attr->av_type = hints->domain_attr->av_type;
+	/* Print a warning and use FI_AV_TABLE if the app requests FI_AV_MAP */
+	if (hints && hints->domain_attr && hints->domain_attr->av_type == FI_AV_MAP)
+		EFA_INFO(FI_LOG_CORE, "FI_AV_MAP is deprecated in Libfabric 2.x. Please use FI_AV_TABLE. "
+					"EFA provider will now switch to using FI_AV_TABLE.\n");
+	info->domain_attr->av_type = FI_AV_TABLE;
 
 	if (!hints || !hints->domain_attr ||
 	    hints->domain_attr->resource_mgmt == FI_RM_UNSPEC)
@@ -468,7 +426,138 @@ int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_i
 }
 
 /**
- * @brief get a list of rdm info the fit user's requirements
+ * @brief update EFA direct info to match user hints
+ *
+ * the input info is a duplicate of prov info, which matches
+ * the capability of the EFA device. This function tailor it
+ * so it matches user provided hints
+ *
+ * @param	version[in]	libfabric API version
+ * @param	info[in,out]	info to be updated
+ * @param	hints[in]	user provided hints
+ * @return	0 on success
+ * 		negative libfabric error code on failure
+ */
+static
+int efa_user_info_alter_direct(int version, struct fi_info *info, const struct fi_info *hints)
+{
+	/*
+	 * FI_HMEM is a primary capability, therefore only check
+	 * and claim support when explicitly requested
+	 */
+	if (hints && (hints->caps & FI_HMEM))
+		info->caps |= FI_HMEM;
+	else
+		info->caps &= ~FI_HMEM;
+
+	if (info->caps & FI_HMEM) {
+		/* Add FI_MR_HMEM to mr_mode when claiming support of FI_HMEM
+		 * because EFA provider's HMEM support rely on
+		 * application to provide descriptor for device buffer.
+		 */
+		if (hints->domain_attr &&
+		    !(hints->domain_attr->mr_mode & FI_MR_HMEM)) {
+			EFA_WARN(FI_LOG_CORE,
+			        "FI_HMEM capability requires device registrations (FI_MR_HMEM)\n");
+			return -FI_ENODATA;
+		}
+
+		info->domain_attr->mr_mode |= FI_MR_HMEM;
+	}
+
+	/**
+	 * When application requests FI_RX_CQ_DATA, efa-direct
+	 * will respect it, and will finally disable unsolicited
+	 * write recv during the QP creation.
+	 * 
+	 * For NULL hints, return FI_RMA and FI_RX_CQ_DATA as 
+	 * efa direct can support them.
+	 */
+	if (!hints || (hints && hints->mode & FI_RX_CQ_DATA)) {
+		info->mode |= FI_RX_CQ_DATA;
+		info->rx_attr->mode |= FI_RX_CQ_DATA;
+	}
+
+	/**
+	 * When unsolicited write recv is not supported,
+	 * For hints that request FI_RMA but not FI_RX_CQ_DATA, we don't return efa-direct.
+	 * For hints that doesn't request FI_RMA and FI_RX_CQ_DATA, we will clear FI_RMA.
+	 */
+	if (hints && !efa_device_support_unsolicited_write_recv() &&
+	    !(info->mode & FI_RX_CQ_DATA)) {
+		if (hints->caps & FI_RMA) {
+			/**
+			 * RDMA with immediate needs to consume a recv buffer
+			 * when unsolicited write recv is not supported. So
+			 * FI_RX_CQ_DATA is required when application requests
+			 * FI_RMA.
+			 */
+			EFA_INFO(FI_LOG_CORE,
+				 "FI_RX_CQ_DATA is required for FI_RMA when "
+				 "unsolicited write recv is not supported.\n");
+			return -FI_ENODATA;
+		}
+		/** Util doesn't clear FI_RMA when !hints->caps so we always
+		 * clear it when user doesn't request it */
+		info->caps &= ~(OFI_TX_RMA_CAPS | OFI_RX_RMA_CAPS);
+		info->tx_attr->caps &= ~OFI_TX_RMA_CAPS;
+		info->rx_attr->caps &= ~OFI_RX_RMA_CAPS;
+	}
+	/*
+	 * Handle user-provided hints and adapt the info object passed back up
+	 * based on EFA-specific constraints.
+	 */
+	if (hints) {
+		/* EFA direct cannot make use of message prefix */
+		if (hints->mode & FI_MSG_PREFIX) {
+			EFA_INFO(FI_LOG_CORE,
+				"FI_MSG_PREFIX supported by application but EFA direct cannot "
+				"use prefix. Setting prefix size to 0.\n");
+			info->ep_attr->msg_prefix_size = 0;
+			EFA_INFO(FI_LOG_CORE,
+				"FI_MSG_PREFIX size = %ld\n", info->ep_attr->msg_prefix_size);
+		}
+		/* When user doesn't request FI_RMA, the max_msg_size should be returned
+		 * as the MSG only as RMA will not be used.
+		 */
+		if (!(hints->caps & FI_RMA))
+			info->ep_attr->max_msg_size = g_efa_selected_device_list[0].ibv_port_attr.max_msg_sz;
+	}
+
+	/* Print a warning and use FI_AV_TABLE if the app requests FI_AV_MAP */
+	if (hints && hints->domain_attr && hints->domain_attr->av_type == FI_AV_MAP)
+		EFA_INFO(FI_LOG_CORE, "FI_AV_MAP is deprecated in Libfabric 2.x. Please use FI_AV_TABLE. "
+					"EFA direct provider will now switch to using FI_AV_TABLE.\n");
+	info->domain_attr->av_type = FI_AV_TABLE;
+
+	return 0;
+}
+
+/**
+ * @brief check if there is an existing open domain that matches the name, caps,
+ * mode, and mr_mode. It compares domain to prov_info instead of user_info
+ * because user_info was trimmed based on user hints. We can reuse the domain as
+ * long as the provider supports.
+ *
+ */
+static int efa_find_domain(struct dlist_entry *item, const void *arg)
+{
+	const struct util_domain *domain;
+	const struct fi_info *prov_info = arg;
+
+	domain = container_of(item, struct util_domain, list_entry);
+
+	return !strcmp(domain->name, prov_info->domain_attr->name) &&
+	       (((prov_info->caps | prov_info->domain_attr->caps) &
+		 domain->info_domain_caps) == domain->info_domain_caps) &&
+	       (((prov_info->mode | prov_info->domain_attr->mode) &
+		 domain->info_domain_mode) == domain->info_domain_mode) &&
+	       ((prov_info->domain_attr->mr_mode & domain->mr_mode) ==
+		domain->mr_mode);
+}
+
+/**
+ * @brief get a list of fi_info objects the fit user's requirements
  *
  * @param	node[in]	node from user's call to fi_getinfo()
  * @param	service[in]	service from user's call to fi_getinfo()
@@ -479,12 +568,15 @@ int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_i
  * 		negative libfabric error code on failure
  */
 static
-int efa_user_info_get_rdm(uint32_t version, const char *node,
+int efa_get_user_info(uint32_t version, const char *node,
 			  const char *service, uint64_t flags,
 			  const struct fi_info *hints, struct fi_info **info)
 {
 	const struct fi_info *prov_info;
 	struct fi_info *dupinfo, *tail;
+	struct util_fabric *fabric;
+	struct util_domain *domain;
+	struct dlist_entry *item;
 	int ret;
 
 	ret = efa_user_info_check_hints_addr(node, service, flags, hints);
@@ -493,23 +585,20 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 		return ret;
 	}
 
-	if (hints) {
-		ret = ofi_prov_check_info(&efa_util_prov, version, hints);
-		if (ret) {
-			*info = NULL;
-			return ret;
-		}
-	}
-
 	*info = tail = NULL;
 	for (prov_info = efa_util_prov.info;
 	     prov_info;
 	     prov_info = prov_info->next) {
 
-		if (prov_info->ep_attr->type != FI_EP_RDM)
+		ret = ofi_check_info(&efa_util_prov, prov_info, version, hints);
+		if (ret)
 			continue;
 
 		ret = efa_prov_info_compare_src_addr(node, flags, hints, prov_info);
+		if (ret)
+			continue;
+
+		ret = efa_prov_info_compare_fabric_name(hints, prov_info);
 		if (ret)
 			continue;
 
@@ -533,19 +622,71 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 
 		dupinfo->fabric_attr->api_version = version;
 
-		ret = efa_user_info_alter_rdm(version, dupinfo, hints);
-		if (ret)
-			goto free_info;
+		if (EFA_INFO_TYPE_IS_RDM(prov_info)) {
+			ret = efa_user_info_alter_rdm(version, dupinfo, hints);
+			if (ret) {
+				fi_freeinfo(dupinfo);
+				continue;
+			}
+
+			/* If application asked for FI_REMOTE_COMM but not FI_LOCAL_COMM, it
+			 * does not want to use shm. In this case, we honor the request by
+			 * unsetting the FI_LOCAL_COMM flag in info. This way efa_rdm_ep_open()
+			 * should disable shm transfer for the endpoint
+			 */
+			if (hints && hints->caps & FI_REMOTE_COMM && !(hints->caps & FI_LOCAL_COMM))
+				dupinfo->caps &= ~FI_LOCAL_COMM;
+		}
+
+		if (EFA_INFO_TYPE_IS_DIRECT(prov_info)) {
+			ret = efa_user_info_alter_direct(version, dupinfo, hints);
+			if (ret) {
+				fi_freeinfo(dupinfo);
+				continue;
+			}
+		}
 
 		ofi_alter_info(dupinfo, hints, version);
 
-		/* If application asked for FI_REMOTE_COMM but not FI_LOCAL_COMM, it
-		 * does not want to use shm. In this case, we honor the request by
-		 * unsetting the FI_LOCAL_COMM flag in info. This way efa_rdm_ep_open()
-		 * should disable shm transfer for the endpoint
-		 */
-		if (hints && hints->caps & FI_REMOTE_COMM && !(hints->caps & FI_LOCAL_COMM))
-			dupinfo->caps &= ~FI_LOCAL_COMM;
+		/* On input to fi_getinfo, a user may set this to an opened
+		 * fabric/domain instance to restrict output to the given fabric/domain. */
+		ret = efa_user_info_check_fabric_object(hints, dupinfo, prov_info);
+		if (ret) {
+			fi_freeinfo(dupinfo);
+			continue;
+		}
+
+		ret = efa_user_info_check_domain_object(hints, dupinfo);
+		if (ret) {
+			fi_freeinfo(dupinfo);
+			continue;
+		}
+
+		if (!dupinfo->fabric_attr->fabric && !dupinfo->domain_attr->domain)
+			util_lookup_existing_fabric_domain(&efa_util_prov, hints, &dupinfo);
+
+		if (hints && hints->domain_attr && hints->domain_attr->name &&
+		    dupinfo->fabric_attr->fabric) {
+			fabric = container_of(dupinfo->fabric_attr->fabric, struct util_fabric, fabric_fid);
+			EFA_INFO(FI_LOG_CORE, "Reusing open fabric %s\n", fabric->name);
+
+			/* Use efa specific efa_find_domain instead of util_find_domain */
+			ofi_mutex_lock(&fabric->lock);
+			if (!dupinfo->domain_attr->domain) {
+				item = dlist_find_first_match(&fabric->domain_list, efa_find_domain, prov_info);
+				if (item) {
+					domain = container_of(item, struct util_domain, list_entry);
+					ofi_genlock_lock(&domain->lock);
+					dupinfo->domain_attr->domain = &domain->domain_fid;
+					EFA_INFO(FI_LOG_CORE, "Reusing open domain %s\n", domain->name);
+					domain->info_domain_caps |= dupinfo->caps | dupinfo->domain_attr->caps;
+					domain->info_domain_mode |= dupinfo->mode | dupinfo->domain_attr->mode;
+					domain->mr_mode |= dupinfo->domain_attr->mr_mode;
+					ofi_genlock_unlock(&domain->lock);
+				}
+			}
+			ofi_mutex_unlock(&fabric->lock);
+		}
 
 		if (!*info)
 			*info = dupinfo;
@@ -579,56 +720,26 @@ int efa_getinfo(uint32_t version, const char *node,
 		const char *service, uint64_t flags,
 		const struct fi_info *hints, struct fi_info **info)
 {
-	struct fi_info *dgram_info_list, *rdm_info_list;
+	struct fi_info *info_list;
+	enum fi_ep_type hints_ep_type;
 	int err;
 
-	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_DGRAM)
-		return efa_user_info_get_dgram(version, node, service, flags, hints, info);
+	hints_ep_type = FI_EP_UNSPEC;
+	if (hints && hints->ep_attr) {
+		hints_ep_type = hints->ep_attr->type;
+	}
 
-	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_RDM)
-		return efa_user_info_get_rdm(version, node, service, flags, hints, info);
-
-	if (hints && hints->ep_attr && hints->ep_attr->type != FI_EP_UNSPEC) {
+	if (hints_ep_type != FI_EP_UNSPEC && hints_ep_type != FI_EP_RDM && hints_ep_type != FI_EP_DGRAM) {
 		EFA_WARN(FI_LOG_DOMAIN, "unsupported endpoint type: %d\n",
-			 hints->ep_attr->type);
+			 hints_ep_type);
 		return -FI_ENODATA;
 	}
 
-	err = efa_user_info_get_dgram(version, node, service, flags, hints, &dgram_info_list);
+	err = efa_get_user_info(version, node, service, flags, hints, &info_list);
 	if (err && err != -FI_ENODATA) {
 		return err;
 	}
 
-	err = efa_user_info_get_rdm(version, node, service, flags, hints, &rdm_info_list);
-	if (err && err != -FI_ENODATA) {
-		fi_freeinfo(dgram_info_list);
-		return err;
-	}
-
-	if (rdm_info_list && dgram_info_list) {
-		struct fi_info *tail;
-
-		tail = rdm_info_list;
-		while (tail->next)
-			tail = tail->next;
-
-		tail->next = dgram_info_list;
-		*info = rdm_info_list;
-		return 0;
-	}
-
-	if (rdm_info_list) {
-		assert(!dgram_info_list);
-		*info = rdm_info_list;
-		return 0;
-	}
-
-	if (dgram_info_list) {
-		assert(!rdm_info_list);
-		*info = dgram_info_list;
-		return 0;
-	}
-
-	return -FI_ENODATA;
+	*info = info_list;
+	return FI_SUCCESS;
 }
-

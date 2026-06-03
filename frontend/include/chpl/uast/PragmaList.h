@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,7 +69,6 @@ PRAGMA(ALWAYS_RVF, ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
 PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
-PRAGMA(LEGACY_LAMBDA, npr, "legacy lambda", ncm)
 PRAGMA(ANONYMOUS_FORMAL, npr, "anonymous formal", ncm)
 PRAGMA(DEAD_END_OF_BLOCK, ypr, "dead at end of block", ncm)
 PRAGMA(DEAD_LAST_MENTION, ypr, "dead after last mention", ncm)
@@ -412,7 +411,6 @@ PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memo
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
 PRAGMA(METHOD, npr, "method", "function that is a method")
 PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
-PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argument")
 
 // marks top-level modules mentioned on the compiler command line
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
@@ -437,7 +435,6 @@ PRAGMA(ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsi
 PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
-PRAGMA(NO_WHERE_DOC, ypr, "no where doc", "do not include the where clause in chpldoc documentation for this symbol")
 PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
 
 // This flag disables initialization entirely. In contrast, `= noinit`
@@ -486,6 +483,8 @@ PRAGMA(OBJECT_CLASS, ypr, "object class", ncm)
 //
 PRAGMA(ON, npr, "on", ncm)
 PRAGMA(ON_BLOCK, npr, "on block", ncm)
+
+PRAGMA(OPAQUE_C_TYPE_ALIAS, ypr, "opaque c type alias", ncm)
 
 PRAGMA(OPERATOR, npr, "operator", ncm)
 

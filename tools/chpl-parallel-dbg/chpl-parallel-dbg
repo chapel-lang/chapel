@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright 2025-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2025-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -47,4 +47,4 @@ commands_file="$CHPL_HOME/runtime/etc/debug/chpl_parallel_dbg_commands.py"
 lldb \
   -o "command script import '$commands_file'" \
   -o "connect $real_name $numLocales" \
-  $@
+  "$@"

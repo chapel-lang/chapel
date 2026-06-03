@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +80,11 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#if LLVM_VERSION_MAJOR >= 21
+#include "llvm/IR/Intrinsics.h"
+#else
 #include "llvm/Target/TargetIntrinsicInfo.h"
+#endif
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -632,6 +636,11 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       if( hasFlag(FLAG_CONST) && hasFlag(FLAG_EXTERN) ) {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
+      } else if (ret.chplType == dtNil) {
+        // nil is not an immediate, but we should treat it like when for C
+        // codegen
+        ret.isLVPtr = GEN_VAL;
+        ret.c = cname;
       } else {
         QualifiedType qt = qualType();
         if (lhsInSetReference) {
@@ -1108,21 +1117,38 @@ static Type* getFormalCodegenType(ArgSymbol* formal) {
 // return type of exported functions, or arguments of those functions.
 //
 // TODO: apply to _ddata as well?
-static std::string
-transformTypeForPointer(Type* type) {
+static std::string transformTypeForPointer(Type* type, bool makeConst=false) {
+  Type* underlying = nullptr;
+  bool isConst = false;
+  std::string ret;
+
   if (type->symbol->hasFlag(FLAG_REF)) {
-    Type* referenced = type->getValType();
-    return referenced->codegen().c + " *";
+    underlying = type->getValType();
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-    bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
-    std::string ret = isConst ? "const " : "";
-    ret += pointedTo->codegen().c + " *";
-    return ret;
+    underlying = getDataClassType(type->symbol)->typeInfo();
+    isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
   }
-  std::string typeName = type->codegen().c;
-  return typeName;
+
+  // Consider output for 'a pointer to a const pointer to a const int(64)':
+  //
+  // const int64_t * const * ptr;
+  //
+  // It's a little bit goofy to build this type in C. We start by recursing
+  // to the left if need be. If the underlying is a pointer, we attach
+  // 'const' to the right of it. Otherwise, we attach 'const ' to the left
+  // of it. The outermost pointer can never be 'const'.
+  if (underlying != nullptr) {
+    ret += transformTypeForPointer(underlying, isConst);
+    ret += " *";
+    if (makeConst) ret += " const";
+
+  } else {
+    if (makeConst) ret += "const ";
+    ret += type->codegen().c;
+  }
+
+  return ret;
 }
 
 static GenRet codegenFormalType(Qualifier qual, Type* type) {
@@ -1472,6 +1498,46 @@ void TypeSymbol::codegenPrototype() {
   }
 }
 
+#ifndef HAVE_LLVM
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {}
+#else
+static void handleOpaqueCTypeAlias(TypeSymbol* ts) {
+  // Nothing to do.
+  if (gGenInfo->cfile) return;
+
+  std::string aliasName = ts->cname;
+  auto equivalentChapelType = chapelTypeForPrimitiveCTypeName(aliasName);
+  auto info = gGenInfo;
+
+  if (!equivalentChapelType) {
+    INT_FATAL(ts, "Unsupported opaque type alias name %s\n",
+                  aliasName.c_str());
+  }
+
+  if (auto eqts = equivalentChapelType->symbol) {
+    // Make sure the equivalent type is generated first.
+    if (!eqts->hasLLVMType()) eqts->codegenDef();
+  }
+
+  auto llvmImplType = equivalentChapelType->symbol->llvmImplType;
+  auto llvmAlignment = equivalentChapelType->symbol->llvmAlignment;
+  bool isUnsigned = !isSignedType(equivalentChapelType);
+
+  if (nullptr == info->lvt->getType(aliasName)) {
+    // Emplace the primitive C type if we need to. This only happens once,
+    // but the use of the pragma triggers the mapping for a given C type.
+    info->lvt->addGlobalType(aliasName, llvmImplType, isUnsigned);
+  }
+
+  // Now set our type's LLVM info to match the 'c_...' type.
+  INT_ASSERT(ts->llvmImplType == nullptr);
+  INT_ASSERT(ts->llvmAlignment == ALIGNMENT_UNINIT);
+  ts->llvmImplType = llvmImplType;
+  ts->llvmAlignment = llvmAlignment;
+
+  ts->addFlag(FLAG_CODEGENNED);
+}
+#endif
 
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -1480,6 +1546,14 @@ void TypeSymbol::codegenDef() {
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
     debuggerBreakHere();
+  }
+
+  if (hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    handleOpaqueCTypeAlias(this);
+
+    // Should hold for subsequent code to take the right path.
+    INT_ASSERT(hasFlag(FLAG_EXTERN));
+    INT_ASSERT(hasFlag(FLAG_CODEGENNED));
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
@@ -1907,7 +1981,7 @@ llvm::Type* TypeSymbol::getLLVMType() {
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
-        return llvm::PointerType::getUnqual(stype);
+        return getPointerType(stype);
       }
     }
   }
@@ -2047,7 +2121,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
 
     case clang::CodeGen::ABIArgInfo::Kind::InAlloca: {
       if (returnInfo.getInAllocaSRet()) {
-        returnTy = llvm::PointerType::get(returnTy, stackSpace);
+        returnTy = getPointerType(returnTy, stackSpace);
       } else {
         returnTy = llvm::Type::getVoidTy(ctx);
       }
@@ -2060,7 +2134,11 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
     case clang::CodeGen::ABIArgInfo::Kind::Expand: {
       INT_FATAL("Invalid ABI kind for return argument");
     } break;
-
+#if LLVM_VERSION_MAJOR >= 22
+    case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific: {
+      INT_FATAL("TargetSpecific ABI argument not implemented");
+    } break;
+#endif
     //
     // No default -> compiler warning if more added
     //
@@ -2073,7 +2151,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
     }
 
     // returnTy is void, so use chapelReturnTy
-    argTys.push_back(llvm::PointerType::get(chapelReturnTy, stackSpace));
+    argTys.push_back(getPointerType(chapelReturnTy, stackSpace));
     argNames.push_back("indirect_return");
 
     // Adjust attributes for sret argument
@@ -2192,7 +2270,7 @@ codegenFunctionTypeLLVMImpl(
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
-      argTys.push_back(llvm::PointerType::getUnqual(argStruct));
+      argTys.push_back(getPointerType(argStruct));
       outArgNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
@@ -2251,7 +2329,7 @@ codegenFunctionTypeLLVMImpl(
 
         case clang::CodeGen::ABIArgInfo::Kind::Indirect: {
           // Emit indirect argument
-          argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
+          argTys.push_back(getPointerType(argTy, stackSpace));
           outArgNames.push_back(astr(cname, ".indirect"));
 
           // Adjust attributes for indirect argument
@@ -2265,6 +2343,15 @@ codegenFunctionTypeLLVMImpl(
           clang::CharUnits align = argInfo->getIndirectAlign();
           if (argInfo->getIndirectByVal()) {
             b.addAlignmentAttr(align.getQuantity());
+          } else {
+#if LLVM_VERSION_MAJOR >= 22
+            // mark dead on return for records only for non-sret indirect
+            auto isMaybeStructLike = isPrimitiveType(formalInfo->type()) &&
+                                     formalInfo->type()->symbol->hasFlag(FLAG_EXTERN);
+            if ((isRecord(formalInfo->type()) || isMaybeStructLike) &&
+                !outAttrs.hasParamAttr(i, llvm::Attribute::StructRet))
+              b.addAttribute(llvm::Attribute::DeadOnReturn);
+#endif
           }
 
           llvmAddAttr(ctx, outAttrs, argTys.size(), b);
@@ -2309,6 +2396,14 @@ codegenFunctionTypeLLVMImpl(
               auto valType = formalInfo->type()->getValType()->codegen().type;
               int64_t sz = getTypeSizeInBytes(layout, valType);
               b.addDereferenceableAttr(sz);
+              // TODO: we should be marking retArg as sret, but can't
+              // because retArg must be either the first or second arg
+              // this will require more investigation
+              // if (formalInfo->isRetArg() &&
+              //    llvm::isa<llvm::StructType>(valType)) {
+              //   auto ptrType = formalInfo->type()->codegen().type;
+              //   llvmAttachStructRetAttr(b, ptrType);
+              // }
             }
             if (argInfo->isExtend()) {
               if (argInfo->isSignExt()) {
@@ -2340,6 +2435,12 @@ codegenFunctionTypeLLVMImpl(
                                         formalInfo->type());
           pushAllFieldTypesRecursively(cname, t, argTys, outArgNames);
         } break;
+
+#if LLVM_VERSION_MAJOR >= 22
+        case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+          INT_FATAL("TargetSpecific ABI argument not implemented");
+          break;
+#endif
       }
 
     } else {
@@ -2351,6 +2452,14 @@ codegenFunctionTypeLLVMImpl(
         auto valType = formalInfo->type()->getValType()->codegen().type;
         int64_t sz = getTypeSizeInBytes(layout, valType);
         b.addDereferenceableAttr(sz);
+        // TODO: we should be marking retArg as sret, but can't
+        // because retArg must be either the first or second arg
+        // this will require more investigation
+        // if (formalInfo->isRetArg() &&
+        //     llvm::isa<llvm::StructType>(valType)) {
+        //   auto ptrType = formalInfo->type()->codegen().type;
+        //   llvmAttachStructRetAttr(b, ptrType);
+        // }
         llvmAddAttr(ctx, outAttrs, argTys.size(), b);
       }
     }
@@ -2467,7 +2576,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 #ifdef HAVE_LLVM
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
-    llvm::PointerType *ptrToFnType = llvm::PointerType::getUnqual(fnType);
+    auto ptrToFnType = getPointerType(fnType);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
     trackLLVMValue(fngen.val);
 #endif
@@ -2889,7 +2998,7 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
-    if(debugInfo) {
+    if (debugInfo && debugInfo->shouldAddDebugInfoFor(this)) {
       llvm::DISubprogram* dbgScope = debugInfo->getFunction(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DILocation::get(dbgScope->getContext(), linenum(), 0,
@@ -3030,9 +3139,9 @@ void FnSymbol::codegenDef() {
             // Create a temp variable to store into
             GenRet tmp = createTempVar(argType);
             llvm::Value* ptr = tmp.val;
-            llvm::Type* ptrEltTy = chapelArgTy;
-            llvm::Type* i8PtrTy = getPointerType(irBuilder);
-            llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
+            auto ptrEltTy = chapelArgTy;
+            auto i8PtrTy = getPointerType(irBuilder);
+            auto coercePtrTy = getPointerType(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
@@ -3270,14 +3379,22 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       INT_ASSERT(ty.type);
       llvm::Type* Types[] = {ty.type};
 
+#if LLVM_VERSION_MAJOR < 21
+      // TargetIntrinsics were removed in LLVM 21
+      // we just access them like normal intrinsics
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+#endif
 #if LLVM_VERSION_MAJOR >= 20
       llvm::Intrinsic::ID ID = llvm::Intrinsic::lookupIntrinsicID(cname);
 #else
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
 #endif
+#if LLVM_VERSION_MAJOR < 21
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+#endif
+      if (ID == llvm::Intrinsic::not_intrinsic)
+        USR_FATAL("Could not find LLVM intrinsic %s", cname);
 #if LLVM_VERSION_MAJOR >= 20
       ret.val = llvm::Intrinsic::getOrInsertDeclaration(info->module, ID, Types);
 #else

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,7 @@
 #include <string>
 #include <map>
 #include <regex>
+#include <csignal>
 #include <numeric>
 
 #ifdef HAVE_LLVM
@@ -63,6 +64,9 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#if HAVE_LLVM_VER >= 220
+#include "llvm/IR/SystemLibraries.h"
+#endif
 #endif
 
 
@@ -122,8 +126,12 @@ const char* CHPL_LLVM_CLANG_CXX = NULL;
 const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
 const char* CHPL_TARGET_LD = NULL;
-const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
-const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = NULL;
+const char* CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS = NULL;
+const char* CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
 const char* CHPL_ROCM_LLVM_PATH = NULL;
@@ -150,13 +158,14 @@ bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 std::string driverTmpDir;
 bool fExitLeaks = false;
+bool fBuiltinRuntime = true;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
 bool fLibraryCMakeLists = false;
 bool fLibraryPython = false;
-bool fMultiLocaleInterop = false;
-bool fMultiLocaleLibraryDebug = false;
+bool fClientServerLibrary = false;
+bool fClientServerLibraryDebug = false;
 
 bool driverInSubInvocation = false;
 bool driverDebugCompilation = true;
@@ -185,6 +194,7 @@ bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = false; // adjusted in postVectorize
 static bool fYesVectorize = false;
 bool fForceVectorize = false;
+std::string fVectorLib;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -195,6 +205,7 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+bool fNoUnionChecks = false;
 bool fIgnoreNilabilityErrors = false;
 bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
@@ -217,8 +228,9 @@ bool fReportAutoAggregation= false;
 bool fArrayViewElision = true;
 bool fReportArrayViewElision = false;
 
-bool  printPasses     = false;
-FILE* printPassesFile = NULL;
+bool  printPasses       = false;
+FILE* printPassesFile   = nullptr;
+bool  printPassesMemory = false;
 
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
@@ -253,7 +265,6 @@ bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
-bool fMinimalModules = false;
 int fParMake = 0;
 bool fIncrementalCompilation = false;
 bool fNoOptimizeForallUnordered = false;
@@ -355,6 +366,7 @@ char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
+std::string defaultEdition = fEdition;
 bool fUserSetPreEdition = false;
 
 static bool fPrintCopyright = false;
@@ -621,7 +633,10 @@ static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg
   // --no-tuple-copy-opt
   fNoTupleCopyOpt = true;
   // --no-denormalize
-  fDenormalize = false;
+  // we want denormalize off for the most part, but need parts of it
+  // (e.g., need denormalize to undo return-by-ref), so this is controlled in
+  // the denormalize pass with fDebugSafeOptOnly
+  // fDenormalize = false;
   // --no-return-by-ref
   fReturnByRef = false;
   // --no-replace-array-accesses-with-ref-temps
@@ -637,6 +652,7 @@ static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 
   // --debug-safe-optimizations-only
+  fDebugSafeOptOnly = true;
   setDebugSafeOptOnly(nullptr, nullptr); // nullptr since args unused
 }
 
@@ -728,7 +744,10 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
   llvmFlags += arg;
 
-  if (0 == strcmp(arg, "--help")) {
+  if (0 == strcmp(arg, "--help-hidden")) {
+    std::vector<const char*> Args = {"chpl --mllvm", "--help-hidden", nullptr};
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  } else if (0 == strcmp(arg, "--help")) {
     std::vector<const char*> Args = {"chpl --mllvm", "--help", nullptr};
     llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
   }
@@ -816,6 +835,14 @@ static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
   return shouldSkipMakeBinary;
 }
 
+static void warnMaybeOomKilled(int sig) {
+  if (sig == SIGKILL) {
+    USR_WARN(
+        "A driver phase was killed by signal SIGKILL -- possibly due to "
+        "running out of memory");
+  }
+}
+
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
 // Exits if a phase fails.
@@ -827,12 +854,14 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
   // invoke compilation phase
   if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
+    warnMaybeOomKilled(status);
     clean_exit(status);
   }
 
   if (!shouldSkipMakeBinary()) {
     // invoke makeBinary phase
     if ((status = runDriverMakeBinaryPhase(argc, argv)) != 0) {
+      warnMaybeOomKilled(status);
       clean_exit(status);
     }
   }
@@ -960,6 +989,10 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
   } else {
     fEdition = val;
   }
+  // when using a non-default edition (and not preview), warn about unstable features
+  if (defaultEdition != fEdition && fEdition != "preview") {
+    fWarnUnstable = true;
+  }
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -1031,6 +1064,14 @@ static void addModulePath(const ArgumentDescription* desc, const char* newpath) 
   cmdLineModPaths.push_back(std::string(newpath));
 }
 
+static void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+static void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
+  gDynoPrependStandardModulePaths.push_back(newpath);
+}
+
 static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
   userSetCppLineno = true;
 }
@@ -1063,6 +1104,14 @@ static void setVectorize(const ArgumentDescription* desc, const char* unused)
     fYesVectorize = true;
 }
 
+static void setVectorLib(const ArgumentDescription* desc, const char* arg)
+{
+  fVectorLib = std::string(arg);
+  if (fVectorLib == "none") {
+    fVectorLib = "";
+  }
+}
+
 static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = fNoChecks;
   fNoBoundsChecks = fNoChecks;
@@ -1072,6 +1121,7 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoStackChecks  = fNoChecks;
   fNoCastChecks = fNoChecks;
   fNoDivZeroChecks = fNoChecks;
+  fNoUnionChecks = fNoChecks;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -1218,7 +1268,7 @@ static void setLogModule(const ArgumentDescription* desc, const char* arg) {
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
-  if (printPassesFile == NULL) {
+  if (printPassesFile == nullptr) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
 }
@@ -1268,7 +1318,7 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   }
 }
 
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+static void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   if (fDynoGenLib) {
     USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
   }
@@ -1413,6 +1463,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
+ {"vector-library", ' ', "<lib>", "Select a vectorization library to use", "S", NULL, "CHPL_VECTORIZATION_LIBRARY", setVectorLib},
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
  {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
@@ -1432,6 +1483,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
+ {"union-checks", ' ', NULL, "Enable [disable] union field checking", "n", &fNoUnionChecks, NULL, NULL},
 
  {"", ' ', NULL, "Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_CODEGEN", NULL},
@@ -1462,6 +1514,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
+ {"print-passes-memory", ' ', NULL, "[Don't] print memory usage after each compiler pass", "N", &printPassesMemory, "CHPL_PRINT_PASSES_MEMORY", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, "CHPL_DETAILED_ERRORS", NULL},
@@ -1494,6 +1547,7 @@ static ArgumentDescription arg_desc[] = {
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setChplEnv},
  {"target-mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_TARGET_MEM", setChplEnv},
  {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setChplEnv},
+ {"sanitize-exe", ' ', "<sanitizer>", "Specify the sanitizer to use for the executable/runtime", "S", NULL, "_CHPL_SANITIZE_EXE", setChplEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setChplEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setChplEnv},
  {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setChplEnv},
@@ -1599,6 +1653,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setChplEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
  {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
+ {"builtin-runtime", ' ', NULL, "[Don't] add a copy of the Chapel runtime to your compiled program", "N", &fBuiltinRuntime, NULL, NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", &libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", &libmodeHeadername, NULL, setLibmode},
@@ -1608,7 +1663,8 @@ static ArgumentDescription arg_desc[] = {
  {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", &fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", &pythonModulename, NULL, setPythonAndLibmode},
- {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
+ {"client-server-library", ' ', NULL, "Enable [disable] generation of multi-locale client-server libraries", "N", &fClientServerLibrary, NULL, NULL},
+ {"client-server-library-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale client-server libraries", "N", &fClientServerLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
@@ -1629,7 +1685,6 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"return-by-ref", ' ', NULL, "Enable return-by-ref of structs in the generated code", "N", &fReturnByRef, NULL, NULL},
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
- {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
@@ -1798,8 +1853,12 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
       key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
       key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
       key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
-      key == "CHPL_TARGET_BUNDLED_LINK_ARGS" ||
-      key == "CHPL_TARGET_SYSTEM_LINK_ARGS") {
+      key == "CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS") {
     return true;
   }
 
@@ -1920,8 +1979,13 @@ static void setChapelEnvs() {
   CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
   CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
   CHPL_TARGET_LD = envMap["CHPL_TARGET_LD"];
-  CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
-  CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
+
+  CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS"];
+  CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS"];
+  CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS = envMap["CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS"];
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
@@ -1979,13 +2043,42 @@ static void postTaskTracking() {
   }
 }
 
-static void postStaticLink() {
-  if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+static void checkMacOsxLinkStyle() {
+  if (fLinkStyle == LS_STATIC && !strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
+    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+    // To handle linker errors and relocations in the client library.
+    fLinkStyle = fClientServerLibrary ? LS_DYNAMIC : LS_DEFAULT;
+  }
+}
+
+static void checkMultiLocaleLibraryConstraints() {
+  if (!isMultiLocaleLibrary()) return;
+
+  //
+  // These checks are "constraints" because they are only current limitations
+  // and could potentially be dropped in the future.
+  //
+
+  if (fLinkStyle == LS_STATIC || fLinkStyle == LS_DEFAULT) {
     if (fLinkStyle == LS_STATIC) {
-      USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-      // To handle linker errors and relocations in the client library.
-      fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
+      USR_WARN("static linking of multi-locale libraries is not "
+               "currently supported, switching to '--dynamic'");
     }
+
+    // Force dynamic linking if it is not already.
+    fLinkStyle = LS_DYNAMIC;
+  }
+
+  if (fLibraryFortran) {
+    USR_FATAL("multi-locale libraries do not currently support "
+              "'--library-fortran', you may want to try throwing the flag "
+              "'--client-server-library' instead");
+  }
+
+  if (fLibraryPython) {
+    USR_FATAL("multi-locale libraries do not currently support "
+              "'--library-python', you may want to try throwing the flag "
+              "'--client-server-library' instead");
   }
 }
 
@@ -2016,17 +2109,31 @@ static void postVectorize() {
   }
 }
 
-static void setMultiLocaleInterop() {
-  // We must be compiling a multi-locale library to be eligible for MLI.
-  if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
-    return;
+static void checkClientServerLibrary() {
+  if (isMultiLocaleLibrary()) {
+    // If we're compiling a "regular old" multi-locale library, gently warn...
+    USR_WARN("The behavior when compiling a multi-locale library has changed. "
+             "For the old behavior, throw '--client-server-library'");
+  }
+
+  // Neither flag is thrown, so just return.
+  if (!isClientServerLibrary()) return;
+
+  if (!strcmp(CHPL_COMM, "none")) {
+    USR_FATAL("Client-server libraries cannot currently be compiled "
+              "with 'CHPL_COMM=none'");
   }
 
   if (fLibraryFortran) {
-    USR_FATAL("Multi-locale libraries do not support --library-fortran");
+    USR_FATAL("Client-server libraries do not support --library-fortran");
   }
 
-  fMultiLocaleInterop = true;
+  if (fClientServerLibraryDebug) {
+    fClientServerLibrary = true;
+  }
+
+  // To get things to work right, consider this a type of library.
+  fLibraryCompile = true;
 }
 
 static void setMaxCIdentLen() {
@@ -2075,6 +2182,7 @@ static void setGPUFlags() {
       fNoStackChecks  = true;
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
+      fNoUnionChecks = true;
     }
     //
     // set up gpuArch
@@ -2095,6 +2203,116 @@ static void setGPUFlags() {
 
 }
 
+struct VectorLibraryInfo {
+  struct KnownVectorLib {
+    std::string name;
+    std::string llvmBackendName;
+    std::string clangBackendName;
+    std::string gccBackendName;
+#if HAVE_LLVM_VER >= 220
+    llvm::VectorLibrary llvmLib;
+    KnownVectorLib(std::string name, std::string llvmBackendName,
+                   std::string clangBackendName, std::string gccBackendName,
+                   llvm::VectorLibrary llvmLib)
+      : name(name), llvmBackendName(llvmBackendName),
+        clangBackendName(clangBackendName), gccBackendName(gccBackendName),
+        llvmLib(llvmLib) {}
+#else
+    KnownVectorLib(std::string name, std::string llvmBackendName,
+                   std::string clangBackendName, std::string gccBackendName)
+      : name(name), llvmBackendName(llvmBackendName),
+        clangBackendName(clangBackendName), gccBackendName(gccBackendName) {}
+#endif
+    std::string getBackendName() {
+      if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+        return llvmBackendName;
+      } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+        return clangBackendName;
+      } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+        return gccBackendName;
+      } else {
+        return "";
+      }
+    }
+  };
+
+#if HAVE_LLVM_VER >= 220
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC", "libmvec", "", llvm::VectorLibrary::LIBMVEC);
+  static inline const auto darwinLibSystemM = KnownVectorLib("darwinLibSystemM", "Darwin_libsystem_m", "Darwin_libsystem_m", "", llvm::VectorLibrary::DarwinLibSystemM);
+#else
+#if HAVE_LLVM_VER < 210
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC-X86", "libmvec", "");
+#else
+  static inline const auto libmvec = KnownVectorLib("libmvec", "LIBMVEC", "libmvec", "");
+#endif
+  static inline const auto darwinLibSystemM = KnownVectorLib("darwinLibSystemM", "Darwin_libsystem_m", "Darwin_libsystem_m", "");
+#endif
+
+  static std::optional<KnownVectorLib> getKnownVectorLib(const std::string& vecLib) {
+    static std::array<KnownVectorLib, 2> knownVectorLibs = {libmvec, darwinLibSystemM};
+    for (const auto& knownLib : knownVectorLibs) {
+      if (vecLib == knownLib.name) {
+        return knownLib;
+      }
+    }
+    return std::nullopt;
+  }
+  static std::optional<std::string> getBackendVectorLibFlag() {
+    if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+#if HAVE_LLVM_VER >= 220
+      return "DELAYED";
+#else
+      return "-vector-library=";
+#endif
+    } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+      return "-fveclib=";
+    } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+      return "-mveclibabi=";
+    } else {
+      return std::nullopt;
+    }
+  }
+};
+
+static void setVectorLib() {
+  if (fVectorLib == "") return; // nothing to do
+
+  auto flagName = VectorLibraryInfo::getBackendVectorLibFlag();
+  if (!flagName.has_value()) {
+    USR_FATAL("--vector-library is not supported with the %s backend",
+              CHPL_TARGET_COMPILER);
+  }
+
+  std::string flagValue = fVectorLib;
+  auto knownLib = VectorLibraryInfo::getKnownVectorLib(fVectorLib);
+  if (knownLib.has_value() && knownLib->getBackendName() != "") {
+    flagValue = knownLib->getBackendName();
+  } else {
+    USR_WARN("Unknown vector library '%s' specified - "
+             "this will be passed to the backend as '%s%s'",
+             fVectorLib.c_str(), flagName.value().c_str(), flagValue.c_str());
+  }
+
+  if (flagName.value() != "DELAYED") {
+    if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+      if (llvmFlags.length() > 0)
+        llvmFlags += ' ';
+      llvmFlags += flagName.value();
+      llvmFlags += flagValue;
+    } else {
+      if (ccflags.length() > 0)
+        ccflags += ' ';
+      ccflags += flagName.value();
+      ccflags += flagValue;
+    }
+  } else {
+#if HAVE_LLVM_VER >= 220
+  if (knownLib.has_value()) {
+    fVectorLibLLVM = knownLib.value().llvmLib;
+  }
+#endif
+  }
+}
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
   if (fDriverDoMonolithic) {
@@ -2161,6 +2379,12 @@ static void checkLLVMCodeGen() {
     if (std::regex_search(ccflags, re) || std::regex_search(ldflags, re)) {
       USR_WARN("The LLVM target compiler does not currently support '-pg'");
     }
+  }
+}
+
+static void checkPrintPassesMemory() {
+  if (printPassesMemory && !MemoryTracker::platformSupportsMemoryTracking()) {
+    USR_FATAL("--print-passes-memory is not supported on this platform");
   }
 }
 
@@ -2239,7 +2463,7 @@ static void checkRuntimeBuilt(void) {
   runtime_dir += "/";
   runtime_dir += CHPL_RUNTIME_SUBDIR;
 
-  if (!isDirectory(runtime_dir.c_str())) {
+  if (!chpl::directoryExists(runtime_dir.c_str())) {
     const char* module_home = getenv("CHPL_MODULE_HOME");
     if (module_home) {
       USR_FATAL("The requested configuration is not included in the module. "
@@ -2251,7 +2475,7 @@ static void checkRuntimeBuilt(void) {
 
       std::string buf = CHPL_HOME + "/util/printchplenv --diagnose-lib=runtime";
       fflush(stdout); // make sure output is flushed before running subprocess
-      mysystem(buf.c_str(), "running printchplenv to diagnose missing runtime", false);
+      mysystem(buf.c_str(), "running printchplenv to diagnose missing runtime", true);
 
       USR_PRINT("Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.");
     }
@@ -2266,7 +2490,7 @@ static void checkRuntimeBuilt(void) {
   launcher_dir += CHPL_LAUNCHER_SUBDIR;
 
   if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
-      !isDirectory(launcher_dir.c_str())) {
+      !chpl::directoryExists(launcher_dir.c_str())) {
     USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
                    CHPL_LAUNCHER);
     if (developer) {
@@ -2274,22 +2498,6 @@ static void checkRuntimeBuilt(void) {
     }
     USR_STOP();
   }
-}
-
-static void checkMLDebugAndLibmode(void) {
-  if (!fMultiLocaleLibraryDebug) { return; }
-
-  // This flag implies compilation of a library.
-  fLibraryCompile = true;
-
-  if (!strcmp(CHPL_COMM, "none")) {
-    fMultiLocaleLibraryDebug = false;
-    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
-  } else {
-    fMultiLocaleInterop = true;
-  }
-
-  return;
 }
 
 static void checkLibraryPythonAndLibmode(void) {
@@ -2304,8 +2512,8 @@ static void checkLibraryPythonAndLibmode(void) {
   }
 
   if (fLinkStyle == LS_STATIC) {
-    const char* libKindMsg = fMultiLocaleInterop
-        ? "Multi-locale Python libraries"
+    const char* libKindMsg = fClientServerLibrary
+        ? "Multi-locale Python client-server libraries"
         : "Python libraries";
     USR_WARN("%s cannot be compiled with -static, ignoring flag",
              libKindMsg);
@@ -2314,23 +2522,13 @@ static void checkLibraryPythonAndLibmode(void) {
 
   INT_ASSERT(fLinkStyle == LS_DEFAULT || fLinkStyle == LS_DYNAMIC);
 
-  // For single-locale libraries LS_DEFAULT may work, but for multi-locale
+  // For single-locale libraries LS_DEFAULT may work, but for client-server
   // libraries we need to force dynamic linking in order to prevent
   // relocations in the client library.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     fLinkStyle = LS_DYNAMIC;
   }
 }
-
-static void checkNotLibraryAndMinimalModules(void) {
-  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
-  if (isLibraryCompile && fMinimalModules) {
-    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
-  }
-
-  return;
-}
-
 
 // Take actions for which settings are inferred based on other arguments
 // or CHPL_ settings
@@ -2351,17 +2549,19 @@ static void postprocess_args() {
 
   postTaskTracking();
 
-  setMultiLocaleInterop();
+  checkClientServerLibrary();
 
-  postStaticLink();
+  checkMacOsxLinkStyle();
 
-  checkMLDebugAndLibmode();
+  checkMultiLocaleLibraryConstraints();
 
   checkLibraryPythonAndLibmode();
 
   setPrintCppLineno();
 
   setGPUFlags();
+
+  setVectorLib();
 
   // restore warnings to previous state
   ignore_warnings = ignore_warnings_previous;
@@ -2381,13 +2581,13 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
-  checkNotLibraryAndMinimalModules();
-
   checkLLVMCodeGen();
 
   checkDebugFlag();
 
   checkEditionFlag();
+
+  checkPrintPassesMemory();
 
   checkTargetCpu();
 
@@ -2408,6 +2608,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .nilDerefChecking = !fNoNilChecks,
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
+    .unionAccessChecking = !fNoUnionChecks,
     .cacheRemote = fCacheRemote,
     // We need privatization if we are doing a non-local compilation, or using
     // GPUs
@@ -2488,6 +2689,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
 
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
+
   // set up the clang arguments
 #ifdef HAVE_LLVM
   {
@@ -2515,7 +2718,6 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
                                         "", //moduleRoot
-                                        fMinimalModules,
                                         CHPL_LOCALE_MODEL,
                                         fEnableTaskTracking,
                                         CHPL_TASKS,
@@ -2635,7 +2837,15 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+  }
 
+  if (!driverInSubInvocation) {
+    // only realize errors in the main driver, to avoid duplicates
+    if (dynoRealizeErrors()) USR_STOP();
+  } else {
+    // even if we have errors to show, just clear them. they should have already
+    // been reported in the driver
+    dynoClearErrors();
   }
 
   if (fDynoTimingPath[0] != '\0' &&
@@ -2691,7 +2901,7 @@ int main(int argc, char* argv[]) {
 
   tracker.Stop();
 
-  if (printPasses == true || printPassesFile != NULL) {
+  if (PhaseTracker::shouldReportPasses()) {
     // Report out timing totals information, with adjustments for driver mode.
     if (fDriverDoMonolithic) {
       // Report normally in monolithic mode.
@@ -2703,7 +2913,7 @@ int main(int argc, char* argv[]) {
       // Save timing totals in sub-invocations, to restore and output by driver.
 
       static const char* groupTimesFilename = "passGroupTimings.tmp";
-      std::vector<unsigned long> groupTimes;
+      std::vector<PhaseData> groupData;
 
       if (driverInSubInvocation) {
         // This is a sub-invocation, capture timing totals information for later
@@ -2714,12 +2924,12 @@ int main(int argc, char* argv[]) {
         tracker.ReportRollup();
 
         // Get timing information
-        tracker.ReportPassGroupTotals(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupData);
 
         // Save times to file
         std::vector<std::string_view> groupTimesStrs;
-        for (const unsigned long groupTime : groupTimes) {
-          groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
+        for (const auto d : groupData) {
+          groupTimesStrs.emplace_back(astr(d.serialize().c_str()));
         }
         saveDriverTmpMultiple(groupTimesFilename, groupTimesStrs);
       } else {
@@ -2728,8 +2938,8 @@ int main(int argc, char* argv[]) {
 
         // Restore times from file
         restoreDriverTmp(
-            groupTimesFilename, [&groupTimes](std::string_view timeStr) {
-              groupTimes.emplace_back(std::stoul(std::string(timeStr)));
+            groupTimesFilename, [&groupData](std::string_view timeStr) {
+              groupData.emplace_back(PhaseData::deserialize(timeStr));
             });
 
         // Unless stopping early, expect frontend, middle-end, and (incomplete)
@@ -2738,11 +2948,11 @@ int main(int argc, char* argv[]) {
         if (!shouldSkipMakeBinary(/* warnIfSkipping */ false)) {
           const size_t numPassGroups = 3;
           INT_ASSERT(
-              groupTimes.size() == (numPassGroups + 1) &&
+              groupData.size() == (numPassGroups + 1) &&
               "unexpected number of saved timing results from driver phases");
           // Combine the two halves of the backend total time into one value.
-          groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
-          groupTimes.pop_back();
+          groupData[numPassGroups - 1] += groupData[numPassGroups];
+          groupData.pop_back();
         }
 
         // Report final driver overhead timing information.
@@ -2751,17 +2961,17 @@ int main(int argc, char* argv[]) {
         tracker.ReportRollup();
 
         // Report restored times
-        tracker.ReportPassGroupTotals(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupData);
         // Report total time including both pass group times and driver overhead
-        auto groupTimesSum =
-            std::accumulate(groupTimes.begin(), groupTimes.end(),
-                            decltype(groupTimes)::value_type(0));
-        tracker.ReportOverallTotal(groupTimesSum);
+        auto groupDataSum =
+            std::accumulate(groupData.begin(), groupData.end(),
+                            decltype(groupData)::value_type(0, 0));
+        tracker.ReportOverallTotal(groupDataSum);
       }
     }
   }
 
-  if (printPassesFile != NULL) {
+  if (printPassesFile != nullptr) {
     fclose(printPassesFile);
   }
 

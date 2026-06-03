@@ -1,2 +1,0 @@
-Bad package name '0bad' - only Chapel identifiers are legal package names.
-Please use mason new 0bad --name <LegalName>

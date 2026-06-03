@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_cache" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_cache" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,13 +10,13 @@ hwlocality_helper_find_cache \- Looking at Cache Objects
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_get_cache_type_depth\fP (\fBhwloc_topology_t\fP topology, unsigned cachelevel, \fBhwloc_obj_cache_type_t\fP cachetype)"
+.RI "int \fBhwloc_get_cache_type_depth\fP (\fBhwloc_topology_t\fP topology, unsigned cachelevel, \fBhwloc_obj_cache_type_t\fP cachetype)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_cache_covering_cpuset\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_cache_covering_cpuset\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_shared_cache_covering_obj\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_shared_cache_covering_obj\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -24,7 +24,7 @@ hwlocality_helper_find_cache \- Looking at Cache Objects
 
 .SH "Function Documentation"
 .PP 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_cache_covering_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_cache_covering_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set)\fC [inline]\fP"
 
 .PP
 Get the first data (or unified) cache covering a cpuset \fCset\fP\&. 
@@ -35,7 +35,7 @@ a covering cache, or \fCNULL\fP if no cache matches\&.
 .RE
 .PP
 
-.SS "static int hwloc_get_cache_type_depth (\fBhwloc_topology_t\fP topology, unsigned cachelevel, \fBhwloc_obj_cache_type_t\fP cachetype)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_get_cache_type_depth (\fBhwloc_topology_t\fP topology, unsigned cachelevel, \fBhwloc_obj_cache_type_t\fP cachetype)\fC [inline]\fP"
 
 .PP
 Find the depth of cache objects matching cache level and type\&. Return the depth of the topology level that contains cache objects whose attributes match \fCcachelevel\fP and \fCcachetype\fP\&.
@@ -56,7 +56,7 @@ the depth of the matching level if \fCcachetype\fP is \fC-1\fP but only one leve
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_shared_cache_covering_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_get_shared_cache_covering_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)\fC [inline]\fP"
 
 .PP
 Get the first data (or unified) cache shared between an object and somebody else\&. 

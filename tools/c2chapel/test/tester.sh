@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# This script must be run within c2chapel/test
-
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+cd $CWD
 
 # Only use colors for stdout with a color-supporting terminal
 if test -t 1; then

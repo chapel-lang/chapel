@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,7 @@
 #include "qio.h"
 
 #include "bswap.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // true 1 false 0   __bool_true_false_are_defined
 #include <stdbool.h>

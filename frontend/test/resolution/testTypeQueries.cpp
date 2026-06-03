@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -916,20 +916,20 @@ static void test27() {
    )""";
 
   std::pair<const char*, const char*> cases[] = {
-    {"f(A)", "one-dim real (domain(1,int(64),one))"},
-    {"f(B)", "two-dim real (domain(1,int(64),negOne), domain(1,int(64),positive))"},
-    {"f(C)", "one-dim owned (domain(1,int(64),one)) with elt type owned MyClass"},
-    {"f((A, C))", "pair of real, owned (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(E)", "wrapper with elt type real(64) (domain(1,int(64),one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1,int(64),one))"},
-    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1,int(64),one))"},
-    {"f(F64)", "two-dim int with width 64 (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"f(F32)", "two-dim int with width 32 (domain(1,int(64),one), domain(1,int(64),one))"},
-    {"f(F16)", "two-dim int with width 16 (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"f(A)", "one-dim real (domain(1, int(64), strideKind.one))"},
+    {"f(B)", "two-dim real (domain(1, int(64), strideKind.negOne), domain(1, int(64), strideKind.positive))"},
+    {"f(C)", "one-dim owned (domain(1, int(64), strideKind.one)) with elt type owned MyClass"},
+    {"f((A, C))", "pair of real, owned (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(E)", "wrapper with elt type real(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"f(F64)", "two-dim int with width 64 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"f(F32)", "two-dim int with width 32 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"f(F16)", "two-dim int with width 16 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
     {"sameElts(A, C)", nullptr}, // should error
     {"sameElts(C, A)", nullptr}, // should error
     {"foo(D, E)", nullptr}, // should error
@@ -975,6 +975,28 @@ static void test28() {
   ensureParamInt(vars.at("x"), 64);
 }
 
+static void test29() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                record pair { type first; type second; }
+                proc foo(x: pair(?, first=?t)) param do return t : string;
+                proc bar(x: pair(?, second=?t)) param do return t : string;
+                param x = foo(new pair(int, real));
+                param y = foo(new pair(real, int));
+                param z = bar(new pair(int, real));
+                param w = bar(new pair(real, int));
+                )"""", {"x", "y", "z", "w"});
+
+  ensureParamString(vars.at("x"), "int(64)");
+  ensureParamString(vars.at("y"), "real(64)");
+  ensureParamString(vars.at("z"), "real(64)");
+  ensureParamString(vars.at("w"), "int(64)");
+}
+
 int main() {
   test1();
   test2();
@@ -1011,6 +1033,7 @@ int main() {
   test26();
   test27();
   test28();
+  test29();
 
   return 0;
 }

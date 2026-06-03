@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,8 +59,6 @@ class IteratorInfo;
 class Stmt;
 class SymExpr;
 struct InterfaceReps;
-
-typedef std::bitset<NUM_FLAGS> FlagSet;
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
@@ -881,6 +879,8 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 extern const char* astr_autoDestroy;
+extern const char* astr__fn;
+extern const char* astr__ln;
 
 bool isAstrOpName(const char* name);
 

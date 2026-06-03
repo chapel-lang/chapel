@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 Intel Corporation. All rights reserved
+ * Copyright (c) Intel Corporation. All rights reserved
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,11 +30,6 @@
  * SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <sys/uio.h>
-
-#include "ofi_iov.h"
 #include "smr.h"
 
 int smr_complete_tx(struct smr_ep *ep, void *context, uint32_t op,
@@ -51,7 +46,7 @@ int smr_complete_tx(struct smr_ep *ep, void *context, uint32_t op,
 }
 
 int smr_write_err_comp(struct util_cq *cq, void *context,
-		       uint64_t flags, uint64_t tag, uint64_t err)
+		       uint64_t flags, uint64_t tag, int err)
 {
 	struct fi_cq_err_entry err_entry;
 
@@ -59,8 +54,8 @@ int smr_write_err_comp(struct util_cq *cq, void *context,
 	err_entry.op_context = context;
 	err_entry.flags = flags;
 	err_entry.tag = tag;
-	err_entry.err = err;
-	err_entry.prov_errno = -err;
+	err_entry.err = -err;
+	err_entry.prov_errno = err;
 	return ofi_peer_cq_write_error(cq, &err_entry);
 }
 
@@ -75,6 +70,7 @@ int smr_complete_rx(struct smr_ep *ep, void *context, uint32_t op,
 
 	flags &= ~FI_COMPLETION;
 
-	return ofi_peer_cq_write(ep->util_ep.rx_cq, context, flags, len, buf,
-				 data, tag, ep->region->map->peers[id].fiaddr);
+	return ofi_peer_cq_write(ep->util_ep.rx_cq, context,
+				 ofi_rx_cq_flags(op) | flags, len, buf, data,
+				 tag, ep->map->peers[id].fiaddr);
 }

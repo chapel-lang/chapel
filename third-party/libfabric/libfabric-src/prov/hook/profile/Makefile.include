@@ -15,6 +15,7 @@ libprofile_fi_la_SOURCES = $(_profilehook_files) \
         $(common_srcs)
 libprofile_fi_la_CPPFLAGS = $(AM_CPPFLAGS) \
         -I$(top_srcdir)/prov/hook/include  \
+        -I$(top_srcdir)/prov/hook/perf/include \
         -I$(top_srcdir)/prov/hook/profile/include 
 libprofile_fi_la_LIBADD = $(linkback) $(profilehook_shm_LIBS)
 libprofile_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic

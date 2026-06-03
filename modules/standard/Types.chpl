@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -770,7 +770,7 @@ proc toNilableIfClassType(type arg) type {
 Returns the number of bits used to store the values of type ``t``.
 This is available for all numeric types.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc numBits(type t) param where t == bool {
   compilerError("'bool' does not have a well-defined size");
 }
@@ -825,7 +825,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -864,7 +864,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc
@@ -997,8 +997,12 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
 
 @unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
-  if this != 0 && this != 1 then
-    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  if castChecking then
+    if this != 0 && this != 1 then
+      HaltWrappers.safeCastCheckHalt(
+        "casting "+this.type:string+
+        " to 'bool' requires it to have a value of either 0 or 1,"+
+        " but the current value is " + this:string);
   return this: bool;
 }
 

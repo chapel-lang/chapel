@@ -1,0 +1,2 @@
+UseExplicitModules.chpl:7: warning: an implicit module named 'UseExplicitModules' is being introduced to contain file-scope code
+UseExplicitModules.chpl:1: node violates rule UseExplicitModules

@@ -1,5 +1,3 @@
-:title: Users Guide: Compiling and Executing Multi-Locale Programs
-
 Compiling and Executing Multi-Locale Programs
 =============================================
 

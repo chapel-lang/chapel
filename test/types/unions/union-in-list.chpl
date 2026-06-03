@@ -1,19 +1,19 @@
 use List;
 
 union Union {
-    var s: string;
+  var s: string;
 }
 
 record Container {
-    var items: list(Union);
+  var items: list(Union);
 }
 
 proc main() {
-    var aUnion: Union;
-      aUnion.s = "string literal";
+  var aUnion: Union;
+  aUnion.s = "string literal";
 
-        var container = new Container();
-          container.items.pushBack(aUnion);
+  var container = new Container();
+  container.items.pushBack(aUnion);
 
-            writeln(container);
+  writeln(container);
 }

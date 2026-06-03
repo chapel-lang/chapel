@@ -40,22 +40,25 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 # When the multi-local playground is not used, set `SKIP_ARKOUDA_PLAYGROUND=1
 #
 
+# Test what happens to performance if we disable the
+# --interprocedural-alias-analysis pass by default
+
 SKIP_ARKOUDA_PLAYGROUND=0
 if [[ "$SKIP_ARKOUDA_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the arkouda playground"
   exit
 fi
 
-TEST_NIGHTLY=0
+TEST_NIGHTLY=1
 
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=main
+GITHUB_USER=bradcray
+GITHUB_BRANCH=no-noAliasSets2
 
-SHORT_NAME=scan-regression-fix
-START_DATE=09/18/25
+SHORT_NAME=noAliasAnalysis
+START_DATE=2/19/26
 
-export ARKOUDA_URL=https://github.com/drculhane/arkouda.git
-export ARKOUDA_BRANCH=ForIssue4810
+export ARKOUDA_URL=https://github.com/Bears-R-Us/arkouda.git
+export ARKOUDA_BRANCH=main
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e

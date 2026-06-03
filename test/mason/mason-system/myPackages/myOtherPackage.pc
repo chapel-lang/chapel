@@ -1,0 +1,4 @@
+Name: myOtherPackage
+Description: My weird package which abuses pkg-config to pass Chapel flags
+Version: 1
+Libs: -sMyOtherChapelReal=3.14 -sMyOtherChapelInt=17

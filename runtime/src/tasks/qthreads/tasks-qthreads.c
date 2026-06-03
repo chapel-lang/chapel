@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@
 #include "chplrt.h"
 
 #include "arg.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
 #include "chpl-comm.h"
@@ -44,6 +44,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
 #include "chpl-tasks-impl.h"
@@ -504,6 +505,10 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         if (0 < maxThreads && maxThreads < hwpar) {
           if (chpl_nodeID == 0) {
             char msg[1024];
+
+            CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                    CHPL_COMM);
+
             snprintf(msg, sizeof(msg),
                      "The CHPL_COMM setting is limiting the number of threads "
                      "to %d, rather than the hardware's preference of %d.%s",
@@ -523,6 +528,9 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         //
         {
             int numNumaDomains = chpl_topo_getNumNumaDomains();
+            CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                    CHPL_LOCALE_MODEL);
+
             if (hwpar < numNumaDomains
                 && strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
                 char msg[100];
@@ -558,10 +566,12 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 }
 
 static chpl_bool setupGuardPages(void) {
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
     const char *armArch = "arm-thunderx";
     chpl_bool guardPagesEnabled = true;
     // default value set by compiler (--[no-]stack-checks)
-    chpl_bool defaultVal = (CHPL_STACK_CHECKS == 1);
+    chpl_bool defaultVal = CHPL_RT_PRGINFO_DATA(prg, CHPL_STACK_CHECKS) == 1;
+    CHPL_RT_PRGINFO_DECLARE(prg, CHPL_TARGET_CPU);
 
     // Setup guard pages. Default to enabling guard pages, only disabling them
     // under the following conditions (Precedence high-to-low):
@@ -685,6 +695,9 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
+
   if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
@@ -986,19 +999,21 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     return rc;
 }
 
-void chpl_task_addTask(chpl_fn_int_t       fid,
-                       chpl_task_bundle_t *arg,
-                       size_t              arg_size,
-                       c_sublocid_t        full_subloc,
-                       int                 lineno,
-                       int32_t             filename)
-{
+void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                           chpl_task_bundle_t *arg,
+                           size_t arg_size,
+                           c_sublocid_t full_subloc,
+                           int lineno,
+                           int32_t filename) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
+
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
-        !strcmp(CHPL_LOCALE_MODEL, "gpu"));
+        !strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                     CHPL_LOCALE_MODEL), "gpu"));
 
     PROFILE_INCR(profile_task_addTask,1);
 
@@ -1058,13 +1073,14 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
     }
 }
 
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,
-                              void *arg, size_t arg_size,
-                              c_sublocid_t subloc,
-                              int lineno, int32_t filename)
-{
+void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                                   void *arg,
+                                   size_t arg_size,
+                                   c_sublocid_t subloc,
+                                   int lineno,
+                                   int32_t filename) {
     PROFILE_INCR(profile_task_taskCallFTable,1);
-
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
     taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 

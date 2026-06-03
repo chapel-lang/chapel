@@ -5,9 +5,9 @@ union U {
 proc U.init=(other: U) {
   // How to write the compiler-generated default?
   select other {
-    when x do
+    when U.x do
       this.x = other.x;
-    when y do
+    when U.y do
       this.y = other.y;
   }
 }

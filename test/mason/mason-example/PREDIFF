@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+OUTFILE=$2
+
+sed -e '/Downloading dependency: _MasonTest1/d' $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE

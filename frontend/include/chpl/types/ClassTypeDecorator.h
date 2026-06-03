@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -87,6 +87,7 @@ class ClassTypeDecorator final {
     CHPL_ASSERT(false && "case not handled");
     return BORROWED_NONNIL;
   }
+  static const char* decoratorToString(ClassTypeDecoratorEnum d);
   static
   ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
     int tmp = d;

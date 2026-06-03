@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,6 +61,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -254,20 +255,35 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   }
 }
 static void
-genGlobalString(const char *cname, const char *value) {
+genGlobalString(const char *cname, const char *value, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
-    fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
+  bool hasValue = value != nullptr;
+  FILE* fp = info->cfile;
+
+  if (fp) {
+    const char* constPart = isConstant ? "const " : "";
+    if (hasValue) {
+      fprintf(fp, "%schar* %s = \"%s\";\n", constPart, cname, value);
+    } else {
+      fprintf(fp, "%schar* %s = NULL;\n", constPart, cname);
+    }
   } else {
 #ifdef HAVE_LLVM
-    if(gCodegenGPU == false) {
-      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal(
-            cname, getPointerType(info->module->getContext())));
-      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-            new_CStringSymbol(value)->codegen().val)->getInitializer());
-      globalString->setConstant(true);
-      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true, dtStringC);
+    if (!gCodegenGPU) {
+      auto llvmPtrType = getPointerType(info->module->getContext());
+      auto lookup = info->module->getOrInsertGlobal(cname, llvmPtrType);
+      auto gVar = llvm::cast<llvm::GlobalVariable>(lookup);
+
+      if (hasValue) {
+        gVar->setInitializer(llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol(value)->codegen().val)->getInitializer());
+      } else {
+        gVar->setInitializer(llvm::Constant::getNullValue(llvmPtrType));
+      }
+
+      if (isConstant) gVar->setConstant(true);
+
+      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, true, dtStringC);
     }
 #endif
   }
@@ -305,7 +321,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 static void
 genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  llvm::Type* voidPtrTy = getPointerType(info->module->getContext(), 1);
+  auto voidPtrTy = getPointerType(info->module->getContext(), 1);
   llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
@@ -769,7 +785,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   forv_Vec(FnSymbol, fn, fSymbols) {
-    const char* fn_name = fn->cname;
+    const char* fn_name = fn->name;
     int fileno = getFilenameTableIndex(fn->astloc.filename());
     int lineno = fn->astloc.lineno();
 
@@ -942,6 +958,124 @@ static void genFilenameTable() {
 }
 
 //
+// Rules for building up the unwind table:
+//
+//    -- There is exactly _one_ best function for a given 'cname', and when
+//       disambiguating matches, extern functions are always replaced by
+//       non-extern ones. If there is more than one non-extern function
+//       mapped to a cname, it is an internal error because the compiler
+//       should have caught that earlier.
+//    -- Always add module initializers to the table.
+//    -- Always add 'chpl_user_main' / 'main()' to the table.
+//    -- If the the Chapel name starts with 'chpl_', then omit that function.
+//    -- If the the C name starts with 'chpl_', then omit that function.
+//    -- A non-extern function can always be renamed.
+//    -- An extern function can be renamed only if there is 1 occurence.
+//
+class UnwindTable {
+  // Use an ordered map to sort the table contents in alphabetical order.
+  using NameMap = std::map<std::string, std::vector<FnSymbol*>>;
+
+  std::vector<std::pair<FnSymbol*, bool>> table_;
+
+  static bool shouldAddToTable(FnSymbol* fn) {
+    if (fn->hasFlag(FLAG_MODULE_INIT)) return true;
+    if (fn == chplUserMain) return true;
+    if (!strncmp(fn->name, "chpl_", 5)) return false;
+    if (!strncmp(fn->cname, "chpl_", 5)) return false;
+    return true;
+  }
+
+public:
+  UnwindTable() = default;
+ ~UnwindTable() = default;
+
+  static UnwindTable create(Vec<FnSymbol*>& vec) {
+    UnwindTable ret;
+    NameMap nameMap;
+
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      auto& v = nameMap[fn->cname];
+      v.push_back(fn);
+    }
+
+    for (auto& [cname, fns] : nameMap) {
+      std::ignore = cname;
+
+      FnSymbol* lastNonExternFn = nullptr;
+      FnSymbol* lastExternFn = nullptr;
+      int numExportOrDefault = 0;
+      int numExtern = 0;
+
+      for (auto fn : fns) {
+        if (fn->hasFlag(FLAG_EXTERN)) {
+          lastExternFn = fn;
+          numExtern++;
+        } else {
+          lastNonExternFn = fn;
+          numExportOrDefault++;
+        }
+      }
+
+      // If this fires, we have a naming problem we didn't catch.
+      INT_ASSERT(numExportOrDefault <= 1);
+
+      auto fn = lastNonExternFn ? lastNonExternFn : lastExternFn;
+      bool canRename = !fn->hasFlag(FLAG_EXTERN) || numExtern == 1;
+
+      if (shouldAddToTable(fn)) ret.table_.push_back({ fn, canRename });
+    }
+
+    return ret;
+  }
+
+  std::vector<GenRet> buildNameTable() const {
+    std::vector<GenRet> ret;
+
+    ret.reserve(table_.size() * 2);
+
+    for (auto [fn, canRename] : table_) {
+      const char* str1 = fn->cname;
+      const char* str2 = canRename ? fn->name : fn->cname;
+
+      ret.push_back(codegenStringForTable(str1));
+      ret.push_back(codegenStringForTable(str2));
+    }
+
+    ret.push_back(codegenStringForTable(""));
+    ret.push_back(codegenStringForTable(""));
+
+    return ret;
+  }
+
+  std::vector<GenRet> buildFileLineTable() const {
+    std::vector<GenRet> ret;
+
+    ret.reserve(table_.size() * 2);
+
+    for (auto [fn, canRename] : table_) {
+      std::ignore = canRename;
+
+      int fileno = getFilenameTableIndex(fn->fname());
+      int lineno = fn->linenum();
+
+      ret.push_back(new_IntSymbol(fileno, INT_SIZE_32)->codegen());
+      ret.push_back(new_IntSymbol(lineno, INT_SIZE_32)->codegen());
+    }
+
+    ret.push_back(new_IntSymbol(0, INT_SIZE_32)->codegen());
+    ret.push_back(new_IntSymbol(0, INT_SIZE_32)->codegen());
+
+    return ret;
+  }
+
+  size_t size() const {
+    return table_.size();
+  }
+};
+
+
+//
 // This adds the Chapel symbol table to the config file
 // Our symbol table is formed by two 1-D arrays with 2 elements
 // per entry:
@@ -950,16 +1084,11 @@ static void genFilenameTable() {
 // chpl_filenumSymTable = Chapel file name index, Chapel line number
 //
 static void genUnwindSymbolTable(){
-  std::vector<FnSymbol*> symbols;
+  UnwindTable unwindTable;
 
   //If CHPL_UNWIND is none we don't want any symbols in our tables
   if(strcmp(CHPL_UNWIND, "none") != 0){
-    // Gets only user symbols
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if(strncmp(fn->name, "chpl_", 5) || fn->hasFlag(FLAG_MODULE_INIT)) {
-        symbols.push_back(fn);
-      }
-    }
+    unwindTable = UnwindTable::create(gFnSymbols);
   }
 
   // Generate the cname, Chapel name table
@@ -970,16 +1099,7 @@ static void genUnwindSymbolTable(){
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
 
-    // Construct the table elements
-    std::vector<GenRet> table;
-    table.reserve(symbols.size() * 2);
-
-    for (FnSymbol* fn : symbols) {
-      table.push_back(codegenStringForTable(fn->cname));
-      table.push_back(codegenStringForTable(fn->name));
-    }
-    table.push_back(codegenStringForTable(""));
-    table.push_back(codegenStringForTable(""));
+    auto table = unwindTable.buildNameTable();
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
@@ -993,27 +1113,14 @@ static void genUnwindSymbolTable(){
     // Compute the element type
     GenRet cintType = codegenTypeByName(eltType);
 
-    // Construct the table elements
-    std::vector<GenRet> table;
-    table.reserve(symbols.size() * 2);
-
-    for (FnSymbol* fn : symbols) {
-      int fileno = getFilenameTableIndex(fn->fname());
-      int lineno = fn->linenum();
-
-      table.push_back( new_IntSymbol(fileno, INT_SIZE_32)->codegen() );
-      table.push_back( new_IntSymbol(lineno, INT_SIZE_32)->codegen() );
-    }
-
-    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
-    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
+    auto table = unwindTable.buildFileLineTable();
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
   }
 
   // Now emit the size of the symbol table
-  genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
+  genGlobalInt32("chpl_sizeSymTable", unwindTable.size() * 2);
 }
 
 static void
@@ -1278,6 +1385,8 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("chpl_compileDirectory", getCwd());
+  genGlobalString("chpl_executionCommand", nullptr, /**isConstant*/ false);
+
   if (!saveCDir.empty()) {
     char *actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);
@@ -1358,8 +1467,6 @@ static void genFunctionTables() {
 //
 // Only put C data objects into this file, not Chapel ones, as it may
 // also be #include'd into a launcher, and those are C/C++ code.
-//
-// New generated variables should be added to runtime/include/chplcgfns.h
 //
 static const char* sCfgFname = "chpl_compilation_config";
 
@@ -1467,6 +1574,118 @@ static void protectNameFromC(Symbol* sym) {
   //  free(oldName);
 }
 
+#ifdef HAVE_LLVM
+// Returns 'true' if the global was declared but not defined.
+static bool errorIfGlobalDefinedLlvm(const char* name) {
+  auto info = gGenInfo;
+
+  if (auto gGet = info->module->getNamedGlobal(name)) {
+    if (auto gVar = llvm::cast_or_null<llvm::GlobalVariable>(gGet)) {
+      bool isDeclaration = gVar->isDeclaration();
+      bool hasInitializer = gVar->hasInitializer();
+      bool hasExternalLinkage = gVar->getLinkage() ==
+                                llvm::GlobalValue::ExternalLinkage;
+
+      if (!isDeclaration || hasInitializer || !hasExternalLinkage) {
+        // NOTE: No code should be defining this. It is possible for the
+        //       type to mismatch, that is, the first declaration might
+        //       be something like 'name: c_ptr(void)' instead of the proper
+        //       type. This is OK for our purposes because the LVT will
+        //       provide the proper type that we define later.
+        //
+        //       This does mean that uses prior to the definition will be
+        //       manipulated using an "incorrect type", but that is in
+        //       line with C semantics where you can fudge the type a bit.
+        INT_FATAL("Reserved symbol '%s' should not be defined", name);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Create a new global with the same name and a new type and replace (all
+// uses of) the old global. In later versions of LLVM there is a method to
+// do this called 'replaceInitializer', but we don't seem to have that yet.
+// I cannot reimplement it 1-to-1 since it uses private/protected state.
+static llvm::GlobalVariable*
+replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
+                             llvm::Type* type,
+                             llvm::Constant* init) {
+  // Copy the name into a 'std::string' because we will use it later.
+  std::string name = global->getName().str();
+
+  // Create a new global which is a duplicate of the existing one.
+  auto& mod = *global->getParent();
+  auto linkage = global->getLinkage();
+  auto ret = new llvm::GlobalVariable(mod, type, false, linkage, init, name);
+
+  // Set some more properties...
+  ret->setVisibility(global->getVisibility());
+  ret->setAlignment(global->getAlign());
+  ret->setDSOLocal(global->isDSOLocal());
+
+  // Replace the old global with the new one.
+  //
+  // The documentation says that the replacement must have the same type.
+  // I think this code works because the type is an opaque "ptr", due to
+  // both being global variables.
+  global->replaceAllUsesWith(ret);
+  global->eraseFromParent();
+
+  // Re-set the new global's name, since there is now no name conflict.
+  // This call updates the symbol table kept by the module.
+  ret->setName(name);
+
+  // If these don't hold, we have big (i.e., link-time) problems.
+  INT_ASSERT(ret->getLinkage() == llvm::GlobalValue::ExternalLinkage);
+  INT_ASSERT(ret->getName() == name);
+
+  return ret;
+}
+
+// If 'entries' is non-empty, use 'entries.size()'. Otherwise use 'size'.
+static void
+buildGlobalArrayLlvm(const char* name, llvm::Type* eltType, size_t size,
+                     const std::vector<llvm::Constant*>& entries,
+                     bool isConstant) {
+  auto info = gGenInfo;
+  auto mod = info->module;
+  bool hasEntries = !entries.empty();
+  size_t sizeToUse = hasEntries ? entries.size() : size;
+
+  bool declared = errorIfGlobalDefinedLlvm(name);
+  auto type = llvm::ArrayType::get(eltType, sizeToUse);
+  auto get = mod->getOrInsertGlobal(name, type);
+  auto var = llvm::cast<llvm::GlobalVariable>(get);
+
+  llvm::Constant* init = hasEntries ? llvm::ConstantArray::get(type, entries)
+                                    : llvm::Constant::getNullValue(type);
+
+  if (declared) {
+    var = replaceGlobalInitializerLlvm(var, type, init);
+  } else {
+    var->setInitializer(init);
+  }
+
+  // Either way, track the value. We replaced it or it was just created.
+  trackLLVMValue(var);
+
+  //
+  // TODO: Attach or copy over debugging info?
+  //
+
+  bool isUnsigned = true;
+  info->lvt->addGlobalValue(name, var, GEN_VAL, isUnsigned, dtCVoidPtr);
+
+  if (isConstant) {
+    var->setConstant(true);
+  }
+}
+#endif
+
 static void genGlobalSerializeTable(GenInfo* info) {
   FILE* hdrfile = info->cfile;
   std::vector<CallExpr*> serializeCalls;
@@ -1506,39 +1725,24 @@ static void genGlobalSerializeTable(GenInfo* info) {
     fprintf(hdrfile, "\n};\n");
   } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    llvm::Type *global_serializeTableEntryType =
-      getPointerType(info->module->getContext());
+    auto name = "chpl_global_serialize_table";
+    auto eltType = getPointerType(info->module->getContext());
+    bool isConstant = true;
 
-    std::vector<llvm::Constant *> global_serializeTable;
-
+    // Build up the table entries.
+    std::vector<llvm::Constant*> entries;
     for_vector(CallExpr, call, serializeCalls) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
 
-      llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
-                               info->lvt->getValue(se->symbol()->cname).val,
-                               global_serializeTableEntryType);
+      auto ptrCast = info->irBuilder->CreatePointerCast(
+                             info->lvt->getValue(se->symbol()->cname).val,
+                             eltType);
       trackLLVMValue(ptrCast);
-      global_serializeTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
+      entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
     }
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_global_serialize_table"))) {
-      GVar->eraseFromParent();
-    }
-
-    llvm::ArrayType *global_serializeTableType =
-      llvm::ArrayType::get(global_serializeTableEntryType,
-                          global_serializeTable.size());
-    llvm::GlobalVariable *global_serializeTableGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_global_serialize_table",
-                                          global_serializeTableType));
-    global_serializeTableGVar->setInitializer(
-        llvm::ConstantArray::get(
-          global_serializeTableType, global_serializeTable));
-    info->lvt->addGlobalValue("chpl_global_serialize_table",
-                              global_serializeTableGVar, GEN_PTR, true, dtCVoidPtr);
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 #endif
   }
 }
@@ -1586,7 +1790,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
     #endif
   }
   if( hdrfile ) {
-    fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
+    fprintf(hdrfile, "\nconst char* const chpl_mem_descs[] = {\n");
     bool first = true;
     if (memDescsVec.n == 0) {
       // Quiet PGI warning about empty initializer
@@ -1818,38 +2022,10 @@ static void codegen_header(std::set<const char*> & cnames,
                            std::vector<VarSymbol*> & globals) {
   GenInfo* info = gGenInfo;
 
-  // Collected when considering both types and 'FnSymbol'.
   std::unordered_set<FunctionType*> fnTypesToCodegen;
 
   //
-  // Collect most types, but do not sort yet.
-  //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (auto ft = toFunctionType(ts->type)) {
-      INT_ASSERT(fcfs::usePointerImplementation() || !ts->isUsed());
-
-      // Only function types used directly (e.g., in a cast operation)
-      // can be collected here. The rest have to be collected when
-      // functions are visited below.
-      if (!ft->symbol->isUsed()) continue;
-
-      if (auto it = fnTypesToCodegen.find(ft);
-               it == fnTypesToCodegen.end()) {
-        // TODO (dlongnecke): Rare case right now, so leave breakpoint...
-        debuggerBreakHere();
-        fnTypesToCodegen.emplace_hint(it, ft);
-        types.push_back(ts);
-      } else {
-        INT_FATAL(ts, "Type stored more than once in 'gTypeSymbols'!");
-      }
-
-    } else if (ts->defPoint->parentExpr != rootModule->block) {
-      types.push_back(ts);
-    }
-  }
-
-  //
-  // Collect functions and function types, then sort them.
+  // Collect functions and function types.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // The function is not code-generated, so skip it.
@@ -1858,26 +2034,67 @@ static void codegen_header(std::set<const char*> & cnames,
     // OK, should generate the function and consider its type.
     functions.push_back(fn);
 
-    // Collect function types to generate. The vast majority are discarded.
-    // TODO (dlongnecke): Ensure that this flag is not stale...
-    bool isProcPtrRoot = fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+    bool isProcPtrRoot = fn->isUsedAsValue();
     auto ft = toFunctionType(fn->type);
 
     INT_ASSERT(!isProcPtrRoot || ft);
 
-    if (auto ft = toFunctionType(fn->type)) {
+    if (ft) {
       if (isProcPtrRoot || ft->symbol->isUsed()) {
-        // It is used or a root used to construct a value, so keep it.
-        if (auto it = fnTypesToCodegen.find(ft);
-                 it == fnTypesToCodegen.end()) {
-          fnTypesToCodegen.emplace_hint(it, ft);
-          types.push_back(ft->symbol);
-        }
-      } else {
-        // TODO (dlongnecke): Could be pruned/discarded earlier...
-        continue;
+        // The function type is used (as a value), so keep it.
+        fnTypesToCodegen.insert(ft);
+      }
+
+      if (!isProcPtrRoot) {
+        // If the function is not used as a value, clear its type.
+        fn->type = dtUnknown;
       }
     }
+  }
+
+  //
+  // Collect types.
+  //
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    bool isFunctionTypeSym = isFunctionType(ts->type);
+
+    if (auto ft = toFunctionType(ts->type->getValType())) {
+      if (!isFunctionTypeSym) {
+        // We need the function type since it's appearing in some other type.
+        fnTypesToCodegen.insert(ft);
+
+      } else if (ts->isUsed()) {
+        // Otherwise, preserve it if it's used as a type.
+        fnTypesToCodegen.insert(ft);
+      }
+    }
+
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      if (!isFunctionTypeSym) types.push_back(ts);
+    }
+  }
+
+  // After denormalization, we won't necessarily know if a TypeSymbol for a
+  // FunctionType is 'alive', and so we need to actually check the uses of
+  // VarSymbols and ArgSymbols
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (auto ft = toFunctionType(var->type->getValType())) {
+      if (var->isUsed()) {
+        fnTypesToCodegen.insert(ft);
+      }
+    }
+  }
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (auto ft = toFunctionType(arg->type->getValType())) {
+      if (arg->isUsed()) {
+        fnTypesToCodegen.insert(ft);
+      }
+    }
+  }
+
+  for (auto ft : fnTypesToCodegen) {
+    // Non-determinism here doesn't matter since we sort below.
+    types.push_back(ft->symbol);
   }
 
   // Now we can sort types...
@@ -1939,19 +2156,24 @@ static void codegen_header(std::set<const char*> & cnames,
   genSubclassArray(true);
   genClassNames(types, true);
 
-  // Generate procedure pointer types first to handle circular dependencies.
-  genComment("Procedure Pointer Types");
-  forv_Vec(TypeSymbol, ts, types) {
-    if (auto ft = toFunctionType(ts->type)) {
-      ft->codegenDef();
-    }
-  }
+  // Generate root class first to satisfy assumptions made elsewhere
+  dtObject->codegenPrototype();
+  dtObject->codegenDef();
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
     {
+      if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
+    }
+  }
+
+  // Do this after class prototypes to avoid circular dependencies.
+  genComment("Procedure Pointer Types");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (auto ft = toFunctionType(ts->type)) {
+      ft->codegenDef();
     }
   }
 
@@ -1992,7 +2214,9 @@ static void codegen_header(std::set<const char*> & cnames,
 
   while (current.n) {
     forv_Vec(TypeSymbol, ts, current) {
-      ts->codegenDef();
+      if (ts->type != dtObject) {
+        ts->codegenDef();
+      }
 
       if (AggregateType* at = toAggregateType(ts->type)) {
         forv_Vec(AggregateType, child, at->dispatchChildren) {
@@ -2068,55 +2292,37 @@ static void codegen_header(std::set<const char*> & cnames,
   flushStatements();
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, true);
-  int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
+  int globalsRegistrySize = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
+
   if( hdrfile ) {
     fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                    globals_registry_static_size);
+                     globalsRegistrySize);
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
-    INT_ASSERT(ptr_wide_ptr_t);
+    auto name = "chpl_globals_registry";
+    auto eltType = info->lvt->getType("ptr_wide_ptr_t");
+    bool isConstant = false;
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_globals_registry"))) {
-      GVar->eraseFromParent();
-    }
-    llvm::Type* globValType =
-      llvm::ArrayType::get(ptr_wide_ptr_t, globals_registry_static_size);
-    llvm::GlobalVariable *chpl_globals_registryGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_globals_registry",
-                                          globValType));
-    chpl_globals_registryGVar->setInitializer(
-        llvm::Constant::getNullValue(globValType));
-    info->lvt->addGlobalValue("chpl_globals_registry",
-                              chpl_globals_registryGVar, GEN_PTR, true, /* chplType= */ nullptr);
+    INT_ASSERT(eltType);
+
+    buildGlobalArrayLlvm(name, eltType, globalsRegistrySize, {}, isConstant);
 #endif
   }
   if( hdrfile ) {
-      fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
+      fprintf(hdrfile, "\nextern const char* const chpl_mem_descs[];\n");
     } else {
 #ifdef HAVE_LLVM
-    std::vector<llvm::Constant *> memDescTable;
+    // Build up the values of the array.
+    std::vector<llvm::Constant*> entries;
     forv_Vec(const char*, memDesc, memDescsVec) {
-      memDescTable.push_back(llvm::cast<llvm::GlobalVariable>(
+      entries.push_back(llvm::cast<llvm::GlobalVariable>(
             new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
     }
-    llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
-        getPointerType(info->module->getContext()),
-        memDescTable.size());
 
-    if(llvm::GlobalVariable *GVar =llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_mem_descs"))) {
-      GVar->eraseFromParent();
-    }
-
-    llvm::GlobalVariable *chpl_memDescsGVar = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal("chpl_mem_descs", memDescTableType));
-    chpl_memDescsGVar->setInitializer(
-        llvm::ConstantArray::get(memDescTableType, memDescTable));
-    chpl_memDescsGVar->setConstant(true);
-    info->lvt->addGlobalValue("chpl_mem_descs", chpl_memDescsGVar, GEN_PTR, true, dtStringC);
+    auto name = "chpl_mem_descs";
+    auto eltType = getPointerType(info->module->getContext());
+    bool isConstant = true;
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 #endif
   }
 
@@ -2129,11 +2335,12 @@ static void codegen_header(std::set<const char*> & cnames,
     fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
   } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
-    llvm::Type *private_broadcastTableEntryType =
-      getPointerType(info->module->getContext());
+    auto eltType = getPointerType(info->module->getContext());
+    auto name = "chpl_private_broadcast_table";
+    bool isConstant = true;
 
-    std::vector<llvm::Constant *> private_broadcastTable;
-
+    // Build up the table entries.
+    std::vector<llvm::Constant*> entries;
     int broadcastID = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
@@ -2142,38 +2349,29 @@ static void codegen_header(std::set<const char*> & cnames,
 
         llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
                                  info->lvt->getValue(se->symbol()->cname).val,
-                                 private_broadcastTableEntryType);
+                                 eltType);
         trackLLVMValue(ptrCast);
-        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
+        entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
         // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));
       }
     }
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
-          info->module->getNamedGlobal("chpl_private_broadcast_table"))) {
-      GVar->eraseFromParent();
-    }
+    buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 
-    llvm::ArrayType *private_broadcastTableType =
-      llvm::ArrayType::get(private_broadcastTableEntryType,
-                          private_broadcastTable.size());
-    llvm::GlobalVariable *private_broadcastTableGVar =
-      llvm::cast<llvm::GlobalVariable>(
-          info->module->getOrInsertGlobal("chpl_private_broadcast_table",
-                                          private_broadcastTableType));
-    private_broadcastTableGVar->setInitializer(
-        llvm::ConstantArray::get(
-          private_broadcastTableType, private_broadcastTable));
-    info->lvt->addGlobalValue("chpl_private_broadcast_table",
-                              private_broadcastTableGVar, GEN_PTR, true, dtCVoidPtr);
     genGlobalInt("chpl_private_broadcast_table_len",
-                 private_broadcastTable.size(), false);
+                 entries.size(),
+                 false);
 #endif
   }
 
   if (hdrfile) {
     fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
+  }
+
+  if (hdrfile) {
+    // Need a forward declaration to make '--incremental' work.
+    fprintf(info->cfile, "extern void chpl_program_about(void);\n");
   }
 }
 
@@ -2183,7 +2381,7 @@ static void codegen_header(std::set<const char*> & cnames,
 //  the types as we use them).
 static void codegen_header_addons() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
+    if (ts->inTree() && ts->defPoint->parentExpr != rootModule->block) {
       if (AggregateType* ct = toAggregateType(ts->type))
         codegen_aggregate_def(ct);
     }
@@ -2220,12 +2418,13 @@ codegen_config() {
     FILE* outfile = configFile.fptr;
     info->cfile = outfile;
 
-    fprintf(outfile, "#include \"error.h\"\n\n");
+    fprintf(outfile, "#include \"chpl-error.h\"\n\n");
 
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
     genGlobalInt("warnUnstable", fWarnUnstable, false);
 
+    fprintf(outfile, "void CreateConfigVarTable(void);\n");
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
 
@@ -2744,6 +2943,11 @@ static void codegenPartOne() {
 
   convertToRefTypes();
 
+  if (fcfs::usePointerImplementation()) {
+    PassManager pm;
+    runPassOverAllSymbols(pm, StreamlineProcPtrTypesForCodegen());
+  }
+
 #if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
   // this is not needed in newer LLVM versions
   // Wrap calls to chosen functions from c library
@@ -2807,8 +3011,11 @@ static void codegenGpuGlobals() {
 struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   ChapelRemarkSerializer(llvm::raw_ostream& OS)
       : llvm::remarks::RemarkSerializer(
-            llvm::remarks::Format::Unknown, OS,
-            llvm::remarks::SerializerMode::Standalone) {}
+            llvm::remarks::Format::Unknown, OS
+#if LLVM_VERSION_MAJOR < 22
+            , llvm::remarks::SerializerMode::Standalone
+#endif
+          ) {}
 
   void emit(const llvm::remarks::Remark& Remark) override {
 
@@ -2856,6 +3063,15 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     OS << " for '" << Remark.PassName << "'";
     OS << " - " << Remark.getArgsAsMsg() << "\n";
   }
+#if LLVM_VERSION_MAJOR >= 22
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream& OS,
+      llvm::StringRef ExternalFilename) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+#else
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
       llvm::raw_ostream& OS,
@@ -2863,6 +3079,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
         OS, ExternalFilename);
   }
+#endif
   private:
   std::string typeToString(llvm::remarks::Type t) {
     switch (t) {
@@ -3169,8 +3386,8 @@ void linkInDynoFiles() {
 static void codegenPartTwo() {
   initializeGenInfo();
 
-  if (fMultiLocaleInterop) {
-    codegenMultiLocaleInteropWrappers();
+  if (fClientServerLibrary) {
+    codegenClientServerLibraryWrappers();
   }
 
 #ifdef HAVE_LLVM
@@ -3229,20 +3446,14 @@ static void codegenPartTwo() {
     if (fDebugSymbols) {
       debugInfo = new DebugData(/*optimized*/false);
     }
-    if(debugInfo) {
+    if (debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
-        const char *current_dir = "./";
-        const char *empty_string = "";
-        debugInfo->createCompileUnit(currentModule,
-          currentModule->astloc.filename(), current_dir, empty_string
-        );
+        debugInfo->createCompileUnit(currentModule, currentModule->fname(), "./", "");
       }
-      debugInfo->createCompileUnit(rootModule,
-        rootModule->astloc.filename(), "./", ""
-      );
+      debugInfo->createCompileUnit(rootModule, rootModule->fname(), "./", "");
     }
 
     // When doing codegen for programs that have GPU kernels we fork the
@@ -3355,8 +3566,8 @@ static void codegenPartTwo() {
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
-    if (fMultiLocaleInterop) {
-      codegenMultiLocaleInteropWrappers();
+    if (fClientServerLibrary) {
+      codegenClientServerLibraryWrappers();
     }
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");

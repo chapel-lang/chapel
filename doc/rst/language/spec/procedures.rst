@@ -1388,11 +1388,22 @@ statements include an expression, the return type is ``void``.
 Otherwise, the types of the expressions in all of the procedure’s return
 statements are considered. If a function has a ``ref`` return intent
 (:ref:`Ref_Return_Intent`), they all must be the same exact
-type, which becomes the inferred return type. Otherwise, there must
-exist exactly one type such that an implicit conversion is allowed
-between every other type and that type, and that type becomes the
+type, which becomes the inferred return type. Otherwise, one of the return
+statements must have a type :math:`T` such that an implicit conversion is allowed
+between every other return type and :math:`T`. Then, :math:`T` becomes the
 inferred return type. If the above requirements are not satisfied, it is
 an error.
+
+.. note::
+
+  In the ``preview`` :ref:`edition of Chapel <readme-editions>`, an
+  additional rule applies when inferring the return type where all
+  returned types are classes. In this case, the most specific common
+  parent class is chosen as the return type, if one exists. This class is
+  nilable if any of the returned types are nilable. For this rule to apply,
+  all returned types must be of the same management
+  (e.g., all ``owned`` or all ``borrowed``). Also, the :ref:`root class <The_Root_Class>`
+  will never be chosen as the common parent.
 
 .. index::
    single: where

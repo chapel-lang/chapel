@@ -1,3 +1,7 @@
 # this test runs long enough to timeout on cygwin and valgrind
 CHPL_HOST_PLATFORM <= cygwin
 CHPL_TEST_VGRND_EXE == on
+
+# we observed sporadic & frequent timeouts in oversubscribed runs 
+# captured in https://github.com/chapel-lang/chapel/issues/28261
+CHPL_RT_OVERSUBSCRIBED == yes

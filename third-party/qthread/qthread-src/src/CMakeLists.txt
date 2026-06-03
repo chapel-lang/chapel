@@ -17,6 +17,7 @@ if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "riscv64" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i486" OR
     "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i586" OR
@@ -54,6 +55,7 @@ set(QTHREADS_SOURCES
   alloc/${QTHREADS_ALLOC}.c
   affinity/common.c
   affinity/${QTHREADS_TOPOLOGY}.c
+  threadpool.c
   touch.c
   tls.c
   teams.c
@@ -94,8 +96,24 @@ endif()
 target_include_directories(qthread
   PRIVATE "../include"
 )
-set_target_properties(qthread PROPERTIES C_VISIBILITY_PRESET hidden)
+set_target_properties(
+  qthread
+  PROPERTIES C_VISIBILITY_PRESET hidden
+             VERSION ${PROJECT_VERSION}
+             SOVERSION ${PROJECT_VERSION_MAJOR})
+# Link pthreads.
 target_link_libraries(qthread PUBLIC Threads::Threads)
+
+# The c11 threading library has to be linked
+# via a separate library on BSD OSs.
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "kFreeBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "OpenBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "NetBSD" OR
+    "${CMAKE_SYSTEM_NAME}" STREQUAL "DragonFly")
+  target_link_libraries(qthread PUBLIC "stdthreads")
+endif()
+
 if ("${QTHREADS_TOPOLOGY}" STREQUAL "hwloc" OR "${QTHREADS_TOPOLOGY}" STREQUAL "binders")
   find_package(hwloc REQUIRED)
   target_include_directories(qthread PRIVATE "${hwloc_INCLUDE_DIR}")
@@ -107,7 +125,7 @@ endif()
 target_include_directories(qthread
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qthread>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 # TODO: move these into a configure header instead of piping them through the flags.
 target_compile_definitions(qthread
@@ -142,8 +160,21 @@ install(
     DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     COMPONENT shlib
 )
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/../qthread-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/qthread-config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/qthread")
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/qthread-config-version.cmake"
+  VERSION 1.22
+  COMPATIBILITY SameMajorVersion)
 install(
-  DIRECTORY ${CMAKE_SOURCE_DIR}/include/qthread
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/qthread-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/qthread-config-version.cmake"
+  DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/cmake/qthread")
+install(
+  DIRECTORY "${CMAKE_SOURCE_DIR}/include/qthread"
   DESTINATION include
   PATTERN "top" EXCLUDE
 )

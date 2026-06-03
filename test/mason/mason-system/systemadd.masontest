@@ -1,0 +1,32 @@
+
+# add packages to existing paths
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$PWD/myPackages"
+
+rm -rf tempMasonLib
+mason new tempMasonLib --lib --no-vcs
+cd tempMasonLib
+mason add dummy@10.9.8 --system
+mason add myWeirdPackage@77 --system
+mason add myOtherPackage --system
+mason add 'forGoodMeasure@*' --system
+mason add unknown --system
+
+mason add myWeirdPackage@1 --system || echo "Expected failure for already added package"
+
+cat Mason.toml | sed '/chplVersion/d'
+mason update || echo "Expected failure for missing package"
+mason rm myWeirdPackage --system
+mason update || echo "Expected failure for missing package"
+mason rm unknown --system
+mason update
+cat Mason.lock | sed '/chplVersion/d'
+
+mason rm dummy@10.9.8 --system
+mason rm 'myOtherPackage@*' --system
+mason rm forGoodMeasure --system
+cat Mason.toml | sed '/chplVersion/d'
+cat Mason.lock | sed '/chplVersion/d'
+mason update
+cat Mason.lock | sed '/chplVersion/d'
+
+mason rm unknown --system || echo "Expected failure for unknown package"

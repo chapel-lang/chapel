@@ -1,12 +1,3 @@
-Note: this test is about record field accesses, not about
-how constructors and initialize() are currently invoked.
-If/when the latter changes, the .good should be adjusted.
-
-RECTYPE constructor
-RECTYPE.initRT()
-(VARFIELD = 401, CONSTFIELD = 901)
-
-RECTYPE constructor
-RECTYPE.initRT()
-(VARFIELD = 401, CONSTFIELD = 901)
-
+constructors.chpl:15: In method 'initRT':
+constructors.chpl:18: error: cannot assign to const variable
+constructors.chpl:20: error: const actual is passed to 'ref' formal 'ARG' of setupInt()

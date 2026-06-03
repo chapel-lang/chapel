@@ -40,8 +40,7 @@ WARNING: currently, the following will not work when compiled with --local:
   var dm   = new blockDist(dist);
   dist.changeBoundingBox(...);
 
-This is because "new dmap(ARG)" retains a copy of ARG
-and destroys the original. We have a .future on this.
+We have a .future on this.
 
 For now, do this instead:
 */

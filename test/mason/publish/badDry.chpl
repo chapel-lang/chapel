@@ -1,4 +1,4 @@
-use MasonNew;
+use MasonNewInit;
 use MasonPublish;
 use MasonUtils;
 

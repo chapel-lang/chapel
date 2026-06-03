@@ -2,6 +2,7 @@
 """
 Run tests on built packages
 """
+
 import sys
 import argparse
 import os
@@ -21,10 +22,12 @@ verbose = False
 global chpl_home
 chpl_home = os.environ.get("CHPL_HOME", "")
 
+
 def run_command(cmd, **kwargs):
     if verbose:
         print(f"Running command: \"{' '.join(cmd)}\"")
     return sp.check_output(cmd, **kwargs)
+
 
 def determine_arch(package):
     # if the arch is aarch64 or arm64, return arm64
@@ -43,6 +46,7 @@ def determine_arch(package):
 def is_minimal_package(package):
     return "chapel-minimal" in os.path.basename(package)
 
+
 def infer_docker_os(package):
     os_tag_to_docker = {
         "el10": "almalinux:10",
@@ -57,7 +61,7 @@ def infer_docker_os(package):
             return docker
 
     # do fedora separately, since its easy to predict
-    m = re.search(r".fc(\d+).", package)
+    m = re.search(r"\.fc(\d+)\.", package)
     if m:
         fc = m.group(1)
         return f"fedora:{fc}"
@@ -65,14 +69,27 @@ def infer_docker_os(package):
     return ValueError(f"Could not infer docker image from package {package}")
 
 
+def infer_docker_os_tag(package):
+    prefixes = ("el", "amzn", "ubuntu", "debian", "fc")
+    regex = r"\.((?:" + "|".join(prefixes) + r")\d+)\."
+    m = re.search(regex, package)
+    if m:
+        return m.group(1)
+    else:
+        raise ValueError(
+            f"Could not infer docker os tag from package {package}"
+        )
+
+
 def add_digest_to_image(docker_os):
     cmd = [
         "docker",
         "inspect",
         "--format='{{index .RepoDigests 0}}'",
-        docker_os
+        docker_os,
     ]
     return run_command(cmd).decode("utf-8").strip()
+
 
 def infer_env_vars(package):
     if "gasnet-udp" in package:
@@ -86,6 +103,13 @@ ENV CHPL_RT_OVERSUBSCRIBED=yes
 """
 
     return ""
+
+
+def pre_install_commands(package):
+    if ".el" in package:
+        return "RUN dnf install -y epel-release\n"
+    return ""
+
 
 def infer_pkg_type(package):
     if package.endswith(".deb"):
@@ -104,14 +128,21 @@ def build_docker(test_dir, package_path, package_name, docker_os):
 
     test_full_package = """
         COPY --chown=user --chmod=0755 ./common/test-package.sh /home/user/test-package.sh
+        COPY --chown=user --chmod=0755 ./common/test-minimal-package.sh /home/user/test-minimal-package.sh
         RUN /home/user/test-package.sh
     """
     test_minimal_package = """
+        COPY --chown=user --chmod=0755 ./common/test-package.sh /home/user/test-package.sh
         COPY --chown=user --chmod=0755 ./common/test-minimal-package.sh /home/user/test-minimal-package.sh
         RUN /home/user/test-minimal-package.sh
     """
     test_package = textwrap.dedent(
-        test_full_package if not is_minimal_package(package_name) else test_minimal_package).strip()
+        test_full_package
+        if not is_minimal_package(package_name)
+        else test_minimal_package
+    ).strip()
+
+    pre_install = pre_install_commands(package_name)
 
     substitutions = {
         "OS_BASE_IMAGE": docker_os,
@@ -119,6 +150,7 @@ def build_docker(test_dir, package_path, package_name, docker_os):
         "PACKAGE_NAME": package_name,
         "TEST_ENV": infer_env_vars(package_name),
         "TEST_SCRIPT": test_package,
+        "PRE_INSTALL": pre_install,
     }
 
     src = MyTemplate(template)
@@ -130,8 +162,11 @@ def build_docker(test_dir, package_path, package_name, docker_os):
 
     # now invoke the proper script to fill in the rest of the Dockerfile
     pkg_type = infer_pkg_type(package_name)
-    fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(chpl_home, pkg_type)
-    run_command(["python3", fill_script, output_file])
+    fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(
+        chpl_home, pkg_type
+    )
+    os_tag = infer_docker_os_tag(package_name)
+    run_command(["python3", fill_script, output_file, "--osname", os_tag])
 
 
 def docker_build_image(

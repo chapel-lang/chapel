@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,7 +101,7 @@ class BasicClassType final : public ManageableType {
   }
 
   /** Return true if this type is the 'object' type. */
-  bool isObjectType() const {
+  bool isRootClass() const {
     return parentType_ == nullptr;
   }
 

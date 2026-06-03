@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
   commandPath += getenv("CHPL_HOME");
   commandPath += "/";
   commandPath += relativeCommandPath;
-  if (!fileExists(commandPath.c_str())) {
+  if (!pathExists(commandPath.c_str())) {
     printf("Could not find analyze query trace command at path %s\n",
            commandPath.c_str());
     return 1;

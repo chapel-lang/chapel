@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -187,7 +187,7 @@ static void test6(Parser* parser) {
 static void test7(Parser* parser) {
   const AggregateDecl* agg = nullptr;
   auto res = parseAggregate(parser, agg, "test7.chpl",
-                            "union U { var x; proc method() { } }");
+                            "union U { var x: int; proc method() { } }");
   auto uni = agg->toUnion();
   assert(uni);
   assert(uni->name() == "U");
@@ -430,8 +430,8 @@ static void test10(Parser* parser) {
                                          "}\n"
                                          "/*4*/ record R4 { }\n"
                                          "/*5*/ union U5 {\n"
-                                         "  /*5c*/ var c;\n"
-                                         "  /*5cc*/ var cc;\n"
+                                         "  /*5c*/ var c: int;\n"
+                                         "  /*5cc*/ var cc: real;\n"
                                          "}\n"
                                          "/*6*/ union U6 { }\n");
   auto mod = parseResult.singleModule();

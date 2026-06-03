@@ -1,0 +1,15 @@
+U ()
+deinit'ing R1
+(r1 = (x = 1, y = 2.0))
+deinit'ing R1
+deinit'ing R2
+(r2 = (x = 3, y = 4.0))
+deinit'ing R2
+UU ()
+(c1 = {x = 1, y = 2.0})
+deinit'ing C1
+(c2 = {x = 3, y = 4.0})
+UU
+shared C2?
+owned C1?
+deinit'ing C2

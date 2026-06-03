@@ -1,98 +1,241 @@
-===== owned CCon
+===== ref owned CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== owned CCon?
+===== const ref owned CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== shared CCon
+===== ref owned CCon?
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== shared CCon?
+===== const ref owned CCon?
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== borrowed CCon
+===== ref shared CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== borrowed CCon?
+===== const ref shared CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== unmanaged CCon
+===== ref shared CCon?
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== unmanaged CCon?
+===== const ref shared CCon?
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== borrowed CCon
+===== ref borrowed CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== borrowed CCon?
+===== const ref borrowed CCon
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
+  getFieldRef     17
   getFieldRef     17
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true
   isFieldBound f6 true
-===== RCon
+===== ref borrowed CCon?
   getNumFields    6
   getFieldName    f6
   getField        17
+  getField        17
   getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref borrowed CCon?
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== ref unmanaged CCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref unmanaged CCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== ref unmanaged CCon?
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref unmanaged CCon?
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== ref borrowed CCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref borrowed CCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== ref borrowed CCon?
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref borrowed CCon?
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== ref RCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== const ref RCon
+  getNumFields    6
+  getFieldName    f6
+  getField        17
+  getField        17
+  getFieldRef     N/A (record)
+  getFieldRef     N/A (record)
   hasField        true
   getFieldIndex   5
   isFieldBound 5  true

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -538,6 +538,8 @@ static inline int64_t qio_file_length_guess(qio_file_t* f) {
   return f->initial_length;
 }
 
+bool qio_isatty(qio_file_t* f);
+
 /* CHANNELS ..... */
 
 /* A Read and Write Buffered channels support:
@@ -1039,6 +1041,9 @@ qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const
 }
 
 
+// passing len=0 will result in errors for the fast path and is not handled by
+// this function. there are probably other functions in qio.h that misbehave
+// with len=0 as well.
 static inline
 qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len) {
   qioerr err;
@@ -1071,7 +1076,9 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
 
 static inline
 qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
-  qioerr err;
+  qioerr err = 0;
+
+  if (len == 0) return err;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -1456,6 +1463,11 @@ qioerr qio_channel_commit(const int threadsafe, qio_channel_t* ch)
   return 0;
 }
 
+#define CHPL_NUM_BITS_IN_VAL(x) (sizeof(x)*8)
+#define CHPL_SAFE_LSHIFT(__x, __y, __max) (__y < __max ? ((__x) << (__y)) : 0)
+#define CHPL_SAFE_RSHIFT(__x, __y, __max) (__y < __max ? ((__x) >> (__y)) : 0)
+#define CHPL_MASK_LOWBITS(__bits) ((__bits) < 64 ? ((((uint64_t)1) << (__bits)) - 1) : ~(uint64_t)0)
+
 /* Handle I/O of bits at a time */
 qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
 void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
@@ -1466,17 +1478,15 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
   qio_bitbuffer_t part_one_bits;
   qio_bitbuffer_t part_one_bits_be;
   qio_bitbuffer_t tmp_bits;
-  uint64_t tmpv;
   int tmp_live;
   int part_one;
   int part_two;
 
   if( nbits < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative number of bits");
+  assert(nbits <= 64);
   if( nbits == 0 ) return 0;
-  if( nbits < 64 && (v >> nbits) != 0 ) {
-    // v must not have any extra bits set.
-    QIO_RETURN_CONSTANT_ERROR(EINVAL, "no more bits");
-  }
+  // if there are significant bits at positions greater than nbits, we ignore them
+  v &= CHPL_MASK_LOWBITS(nbits);
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -1500,7 +1510,7 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
     // Can we just put it into bitbuffer?
     if( tmp_live + nbits <= (int) (8*sizeof(qio_bitbuffer_t)) ) {
       //printf("WRITE BITS LOCAL WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
-      tmp_bits = (tmp_bits << nbits) | v;
+      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, (int)(8*sizeof(qio_bitbuffer_t))) | v;
       tmp_live += nbits;
       ch->bit_buffer = tmp_bits;
       ch->bit_buffer_bits = tmp_live;
@@ -1509,8 +1519,8 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
       // The value is split between tmp_bits and next_bits
       part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
       part_two = nbits - part_one;
-      tmpv = (part_two < 64) ? v : 0;
-      part_one_bits = (tmp_bits << part_one) | ( tmpv >> part_two );
+      part_one_bits = CHPL_SAFE_LSHIFT(tmp_bits, part_one, 64) |
+                      CHPL_SAFE_RSHIFT(v, part_two, 64);;
       part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
       tmp_bits = v;
       tmp_live = part_two;
@@ -1564,6 +1574,7 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
   int part_two;
 
   if( nbits < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative number of bits");
+  assert(nbits <= 64);
   if( nbits == 0 ) return 0;
 
   if( threadsafe ) {
@@ -1589,7 +1600,7 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
     if( nbits <= tmp_live ) {
       //printf("READ BITS LOCAL\n");
       *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
-      tmp_bits <<= nbits;
+      tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, (int)(8*sizeof(qio_bitbuffer_t)));
       tmp_live -= nbits;
       ch->bit_buffer = tmp_bits;
       ch->bit_buffer_bits = tmp_live;
@@ -1618,11 +1629,11 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
         // Now, from part_two_bits, read from the top to get
         // our number...
 
-        value <<= part_two;
+        value = CHPL_SAFE_LSHIFT(value, part_two, 64);
         value |= qio_bitbuffer_topn(part_two_bits,part_two);
 
         *v = value;
-        ch->bit_buffer = (part_two_bits << part_two);
+        ch->bit_buffer = CHPL_SAFE_LSHIFT(part_two_bits, part_two, 64);
         ch->bit_buffer_bits = 8*sizeof(qio_bitbuffer_t) - part_two;
         ch->bits_read_bytes = sizeof(qio_bitbuffer_t);
       } else {

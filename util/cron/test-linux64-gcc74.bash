@@ -11,7 +11,7 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /hpcdc/project/chapel/setup_gcc.bash 7.4
+source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_gcc.bash 7.4
 
 # Set environment variables to nudge cmake towards GCC 7.4
 export CHPL_CMAKE_USE_CC_CXX=1

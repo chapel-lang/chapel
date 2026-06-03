@@ -1,4 +1,4 @@
-Optimized on clause (wrapon_fn) in module optimizeOnClauses_basic_record (optimizeOnClauses_basic_record.chpl:13)
+Optimized on clause (wrapon_fn_optimizeOnClauses_basic_record_line_13) in module optimizeOnClauses_basic_record (optimizeOnClauses_basic_record.chpl:13)
 (r = 100)
 (r = 20)
 (r = 5)

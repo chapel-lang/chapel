@@ -1,3 +1,4 @@
 # And in any case no point running this in too many configs.
 CHPL_COMM!=none
 COMPOPTS <= --no-local
+COMPOPTS <= --baseline

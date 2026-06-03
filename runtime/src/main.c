@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,18 +23,40 @@
 #include "chpl-init.h"
 #include "chplexit.h"
 #include "config.h"
+#include "chpl-prginfo.h"
+
+// Defined in our module code. We will link against it.
+extern chpl_rt_prginfo* chpl_prepareProgramInfoHere(void);
 
 int main(int argc, char* argv[]) {
+  // Run the code that initializes our program information.
+  chpl_rt_prginfo* prg = chpl_prepareProgramInfoHere();
+  chpl_rt_prginfo* got_prg = NULL;
 
-  // Initialize the runtime
-  chpl_rt_init(argc, argv);
+  // Initialize the runtime, giving it our program info.
+  chpl_rt_init(prg, argc, argv);
+
+  // Have the runtime fetch the root program.
+  got_prg = CHPL_RT_PRGINFO_ROOT;
+
+  // It should match what we gave 'chpl_rt_init'.
+  if (got_prg && prg != got_prg) {
+    chpl_internal_error("a Chapel program tried to initialize the Chapel "
+                        "runtime, but the root program was already bound");
+
+  } else if (!got_prg) {
+    chpl_internal_error("the Chapel runtime has not bound a root program");
+  }
 
   // Run the main function for this node.
   chpl_task_callMain(chpl_executable_init);
 
+  // Fetch the main argument from the program data.
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
   // have everyone exit, returning the value returned by the user written main
   // or 0 if it didn't return anything
-  chpl_exit_all(chpl_gen_main_arg.return_value);
+  chpl_exit_all(main_arg_ptr->return_value);
 
   return 0; // should never get here
 }

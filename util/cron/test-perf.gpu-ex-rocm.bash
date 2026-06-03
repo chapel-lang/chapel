@@ -10,13 +10,9 @@ source $UTIL_CRON_DIR/common-native-gpu-perf.bash
 # CONFIG_NAME
 source $UTIL_CRON_DIR/common-perf.bash
 
-# module load rocm # load the default version of ROCm
-# pin to rocm 6.2 for now, https://github.com/chapel-lang/chapel/issues/26934
-module load rocm/6.2.0
+module load rocm/7
 
 export CHPL_COMM=none
-export CHPL_LLVM=bundled
-unset CHPL_LLVM_CONFIG  # we need this to avoid warnings
 export CHPL_LAUNCHER_PARTITION=bardpeak  # bardpeak is the default queue
 export CHPL_GPU=amd  # also detected by default
 export CHPL_GPU_ARCH=gfx90a

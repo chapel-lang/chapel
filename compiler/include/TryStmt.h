@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +40,7 @@ public:
   BlockStmt*          body() const;
   bool                tryBang() const;
   bool                isSyncTry() const;
+  bool                isForManageStmt() const;
 
   void                accept(AstVisitor* visitor) override;
   void                replaceChild(Expr* old_ast, Expr* new_ast) override;

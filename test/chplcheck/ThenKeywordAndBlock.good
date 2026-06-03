@@ -1,0 +1,9 @@
+ThenKeywordAndBlock.chpl:2: node violates rule ThenKeywordAndBlock
+ThenKeywordAndBlock.chpl:13: node violates rule ThenKeywordAndBlock
+ThenKeywordAndBlock.chpl:13: node violates rule ControlFlowParentheses
+ThenKeywordAndBlock.chpl:19: node violates rule ThenKeywordAndBlock
+ThenKeywordAndBlock.chpl:19: node violates rule UnattachedCurly
+ThenKeywordAndBlock.chpl:21: node violates rule ThenKeywordAndBlock
+ThenKeywordAndBlock.chpl:21: node violates rule ControlFlowParentheses
+ThenKeywordAndBlock.chpl:21: node violates rule UnattachedCurly
+[Success matching fixit for ThenKeywordAndBlock]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -287,6 +287,14 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
              (isImport ? "" : " or 'enum'"), " symbols.");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.codeForLocation(loc);
+}
+
+void ErrorEmptyEnum::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info_);
+  wr.heading(kind_, type_, loc,
+             "enums cannot be empty.");
+  wr.message("Empty enum here:");
+  wr.code(loc);
 }
 
 // catch-alls for simple parsing errors

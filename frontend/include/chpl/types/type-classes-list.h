@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -88,6 +88,7 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
   BUILTIN_TYPE_NODE(AnyOwnedType, "owned")
   BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
+  BUILTIN_TYPE_NODE(AnyProcType, "chpl_anyProc")
   BUILTIN_TYPE_NODE(AnyRealType, "chpl_anyreal")
   BUILTIN_TYPE_NODE(AnyRecordType, "record")
   BUILTIN_TYPE_NODE(AnySharedType, "shared")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,9 +31,8 @@
 #include "chpl/uast/Variable.h"
 
 // Test basic sum-reduce
-static void test1(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test1() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          iter f() {
@@ -49,9 +48,8 @@ static void test1(Context* context) {
 }
 
 // Test basic or-reduce
-static void test2(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test2() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          iter f() {
@@ -65,9 +63,8 @@ static void test2(Context* context) {
 }
 
 // Tests calling `these` on a record when it's used for a reduction
-static void test3(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test3() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          record R {
@@ -85,9 +82,8 @@ static void test3(Context* context) {
   assert(qt.type()->toIntType()->isDefaultWidth());
 }
 
-static void test4(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test4() {
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          iter f() {
@@ -123,9 +119,8 @@ static void test4(Context* context) {
 }
 
 // test 'minloc' and 'maxloc' reductions
-static void test5(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test5() {
+  auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
                         R""""(
                         iter f() {
@@ -147,9 +142,8 @@ static void test5(Context* context) {
 }
 
 // test 'zip' forms for reductions (serial and parallel)
-static void test6(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test6() {
+  auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
                         R""""(
                         iter f() { yield 1; yield 2; yield 3; }
@@ -168,9 +162,8 @@ static void test6(Context* context) {
 }
 
 // test 'reduce' with parallel-only iterators
-static void test7(Context* context) {
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+static void test7() {
+  auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
                         R""""(
                         iter f(param tag) where tag == iterKind.standalone { yield 1; yield 2; yield 3; }
@@ -185,14 +178,11 @@ static void test7(Context* context) {
 }
 
 int main() {
-  // Use a single context instance to avoid re-resolving internal modules.
-  auto context = buildStdContext();
-
-  test1(context);
-  test2(context);
-  test3(context);
-  test4(context);
-  test5(context);
-  test6(context);
-  test7(context);
+  test1();
+  test2();
+  test3();
+  test4();
+  test5();
+  test6();
+  test7();
 }

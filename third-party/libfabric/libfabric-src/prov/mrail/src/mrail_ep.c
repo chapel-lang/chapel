@@ -363,7 +363,7 @@ int mrail_send_rndv_ack_blocking(struct mrail_ep *mrail_ep,
 
 	tx_buf->hdr.protocol = MRAIL_PROTO_RNDV;
 	tx_buf->hdr.protocol_cmd = MRAIL_RNDV_ACK;
-	tx_buf->rndv_hdr.context = (uint64_t)context;
+	tx_buf->rndv_hdr.context = (uint64_t)(uintptr_t)context;
 
 	iov_dest.iov_base = &tx_buf->hdr;
 	iov_dest.iov_len = rndv_pkt_size;
@@ -415,7 +415,7 @@ mrail_prepare_rndv_req(struct mrail_ep *mrail_ep, struct mrail_tx_buf *tx_buf,
 
 	tx_buf->hdr.protocol = MRAIL_PROTO_RNDV;
 	tx_buf->hdr.protocol_cmd = MRAIL_RNDV_REQ;
-	tx_buf->rndv_hdr.context = (uint64_t)tx_buf;
+	tx_buf->rndv_hdr.context = (uint64_t)(uintptr_t)tx_buf;
 	tx_buf->rndv_req = NULL;
 
 	if (!desc || !desc[0]) {
@@ -463,7 +463,7 @@ mrail_prepare_rndv_req(struct mrail_ep *mrail_ep, struct mrail_tx_buf *tx_buf,
 			assert(!ret);
 			offset += key_size;
 		}
-		tx_buf->rndv_req->rma_iov[i].addr = (uint64_t)iov[i].iov_base;
+		tx_buf->rndv_req->rma_iov[i].addr = (uint64_t)(uintptr_t)iov[i].iov_base;
 		tx_buf->rndv_req->rma_iov[i].len = iov[i].iov_len;
 		tx_buf->rndv_req->rma_iov[i].key = key_size; /* otherwise unused */
 	}

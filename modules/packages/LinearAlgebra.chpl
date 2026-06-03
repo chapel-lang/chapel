@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1092,6 +1092,8 @@ proc _matmatMultHelper(AMat: [?Adom] ?eltType,
                        BMat : [?Bdom] eltType,
                        ref CMat : [] eltType)
 {
+  private use RangeChunk;
+
   // TODO - Add logic to calculate blockSize
   // based on eltType and L1 cache size
   const blockSize = 32;

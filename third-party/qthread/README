@@ -2,7 +2,7 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.22 is being released with Chapel for
+This copy of Qthreads 1.23 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/sandialabs/qthreads
@@ -18,7 +18,7 @@ The directory $CHPL_HOME/third-party/qthread/qthread-src contains
 a copy of the Qthreads repository. Version updates should be done
 as follows, assuming the CWD is $CHPL_HOME/third-party/qthread/:
 
-1. download the latest qthread version: e.g. `wget https://github.com/sandialabs/qthreads/archive/refs/tags/1.22.tar.gz -O qthread-src.tar.gz`
+1. download the latest qthread version: e.g. `wget https://github.com/sandialabs/qthreads/archive/refs/tags/1.23.tar.gz -O qthread-src.tar.gz`
 2. `git rm -r qthread-src`
 3. `tar xf qthread-src.tar.gz`
 4. `git add --force qthread-src` (--force to ignore our .gitignore)
@@ -29,98 +29,19 @@ as follows, assuming the CWD is $CHPL_HOME/third-party/qthread/:
 The modifications that we have made to the official Qthreads release are
 as follows:
 
-Route HWLOC_GET_TOPOLOGY_FUNCTION option properly to the relevant source files.
-This fixes a minor performance regression in the startup time.
---- a/src/affinity/binders.c
-+++ b/src/affinity/binders.c
-@@ -87,6 +87,10 @@ static int qt_affinity_compact(int num_workers, hwloc_obj_t obj) {
- void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
-                                qthread_worker_id_t *nbworkers,
-                                size_t *hw_par) {
-+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
-+  extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
-+  topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
-+#endif
-   // Note: the lack of a teardown routine will cause topology initialization
-   // to be skipped if qthreads is re-initialized
-   if (topology == NULL) {
-diff --git a/src/affinity/hwloc.c b/src/affinity/hwloc.c
-index eb8ac5b1..ea03ed6d 100644
---- a/src/affinity/hwloc.c
-+++ b/src/affinity/hwloc.c
-@@ -86,6 +86,10 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
-                                qthread_worker_id_t *nbworkers,
-                                size_t *hw_par) {
-   if (qthread_cas(&initialized, 0, 1) == 0) {
-+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
-+    extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
-+    topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
-+#endif
-     if (topology == NULL) {
-       qassert(hwloc_topology_init(&topology), 0);
-       qassert(hwloc_topology_load(topology), 0);
-
-
 Prevent CMake from overriding the OSX deployment target
 --- a/third-party/qthread/qthread-src/CMakeLists.txt
 +++ b/third-party/qthread/qthread-src/CMakeLists.txt
 @@ -16,6 +16,11 @@ else()
      LANGUAGES C ASM CXX)
  endif()
- 
+
 +# This must be done after `project` or it gets overridden by cmake
 +if(APPLE)
 +  set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "" FORCE)
 +endif()
 +
  include(GNUInstallDirs)
- 
+
  set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-
-Backport a patch from qthreads that switches to the fallback implementation of context swapping on ppc64le since the fast one is broken there.
---- a/third-party/qthread/qthread-src/src/CMakeLists.txt
-+++ b/third-party/qthread/qthread-src/src/CMakeLists.txt
-@@ -8,7 +8,26 @@ set(QTHREADS_DEFAULT_STACK_SIZE 32768 CACHE STRING "Default qthread stack size."
- set(QTHREADS_HASHMAP hashmap CACHE STRING "Which hashmap implementation to use. Valid values are \"hashmap\" and \"lf_hashmap\".")
- set(QTHREADS_DICT_TYPE shavit CACHE STRING "Which dictionary implementation to use. Valid values are \"shavit\", \"trie\", and \"simple\".")
- set(QTHREADS_TIMER_TYPE gettimeofday CACHE STRING "Which timer implementation to use. Valid values are \"clock_gettime\", \"mach\", \"gettimeofday\", and \"gethrtime\".")
--set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
-+# Only default to the fastcontext implementation in cases where it's confirmed to work.
-+# Note: apparently 32-bit x86 may show up as i386, i486, i586, or i686.
-+# Little-endian powerpc variants are excluded here as they're known not to work
-+# due to an unresolved bug in our fastcontext code.
-+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i486" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i586" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64" OR
-+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc")
-+  set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
-+else()
-+  message(WARNING "No fast context swap available on this system, falling back to the system-provided one.")
-+  set(QTHREADS_CONTEXT_SWAP_IMPL system CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
-+endif()
- set(QTHREADS_HWLOC_GET_TOPOLOGY_FUNCTION "" CACHE STRING "function to get hwloc topology (otherwise uses hwloc_topology_init and hwloc_topology_load)")
- set(QTHREADS_GUARD_PAGES OFF CACHE BOOL "Whether or not to guard memory pages to help with debugging stack overflows. Default is OFF.")
- set(QTHREADS_CONDWAIT_QUEUE OFF CACHE BOOL "Use a waiting queue based on pthread condition variables instead of a spin-based queue for inter-thread communication. Default is OFF.")
-
-
-
-Fix an ASAN failure caused by an off-by-one error with copying strings
---- a/src/affinity/binders.c
-+++ b/src/affinity/binders.c
-@@ -142,7 +142,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
-     }
- 
-   } else {
--    char *bstr = qt_malloc(strlen(bindstr));
-+    char *bstr = qt_malloc(strlen(bindstr)+1);
-     strcpy(bstr, bindstr);
-     int i, j;
-     sheps.num = 1;

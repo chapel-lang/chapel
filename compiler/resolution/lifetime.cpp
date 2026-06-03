@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -442,6 +442,11 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   // No need to lifetime check extern functions
   if (fn->hasFlag(FLAG_EXTERN))
     return;
+  if (fn->hasFlag(FLAG_RESOLVED_EARLY)) {
+    // TODO: temporary hack to avoid lifetime checking while we develop the
+    // converter
+    return;
+  }
 
   bool debugging = debuggingLifetimesForFn(fn);
 

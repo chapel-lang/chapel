@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -69,7 +69,7 @@ class ReplacementContext:
         Given a location (as retrieved from an AST node), convert this
         location into an offset in the source file.
         """
-        (row, col) = loc
+        row, col = loc
         return self.lines[row] + (col - 1)
 
     def node_idx_range(self, node: chapel.AstNode) -> typing.Tuple[int, int]:
@@ -88,7 +88,7 @@ class ReplacementContext:
         Return the substring that corresponds to the given node in the source
         file.
         """
-        (range_start, range_end) = self.node_idx_range(node)
+        range_start, range_end = self.node_idx_range(node)
         return self.content[range_start:range_end]
 
     def node_indent(self, node: chapel.AstNode) -> int:
@@ -96,7 +96,7 @@ class ReplacementContext:
         Determine the number of characters between the given node and the
         beginning of the line.
         """
-        (range_start, _) = self.node_idx_range(node)
+        range_start, _ = self.node_idx_range(node)
         return range_start - self.lines[self.lines_back[range_start]]
 
 
@@ -130,7 +130,7 @@ def rename_named_actuals(
     """
     for actual in call.actuals():
         if isinstance(actual, tuple):
-            (name, actual) = actual
+            name, actual = actual
             if name not in renames:
                 continue
 
@@ -193,13 +193,13 @@ def replace(
         # If it's not callable, it must be a string; we don't care about child
         # replacements, since our own target is constant.
         elif not callable(my_replace):
-            (replace_from, replace_to) = rc.node_idx_range(node)
+            replace_from, replace_to = rc.node_idx_range(node)
             yield (replace_from, replace_to, my_replace)
 
         # We have a callable replacement, which means we should apply child
         # substitutions to our text and then call the replacement with that.
         else:
-            (replace_from, replace_to) = rc.node_idx_range(node)
+            replace_from, replace_to = rc.node_idx_range(node)
             my_text = rc.node_exact_string(node)
             for child in reversed(list(node)):
                 for child_from, child_to, child_str in recurse(child):

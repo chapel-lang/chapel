@@ -271,6 +271,11 @@ tasks across the network-connected locales upon which the program is running:
 Remote Variable Declarations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+   Remote variable declarations as described in this section are currently
+   unstable and may change in the future.
+
 By default, when new variables and data objects are created, they are
 created in the locale where the task is running. Variables can be
 defined within an ``on-statement`` to define them on a particular locale

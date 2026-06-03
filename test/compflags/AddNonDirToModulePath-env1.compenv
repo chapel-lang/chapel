@@ -1,0 +1,1 @@
+CHPL_MODULE_PATH=nonexistentdir:AddNonDir-symlink-dir

@@ -1,5 +1,3 @@
-:title: Users Guide: Casts: Explicit Type Conversions
-
 .. _ug-casts:
 
 Casts: explicit type conversions

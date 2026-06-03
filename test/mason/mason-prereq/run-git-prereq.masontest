@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Test that mason builds prereqs for git dependencies.
+# This verifies that mason correctly builds prereqs (and collects
+# printchplflags) for git dependencies, not just the root project
+# and registry/source dependencies.
+
+set -eo pipefail
+
+TESTDIR=$(cd "$(dirname "$0")" && pwd)
+
+# --- Set up the library as a local git repo ---
+LIB_REPO=$(mktemp -d)
+cp -r "$TESTDIR/git-prereq-lib/." "$LIB_REPO/"
+
+pushd "$LIB_REPO" > /dev/null
+git init -q
+git add -A
+git commit -q -m "initial commit"
+popd > /dev/null
+
+# --- Set up the consumer app ---
+cd "$TESTDIR/git-prereq-app"
+rm -rf target Mason.lock
+rm -rf "$MASON_HOME/git/GitPrereqLib-HEAD"
+
+cat > Mason.toml <<EOF
+[brick]
+name="git_prereq_app"
+version="0.1.0"
+chplVersion="2.7.0"
+license="None"
+type="application"
+source="https://github.com/test/git_prereq_app"
+
+[dependencies]
+GitPrereqLib = { git = "file://${LIB_REPO}" }
+EOF
+
+# --- Attempt to build ---
+if mason build; then
+  echo "mason build succeeded"
+  mason run
+else
+  echo "mason build failed"
+fi
+
+# --- Clean up ---
+rm -rf "$LIB_REPO"
+rm -rf target Mason.lock Mason.toml

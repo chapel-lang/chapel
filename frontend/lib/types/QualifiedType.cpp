@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -88,7 +88,7 @@ QualifiedType QualifiedType::makeParamBytes(Context* context, std::string s) {
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
   return (isParam() && !hasParamPtr()) ||
     isUnknownKindOrType() ||
-    resolution::getTypeGenericity(context, type()) == Type::GENERIC;
+    resolution::getTypeGenericity(context, type()) != Type::CONCRETE;
 }
 
 QualifiedType QualifiedType::createParamBool(Context* context, bool x) {

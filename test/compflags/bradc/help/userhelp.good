@@ -112,6 +112,7 @@ Optimization Control Options:
                                       fields in classes and records
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
+      --vector-library <lib>          Select a vectorization library to use
       --[no-]auto-local-access        Enable [disable] using local access
                                       automatically
       --[no-]dynamic-auto-local-access
@@ -135,6 +136,7 @@ Run-time Semantic Check Options:
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] runtime nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
+      --[no-]union-checks             Enable [disable] union field checking
 
 Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
@@ -172,6 +174,8 @@ Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
       --[no-]print-passes             [Don't] print compiler passes
       --print-passes-file <filename>  Print compiler passes to <filename>
+      --[no-]print-passes-memory      [Don't] print memory usage after each
+                                      compiler pass
 
 Miscellaneous Options:
       --[no-]detailed-errors          Enable [disable] detailed error messages
@@ -214,6 +218,8 @@ Compiler Configuration Options:
       --make <make utility>           Make utility for generated code
       --target-mem <mem-impl>         Specify the memory manager
       --re2 <re2-version>             Specify RE2 library
+      --sanitize-exe <sanitizer>      Specify the sanitizer to use for the
+                                      executable/runtime
       --target-arch <architecture>    Target architecture / machine type
       --target-compiler <compiler>    Compiler for generated code
       --target-cpu <cpu>              Target cpu model for specialization

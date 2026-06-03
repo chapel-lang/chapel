@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -376,9 +376,16 @@ module Map {
       ref val = table.table[slot].val;
 
       import Reflection;
-      if !Reflection.canResolveMethod(updater, "this", key, val) then
-        compilerError('`map.update()` failed to resolve method ' +
-                      updater.type:string + '.this() for arguments (' +
+      param resolves = if useProcedurePointers then
+                   Reflection.canResolveCall(updater, key, val)
+                 else
+                   Reflection.canResolveMethod(updater, "this", key, val);
+      param str = if useProcedurePointers then "' for arguments ("
+            else ".this()' for arguments (";
+      param kind = if useProcedurePointers then "updater '" else "method '";
+      if !resolves then
+        compilerError('`map.update()` failed to resolve ' + kind +
+                      updater.type:string + str +
                       key.type:string + ', ' + val.type:string + ')');
 
       return updater(key, val);
@@ -765,11 +772,8 @@ module Map {
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("toArray requires copyable key and value types");
 
-      var A: [0..#_size] (keyType, valType);
-
-      for (a, k, v) in zip(A, keys(), values()) {
-        a = (k, v);
-      }
+      var A: [0..#_size] (keyType, valType)
+          = for (k, v) in zip(keys(), values()) do (k, v);
 
       return A;
     }
@@ -787,10 +791,7 @@ module Map {
       if !isCopyableType(keyType) then
         compilerError("keysToArray requires a copyable key type");
 
-      var A: [0..#_size] keyType;
-      for (a, k) in zip(A, keys()) {
-        a = k;
-      }
+      var A: [0..#_size] keyType = for k in keys() do k;
       return A;
     }
 
@@ -807,10 +808,7 @@ module Map {
       if !isCopyableType(valType) then
         compilerError("valuesToArray requires a copyable value type");
 
-      var A: [0..#_size] valType;
-      for (a, v) in zip(A, values()) {
-        a = v;
-      }
+      var A: [0..#_size] valType = for v in values() do v;
       return A;
     }
   } // end record map

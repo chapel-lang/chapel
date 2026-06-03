@@ -5,7 +5,12 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_LIBUNWIND_CFG_OPTIONS = --prefix=$(LIBUNWIND_INSTALL_DIR) --disable-shared --disable-coredump --disable-cxx-exceptions
+CHPL_LIBUNWIND_CFG_OPTIONS = --prefix=$(LIBUNWIND_INSTALL_DIR) \
+                             --disable-shared \
+                             --disable-coredump \
+                             --disable-cxx-exceptions \
+                             --disable-minidebuginfo \
+                             --disable-zlibdebuginfo
 
 ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)

@@ -15,6 +15,7 @@ Dependencies
   toml 0.9.4
 """
 
+
 def getAuthToken():
     """get authentication token for GitHub"""
     secret = open("secret-token.txt", "r+")
@@ -45,8 +46,9 @@ def requestPackageInfo():
 
             # get contents of toml files and parse values
             for toml_file in content:
-                download = requests.get(toml_file["download_url"],
-                                        auth=(user, token))
+                download = requests.get(
+                    toml_file["download_url"], auth=(user, token)
+                )
                 toml_file = toml.loads(download.text)
                 package["author"] = toml_file["brick"]["author"]
                 package["source"] = toml_file["brick"]["source"]
@@ -57,8 +59,8 @@ def requestPackageInfo():
             packages[package["name"]] = package
 
     else:
-        print('Error requesting content from GitHub')
-        print('Could not write package-list.rst')
+        print("Error requesting content from GitHub")
+        print("Could not write package-list.rst")
 
     return packages
 
@@ -80,7 +82,7 @@ def writePackageList(packages, path="../rst/tools/mason/package-list.rst"):
     for name, pack in sorted(packages.items()):
         if not name.startswith("_"):
             f.write(name + "\n")
-            f.write("~"*len(name) + "\n")
+            f.write("~" * len(name) + "\n")
             f.write("Author: \n")
             f.write("     | " + pack["author"] + "\n")
             f.write("Repository: \n")
@@ -95,6 +97,7 @@ def writePackageList(packages, path="../rst/tools/mason/package-list.rst"):
 
     # close package-list.rst
     f.close()
+
 
 if __name__ == "__main__":
     package_list = requestPackageInfo()

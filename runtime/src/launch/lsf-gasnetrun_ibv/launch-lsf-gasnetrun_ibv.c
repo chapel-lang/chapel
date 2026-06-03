@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,8 @@
 #include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
@@ -44,6 +45,8 @@
 static char _nlbuf[16];
 static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_THIRD_PARTY);
+
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(cmd, len * sizeof(char), "%s/%sgasnetrun_ibv", CHPL_THIRD_PARTY,

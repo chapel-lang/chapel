@@ -34,7 +34,7 @@ prereq_any(
 
 -- template variables ----------------------------------------------------------
 local MOD_LEVEL           = "@@{pkg_version}"       -- 1.23.0, e.g.
-local INSTALL_ROOT        = "@@{platform_prefix}"   -- former BASE_INSTALL_DIR
+local INSTALL_ROOT        = "[BASE_INSTALL_DIR]"    -- replaced with install prefix by RPM post-install script
 --------------------------------------------------------------------------------
 
 -- set comm layer

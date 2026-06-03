@@ -88,6 +88,9 @@ typedef struct {
 #elif defined(PSMI_LOCK_IS_MUTEXLOCK_DEBUG)
 	pthread_mutex_t lock;
 	pthread_t lock_owner;
+#ifdef PSMI_LOCK_MUTEXLOCK_DEBUG_LOG_CONTENTION
+	const char *lock_owner_loc;
+#endif
 #elif defined(PSMI_LOCK_IS_MUTEXLOCK)
 	pthread_mutex_t lock;
 #endif
@@ -154,6 +157,9 @@ PSMI_ALWAYS_INLINE(void psmi_init_lock(psmi_lock_t *lock))
 	pthread_mutex_init(&(lock->lock), &attr);
 	pthread_mutexattr_destroy(&attr);
 	lock->lock_owner = PSMI_LOCK_NO_OWNER;
+#ifdef PSMI_LOCK_MUTEXLOCK_DEBUG_LOG_CONTENTION
+	lock->lock_owner_loc = "NONE";
+#endif
 #endif
 }
 

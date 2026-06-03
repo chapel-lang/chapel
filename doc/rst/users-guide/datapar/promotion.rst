@@ -1,5 +1,3 @@
-:title: Users Guide: Promotion
-
 .. _ug-promotion:
 
 Promotion: implicit data parallelism

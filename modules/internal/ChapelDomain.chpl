@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2794,7 +2794,7 @@ module ChapelDomain {
        Returns a local view of the sub-domain (slice) defined by the provided
        range(s), halting if the slice contains elements that are not local.
     */
-    pragma "no where doc"
+    @chpldoc.noWhereClause
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
           !_value.isDefaultRectangular()
@@ -2920,7 +2920,7 @@ module ChapelDomain {
        do not fit in the new idxType or when the original stride(s)
        are not legal for the new `strides` parameter.
      */
-    pragma "no where doc"
+    @chpldoc.noWhereClause
     proc tryCast(type t: domain)
       where chpl__isRectangularDomType(t) && this.isRectangular()
         &&  this.chpl_domainTryCastIsSafe(t)

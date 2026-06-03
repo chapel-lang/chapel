@@ -2,8 +2,9 @@
 // can be passed to another IC function when doing so is legal due to an
 // associated constraint.
 //
-// This test is simplified for --minimal-modules
-// Once this functionality is implemented, we should beef up this code.
+// This test was simplified for --minimal-modules, but that option is
+// no longer needed.
+// TODO: we should beef up this code.
 
 interface IFC {
   type AT;

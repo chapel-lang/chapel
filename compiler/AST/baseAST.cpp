@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -248,6 +248,19 @@ void cleanAst() {
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+
+    if (isAlive(ts)) {
+      if (auto ft = toFunctionType(ts->type)) {
+        for (auto& formal : ft->formals()) {
+          INT_ASSERT(isAlive(formal.type()));
+        }
+      }
+
+      if (ts->hasFlag(FLAG_REF)) {
+        INT_ASSERT(isAlive(ts->type->getValType()->symbol));
+      }
+    }
+
     for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
 
@@ -364,7 +377,7 @@ BaseAST::BaseAST(AstTag type) :
       if (developer || fVerify) {
         INT_FATAL("no line number available");
       } else {
-        astloc = astlocT(0, astr("[file unknown]"));
+        astloc = astlocT::unknownLoc("[file unknown]");
       }
     }
   }

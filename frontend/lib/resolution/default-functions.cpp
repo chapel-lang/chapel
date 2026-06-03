@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -408,6 +408,7 @@ generateIntegralToOrFromCastForEnum(ResolutionContext* rc,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
   return ret;
 }
@@ -575,7 +576,7 @@ static bool initHelper(Context* context,
     auto bct = t->getCompositeType()->toBasicClassType();
     auto pct = bct->parentClassType();
 
-    if (pct && !pct->isObjectType()) {
+    if (pct) {
       addSuperInit = true;
 
       const Type* manager = nullptr;
@@ -669,7 +670,7 @@ static bool initHelper(Context* context,
         // Now, propagate to the previous decls forming the current 'group'.
         // We process this group in a 'forward' direction, rather than a
         // 'backward' direction, so that we preserve field declaration order.
-        if (curTypeExpr || curInitExpr) {
+        if (curTypeExpr || curInitExpr || std::next(it) == multi->decls().end()) {
           auto groupEnd = std::next(it);
           auto groupIt = groupBegin;
           while (groupIt != groupEnd) {
@@ -762,24 +763,23 @@ buildInitUfsFormals(const uast::Function* initFn) {
   std::vector<UntypedFnSignature::FormalDetail> formals;
   for (auto decl : initFn->formals()) {
     UniqueString name;
-    bool hasDefault = false;
 
+    auto defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
     if (auto formal = decl->toFormal()) {
       name = formal->name();
 
-      hasDefault = formal->initExpression() != nullptr;
-      if (decl != initFn->thisFormal()) {
+      if (formal->initExpression() != nullptr) {
+        defaultKind = UntypedFnSignature::DK_DEFAULT;
+      } else if (decl != initFn->thisFormal()) {
         if (formal->intent() != Formal::Intent::TYPE &&
             formal->intent() != Formal::Intent::PARAM) {
           if (formal->typeExpression() != nullptr) {
-            hasDefault = true;
+            defaultKind = UntypedFnSignature::DK_MAYBE_DEFAULT;
           }
         }
       }
     }
 
-    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
-                                  : UntypedFnSignature::DK_NO_DEFAULT;
     auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                decl, decl->isVarArgFormal());
     formals.push_back(fd);
@@ -791,11 +791,6 @@ buildInitUfsFormals(const uast::Function* initFn) {
 static const TypedFnSignature*
 generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   auto context = rc->context();
-  if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
-    if (ct->isObjectType()) {
-      return nullptr;
-    }
-  }
 
   auto& br = buildInitializer(context, inCompType->id());
 
@@ -866,6 +861,10 @@ struct FnBuilder {
 
   owned<Identifier> identifier(UniqueString name) {
     return Identifier::build(builder(), dummyLoc_, name);
+  }
+
+  owned<Identifier> identifier(std::string name) {
+    return Identifier::build(builder(), dummyLoc_, UniqueString::get(context_, name));
   }
 
   owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
@@ -1366,7 +1365,6 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
 
   // TODO:
   // - use types for formals
-  // - add calls to (de)serializeDefaultImpl
 
   auto bld = Builder::createForGeneratedCode(context, typeID);
   auto builder = bld.get();
@@ -1380,12 +1378,19 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
   auto writerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "writer"),
                                  Formal::DEFAULT_INTENT, {}, nullptr);
   auto serializerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "serializer"),
-                                 Formal::DEFAULT_INTENT, {}, nullptr);
+                                 Formal::REF, {}, nullptr);
   AstList formals;
   formals.push_back(std::move(writerArg));
   formals.push_back(std::move(serializerArg));
 
   AstList stmts;
+  FnBuilder helper(context, typeID, UniqueString(),
+           Function::Kind::PROC, false);
+  auto call = helper.call(helper.identifier("serializeDefaultImpl"),
+                helper.identifier(UniqueString::get(context, "writer")),
+                helper.identifier(UniqueString::get(context, "serializer")),
+                helper.identifier(USTR("this")));
+  stmts.push_back(std::move(call));
   auto body = Block::build(builder, dummyLoc, std::move(stmts));
 
   auto genFn = Function::build(builder,
@@ -1456,6 +1461,32 @@ static void buildWhenStmts(Context* context, Builder* builder,
   }
 }
 
+// In production, some functions like 'enumToOrder' or string casts get
+// inserted into the ChapelBase module. They therefore get access to 'operator=='
+// even if their module doesn't have access to ChapelBase.
+// In dyno, we can't do this, since generated code has to be in a particular
+// location (at this time, logically "inside" the type declaration it's generated
+// for). To ensure we have the necessary access to things in ChapelBase,
+// `use` ChapelBase` in the body.
+static owned<Use> useDefsFromChapelBase(Context* context, Builder* builder,
+                                        const Location& dummyLoc,
+                                        std::vector<const char*> limitationStrs = {"=="}) {
+  AstList baseUseList;
+  auto baseIdent = Identifier::build(builder, dummyLoc,
+                                     UniqueString::get(context, "ChapelBase"));
+  std::vector<owned<AstNode>> limitations;
+  for (auto limitation : limitationStrs) {
+    auto eq = Identifier::build(builder, dummyLoc, UniqueString::get(context, limitation));
+    limitations.push_back(std::move(eq));
+  }
+  auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
+                                               std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
+  baseUseList.push_back(std::move(baseVisClause));
+
+  auto useBase = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(baseUseList));
+  return useBase;
+}
+
 const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   QUERY_BEGIN(buildEnumToOrder, context, typeID);
 
@@ -1466,6 +1497,16 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   auto argType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
   auto typeIdent = argType->copy(); // make a copy for the 'use <type>' stmt
   auto argName = UniqueString::get(context, "e");
+  if (argName == argType->name()) {
+    // if the enum is named 'e', don't generate a formal like 'e : e'.
+    //
+    // Note: on the one hand, it seems like we don't even need to specify the
+    // type expression, since the generated `buildEnumToOrder` is exactly the
+    // one corresponding to the type (it's build via the `EnumType`). However,
+    // it seems like we might need that information when generating production
+    // compiler AST, so instead, I chose to avoid naming conflicts via this check.
+    argName = UniqueString::getConcat(context, argName.c_str(), "_");
+  }
   auto argFormal = Formal::build(builder, dummyLoc, nullptr,
                                   argName, Formal::DEFAULT_INTENT,
                                   std::move(argType), nullptr);
@@ -1485,24 +1526,7 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
     stmts.push_back(std::move(useEnum));
   }
 
-  // In production, the new function gets inserted into the ChapelBase module.
-  // In dyno, we can't do this, since generated code has to be in a particular
-  // location (at this time, logically "inside" the type declaration it's generated
-  // for). To ensure we have the necessary code, `use` ChapelBase` in the body.
-  {
-    AstList baseUseList;
-    auto baseIdent = Identifier::build(builder, dummyLoc,
-                                       UniqueString::get(context, "ChapelBase"));
-    auto eq = Identifier::build(builder, dummyLoc, USTR("=="));
-    std::vector<owned<AstNode>> limitations;
-    limitations.push_back(std::move(eq));
-    auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
-                                                 std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
-    baseUseList.push_back(std::move(baseVisClause));
-
-    auto useBase = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(baseUseList));
-    stmts.push_back(std::move(useBase));
-  }
+  stmts.push_back(useDefsFromChapelBase(context, builder, dummyLoc));
 
 
   // build up when-stmts
@@ -1595,6 +1619,8 @@ struct EnumCastBuilder : BinaryFnBuilder {
   }
 
   BuilderResult finalize() {
+    stmts().push_back(useDefsFromChapelBase(context(), builder(), dummyLoc_,
+                      {"==", "chpl_enum_cast_error"}));
     auto select = Select::build(builder(), dummyLoc_,
                                 identifier(lhsFormal()->name()),
                                 std::move(selectWhens_));
@@ -1814,6 +1840,7 @@ generateTupleMethod(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsInstantiated */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1868,6 +1895,7 @@ fieldAccessorQuery(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return QUERY_END(result);
@@ -1947,6 +1975,7 @@ generatePtrMethod(Context* context, QualifiedType receiverType,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1989,6 +2018,7 @@ generateEnumMethod(ResolutionContext* rc,
           /* instantiatedFrom */ nullptr,
           /* parentFn */ nullptr,
           /* formalsInstantiated */ Bitmap(),
+          /* formalsErrored */ Bitmap(),
           /* outerVariables */ {});
     }
   }
@@ -2047,6 +2077,7 @@ generateIteratorMethod(Context* context,
         /* instantiatedFrom */ nullptr,
         /* parentFn */ nullptr,
         /* formalsInstantiated */ Bitmap(),
+        /* formalsErrored */ Bitmap(),
         /* outerVariables */ {});
   }
   return result;
@@ -2091,6 +2122,7 @@ generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -2253,6 +2285,7 @@ getParamOrderToEnum(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);
@@ -2325,6 +2358,7 @@ getParamEnumToOrder(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);
@@ -2429,7 +2463,7 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
 
   if (auto bct = ct->toBasicClassType()) {
     auto parent = bct->parentClassType();
-    if (parent && !parent->isObjectType()) {
+    if (parent && !parent->isRootClass()) {
       auto& br = buildTypeConstructor(context, parent->id());
       auto fn = br.topLevelExpression(0)->toFunction();
 

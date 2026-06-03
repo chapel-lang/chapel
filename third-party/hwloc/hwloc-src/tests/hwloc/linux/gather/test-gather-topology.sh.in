@@ -2,7 +2,7 @@
 #-*-sh-*-
 
 #
-# Copyright © 2012-2023 Inria.  All rights reserved.
+# Copyright © 2012-2025 Inria.  All rights reserved.
 # Copyright © 2010-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2011 Université Bordeaux
 # See COPYING in top-level directory.
@@ -62,7 +62,7 @@ export HWLOC_FSROOT=//
 
 echo "Saving current system topology to XML..."
 # ignore DAXDevice info attr because it won't appear in save2.xml unless we pass --io to gather below
-if ! "$lstopo" --no-io -.xml | grep -v DAXDevice > "$tmpdir/save1.xml" ; then
+if ! "$lstopo" --no-io --ignore misc -.xml | grep -v DAXDevice > "$tmpdir/save1.xml" ; then
     error "Failed"
     exit 1
 fi
@@ -85,7 +85,7 @@ export HWLOC_FSROOT="$tmpdir/save"
 rm -f "$tmpdir/save/proc/hwloc-nofile-info"
 
 echo "Saving tarball topology to XML..."
-if ! "$lstopo" --no-io "$tmpdir/save2.xml" ; then
+if ! "$lstopo" --no-io --ignore misc "$tmpdir/save2.xml" ; then
     error "Failed"
     exit 1
 fi

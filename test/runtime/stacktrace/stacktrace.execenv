@@ -1,0 +1,2 @@
+# if CHPL_RT_UNWIND is explicitly set we don't get the extra message
+unset CHPL_RT_UNWIND

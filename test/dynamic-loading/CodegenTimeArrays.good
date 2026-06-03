@@ -1,0 +1,17 @@
+getter_chpl_global_serialize_table
+GOOD
+getter_chpl_globals_registry
+GOOD
+getter_chpl_mem_descs
+GOOD
+getter_chpl_private_broadcast_table
+GOOD
+-- get_from_holder --
+getter_chpl_global_serialize_table
+GOOD
+getter_chpl_globals_registry
+GOOD
+getter_chpl_mem_descs
+GOOD
+getter_chpl_private_broadcast_table
+GOOD

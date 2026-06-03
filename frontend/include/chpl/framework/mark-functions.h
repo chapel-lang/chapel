@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,8 +90,8 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
-template<typename T, size_t i> struct mark<llvm::SmallVector<T, i>> {
-  void operator()(Context* context, const llvm::SmallVector<T, i>& keep) const {
+template<typename T> struct mark<llvm::SmallVector<T>> {
+  void operator()(Context* context, const llvm::SmallVector<T>& keep) const {
     for (auto const &elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);

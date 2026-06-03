@@ -8,7 +8,7 @@ function ck_module_list() {
 
     # sanity check Cray module system
 
-    case "$1" in ( "" ) ;; ( * ) log_error "ck_module_list: too many args=$@"; exit 2;; esac
+    case "$1" in ( "" ) ;; ( * ) log_error "ck_module_list: too many args=$*"; exit 2;; esac
 
     local output=$( set +x; module -t list 2>&1 ) || {
         log_error "Failed: module -t list"
@@ -47,7 +47,7 @@ function get_module_re() {
         ( "" | *\ * | */* ) log_error "get_module_re: invalid arg=$1"; exit 2;;
         ( "-v" )
             if [ -n "$filter" -o -n "$target" ]; then
-                log_error "get_module_re: invalid args: should be args 1 and 2=$@"
+                log_error "get_module_re: invalid args: should be args 1 and 2=$*"
                 exit 2
             fi
             shift
@@ -56,7 +56,7 @@ function get_module_re() {
             ;;
         ( "-*" )    log_error "get_module_re: invalid arg=$1"; exit 2;;
         ( * )
-            case "$target" in ( "" ) ;; ( * ) log_error "get_module_re: too many args=$@"; exit 2;; esac
+            case "$target" in ( "" ) ;; ( * ) log_error "get_module_re: too many args=$*"; exit 2;; esac
             target=$1
             ;;
         esac
@@ -81,7 +81,7 @@ function get_module_version() {
     # Returns the current version of a given module, if loaded
 
     case "$1" in ( "" ) log_error "get_module_version: missing arg 1"; exit 2;; esac
-    case "$2" in ( "" ) ;; ( * ) log_error "get_module_version: too many args=$@"; exit 2;; esac
+    case "$2" in ( "" ) ;; ( * ) log_error "get_module_version: too many args=$*"; exit 2;; esac
     local target=$1
 
     local found=$( set +x; module -t list 2>&1 | grep -E -e "^$target(/|$)" || : ok )
@@ -137,7 +137,7 @@ function load_module() {
     # Loads the given module, if not loaded already
 
     case "$1" in ( "" ) log_error "load_module: missing arg 1"; exit 2;; esac
-    case "$2" in ( "" ) ;; ( * ) log_error "load_module: too many args=$@"; exit 2;; esac
+    case "$2" in ( "" ) ;; ( * ) log_error "load_module: too many args=$*"; exit 2;; esac
     local target=$1
 
     if [ -z "$( get_module_version $target )" ]; then
@@ -160,7 +160,7 @@ function load_module_version() {
     local target_module=$1
     case "$2" in ( "" ) log_error "load_module_version: missing arg 2"; exit 2;; esac
     local target_version=$2
-    case "$3" in ( "" ) ;; ( * ) log_error "load_module_version: too many args=$@"; exit 2;; esac
+    case "$3" in ( "" ) ;; ( * ) log_error "load_module_version: too many args=$*"; exit 2;; esac
 
     local found=$( get_module_version $target_module )
     if [ -z "$found" ]; then

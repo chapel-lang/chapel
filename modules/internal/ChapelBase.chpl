@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ module ChapelBase {
   enum iterKind {leader, follower, standalone};
 
   // This flag toggles on the new pointer-based implementation.
-  config param useProcedurePointers = false;
+  config param useProcedurePointers = true;
 
   proc chpl_enableProcPtrs(type t) param {
     if !useProcedurePointers then return false;
@@ -145,6 +145,10 @@ module ChapelBase {
 
   // This needs to be param so calls to it are removed after they are resolved
   inline operator =(ref a: nothing, b: nothing) param { }
+
+  inline operator =(ref a: ?t, b: t) where chpl_enableProcPtrs(t) {
+    __primitive("=", a, b);
+  }
 
   //
   // equality comparison on primitive types
@@ -311,17 +315,14 @@ module ChapelBase {
   inline operator <=(a: int(16), b: int(16)) do return __primitive("<=", a, b);
   inline operator <=(a: int(32), b: int(32)) do return __primitive("<=", a, b);
   inline operator <=(a: int(64), b: int(64)) do return __primitive("<=", a, b);
-
   inline operator <=(a: uint(8), b: uint(8)) do return __primitive("<=", a, b);
   inline operator <=(a: uint(16), b: uint(16)) do return __primitive("<=", a, b);
   inline operator <=(a: uint(32), b: uint(32)) do return __primitive("<=", a, b);
   inline operator <=(a: uint(64), b: uint(64)) do return __primitive("<=", a, b);
-
   inline operator <=(a: real(32), b: real(32)) do return __primitive("<=", a, b);
   inline operator <=(a: real(64), b: real(64)) do return __primitive("<=", a, b);
-  operator <=(a: enum, b: enum) where (a.type == b.type) {
+  operator <=(a: enum, b: enum) where (a.type == b.type) do
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  }
   pragma "last resort"
   inline operator <=(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
@@ -332,65 +333,32 @@ module ChapelBase {
   inline operator >=(a: int(16), b: int(16)) do return __primitive(">=", a, b);
   inline operator >=(a: int(32), b: int(32)) do return __primitive(">=", a, b);
   inline operator >=(a: int(64), b: int(64)) do return __primitive(">=", a, b);
-
   inline operator >=(a: uint(8), b: uint(8)) do return __primitive(">=", a, b);
   inline operator >=(a: uint(16), b: uint(16)) do return __primitive(">=", a, b);
   inline operator >=(a: uint(32), b: uint(32)) do return __primitive(">=", a, b);
   inline operator >=(a: uint(64), b: uint(64)) do return __primitive(">=", a, b);
-
   inline operator >=(a: real(32), b: real(32)) do return __primitive(">=", a, b);
   inline operator >=(a: real(64), b: real(64)) do return __primitive(">=", a, b);
-  operator >=(a: enum, b: enum) where (a.type == b.type) {
+  operator >=(a: enum, b: enum) where (a.type == b.type) do
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  }
   pragma "last resort"
   inline operator >=(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
-  // operator <(integral, integral)
-
-  // cast an int(?w) to uint(w)
-  private inline proc asUint(a: integral) do return a: uint(numBits(a.type));
-
-  inline operator <(a: integral, b: integral) do return
-    // prim("<") works correctly for same signed-ness even with diff. sizes
-    if isInt(a) then
-      if isInt(b) then __primitive("<", a, b)
-      else __primitive("<", a, 0) || __primitive("<", asUint(a), b)
-    else
-      if isUint(b) then __primitive("<", a, b)
-      else ! __primitive("<", b, 0) && __primitive("<", a, asUint(b));
-
-  inline operator <(a: integral, param b: integral) param
-    where isUint(a) && __primitive("<=", b, 0)
-    do return false;
-
-  inline operator <(param a: integral, b: integral) param
-    where isUint(b) && __primitive("<", a, 0)
-    do return true;
-
-  inline operator <(param a: integral, param b: integral) param do return
-    // prim("<") may be wrong with mixed int*uint ex. prim("<", 1, (-5):uint)
-    if a >= 0 then
-      if b >= 0 then __primitive("<", a, b) else false
-    else
-      if b >= 0 then true else __primitive("<", a, b);
-
-  // operator < involving bool
-  inline operator <(a: bool, b: bool)     do return a:int < b:int;
-  inline operator <(a: bool, b: integral) do return a:int < b;
-  inline operator <(a: integral, b: bool) do return a     < b:int;
-  inline operator <(param a: bool, param b: bool) param
-    do return __primitive("<", a, b);
-
+  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
+  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
+  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
+  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
+  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
+  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
+  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
-
-  operator <(a: enum, b: enum) where (a.type == b.type) {
+  operator <(a: enum, b: enum) where (a.type == b.type) do
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  }
   pragma "last resort"
   inline operator <(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
@@ -401,17 +369,14 @@ module ChapelBase {
   inline operator >(a: int(16), b: int(16)) do return __primitive(">", a, b);
   inline operator >(a: int(32), b: int(32)) do return __primitive(">", a, b);
   inline operator >(a: int(64), b: int(64)) do return __primitive(">", a, b);
-
   inline operator >(a: uint(8), b: uint(8)) do return __primitive(">", a, b);
   inline operator >(a: uint(16), b: uint(16)) do return __primitive(">", a, b);
   inline operator >(a: uint(32), b: uint(32)) do return __primitive(">", a, b);
   inline operator >(a: uint(64), b: uint(64)) do return __primitive(">", a, b);
-
   inline operator >(a: real(32), b: real(32)) do return __primitive(">", a, b);
   inline operator >(a: real(64), b: real(64)) do return __primitive(">", a, b);
-  operator >(a: enum, b: enum) where (a.type == b.type) {
+  operator >(a: enum, b: enum) where (a.type == b.type) do
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  }
   pragma "last resort"
   inline operator >(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
@@ -422,13 +387,11 @@ module ChapelBase {
   inline operator <=(param a: int(16), param b: int(16)) param do return __primitive("<=", a, b);
   inline operator <=(param a: int(32), param b: int(32)) param do return __primitive("<=", a, b);
   inline operator <=(param a: int(64), param b: int(64)) param do return __primitive("<=", a, b);
-
   inline operator <=(param a: uint(8), param b: uint(8)) param do return __primitive("<=", a, b);
   inline operator <=(param a: uint(16), param b: uint(16)) param do return __primitive("<=", a, b);
   inline operator <=(param a: uint(32), param b: uint(32)) param do return __primitive("<=", a, b);
   inline operator <=(param a: uint(64), param b: uint(64)) param do return __primitive("<=", a, b);
   inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-
   inline operator <=(param a: real(32), param b: real(32)) param do return __primitive("<=", a, b);
   inline operator <=(param a: real(64), param b: real(64)) param do return __primitive("<=", a, b);
 
@@ -436,18 +399,23 @@ module ChapelBase {
   inline operator >=(param a: int(16), param b: int(16)) param do return __primitive(">=", a, b);
   inline operator >=(param a: int(32), param b: int(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: int(64), param b: int(64)) param do return __primitive(">=", a, b);
-
   inline operator >=(param a: uint(8), param b: uint(8)) param do return __primitive(">=", a, b);
   inline operator >=(param a: uint(16), param b: uint(16)) param do return __primitive(">=", a, b);
   inline operator >=(param a: uint(32), param b: uint(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: uint(64), param b: uint(64)) param do return __primitive(">=", a, b);
   inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
 
+  inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(32), param b: int(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(64), param b: int(64)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(8), param b: uint(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(16), param b: uint(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(32), param b: uint(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(64), param b: uint(64)) param do return __primitive("<", a, b);
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
-
   inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
   inline operator <(param a: real(64), param b: real(64)) param do return __primitive("<", a, b);
 
@@ -455,13 +423,11 @@ module ChapelBase {
   inline operator >(param a: int(16), param b: int(16)) param do return __primitive(">", a, b);
   inline operator >(param a: int(32), param b: int(32)) param do return __primitive(">", a, b);
   inline operator >(param a: int(64), param b: int(64)) param do return __primitive(">", a, b);
-
   inline operator >(param a: uint(8), param b: uint(8)) param do return __primitive(">", a, b);
   inline operator >(param a: uint(16), param b: uint(16)) param do return __primitive(">", a, b);
   inline operator >(param a: uint(32), param b: uint(32)) param do return __primitive(">", a, b);
   inline operator >(param a: uint(64), param b: uint(64)) param do return __primitive(">", a, b);
   inline operator >(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
-
   inline operator >(param a: real(32), param b: real(32)) param do return __primitive(">", a, b);
   inline operator >(param a: real(64), param b: real(64)) param do return __primitive(">", a, b);
 
@@ -942,8 +908,18 @@ module ChapelBase {
   inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
   inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
 
-  inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
-  inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
+  inline operator **(a: real(32), b: real(32)) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc powf(x: real(32), y: real(32)): real(32);
+    return powf(a, b);
+  }
+  inline operator **(a: real(64), b: real(64)) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc pow(x: real(64), y: real(64)): real(64);
+    return pow(a, b);
+  }
 
   inline operator **(a: complex(64), b: complex(64)) {
     pragma "fn synchronization free"
@@ -982,6 +958,35 @@ module ChapelBase {
   operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
   operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
 
+  // The following is a catch-all that became necessary when
+  // `param real**param int` was introduced to break ambiguities.
+  // It could replace the previous 8 overloads, but its additional
+  // complexity made that seem unattractive for "obvious" cases to me
+  // that are more trivially represented as above.  The 'where' clause
+  // below avoids it being ambiguous with them.
+  //
+  // I've implemented it to follow historical precedent for '**' in
+  // terms of the resulting type, which I believe is similar to other
+  // operators like '+'.  However, I wonder whether the base value should
+  // determine the result type since exponentiation is a less symmetrical
+  // operator.  E.g., myParamInt8**2 seems more appropriate to produce an
+  // int(8) than an int(64) due to '2'.  This feels related to
+  // https://github.com/chapel-lang/chapel/issues/28509
+
+  operator **(param a: integral, param b: integral) param where a.type != b.type {
+    param aBits = numBits(a.type),
+          bBits = numBits(b.type);
+    type resType = if aBits > bBits then a.type
+                   else if bBits > aBits then b.type
+                   else if isUint(a) || isUint(b) then uint(aBits)
+                                                          else int(aBits);
+
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+
+    return __primitive("**", a:resType, b:resType);
+  }
+
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
       return 1:a.type;
@@ -1002,6 +1007,32 @@ module ChapelBase {
       return t*t*t;
     } else if b == 8 {
       const t = a*a, u = t*t;
+      return u*u;
+    }
+    else
+      compilerError("unexpected case in exponentiation optimization");
+  }
+
+  inline proc _expHelpParam(param a, param b: integral) param {
+    if b == 0 {
+      return 1:a.type;
+    } else if b == 1 {
+      return a;
+    } else if b == 2 {
+      return a*a;
+    } else if b == 3 {
+      return a*a*a;
+    } else if b == 4 {
+      param t = a*a;
+      return t*t;
+    } else if b == 5 {
+      param t = a*a;
+      return t*t*a;
+    } else if b == 6 {
+      param t = a*a;
+      return t*t*t;
+    } else if b == 8 {
+      param t = a*a, u = t*t;
       return u*u;
     }
     else
@@ -1036,6 +1067,43 @@ module ChapelBase {
   inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
   inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
+
+  //
+  // `param real **` overloads marked stable for the preview edition
+  //
+
+  @edition(first="preview")
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(first="preview")
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(first="preview")
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(first="preview")
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
+  //
+  // `param real **` overloads marked unstable for the 2.0 edition
+  //
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+
 
   //
   // logical operations on primitive types
@@ -1388,6 +1456,10 @@ module ChapelBase {
   proc _cond_invalid(x: uint) param do return false;
   pragma "last resort"
   proc _cond_invalid(x) param do return true;
+
+  inline proc _select_test(param x) param do return x;
+  inline proc _select_test(type x) type do return x;
+  inline proc _select_test(x) do return x;
 
   //
   // isNonnegative(i) == (i>=0), but is a param value if i is unsigned.
@@ -3000,16 +3072,16 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: uint(64), b: uint(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(a: int(64), param b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
   inline operator **(param a: int(64), b: int(64)) {
-    return __primitive("**", a, b);
+    return _intExpHelp(a, b);
   }
 
 
@@ -3054,12 +3126,6 @@ module ChapelBase {
   inline operator ==(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) == b;
   inline operator ==(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) == b;
 
-  // non-param/param and param/non-param
-  // not necessary since the == versions above
-  // work there (and aren't an error)
-
-
-
   // non-param/non-param
   inline operator !=(a: uint(8), b: int(8)) do return b < 0 || a != b : uint(8);
   inline operator !=(a: uint(16), b: int(16)) do return b < 0 || a != b : uint(16);
@@ -3071,153 +3137,45 @@ module ChapelBase {
   inline operator !=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) != b;
   inline operator !=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) != b;
 
-  // non-param/param and param/non-param
-  // not necessary since the == versions above
-  // work there (and aren't an error)
-
-
   // non-param/non-param
   inline operator >(a: uint(8), b: int(8)) do return b < 0 || a > b : uint(8);
   inline operator >(a: uint(16), b: int(16)) do return b < 0 || a > b : uint(16);
   inline operator >(a: uint(32), b: int(32)) do return b < 0 || a > b : uint(32);
   inline operator >(a: uint(64), b: int(64)) do return b < 0 || a > b : uint(64);
-
   inline operator >(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) > b;
   inline operator >(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) > b;
   inline operator >(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) > b;
   inline operator >(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) > b;
 
-  // non-param/param and param/non-param
-  // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(8), b: uint(8)) {
-    if __primitive("==", a, 0) {
-      return false;
-    } else {
-      return __primitive(">", a, b);
-    }
-  }
-  inline operator >(param a: uint(16), b: uint(16)) {
-    if __primitive("==", a, 0) {
-      return false;
-    } else {
-      return __primitive(">", a, b);
-    }
-  }
-  inline operator >(param a: uint(32), b: uint(32)) {
-    if __primitive("==", a, 0) {
-      return false;
-    } else {
-      return __primitive(">", a, b);
-
-    }
-  }
-  inline operator >(param a: uint(64), b: uint(64)) {
-    if __primitive("==", a, 0) {
-      return false;
-    } else {
-      return __primitive(">", a, b);
-    }
-  }
-
-  inline operator >(param a: int(8), b: int(8)) do return __primitive(">", a, b);
-  inline operator >(param a: int(16), b: int(16)) do return __primitive(">", a, b);
-  inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
-  inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
+  // non-param/non-param
+  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
+  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
+  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
+  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
+  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
+  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
+  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
+  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
 
   // non-param/non-param
   inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
   inline operator >=(a: uint(16), b: int(16)) do return b < 0 || a >= b : uint(16);
   inline operator >=(a: uint(32), b: int(32)) do return b < 0 || a >= b : uint(32);
   inline operator >=(a: uint(64), b: int(64)) do return b < 0 || a >= b : uint(64);
-
   inline operator >=(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) >= b;
   inline operator >=(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) >= b;
   inline operator >=(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) >= b;
   inline operator >=(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) >= b;
-
-  // non-param/param and param/non-param
-  inline operator >=(a: uint(8), param b: uint(8)) {
-    if __primitive("==", b, 0) {
-      return true;
-    } else {
-      return __primitive(">=", a, b);
-    }
-  }
-  inline operator >=(a: uint(16), param b: uint(16)) {
-    if __primitive("==", b, 0) {
-      return true;
-    } else {
-      return __primitive(">=", a, b);
-    }
-  }
-  inline operator >=(a: uint(32), param b: uint(32)) {
-    if __primitive("==", b, 0) {
-      return true;
-    } else {
-      return __primitive(">=", a, b);
-    }
-  }
-  inline operator >=(a: uint(64), param b: uint(64)) {
-    if __primitive("==", b, 0) {
-      return true;
-
-    } else {
-      return __primitive(">=", a, b);
-    }
-  }
-
-  inline operator >=(a: int(8), param b: int(8)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(16), param b: int(16)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(32), param b: int(32)) do return __primitive(">=", a, b);
-  inline operator >=(a: int(64), param b: int(64)) do return __primitive(">=", a, b);
-
 
   // non-param/non-param
   inline operator <=(a: uint(8), b: int(8)) do return !(b < 0) && a <= b : uint(8);
   inline operator <=(a: uint(16), b: int(16)) do return !(b < 0) && a <= b : uint(16);
   inline operator <=(a: uint(32), b: int(32)) do return !(b < 0) && a <= b : uint(32);
   inline operator <=(a: uint(64), b: int(64)) do return !(b < 0) && a <= b : uint(64);
-
   inline operator <=(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) <= b;
   inline operator <=(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) <= b;
   inline operator <=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) <= b;
   inline operator <=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) <= b;
-
-  // non-param/param and param/non-param
-  inline operator <=(param a: uint(8), b: uint(8)) {
-    if __primitive("==", a, 0) {
-      return true;
-    } else {
-      return __primitive("<=", a, b);
-    }
-  }
-  inline operator <=(param a: uint(16), b: uint(16)) {
-    if __primitive("==", a, 0) {
-      return true;
-    } else {
-      return __primitive("<=", a, b);
-    }
-  }
-  inline operator <=(param a: uint(32), b: uint(32)) {
-    if __primitive("==", a, 0) {
-      return true;
-    } else {
-      return __primitive("<=", a, b);
-    }
-  }
-  inline operator <=(param a: uint(64), b: uint(64)) {
-    if __primitive("==", a, 0) {
-      return true;
-    } else {
-      return __primitive("<=", a, b);
-    }
-  }
-
-  inline operator <=(param a: int(8), b: int(8)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(16), b: int(16)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(32), b: int(32)) do return __primitive("<=", a, b);
-  inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
-
 
   pragma "suppress generic actual warning"
   proc isGenericType(type t) param do return __primitive("is generic type", t);
@@ -3237,24 +3195,9 @@ module ChapelBase {
   // and in e.g. implementations of those in Tuple.
   extern const QIO_STYLE_ELEMENT_STRING:int;
   extern const QIO_STYLE_ELEMENT_COMPLEX:int;
-  extern const QIO_STYLE_ELEMENT_ARRAY:int;
   extern const QIO_STYLE_ELEMENT_AGGREGATE:int;
-  extern const QIO_STYLE_ELEMENT_TUPLE:int;
   extern const QIO_STYLE_ELEMENT_BYTE_ORDER:int;
   extern const QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER:int;
-  extern const QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS:int;
-
-  extern const QIO_ARRAY_FORMAT_SPACE:int;
-  extern const QIO_ARRAY_FORMAT_CHPL:int;
-  extern const QIO_ARRAY_FORMAT_JSON:int;
-
-  extern const QIO_AGGREGATE_FORMAT_BRACES:int;
-  extern const QIO_AGGREGATE_FORMAT_CHPL:int;
-  extern const QIO_AGGREGATE_FORMAT_JSON:int;
-
-  extern const QIO_TUPLE_FORMAT_CHPL:int;
-  extern const QIO_TUPLE_FORMAT_SPACE:int;
-  extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
   class chpl_ModuleDeinit : writeSerializable {
@@ -3388,7 +3331,9 @@ module ChapelBase {
   }
 
   /* The following chpl_field_*() overloads support compiler-generated
-     comparison operators for records with array fields */
+     comparison operators for records with array fields as well as the
+     module-based operators defined at the end of this file, enabled
+     for the preview edition. */
 
   proc chpl_field_neq(a: [] ?t, b: [] t) {
     return || reduce (a != b);
@@ -3439,5 +3384,106 @@ module ChapelBase {
                           __primitive("is_local", b);
 
     return locIdCheck && isLocalCheck;
+  }
+
+
+  // Mark the following overloads as "last resort" so that other comparison
+  // operators on generic records are preferred.  Arguably `record` could
+  // always be considered a worse match, but
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator ==(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '=='");
+
+    return chpl_recordEquals(r1, r2);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator !=(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '!='");
+
+    return !chpl_recordEquals(r1, r2);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator >(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '>'");
+
+    return !chpl_recordLessThan(r1, r2, equals=true);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator >=(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '>='");
+
+    return !chpl_recordLessThan(r1, r2, equals=false);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '<'");
+
+    return chpl_recordLessThan(r1, r2, equals=false);
+  }
+
+  pragma "last resort"
+  @edition(first="preview")
+  operator <=(r1: record, r2: record) {
+    if r1.type != r2.type then
+      compilerError("Cannot compare records of type ", r1.type:string, " and ",
+                    r2.type:string, " using '<='");
+
+    return chpl_recordLessThan(r1, r2, equals=true);
+  }
+
+  private proc chpl_recordEquals(const ref r1, const ref r2) {
+    use Reflection;
+
+    for param i in 0..<getNumFields(r1.type) do
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) then
+        if chpl_field_neq(getField(r1, i), getField(r2, i)) then
+          return false;
+    return true;
+  }
+
+  private proc chpl_recordLessThan(const ref r1, const ref r2, param equals) {
+    use Reflection;
+
+    for param i in 0..<getNumFields(r1.type) do
+      if !isType(getField(r1, i)) && !isParam(getField(r1, i)) {
+        const ref f1 = getField(r1, i),
+                  f2 = getField(r2, i);
+        if chpl_field_lt(f1, f2) then
+          return true;
+        else if chpl_field_gt(f1, f2) then
+          return false;
+      }
+
+    return equals;
+  }
+
+  proc chpl_validateWhere(param test) param : bool {
+    if test.type != bool then
+      compilerError("a 'where' clause expression must evaluate to a 'param bool', but got a 'param " + test.type:string + "' instead");
+    return test;
+  }
+
+  proc chpl_validateWhere(test) param : bool {
+    compilerError("a 'where' clause expression must be a 'param', but got a non-'param'");
   }
 }

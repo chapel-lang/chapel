@@ -401,7 +401,7 @@ module DataFrames {
   class TypedSeries : Series, writeSerializable {
     type eltType;
 
-    // TODO: ords dmap Block
+    // TODO: ords dmapped blockDist
     var idx: shared Index?;
     var ords: domain(1);
     var data: [ords] eltType;

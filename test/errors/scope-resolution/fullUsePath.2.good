@@ -10,7 +10,7 @@
   A declaration of 'ToLookFor' is here:
       |
     1 | param ToLookFor = "??";
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   However, 'use' statements can only be used with modules or enums (and this 'ToLookFor' is not a module or enum).
 

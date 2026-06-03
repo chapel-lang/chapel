@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,11 +105,18 @@ void computeAllCallSites(FnSymbol* fn);
 
 using AdjustTypeFn = std::function<Type*(Type*)>;
 
-void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
-                      bool preserveRefLevels=true);
+// Given 'adjustTypeFn', compute the new type of 'sym' and adjust 'sym->type'
+// if able. Returns the newly computed type. If the symbol is a 'TypeSymbol',
+// will not set 'sym->type'. The caller is responsible for walking the live
+// uses of the type symbol and retargeting them to the newly computed type.
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels=true);
 
-// Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
-// the type produced by 'adjustTypeFn' differs from the symbol's current type.
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
+// if the type produced by 'adjustTypeFn' differs from the symbol's current
+// type. If the symbol is a 'TypeSymbol' and the adjusted type differs, this
+// function will adjust all uses of the 'TypeSymbol' to point to the new type
+// instead of setting 'sym->type'.
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
                           bool preserveRefLevels=true);
 
@@ -259,5 +266,10 @@ bool symExprIsUsedAsRef(
 // Returns 'true' if the given 'SymExpr' refers to a 'FnSymbol' that is being
 // used as a value. This function relies on typed AST to make determinations.
 bool isUseOfProcedureAsValue(SymExpr* se);
+
+// Make the ref level of 't' match the ref level of 'matchType'. E.g., if
+// 'matchType' is 'ref', then 't' will be adjusted to be 't->refType' if it
+// is not already a ref type.
+Type* matchRefLevel(Type* t, Type* matchType);
 
 #endif

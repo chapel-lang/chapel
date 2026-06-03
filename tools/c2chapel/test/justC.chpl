@@ -9,38 +9,40 @@ extern proc main() : c_int;
 
 // c2chapel thinks these typedefs are from the fake headers:
 /*
+extern type DIR = c_ptr(void);
+
 extern type FILE = c_int;
 
 // Opaque struct?
-extern record MirBlob {};
+extern record MirBlob {}
 
 // Opaque struct?
-extern record MirBufferStream {};
+extern record MirBufferStream {}
 
 // Opaque struct?
-extern record MirConnection {};
+extern record MirConnection {}
 
 // Opaque struct?
-extern record MirDisplayConfig {};
+extern record MirDisplayConfig {}
 
 extern type MirEGLNativeDisplayType = c_ptr(void);
 
 extern type MirEGLNativeWindowType = c_ptr(void);
 
 // Opaque struct?
-extern record MirPersistentId {};
+extern record MirPersistentId {}
 
 // Opaque struct?
-extern record MirPromptSession {};
+extern record MirPromptSession {}
 
 // Opaque struct?
-extern record MirScreencast {};
+extern record MirScreencast {}
 
 // Opaque struct?
-extern record MirSurface {};
+extern record MirSurface {}
 
 // Opaque struct?
-extern record MirSurfaceSpec {};
+extern record MirSurfaceSpec {}
 
 extern type _LOCK_RECURSIVE_T = c_int;
 
@@ -58,6 +60,8 @@ extern type __gid_t = c_int;
 
 extern type __gnuc_va_list = c_int;
 
+extern type __int128_t = c_int;
+
 extern type __int16_t = c_int;
 
 extern type __int32_t = c_int;
@@ -69,6 +73,8 @@ extern type __int8_t = c_int;
 extern type __int_least16_t = c_int;
 
 extern type __int_least32_t = c_int;
+
+extern type __kernel_sa_family_t = c_ushort;
 
 extern type __loff_t = c_int;
 
@@ -86,6 +92,8 @@ extern type __s8 = c_int;
 
 extern type __sigset_t = c_int;
 
+extern type __socklen_t = __uint32_t;
+
 extern type __tzinfo_type = c_int;
 
 extern type __tzrule_type = c_int;
@@ -99,6 +107,8 @@ extern type __u64 = c_int;
 extern type __u8 = c_int;
 
 extern type __uid_t = c_int;
+
+extern type __uint128_t = c_int;
 
 extern type __uint16_t = c_int;
 
@@ -130,9 +140,91 @@ extern type _ssize_t = c_int;
 
 extern type _types_fd_set = c_int;
 
+extern type atomic_bool = _Bool;
+
+extern type atomic_char = c_char;
+
+extern type atomic_char16_t = uint_least16_t;
+
+extern type atomic_char32_t = uint_least32_t;
+
+extern record atomic_flag {
+  var _Value : atomic_bool;
+}
+
+extern type atomic_int = c_int;
+
+extern type atomic_int_fast16_t = int_fast16_t;
+
+extern type atomic_int_fast32_t = int_fast32_t;
+
+extern type atomic_int_fast64_t = int_fast64_t;
+
+extern type atomic_int_fast8_t = int_fast8_t;
+
+extern type atomic_int_least16_t = int_least16_t;
+
+extern type atomic_int_least32_t = int_least32_t;
+
+extern type atomic_int_least64_t = int_least64_t;
+
+extern type atomic_int_least8_t = int_least8_t;
+
+extern type atomic_intmax_t = intmax_t;
+
+extern type atomic_intptr_t = c_intptr;
+
+extern type atomic_llong = c_longlong;
+
+extern type atomic_long = c_long;
+
+extern type atomic_ptrdiff_t = c_ptrdiff;
+
+extern type atomic_schar = c_schar;
+
+extern type atomic_short = c_short;
+
+extern type atomic_size_t = c_size_t;
+
+extern type atomic_uchar = c_uchar;
+
+extern type atomic_uint = c_uint;
+
+extern type atomic_uint_fast16_t = uint_fast16_t;
+
+extern type atomic_uint_fast32_t = uint_fast32_t;
+
+extern type atomic_uint_fast64_t = uint_fast64_t;
+
+extern type atomic_uint_fast8_t = uint_fast8_t;
+
+extern type atomic_uint_least16_t = uint_least16_t;
+
+extern type atomic_uint_least32_t = uint_least32_t;
+
+extern type atomic_uint_least64_t = uint_least64_t;
+
+extern type atomic_uint_least8_t = uint_least8_t;
+
+extern type atomic_uintmax_t = uintmax_t;
+
+extern type atomic_uintptr_t = c_uintptr;
+
+extern type atomic_ullong = c_ulonglong;
+
+extern type atomic_ulong = c_ulong;
+
+extern type atomic_ushort = c_ushort;
+
+extern type atomic_wchar_t = c_wchar_t;
+
 extern type bool = _Bool;
 
 extern type caddr_t = c_int;
+
+extern type char16_t = c_int;
+
+extern type char32_t = c_int;
 
 extern type clock_t = c_int;
 
@@ -200,6 +292,16 @@ extern type lldiv_t = c_int;
 
 extern type mbstate_t = c_int;
 
+// memory_order enum
+extern type memory_order = c_int;
+extern const memory_order_relaxed :memory_order;
+extern const memory_order_consume :memory_order;
+extern const memory_order_acquire :memory_order;
+extern const memory_order_release :memory_order;
+extern const memory_order_acq_rel :memory_order;
+extern const memory_order_seq_cst :memory_order;
+
+
 extern type mode_t = c_int;
 
 extern type nlink_t = c_int;
@@ -251,6 +353,8 @@ extern type sigjmp_buf = c_int;
 extern type sigset_t = c_int;
 
 extern type size_t = c_int;
+
+extern type socklen_t = __socklen_t;
 
 extern type ssize_t = c_int;
 
@@ -313,7 +417,7 @@ extern type wchar_t = c_int;
 extern type wint_t = c_int;
 
 // Opaque struct?
-extern record xcb_connection_t {};
+extern record xcb_connection_t {}
 
 extern type xcb_visualid_t = uint(32);
 

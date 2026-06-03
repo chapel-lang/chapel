@@ -200,7 +200,7 @@ run Chapel programs using the MPI library for communication between locales.
 
 For best practices about how to configure/use GASNet to avoid such conflicts
 with MPI, please see the
-`GASNet docs for the MPI Conduit <https://bitbucket.org/berkeleylab/gasnet/src/master/mpi-conduit/README>`_
+`GASNet docs for the MPI Conduit <https://github.com/BerkeleyLab/gasnet/tree/main/mpi-conduit/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/mpi-conduit/README``).
 

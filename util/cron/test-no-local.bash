@@ -10,4 +10,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="no-local"
 
 nightly_args="${nightly_args} -no-local"
-$UTIL_CRON_DIR/nightly -cron ${nightly_args} $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron ${nightly_args} $(get_nightly_paratest_args 8)

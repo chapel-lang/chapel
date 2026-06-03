@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -499,6 +499,51 @@ static void test10() {
                              var x = new Child();
                              var sixtyFourBits: int = 0;
                              f(x, sixtyFourBits);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 8);
+  const Call* call = m->stmt(7)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == chpl::ConstRefCoercion);
+  guard.realizeErrors();
+}
+
+// Tests 'const ref' formals disallowing coercion, and that this
+// error happens after disambiguation.
+static void test10b() {
+  printf("test10b\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class Child : Parent { }
+
+                             /* Both functions should be considered, one
+                                should be picked (numeric, since we prefer
+                                instantiating), and this function should be
+                                rejected. */
+                             proc const ref Parent.f(x: int(8)) { }
+                             proc const ref Parent.f(x: numeric) { }
+
+                             var x = new Child();
+                             var sixtyFourBits: int = 0;
+                             x.f(sixtyFourBits);
                           }
                         )"""";
 
@@ -2398,6 +2443,56 @@ static void testTypeProcOnGenericReceiver() {
   assert(qt.type()->isIntType());
 }
 
+// regression test. We previously hit bugs in which:
+// * The user wrote a free-standing call 'foo()' in a method context.
+// * The resolution machinery attempted to resolve 'this.foo()'.
+// * A candidate was rejected because its receiver was not applicable.
+// * The reported actual index was 0 (for the 'this' argument), but this
+//   is out of bounds of the original `foo()`.actuals(). This caused an
+//   assertion error.
+//
+// Test that triggering a resolution error in this case does not cause an
+// assertion failure.
+static void testReindexingForErrors() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    record R {}
+    proc int.foo() {}
+    proc R.bar() {
+      foo();
+    }
+    (new R()).bar();
+    )""", {});
+  assert(guard.realizeErrors() == 1);
+}
+
+// regression test. In certain errors that tried to print a particular
+// actual, we assumed that CallInfo actual indices match the call expression.
+// However, CallInfo actuals have an extra 'this' argument, which meant
+// that for method calls, the indexing broke.
+//
+// Trigger this by trying to split-init a method receiver.
+static void testReindexingForErrors2() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    proc int.bar(arg: int) {}
+
+    proc foo() {
+      var y;
+      y.bar(10);
+      10.bar(y);
+    }
+    var tmp = foo();
+    )""", {});
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -2409,6 +2504,7 @@ int main() {
   test8();
   test9();
   test10();
+  test10b();
   test11();
   test12();
   test13();
@@ -2464,6 +2560,9 @@ int main() {
   testSkipUnknownInNew();
 
   testTypeProcOnGenericReceiver();
+
+  testReindexingForErrors();
+  testReindexingForErrors2();
 
   return 0;
 }

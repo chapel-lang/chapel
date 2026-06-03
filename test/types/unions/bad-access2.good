@@ -1,0 +1,1 @@
+bad-access2.chpl:8: error: halt reached - illegal union access: no field is active

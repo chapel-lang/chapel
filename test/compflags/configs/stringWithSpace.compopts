@@ -1,1 +1,7 @@
--sx="hello world"
+-sx="hello world" # stringWithSpace-error1.good
+-sx="'hello world'"
+-sx='"hello world"'
+-sx="\'hello world\'" # stringWithSpace-error2.good
+-sx="\\'hello world\\'" # stringWithSpace-error2.good
+-sx="'hello\nworld'" # stringWithSpace-newline.good
+-sx="'hello\\nworld'" # stringWithSpace-newline.good

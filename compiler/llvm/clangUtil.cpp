@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -99,6 +99,10 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #include "llvm/Transforms/Instrumentation/AddressSanitizerOptions.h"
 #include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
 
+#if HAVE_LLVM_VER >= 220
+#include "llvm/IR/SystemLibraries.h"
+#endif
+
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -170,6 +174,10 @@ static void setupModule();
 
 fileinfo    gAllExternCode;
 
+#if HAVE_LLVM_VER >= 220
+llvm::VectorLibrary fVectorLibLLVM = llvm::VectorLibrary::NoLibrary;
+#endif
+
 // forward declare
 class CCodeGenConsumer;
 class CCodeGenAction;
@@ -209,7 +217,11 @@ struct ClangInfo {
   // Once we get to code generation....
   clang::ASTContext *Ctx;
 
+#if LLVM_VERSION_MAJOR >= 22
+  std::unique_ptr<clang::CodeGenerator> cCodeGen;
+#else
   clang::CodeGenerator *cCodeGen;
+#endif
   CCodeGenAction *cCodeGenAction;
 
   // We stash the layout that Clang would like to use here.
@@ -234,6 +246,8 @@ struct ClangInfo {
     std::vector<std::string> clangOtherArgsIn,
     std::vector<std::string> clangLDArgsIn,
     bool parseOnlyIn);
+
+  clang::CodeGenerator* getCodeGenerator();
 };
 
 ClangInfo::ClangInfo(
@@ -262,6 +276,16 @@ ClangInfo::ClangInfo(
          ptrSizeInBits(0),
          wideCharSizeInBits(0)
 {
+}
+
+clang::CodeGenerator* ClangInfo::getCodeGenerator() {
+#if LLVM_VERSION_MAJOR >= 22
+  clang::CodeGenerator* cCodeGen = this->cCodeGen.get();
+#else
+  clang::CodeGenerator* cCodeGen = this->cCodeGen;
+#endif
+  INT_ASSERT(cCodeGen);
+  return cCodeGen;
 }
 
 static
@@ -315,7 +339,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc = astlocT(0, astr("<internal>"));
+  currentAstLoc = astlocT::unknownLoc("<internal>");
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");
@@ -1320,6 +1344,7 @@ void readMacrosClang(void) {
   }
 };
 
+
 // This ASTConsumer helps us to:
 // 1: parse code only in certain configurations
 // 2: Convert C code to LLVM IR in others
@@ -1355,13 +1380,13 @@ class CCodeGenConsumer final : public ASTConsumer {
       : ASTConsumer(),
         info(gGenInfo),
         Diags(&info->clangInfo->Clang->getDiagnostics()),
-        Builder(NULL),
+        Builder(nullptr),
         parseOnly(info->clangInfo->parseOnly),
-        savedCtx(NULL)
+        savedCtx(nullptr)
     {
 
       if (!parseOnly) {
-        Builder = CreateLLVMCodeGen(
+        info->clangInfo->cCodeGen = CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
 #if HAVE_LLVM_VER >= 150
@@ -1372,10 +1397,18 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->codegenOptions,
           gContext->llvmContext());
 
-        INT_ASSERT(Builder);
+#if LLVM_VERSION_MAJOR >= 22
+        INT_ASSERT(info->clangInfo->cCodeGen.get());
+#else
+        INT_ASSERT(info->clangInfo->cCodeGen);
+#endif
         INT_ASSERT(!info->module);
-        info->module = Builder->GetModule();
-        info->clangInfo->cCodeGen = Builder;
+        info->module = info->clangInfo->cCodeGen->GetModule();
+#if LLVM_VERSION_MAJOR >= 22
+        Builder = info->clangInfo->cCodeGen.get();
+#else
+        Builder = info->clangInfo->cCodeGen;
+#endif
 
         // compute target triple, data layout
         setupModule();
@@ -1486,7 +1519,7 @@ class CCodeGenConsumer final : public ASTConsumer {
            info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
          }
       } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
-         const clang::Type *ctype = rd->getTypeForDecl();
+         const clang::Type *ctype = getClangASTType(rd->getASTContext(), rd);
 
          if(ctype != NULL && rd->getDefinition() != NULL) {
            info->lvt->addGlobalCDecl(rd);
@@ -1590,24 +1623,29 @@ CCodeGenAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
 };
 
 static void finishClang(ClangInfo* clangInfo){
-  if( clangInfo->cCodeGen ) {
+  if (clangInfo->cCodeGen) {
     // This should call Builder->Release()
     clangInfo->cCodeGen->HandleTranslationUnit(*clangInfo->Ctx);
   }
 }
 
 static void deleteClang(ClangInfo* clangInfo){
-  if( clangInfo->cCodeGen ) {
+  if (clangInfo->cCodeGen) {
+#if LLVM_VERSION_MAJOR >= 22
+    delete clangInfo->cCodeGen.release();
+    clangInfo->cCodeGen = nullptr;
+#else
     delete clangInfo->cCodeGen;
-    clangInfo->cCodeGen = NULL;
+    clangInfo->cCodeGen = nullptr;
+#endif
   }
-  if ( clangInfo->Clang ) {
+  if (clangInfo->Clang) {
     delete clangInfo->Clang;
-    clangInfo->Clang = NULL;
+    clangInfo->Clang = nullptr;
   }
-  if ( clangInfo->cCodeGenAction ) {
+  if (clangInfo->cCodeGenAction) {
     delete clangInfo->cCodeGenAction;
-    clangInfo->cCodeGenAction = NULL;
+    clangInfo->cCodeGenAction = nullptr;
   }
 }
 
@@ -1620,7 +1658,7 @@ static void cleanupClang(ClangInfo* clangInfo)
 // Initialize LLVM targets if needed
 static void initializeLlvmTargets() {
   static bool targetsInited = false;
-  if (targetsInited == false) {
+  if (!targetsInited) {
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmPrinters();
@@ -1632,11 +1670,23 @@ static void initializeLlvmTargets() {
 
 // Get a string corresponding to the LLVM target triple
 // for the current configuration
+// TODO: use a different triple when cross compiling
+// TODO: look at CHPL_TARGET_ARCH
+#if LLVM_VERSION_MAJOR >= 22
+static llvm::Triple getConfiguredTargetTriple() {
+  return llvm::Triple(llvm::sys::getDefaultTargetTriple());
+}
+static std::string getConfiguredTargetTripleString() {
+  return getConfiguredTargetTriple().str();
+}
+#else
 static std::string getConfiguredTargetTriple() {
-  // TODO: use a different triple when cross compiling
-  // TODO: look at CHPL_TARGET_ARCH
   return llvm::sys::getDefaultTargetTriple();
 }
+static std::string getConfiguredTargetTripleString() {
+  return getConfiguredTargetTriple();
+}
+#endif
 
 
 void setupClang(GenInfo* info, std::string mainFile)
@@ -1675,7 +1725,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
   initializeLlvmTargets();
-  std::string triple = getConfiguredTargetTriple();
+  std::string triple = getConfiguredTargetTripleString();
 
   for (auto & arg : clangInfo->driverArgs) {
     clangInfo->driverArgsCStrings.push_back(arg.c_str());
@@ -1685,11 +1735,20 @@ void setupClang(GenInfo* info, std::string mainFile)
   CompilerInstance* Clang = new CompilerInstance();
   auto diagOptions = clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 21
+                                                     *diagOptions
+#else
+                                                      diagOptions.get()
+#endif
+                                                    );
 #if LLVM_VERSION_MAJOR >= 20
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+#if LLVM_VERSION_MAJOR >= 21
+                                              *diagOptions,
+#else
                                                diagOptions.release(),
+#endif
                                                diagClient,
                                                /* owned */ true);
 #else
@@ -1807,10 +1866,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
   // Create the compilers actual diagnostics engine.
-#if LLVM_VERSION_MAJOR >= 20
-  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
-#else
+#if LLVM_VERSION_MAJOR < 20 || LLVM_VERSION_MAJOR >= 22
   clangInfo->Clang->createDiagnostics();
+#else
+  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
 #endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
@@ -1933,6 +1992,10 @@ static llvm::TargetOptions getTargetOptions(
           .Case("hard", llvm::FloatABI::Hard)
           .Default(llvm::FloatABI::Default);
 
+#if HAVE_LLVM_VER >= 220
+  Options.VecLib = fVectorLibLLVM;
+#endif
+
 
   // Set the floating point optimization level
   // see also code setting FastMathFlags
@@ -1940,12 +2003,19 @@ static llvm::TargetOptions getTargetOptions(
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Allow unsafe fast floating point optimization
+#if LLVM_VERSION_MAJOR < 22
+    // NOTE (Jade 3-18-26): its not clear why LLVM removed "UnsafeFPMath", and
+    // what the proper replacement is, if any.
+    // They may have removed it due to it being redudant and so
+    // everything may just work fine
     Options.UnsafeFPMath = 1; // e.g. FSIN instruction
+#endif
     Options.NoInfsFPMath = 1;
     Options.NoNaNsFPMath = 1;
     Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
@@ -2103,7 +2173,11 @@ static void setupModule()
   // Set the target triple.
   const llvm::Triple &Triple =
     clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
+  info->module->setTargetTriple(Triple);
+#else
   info->module->setTargetTriple(Triple.getTriple());
+#endif
 
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
@@ -2114,7 +2188,11 @@ static void setupModule()
 
   // Set the TargetMachine
   std::string Err;
+#if LLVM_VERSION_MAJOR >= 22
+  const llvm::Target* Target = TargetRegistry::lookupTarget(Triple, Err);
+#else
   const llvm::Target* Target = TargetRegistry::lookupTarget(Triple.str(), Err);
+#endif
   if (!Target)
     USR_FATAL("Could not find LLVM target for %s: %s",
               Triple.str().c_str(), Err.c_str());
@@ -2171,13 +2249,23 @@ static void setupModule()
 #endif
 
   // Create the target machine.
-  info->targetMachine = Target->createTargetMachine(Triple.str(),
+#if LLVM_VERSION_MAJOR >= 21
+  info->targetMachine = Target->createTargetMachine(Triple,
                                                     cpu,
                                                     featuresString,
                                                     Options,
                                                     relocModel,
                                                     codeModel,
                                                     optLevel);
+#else
+  info->targetMachine = Target->createTargetMachine(Triple.getTriple(),
+                                                    cpu,
+                                                    featuresString,
+                                                    Options,
+                                                    relocModel,
+                                                    codeModel,
+                                                    optLevel);
+#endif
 
 
 
@@ -2584,8 +2672,6 @@ static void runModuleOptPipeline(bool addWideOpts) {
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
       new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
-  // TODO: handle CodeGenOptions::LIBMVEC etc to support
-  // vectorizing the math library.
 
   // not sure if this one is needed
   FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
@@ -2831,7 +2917,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
     return true;
   } else {
     initializeLlvmTargets();
-    std::string triple = getConfiguredTargetTriple();
+    auto triple = getConfiguredTargetTriple();
     std::string err;
     const llvm::Target* tgt = llvm::TargetRegistry::lookupTarget(triple, err);
     if (tgt == nullptr || !err.empty()) {
@@ -3008,6 +3094,28 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 #endif
 
+#if HAVE_LLVM_VER >= 210
+  if (usingGpuLocaleModel() &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // this is need to make hipcub wrappers work since
+    // TempStorage is marked deprecated, but I can't seem to find an alternative
+    // the rocm docs do not mention the deprecation and I can't find proper docs
+    // for the new API that the warning refers to
+    clangCCArgs.push_back("-Wno-deprecated-declarations");
+  }
+#endif
+
+#if HAVE_LLVM_VER >= 220
+  if (usingGpuLocaleModel()) {
+    // silence warnings about gcc compat with clang 22
+    // these come from applying the format attribute to non-variadic functions,
+    // which clang allows but gcc does not. we never compiler GPU code with gcc,
+    // so this is fine
+    clangCCArgs.push_back("-Wno-gcc-compat");
+    clangCCArgs.push_back("-DUSE_FORMAT_ATTR_FOR_NON_VARIADIC");
+  }
+#endif
+
   // Add debug flags
   if (fDebugSymbols) {
     clangCCArgs.push_back("-g");
@@ -3035,7 +3143,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     if (!targetCpuValid) {
       USR_WARN("Unknown target CPU %s -- not specializing",
                CHPL_LLVM_TARGET_CPU);
-      std::string triple = getConfiguredTargetTriple();
+      std::string triple = getConfiguredTargetTripleString();
       USR_PRINT("To see available CPU types, run "
                 "%s --target=%s --print-supported-cpus",
                 clangCC.c_str(), triple.c_str());
@@ -3077,7 +3185,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
   // already defines this.
-  if (!fMultiLocaleInterop) {
+  if (!fClientServerLibrary) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
   }
 
@@ -3131,7 +3239,7 @@ void runClang(const char* just_parse_filename) {
   // tell clang to use CUDA/AMD support
   if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
-    clangOtherArgs.push_back("--std=c++14");
+    clangOtherArgs.push_back("--std=c++17");
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
@@ -3196,7 +3304,7 @@ void runClang(const char* just_parse_filename) {
     }
 
     // Include a few extra things if generating a multi-locale library.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
@@ -3451,14 +3559,12 @@ llvm::Type* getTypeLLVM(const char* name)
   return NULL;
 }
 // should support TypedefDecl,EnumDecl,RecordDecl
-llvm::Type* codegenCType(const TypeDecl* td)
-{
+llvm::Type* codegenCType(const TypeDecl* td) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
   QualType qType;
 
@@ -3471,9 +3577,13 @@ llvm::Type* codegenCType(const TypeDecl* td)
     RecordDecl *def = rd->getDefinition();
     if (def == nullptr) {
       // it's an opaque type - definition of fields not available
-      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+      qType
+        = getClangASTType(rd->getASTContext(),
+                          rd->getCanonicalDecl())->getCanonicalTypeInternal();
     } else {
-      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+      qType
+        = getClangASTType(def->getASTContext(),
+                          def->getCanonicalDecl())->getCanonicalTypeInternal();
     }
   } else {
     INT_FATAL("Unknown clang type declaration");
@@ -3481,27 +3591,23 @@ llvm::Type* codegenCType(const TypeDecl* td)
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
-llvm::Type* codegenCType(const clang::QualType& qType)
-{
+llvm::Type* codegenCType(const clang::QualType& qType) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
-GenRet codegenCValue(const ValueDecl *vd)
-{
+GenRet codegenCValue(const ValueDecl *vd) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
   GenRet ret;
 
@@ -3771,7 +3877,9 @@ llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
 
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
-      const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
+      const clang::Type *type =
+        getClangASTType(store->u.cTypeDecl->getASTContext(),
+                        store->u.cTypeDecl);
       if (type != NULL) {
         store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
       }
@@ -3891,14 +3999,12 @@ void LayeredValueTable::swap(LayeredValueTable* other)
 }
 
 int getCRecordMemberGEP(const char* typeName, const char* fieldName,
-                        bool& isCArrayField)
-{
+                        bool& isCArrayField) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
   TypeDecl* d = NULL;
   int ret;
@@ -3996,15 +4102,26 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (cCastedToType)
     USR_FATAL(t, "Cannot use macro with type cast in export function argument");
 
-  if (cTypeDecl == NULL)
+  clang::CanQualType ret;
+
+  if (cTypeDecl) {
+    auto cQualType = Ctx->getTypeDeclType(cTypeDecl);
+    ret = cQualType->getCanonicalTypeUnqualified();
+
+  } else if (t->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    if (::Type* t = chapelTypeForPrimitiveCTypeName(cname)) {
+      ret = getClangType(t, makeRef);
+    } else {
+      INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");
+    }
+
+  } else {
     USR_FATAL(t, "Could not find C type %s - "
                   "extern/export functions should only use extern types",
                    cname);
+  }
 
-  clang::QualType cQualType = Ctx->getTypeDeclType(cTypeDecl);
-  clang::CanQualType cTy = cQualType->getCanonicalTypeUnqualified();
-
-  return cTy;
+  return ret;
 }
 
 static clang::CanQualType
@@ -4024,14 +4141,12 @@ static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
   return getClangFormalType(formal->intent, formal->type, isReceiver);
 }
 
-const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
-{
+const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
   clang::CanQualType FTy = FD->getType()->getCanonicalTypeUnqualified();
@@ -4049,9 +4164,10 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
   auto info = gGenInfo;
+  INT_ASSERT(info);
   auto clangInfo = info->clangInfo;
-  auto cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(info && clangInfo && cCodeGen);
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
   auto& CGM = cCodeGen->CGM();
 
   // Otherwise, we should call arrangeFreeFunctionCall
@@ -4092,8 +4208,7 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
   // Lookup the clang AST for this function so we can
@@ -4207,14 +4322,12 @@ bool useDarwinArmFix(::Type* type) {
 // TODO: Update `getClangABIInfo` to handle formal types and return types that
 // are not extern types.
 //
-const clang::CodeGen::ABIArgInfo*
-getSingleCGArgInfo(::Type* type) {
+const clang::CodeGen::ABIArgInfo* getSingleCGArgInfo(::Type* type) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
-  INT_ASSERT(cCodeGen);
+  clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
   clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
 
   llvm::SmallVector<clang::CanQualType,4> argTypesC;
@@ -4251,20 +4364,30 @@ int getCTypeAlignment(::Type* type) {
   gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
   const clang::TypeDecl* td = cType;
 
-  // find the QualType
   QualType qType;
-  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
-    qType = tnd->getCanonicalDecl()->getUnderlyingType();
-  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
-    qType = ed->getCanonicalDecl()->getIntegerType();
-  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
-    RecordDecl *def = rd->getDefinition();
-    if (def == nullptr)
-      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
-      return ALIGNMENT_DEFER;
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+
+  if (td) {
+    if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+      qType = tnd->getCanonicalDecl()->getUnderlyingType();
+    } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+      qType = ed->getCanonicalDecl()->getIntegerType();
+    } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+      RecordDecl *def = rd->getDefinition();
+      if (def == nullptr)
+        // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+        return ALIGNMENT_DEFER;
+      qType =
+        getClangASTType(def->getASTContext(),
+                        def->getCanonicalDecl())->getCanonicalTypeInternal();
+    } else {
+      INT_FATAL(type, "Unhandled Clang type declaration");
+    }
+  } else if (type->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
+    auto eqt = chapelTypeForPrimitiveCTypeName(type->symbol->cname);
+    INT_ASSERT(eqt);
+    return getCTypeAlignment(eqt);
   } else {
-    INT_FATAL("Unknown clang type declaration");
+    INT_FATAL(type, "Chapel type does not have a corresponding Clang type");
   }
 
   return getCTypeAlignment(qType);
@@ -4521,7 +4644,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
+  bcLib->setTargetTriple(Triple);
+#else
   bcLib->setTargetTriple(Triple.getTriple());
+#endif
   bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
   // link
@@ -4556,15 +4683,15 @@ static void linkGpuDeviceLibraries() {
   GenInfo* info = gGenInfo;
 
   // save external functions
-  std::set<std::string> externals;
-  for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  std::unordered_set<llvm::GlobalValue::GUID> externals;
+  for (const auto& f: info->module->functions()) {
+    if (f.hasExternalLinkage()) {
+      externals.insert(f.getGUID());
     }
   }
-  for (auto it = info->module->global_begin() ; it!= info->module->global_end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  for (const auto& g: info->module->globals()) {
+    if (g.hasExternalLinkage()) {
+      externals.insert(g.getGUID());
     }
   }
 
@@ -4602,7 +4729,7 @@ static void linkGpuDeviceLibraries() {
 
   // internalize all functions that are not in `externals`
   llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
-    return externals.count(gv.getGlobalIdentifier()) > 0;
+    return externals.count(gv.getGUID()) > 0;
   });
   iPass.internalizeModule(*info->module);
 }
@@ -4653,8 +4780,8 @@ void setupForGlobalToWide(void) {
   const char* dummy = "chpl_wide_opt_dummy";
   if( getFunctionLLVM(dummy) ) INT_FATAL("dummy function already exists");
 
-  llvm::Type* retType = getPointerType(ginfo->module->getContext());
-  llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
+  auto retType = getPointerType(ginfo->module->getContext());
+  auto argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
                         dummy, retType, argType).getCallee();
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
@@ -4748,7 +4875,7 @@ void checkAdjustedDataLayout() {
 
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();
-  llvm::Type* testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
+  auto testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
@@ -4805,7 +4932,7 @@ static std::string findSiblingClangToolPath(std::string_view toolName) {
     if (!parent.empty()) {
       SmallString<128> path;
       sys::path::append(path, parent, toolName);
-      if (pathExists(path.str())) {
+      if (chpl::pathExists(path.str())) {
         return std::string(path);
       }
     }
@@ -4902,10 +5029,10 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   std::string profiles;
   for (auto& gpuArch : gpuArches) {
     // Figure out the corresponding compute capability and object name
-    if (strncmp(gpuArch.c_str(), "sm_", 3) != 0 || gpuArch.size() != 5) {
+    if (strncmp(gpuArch.c_str(), "sm_", 3) != 0 || gpuArch.size() < 4) {
       USR_FATAL("Unrecognized CUDA arch");
     }
-    std::string computeCap = std::string("compute_") + gpuArch[3] + gpuArch[4];
+    std::string sm = gpuArch.substr(3);
     std::string gpuObject = gpuObjectFilenamePrefix + "_" + gpuArch + ".o";
 
     // Execute the assembler for this architecture
@@ -4916,11 +5043,10 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                          " " + artifactFilename.c_str();
     mysystem(ptxCmd.c_str(), "PTX to object file");
 
-    // Track the new object we created and the CC we enabled.
-    profiles += std::string(" --image=profile=") + computeCap +
-                ",file=" + artifactFilename;
-    profiles += std::string(" --image=profile=") + gpuArch +
-                ",file=" + gpuObject;
+    profiles += std::string(" --image3=kind=ptx,sm=") + sm +
+                  ",file=" + artifactFilename;
+    profiles += std::string(" --image3=kind=elf,sm=") + sm +
+                  ",file=" + gpuObject;
   }
 
   std::string fatbinaryCmd = std::string("fatbinary -64 ") +
@@ -4941,7 +5067,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets = "-targets=host-x86_64-unknown-linux";
+  std::string targets = "-targets=host-x86_64-unknown-linux-unknown";
 #if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
   std::string outputs = "-output=" + fatbinFilename;
@@ -5127,17 +5253,42 @@ void makeBinaryLLVM(void) {
     if (useLinkCXX != clangCXX)
       clangLDArgs.clear();
 
-    // Add runtime libs arguments
-    //readArgsFromFile(runtime_libs, clangLDArgs);
+    //
+    // Add link args. Order is runtime > program && bundled > system.
+    //
 
-    // add the bundled link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+    if (fBuiltinRuntime) {
+      // We are embedding a copy of the runtime, so link against 'libchpl.a'.
+      splitStringWhitespace(CHPL_TARGET_USE_STATIC_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    } else {
+      // Even without a builtin runtime, we still need to pass in the
+      // shared library containing the runtime so that the linker will
+      // not complain about undefined symbols. This can happen on OSX.
+      //
+      // Link against 'libchpl.so'/'libchpl.dylib':
+      splitStringWhitespace(CHPL_TARGET_USE_SHARED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
 
-    // add the system link args from printchplenv
-    splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
+      splitStringWhitespace(CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_PROGRAM_LINK_ARGS, clangLDArgs);
+
+    if (fBuiltinRuntime) {
+      // If embedding, we need to also link against runtime dependencies.
+      splitStringWhitespace(CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS,
+                            clangLDArgs);
+    }
+
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_PROGRAM_LINK_ARGS, clangLDArgs);
 
     // Grab extra dependencies for multilocale libraries if needed.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       std::string cmd = std::string(CHPL_HOME);
       cmd += "/util/config/compileline --multilocale-lib-deps";
       std::string libs = runCommand(cmd,
@@ -5233,16 +5384,16 @@ void makeBinaryLLVM(void) {
     const char* tmpbinname = NULL;
     const char* tmpservername = NULL;
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
-      INT_ASSERT(tmpservername);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpservername && strlen(tmpservername) > 0);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     } else {
       codegen_makefile(&mainfile, &tmpbinname, NULL, true);
-      INT_ASSERT(tmpbinname);
+      INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     }
 
-    if (fLibraryCompile && !fMultiLocaleInterop) {
+    if (fLibraryCompile && !fClientServerLibrary) {
       switch (fLinkStyle) {
       // The default library link style for Chapel is _static_.
       case LS_DEFAULT:
@@ -5258,7 +5409,7 @@ void makeBinaryLLVM(void) {
         break;
       }
     } else {
-      const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+      const char* outbin = fClientServerLibrary ? tmpservername : tmpbinname;
 
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
@@ -5274,25 +5425,30 @@ void makeBinaryLLVM(void) {
 
     if (generateDarwinSymArchive) {
       auto bin = findSiblingClangToolPath("dsymutil");
-      const char* sfx = ".dSYM";
-      const char* tmp = astr(tmpbinname, sfx);
-      const char* out = astr(executableFilename.c_str(), sfx);
+      const char* tmp = astr(tmpbinname, ".dSYM");
 
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
       // better name?
       std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
       mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
-      moveResultFromTmp(out, tmp);
     }
 
-    // If we're not using a launcher, copy the program here
-    if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+    bool isLauncherNone = !strcmp(CHPL_LAUNCHER, "none");
+    bool needLauncher = !isLauncherNone && !isMultiLocaleLibrary();
+
+    if (!needLauncher) {
+      // If we're not using a launcher, copy the program here
 
       if (fLibraryCompile) {
         moveGeneratedLibraryFile(tmpbinname);
       } else {
         moveResultFromTmp(executableFilename.c_str(), tmpbinname);
+      }
+      if (generateDarwinSymArchive) {
+        const char* out = astr(executableFilename.c_str(), ".dSYM");
+        const char* tmp = astr(tmpbinname, ".dSYM");
+        moveResultFromTmp(out, tmp);
       }
 
     } else {
@@ -5737,7 +5893,7 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   // that cannot be built with `-static`, because because it depends on
   // dynamic libraries. So even if the client library is being built as
   // static, the server cannot be.
-  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
+  if (fLinkStyle == LS_STATIC && !fClientServerLibrary) {
     command += " -static";
   }
 

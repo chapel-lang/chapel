@@ -1,5 +1,7 @@
 
+
 use MasonEnv;
+use MasonUtils;
 
 use FileSystem, CTypes;
 
@@ -34,15 +36,46 @@ proc main() {
   setEnv("MASON_REGISTRY", "foobar|foobar");
   masonEnv(args);
   writeln("----------");
-  unsetEnv("MASON_REGISTRY");
+
+
 
   setEnv("MASON_OFFLINE", "true");
-	masonEnv(args);
+  masonEnv(args);
   writeln("---------");
   unsetEnv("MASON_OFFLINE");
 
   masonEnv(debugArgs);
   writeln("----------");
+  
+  
+  // Test: Malformed registry format
+  setEnv("MASON_REGISTRY", "foo|bar|baz");
+  try {
+    var regs = MASON_REGISTRY;
+    writeln("Test failed: No error thrown for duplicate registry names");
+  } catch e: MasonError {
+    writeln(e);
+  } catch {
+    writeln("Malformed registry : unexpected error");
+  }
+  unsetEnv("MASON_REGISTRY");
+  writeln("----------");
+
+  // Test: Duplicate registry names should trigger error
+  setEnv("MASON_REGISTRY", "foo|/tmp/registry1,foo|/tmp/registry2");
+  try {
+    var regs = MASON_REGISTRY;
+    writeln("Test failed: No error thrown for duplicate registry names");
+  } catch e: MasonError {
+    writeln(e);
+  } catch {
+    writeln("Duplicate registry : unexpected error");
+  }
+  unsetEnv("MASON_REGISTRY");
+  writeln("----------");
 
   masonEnv(helpArgs);
-}
+
+  }
+  
+

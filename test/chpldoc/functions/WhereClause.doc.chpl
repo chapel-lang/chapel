@@ -30,7 +30,7 @@ module M {
         writeln("processRange 2");
     }
 
-    pragma "no where doc"
+    @chpldoc.noWhereClause
     proc processRangeNW(r: range) where r.low > 1 {
         writeln("processRange no where");
     }

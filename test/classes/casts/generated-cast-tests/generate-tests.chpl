@@ -1,4 +1,4 @@
-// This script generates tests for managment casts and coercion. It generates
+// This script generates tests for management casts and coercion. It generates
 // all combinations of casts/coercions for flat casts (`MyClass` -> `MyClass`)
 // as well as for up and down casts (`ParentClass` and `ChildClass`) using
 // `owned`, `shared`, `borrowed`, and `unmanaged`. This is 192 combinations,

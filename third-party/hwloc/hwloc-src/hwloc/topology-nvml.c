@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2024 Inria.  All rights reserved.
+ * Copyright © 2012-2025 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -351,6 +351,7 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
       assert(ret == NVML_SUCCESS);
 
       for(j=0; j<NVML_NVLINK_MAX_LINKS; j++) {
+        static int warned = 0;
         unsigned version;
         hwloc_uint64_t bw;
         unsigned peer_index = peer_indexes[i*NVML_NVLINK_MAX_LINKS+j];
@@ -370,19 +371,33 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
 
         hwloc_debug("GPU #%u NVLink #%u has version %u\n", i, j, version);
         /* NVIDIA often shows bidirection bandwidths,
-         * or even the bidirectional bandwidth of all links agregated for a single GPU
-         * 160GB/s on P100 (4 links), 300 on V100 (6), 600 on A100 (12), 900 on H100 (18 links).
+         * or even the bidirectional bandwidth of all links agregated for a single GPU.
          *
-         * The actual unidirectional bandwidth we want is 20GB/s for v1, and 25GB/s for v2+.
-         * v3 has twice bigger pairs than v2 but half the number of pairs per (sub-)link.
-         * v4 and v3 seem identical.
+         * v1 = P100 = 160GB/s = 4 links * 20GB/s (link full duplex rate) * 2 (full duplex)
+         * v2 = V100 = 300GB/s = 6 * 25 * 2
+         * v3 = A100 = 600GB/s = 12 * 25 * 2 (twice bigger pairs but half number of pairs per link)
+         * v4 = H100 = 900GB/s = 18 * 25 *2
+         * v5 = B100 = 1800GB/s = 18 * 50 *2
+         *
+         * We want the unidirectional bandwidth of each link.
+         * Multiple links may connect same GPUs.
          */
-        if (version == 1) {
-          bw = 20000; /* multiple links may connect same GPUs */
-        } else if (version >= 2 && version <= 4) {
-          bw = 25000; /* multiple links may connect same GPUs */
-        } else {
-          static int warned = 0;
+        switch (version) {
+        /* enum nvmlNvlinkVersion_enum added only in CUDA 12.7 */
+        case 1: /* NVML_NVLINK_VERSION_1_0 */
+          bw = 20000;
+          break;
+        case 2: /* NVML_NVLINK_VERSION_2_0 */
+        case 3: /* NVML_NVLINK_VERSION_2_2 */
+        case 4: /* NVML_NVLINK_VERSION_3_0 */
+        case 5: /* NVML_NVLINK_VERSION_3_1 */
+        case 6: /* NVML_NVLINK_VERSION_4_0 */
+          bw = 25000;
+          break;
+        case 7: /* NVML_NVLINK_VERSION_5_0 */
+          bw = 50000;
+          break;
+        default:
           if (!warned && HWLOC_SHOW_ALL_ERRORS())
             fprintf(stderr, "hwloc/nvml: Failed to recognize NVLink version %u\n", version);
           warned = 1;

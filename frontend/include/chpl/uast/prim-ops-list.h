@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -92,7 +92,7 @@ PRIMITIVE_G(GREATER, ">")
 PRIMITIVE_G(AND, "&")
 PRIMITIVE_G(OR, "|")
 PRIMITIVE_G(XOR, "^")
-PRIMITIVE_G(POW, "**")
+PRIMITIVE_R(POW, "**")
 
 PRIMITIVE_R(LOGICAL_AND, "&&")
 PRIMITIVE_R(LOGICAL_OR, "||")

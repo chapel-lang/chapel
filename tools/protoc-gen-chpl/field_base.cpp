@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,16 +18,14 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/logging.h>
-
-#include <field_base.h>
-#include <helpers.h>
+#include "field_base.h"
+#include "helpers.h"
 
 namespace chapel {
 
 
   void FieldGeneratorBase::SetCommonFieldVariables(
-      map<string, string>* variables) {
+      std::map<std::string, std::string>* variables) {
 
     (*variables)["type_name"] = type_name(descriptor_);
     (*variables)["proto_type_name"] = proto_type_name(descriptor_);
@@ -37,7 +35,7 @@ namespace chapel {
   }
 
   void FieldGeneratorBase::SetCommonOneofFieldVariables(
-    std::map<string, string>* variables) {
+    std::map<std::string, std::string>* variables) {
     (*variables)["oneof_name"] = oneof_name(descriptor_->containing_oneof());
     (*variables)["property_name"] = name() + "_" ;
     (*variables)["default_value"] = default_value(descriptor_);
@@ -51,15 +49,15 @@ namespace chapel {
   FieldGeneratorBase::~FieldGeneratorBase() {
   }
 
-  string FieldGeneratorBase::name() {
+  std::string FieldGeneratorBase::name() {
     return GetFieldName(descriptor_);
   }
 
-  string FieldGeneratorBase::oneof_name(const OneofDescriptor* descriptor) {
+  std::string FieldGeneratorBase::oneof_name(const OneofDescriptor* descriptor) {
     return GetOneofName(descriptor);
   }
 
-  string FieldGeneratorBase::type_name(const FieldDescriptor* descriptor) {
+  std::string FieldGeneratorBase::type_name(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_INT64:
         return "int(64)";
@@ -96,12 +94,12 @@ namespace chapel {
       case FieldDescriptor::TYPE_MESSAGE:
         return GetMessageName(descriptor->message_type());
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
 
-  string FieldGeneratorBase::proto_type_name(const FieldDescriptor* descriptor) {
+  std::string FieldGeneratorBase::proto_type_name(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_INT64:
         return "int64";
@@ -141,12 +139,12 @@ namespace chapel {
         }
         return "message";
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
 
-  string FieldGeneratorBase::default_value(const FieldDescriptor* descriptor) {
+  std::string FieldGeneratorBase::default_value(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_MESSAGE:
         return ""; // we use chapel compiler generated default values for messages;
@@ -183,12 +181,12 @@ namespace chapel {
       case FieldDescriptor::TYPE_SFIXED64:
         return std::to_string(descriptor->default_value_int64());
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
 
-  string FieldGeneratorBase::number() {
+  std::string FieldGeneratorBase::number() {
     return std::to_string(descriptor_->number());
   }
 

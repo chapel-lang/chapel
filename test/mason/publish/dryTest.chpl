@@ -1,7 +1,7 @@
 
 use MasonPublish;
 use MasonUtils;
-use MasonNew;
+use MasonNewInit;
 
 const dir = here.cwd();
 

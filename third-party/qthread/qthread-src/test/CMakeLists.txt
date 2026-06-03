@@ -29,5 +29,6 @@ if (${QTHREADS_BUILD_TESTS})
 
   add_subdirectory(basics)
   add_subdirectory(features)
+  add_subdirectory(internal)
   add_subdirectory(stress)
 endif()

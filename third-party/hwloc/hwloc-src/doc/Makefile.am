@@ -1,4 +1,4 @@
-# Copyright © 2009-2024 Inria.  All rights reserved.
+# Copyright © 2009-2025 Inria.  All rights reserved.
 # Copyright © 2009-2013, 2021 Université Bordeaux
 # Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -38,9 +38,6 @@ EXTRA_DIST = \
         doxygen.cfg \
         images/diagram.fig \
         www.open-mpi.org.cfg \
-        www.open-mpi.org-css.inc \
-        www.open-mpi.org-footer.inc \
-        www.open-mpi.org-header.inc \
         $(PREBUILT_IMAGES) \
         $(BUILT_IMAGES)
 
@@ -690,6 +687,7 @@ man3_memattrs_DATA = \
         $(DOX_MAN_DIR)/man3/HWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_LOCAL_NUMANODE_FLAG_ALL.3 \
         $(DOX_MAN_DIR)/man3/hwloc_get_local_numanode_objs.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_topology_get_default_nodeset.3 \
         $(DOX_MAN_DIR)/man3/hwloc_memattr_get_value.3 \
         $(DOX_MAN_DIR)/man3/hwloc_memattr_get_best_target.3 \
         $(DOX_MAN_DIR)/man3/hwloc_memattr_get_best_initiator.3 \
@@ -763,7 +761,9 @@ man3_gpu_DATA = \
         $(DOX_MAN_DIR)/man3/hwloc_rsmi_get_device_osdev_by_index.3 \
         $(DOX_MAN_DIR)/man3/hwlocality_levelzero.3 \
         $(DOX_MAN_DIR)/man3/hwloc_levelzero_get_device_cpuset.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_levelzero_get_sysman_device_cpuset.3 \
         $(DOX_MAN_DIR)/man3/hwloc_levelzero_get_device_osdev.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_levelzero_get_sysman_device_osdev.3 \
         $(DOX_MAN_DIR)/man3/hwlocality_gl.3 \
         $(DOX_MAN_DIR)/man3/hwloc_gl_get_display_osdev_by_port_device.3 \
         $(DOX_MAN_DIR)/man3/hwloc_gl_get_display_osdev_by_name.3 \

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/framework/ErrorBase.h"
 
 static void test1() {
   printf("test1\n");
@@ -1023,7 +1024,7 @@ static void test36() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1058,7 +1059,7 @@ static void test37() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->parentClassType()->isObjectType());
+  assert(bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1093,7 +1094,7 @@ static void test38() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(!bct->parentClassType()->isObjectType());
+  assert(!bct->parentClassType()->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1110,7 +1111,7 @@ static void test38() {
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->parentClassType()->isObjectType());
+  assert(pct->parentClassType()->isRootClass());
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto rc = createDummyRC(context);
@@ -1140,7 +1141,7 @@ static void test39() {
   assert(bct);
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
-  assert(pct->isObjectType());
+  assert(pct->isRootClass());
 
   auto fields = p.second;
   assert(fields);
@@ -1335,9 +1336,14 @@ static void testRecursiveTypeConstructorGeneric() {
 
   bool foundError = false;
   for (auto& err : guard.errors()) {
-    if (err->type() == ErrorType::MissingFormalInstantiation) {
-      foundError = true;
-      break;
+    if (err->type() == ErrorType::NoMatchingCandidates) {
+      auto noCandidates = static_cast<ErrorNoMatchingCandidates*>(err.get());
+      auto& rejected = std::get<2>(noCandidates->info());
+      if (rejected.size() > 0 &&
+          rejected[0].reason() == chpl::resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+        foundError = true;
+        break;
+      }
     }
   }
   assert(foundError);
@@ -1671,6 +1677,104 @@ static void testPartialInstantiationNoExtraSubstitutions() {
   assert(rt->substitutions().begin()->first == fields->fieldDeclId(0));
 }
 
+// Helper function to check that an error is NoMatchingCandidates with
+// the FAIL_NO_TYPE_CONSTRUCTOR reason
+static void assertNoTypeConstructorError(ErrorGuard& guard, size_t errorIdx) {
+  assert(guard.numErrors() > errorIdx);
+  const auto& err = guard.error(errorIdx);
+  assert(err->type() == ErrorType::NoMatchingCandidates);
+
+  auto nmcErr = static_cast<const ErrorNoMatchingCandidates*>(err.get());
+  auto& info = nmcErr->info();
+  auto& rejectedCandidates = std::get<2>(info);
+
+  assert(rejectedCandidates.size() > 0);
+  bool foundNoTypeCtor = false;
+  for (const auto& result : rejectedCandidates) {
+    if (result.reason() == FAIL_NO_TYPE_CONSTRUCTOR) {
+      foundNoTypeCtor = true;
+      break;
+    }
+  }
+  assert(foundNoTypeCtor);
+}
+
+static void testEnumTypeConstructorError() {
+  printf("testEnumTypeConstructorError\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    enum Color { red, green, blue }
+    var x = Color(0);
+  )""";
+
+  std::ignore = resolveTypeOfXInit(context, program, /* requireTypeKnown */ false);
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testPrimitiveTypeConstructorErrors() {
+  printf("testPrimitiveTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with integral, a builtin type that doesn't support constructors
+  std::string program = R"""(
+    type IntegralType = integral;
+    var b = IntegralType(5);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testBuiltinTypeConstructorErrors() {
+  printf("testBuiltinTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with void type - doesn't support constructors
+  std::string program = R"""(
+    type VoidType = void;
+    var x = VoidType(0);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+// regression test: only instantiating signature checing was done on
+// type constructors, which meant concrete type constructors could be invoked
+// with totally nonsensical arguments.
+static void testConcreteTypeConstructorBadCall() {
+  printf("testConcreteTypeConstructorBadCall\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      var f: int;
+    }
+
+    var x: R(int); // bad call, R is concrete.
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program.c_str(), {"x"});
+
+  assert(vars["x"].isUnknownOrErroneous());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1726,6 +1830,12 @@ int main() {
 
   testPartialInstantiation();
   testPartialInstantiationNoExtraSubstitutions();
+
+  testEnumTypeConstructorError();
+  testPrimitiveTypeConstructorErrors();
+  testBuiltinTypeConstructorErrors();
+
+  testConcreteTypeConstructorBadCall();
 
   return 0;
 }

@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,7 @@ import importlib.util
 import copy
 import configargparse
 import functools
+from pathlib import Path
 
 import chapel
 from chapel.lsp import location_to_range
@@ -63,6 +64,8 @@ from lsprotocol.types import (
     SymbolKind,
 )
 
+from mason import MasonProject
+
 
 def log(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
@@ -77,12 +80,14 @@ class ChplcheckProxy:
         lsp: ModuleType,
         driver: ModuleType,
         rules: ModuleType,
+        indentation: ModuleType,
     ):
         self.main = main
         self.config = config
         self.lsp = lsp
         self.driver = driver
         self.rules = rules
+        self.indentation = indentation
 
     @classmethod
     def get(cls) -> Optional["ChplcheckProxy"]:
@@ -116,8 +121,16 @@ class ChplcheckProxy:
             spec.loader.exec_module(module)
             return module
 
+        to_load = [
+            "chplcheck",
+            "config",
+            "lsp",
+            "driver",
+            "rules",
+            "indentation",
+        ]
         mods = []
-        for mod in ["chplcheck", "config", "lsp", "driver", "rules"]:
+        for mod in to_load:
             m = load_module(mod)
             if m is None:
                 return None
@@ -218,6 +231,16 @@ def location_to_location(loc) -> Location:
     return Location(
         "file://" + os.path.abspath(loc.path()), location_to_range(loc)
     )
+
+
+def min_pos(a: Position, b: Optional[Position]) -> Position:
+    if b is None:
+        return a
+    return min(a, b)
+
+
+def range_overlap(r1: Range, r2: Range) -> bool:
+    return not (r1.end <= r2.start or r1.start >= r2.end)
 
 
 def get_symbol_information(
@@ -546,6 +569,41 @@ class References:
 
 
 @dataclass
+class Instantiations:
+    in_file: "FileInfo"
+    instantiations: List[chapel.TypedSignature]
+
+    def append(self, x: chapel.TypedSignature):
+        self.instantiations.append(x)
+
+    def clear(self):
+        self.instantiations.clear()
+
+    def __iter__(self):
+        return iter(self.instantiations)
+
+
+CallInTypeContext = Union[
+    Tuple[chapel.FnCall, Optional[chapel.TypedSignature]], Tuple[()]
+]
+
+
+@dataclass
+class CallsInTypeContext:
+    in_file: "FileInfo"
+    call_contexts: List[CallInTypeContext]
+
+    def append(self, x: CallInTypeContext):
+        self.call_contexts.append(x)
+
+    def clear(self):
+        self.call_contexts.clear()
+
+    def __iter__(self):
+        return iter(self.call_contexts)
+
+
+@dataclass
 class EndMarkerPattern:
     pattern: Union[Type, Set[Type]]
     header_location: Callable[[chapel.AstNode], Optional[chapel.Location]]
@@ -611,18 +669,28 @@ class ContextContainer:
         self.global_uses: Dict[chapel.AstNode, List[References]] = defaultdict(
             list
         )
+        self.global_instantiations: Dict[str, List[Instantiations]] = (
+            defaultdict(list)
+        )
+        self.global_inst_contexts: Dict[
+            chapel.TypedSignature, List[CallsInTypeContext]
+        ] = defaultdict(list)
         self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
         self.instantiation_id_counter = 0
 
         if config:
-            file_config = config.for_file(file)
-            if file_config:
-                self.module_paths = file_config["module_dirs"]
-                self.file_paths = file_config["files"]
+            module_dirs, files = config.for_file(file)
+            self.module_paths.extend(module_dirs)
+            self.file_paths.extend(files)
 
         self.std_module_root = self.cls_config.get("std_module_root")
         self.module_paths.extend(self.cls_config.get("module_dir"))
 
+        log(
+            "Setting module paths with std module root '{}', module paths '{}', and file paths '{}'".format(
+                self.std_module_root, self.module_paths, self.file_paths
+            )
+        )
         self.context._set_module_paths(
             self.std_module_root, self.module_paths, self.file_paths
         )
@@ -679,11 +747,51 @@ class ContextContainer:
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
                 fi.rebuild_index()
+
+            # Invoke _invalidate_insts a second time, so that
+            # if instantiations disappeared from a file after a different
+            # file was processed, we still remove them from the code lens
+            # list.
+            #
+            # To do this without this redundant work, we'd need
+            # a topological ordering of files ordered by instantiation
+            # dependencies. It doesn't seem worth it, though.
+            for fi in self.file_infos:
+                fi._invalidate_inst_segments()
+
         return errors
 
+    def call_contexts(
+        self, sig: chapel.TypedSignature
+    ) -> Iterable[CallInTypeContext]:
+        all_contexts = {
+            ctx for ctxs in self.global_inst_contexts[sig] for ctx in ctxs
+        }
+        return all_contexts
 
-CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
-CallsInTypeContext = List[CallInTypeContext]
+    def instantiations(self, fnid: str):
+        seen_insts = set()
+        for insts in self.global_instantiations[fnid]:
+            for inst in insts:
+                if inst not in self.global_inst_contexts:
+                    continue
+                if inst in seen_insts:
+                    continue
+                seen_insts.add(inst)
+
+                # as long as there is one calling context, yield inst.
+                found_instance = False
+                for _ in self.call_contexts(inst):
+                    found_instance = True
+                    break
+
+                if found_instance:
+                    yield (inst, insts.in_file)
+
+    def has_instantiation(self, fnid: str):
+        for _ in self.instantiations(fnid):
+            return True
+        return False
 
 
 # We should show these variables in autocompletion even though they are 'nodoc'.
@@ -704,11 +812,12 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[chapel.AstNode, References] = field(init=False)
-    instantiations: Dict[
-        str,
-        Dict[chapel.TypedSignature, CallsInTypeContext],
-    ] = field(init=False)
+    instantiations_here: Dict[str, Instantiations] = field(init=False)
+    inst_contexts_here: Dict[chapel.TypedSignature, CallsInTypeContext] = field(
+        init=False
+    )
     siblings: chapel.SiblingMap = field(init=False)
+    earliest_changed_pos: Optional[Position] = None
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
@@ -717,6 +826,8 @@ class FileInfo:
         self.call_segments = PositionList(lambda x: x.ident.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
+        self.instantiations_here = {}
+        self.inst_contexts_here = {}
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -745,6 +856,26 @@ class FileInfo:
         self.context.global_uses[node].append(refs)
         return refs
 
+    def _get_inst_container(self, fnid: str) -> Instantiations:
+        if fnid in self.instantiations_here:
+            return self.instantiations_here[fnid]
+
+        insts = Instantiations(self, [])
+        self.instantiations_here[fnid] = insts
+        self.context.global_instantiations[fnid].append(insts)
+        return insts
+
+    def _get_call_context_container(
+        self, sig: chapel.TypedSignature
+    ) -> CallsInTypeContext:
+        if sig in self.inst_contexts_here:
+            return self.inst_contexts_here[sig]
+
+        ctxs = CallsInTypeContext(self, [])
+        self.inst_contexts_here[sig] = ctxs
+        self.context.global_inst_contexts[sig].append(ctxs)
+        return ctxs
+
     def _note_reference(
         self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
     ):
@@ -760,6 +891,25 @@ class FileInfo:
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
+
+    def _note_inst(
+        self,
+        fnid: str,
+        sig: chapel.TypedSignature,
+        call: Optional[chapel.FnCall],
+        via: Optional[chapel.TypedSignature],
+    ) -> bool:
+        insts = self._get_inst_container(fnid)
+        already_visited = sig in insts
+        if not already_visited:
+            insts.append(sig)
+        contexts = self._get_call_context_container(sig)
+        if call:
+            contexts.append((call, via))
+        else:
+            contexts.append(())
+
+        return already_visited
 
     def _note_scope(self, node: chapel.AstNode):
         if not node.creates_scope():
@@ -995,17 +1145,54 @@ class FileInfo:
                     )
                 )
 
-            # Even if we don't descend into it (and even if it's not an
-            # instantiation), track the call that invoked this function.
-            # This will help with call hierarchy.
-            insts = self.instantiations[fn.unique_id()]
-            already_visited = sig in insts
-            insts[sig].append((node, via))
-
-            if not sig.is_instantiation() or already_visited:
+            visit = not self._note_inst(fn.unique_id(), sig, node, via)
+            if not sig.is_instantiation() or not visit:
                 continue
 
             self._search_instantiations(fn, via=sig)
+
+    def _search_rectangular_instantiations(self, root):
+        if not self.context.cls_config.get("default_rect_arrays"):
+            return
+
+        for node, _ in chapel.each_matching(
+            root, chapel.Function, iterator=chapel.preorder
+        ):
+            # Some functions (e.g., 'main') are never called, and written
+            # with array formals. This makes them generic. But we can turn
+            # the array formals into concrete default-rectangular formals,
+            # and thus maybe get a concrete instantiation to show.
+            assert isinstance(node, chapel.Function)
+            sig = node.initial_signature()
+            if sig:
+                sig = sig.rectangularize()
+            if sig:
+                visit = not self._note_inst(
+                    node.unique_id(), sig, None, via=None
+                )
+                if not sig.is_instantiation() or not visit:
+                    continue
+
+                self._search_instantiations(node, via=sig)
+
+    def _invalidate_inst_segments(
+        self,
+    ):
+        """
+        Once we've collected new instantiations, remove any instantiation
+        segments that were built with instantiations we no longer have.
+        """
+        for decl, inst in self.instantiation_segments.elts:
+            found_inst = False
+            for ainst, in_file in self.context.instantiations(
+                decl.node.unique_id()
+            ):
+                if ainst == inst:
+                    found_inst = True
+                    break
+
+            if not found_inst:
+                self.instantiation_segments.clear_range(decl.rng)
 
     def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
         """
@@ -1102,9 +1289,12 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(lambda: defaultdict(list))
         for _, refs in self.uses_here.items():
             refs.clear()
+        for _, insts in self.instantiations_here.items():
+            insts.clear()
+        for _, ctxs in self.inst_contexts_here.items():
+            ctxs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
         self.scope_segments.clear()
@@ -1120,6 +1310,8 @@ class FileInfo:
         if self.use_resolver:
             for ast in asts:
                 self._search_instantiations(ast)
+                self._search_rectangular_instantiations(ast)
+                self._invalidate_inst_segments()
             self.call_segments.sort()
 
     def called_function_at_position(
@@ -1219,6 +1411,32 @@ class FileInfo:
 
         return None
 
+    def get_source_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        """
+        Like get_target_segment_at_position, but returns the source expression
+        (the identifier under the cursor) rather than the declaration it resolves
+        to. This is useful for queries like go-to-type-definition, where we want
+        the type of the expression written by the user, not the type stored on
+        the declaration node (which is generally harder to come by and ought
+        to be equivalent).
+        """
+
+        segment = self.get_call_segment_at_position(position)
+        if segment:
+            return segment.ident
+
+        segment = self.get_use_segment_at_position(position)
+        if segment:
+            return segment.ident
+
+        segment = self.get_def_segment_at_position(position)
+        if segment:
+            return segment
+
+        return None
+
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
             self.uri[len("file://") :]
@@ -1233,7 +1451,9 @@ class FileInfo:
         instantiations collected while rebuilding the index.
         """
         return next(
-            itertools.islice(self.instantiations[fn.unique_id()], idx, None)
+            itertools.islice(
+                self.instantiations_here[fn.unique_id()], idx, None
+            )
         )
 
     def index_of_instantiation(
@@ -1246,7 +1466,7 @@ class FileInfo:
         return next(
             (
                 i
-                for i, s in enumerate(self.instantiations[fn.unique_id()])
+                for i, s in enumerate(self.instantiations_here[fn.unique_id()])
                 if s == sig
             ),
             -1,
@@ -1262,8 +1482,8 @@ class FileInfo:
         that signature, if it exists for the given function.
         """
         uid = fn.unique_id()
-        if uid in self.instantiations:
-            for sig in self.instantiations[uid]:
+        if uid in self.instantiations_here:
+            for sig in self.instantiations_here[uid]:
                 if not sig.is_instantiation():
                     return sig
         return None
@@ -1271,7 +1491,7 @@ class FileInfo:
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
-        self.files: Dict[str, Dict[str, Any]] = {}
+        self._files: Dict[str, Dict[str, Any]] = {}
 
         for key in json:
             compile_commands = json[key]
@@ -1293,23 +1513,45 @@ class WorkspaceConfig:
                 )
                 continue
 
-            self.files[key] = compile_commands[0]
+            self._files[key] = compile_commands[0]
 
-    def file_paths(self) -> Iterable[str]:
-        return self.files.keys()
+        self.mason: Optional[MasonProject] = None
 
-    def for_file(self, path: str) -> Optional[Dict[str, Any]]:
-        if path in self.files:
-            return self.files[path]
-        return None
+    def for_file(self, path: str) -> Tuple[List[str], List[str]]:
+        file_cfg = self._files.get(path, {"module_dirs": [], "files": []})
+        module_dirs = file_cfg.get("module_dirs", [])
+        files = file_cfg.get("files", [])
+        if self.mason:
+            module_dirs += self.mason.get_module_dirs()
+            files += self.mason.get_files()
+        return module_dirs, files
+
+    def files(self) -> List[str]:
+        files = set()
+        for key, file_cfg in self._files.items():
+            if key == "invocation":
+                continue
+            files.update(file_cfg.get("files", []))
+        if self.mason:
+            files.update(self.mason.get_files())
+        return list(files)
 
     @staticmethod
-    def from_file(ls: "ChapelLanguageServer", path: str):
-        if os.path.exists(path):
+    def from_file(
+        ls: "ChapelLanguageServer", workspace_root_uri: str
+    ) -> "WorkspaceConfig":
+        workspace_root = Path(workspace_root_uri[len("file://") :])
+        path = workspace_root / ".cls-commands.json"
+        if path.exists():
             with open(path) as f:
                 commands = json.load(f)
-                return WorkspaceConfig(ls, commands)
-        return None
+                ws_cfg = WorkspaceConfig(ls, commands)
+        else:
+            ws_cfg = WorkspaceConfig(ls, {})
+        ws_cfg.mason = MasonProject.from_ws(
+            ls.config.get("mason_path"), workspace_root_uri
+        )
+        return ws_cfg
 
 
 class CLSConfig:
@@ -1334,6 +1576,11 @@ class CLSConfig:
             ),
             args_for_setting_config_path=["--config", "-c"],
         )
+        self.parser.add_argument(
+            "--version",
+            action="version",
+            version=f"chpl-language-server {chapel.Context().get_compiler_version()}",
+        )
 
         chplcheck().config.add_bool_flag(
             self.parser, "resolver", "resolver", False
@@ -1354,6 +1601,12 @@ class CLSConfig:
             self.parser, "enum-inlays", "enum_inlays", True
         )
         chplcheck().config.add_bool_flag(
+            self.parser, "default-rect-arrays", "default_rect_arrays", True
+        )
+        chplcheck().config.add_bool_flag(
+            self.parser, "common-inlays", "common_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True
         )
         chplcheck().config.add_bool_flag(
@@ -1365,8 +1618,24 @@ class CLSConfig:
         chplcheck().config.add_bool_flag(
             self.parser, "show-instantiations", "show_instantiations", True
         )
+        chplcheck().config.add_bool_flag(
+            self.parser,
+            "hide-redundant-type-inlays",
+            "hide_redundant_type_inlays",
+            True,
+        )
+        chplcheck().config.add_bool_flag(
+            self.parser,
+            "hide-more-redundant-type-inlays",
+            "hide_more_redundant_type_inlays",
+            False,
+        )
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
+
+        self.parser.add_argument(
+            "--mason-path", default="mason", help=configargparse.SUPPRESS
+        )
 
         chplcheck().config.add_bool_flag(
             self.parser, "chplcheck", "do_linting", False

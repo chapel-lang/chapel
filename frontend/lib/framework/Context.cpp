@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -148,8 +148,7 @@ std::vector<owned<ErrorBase>> Context::CapturingRunResultBase::consumeErrors() {
 
 bool Context::CapturingRunResultBase::ranWithoutErrors() const {
   for (auto& error : errors_) {
-    auto kind = error->kind();
-    if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) {
+    if (errorKindIsError(error->kind())) {
       return false;
     }
   }
@@ -194,7 +193,7 @@ void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
   }
   if (noteErrorOccurredInto_) {
     *noteErrorOccurredInto_ |=
-      toStore->kind() == ErrorBase::ERROR || toStore->kind() == ErrorBase::SYNTAX;
+      errorKindIsError(toStore->kind());
   }
 }
 
@@ -260,7 +259,7 @@ std::string Context::tmpDirAnchorFile() {
 }
 
 void Context::cleanupTmpDirIfNeeded() {
-  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
+  if (!tmpDir_.empty() && pathExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
     // delete the tmp dir
     deleteDir(tmpDir_);
   }
@@ -919,7 +918,7 @@ void Context::report(owned<ErrorBase> error) {
   // results (errors will be re-emitted if the cached query is invoked without
   // error collection).
 
-  bool isError = error->kind() == ErrorBase::ERROR || error->kind() == ErrorBase::SYNTAX;
+  bool isError = errorKindIsError(error->kind());
 
   if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
     bool isSilencing =
@@ -1024,6 +1023,10 @@ void Context::warning(Location loc, const char* fmt, ...) {
 
 void Context::warning(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, id, fmt);
+}
+
+void Context::warning(const IdOrLocation& loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, loc, fmt);
 }
 
 void Context::warning(const uast::AstNode* ast, const char* fmt, ...) {
@@ -1220,6 +1223,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // Clear out the dependencies and errors since these will be recomputed
     // by evaluating the query.
     resultEntry->dependencies.clear();
+    resultEntry->errorsPresentInSelfOrDependencies = 0;
     resultEntry->errors.clear();
     resultEntry->oldResultForErrorContents = -1;
     resultEntry->recursionErrors.clear();

@@ -3,8 +3,9 @@
 # Chapel module
 #
 
-if { [info exists env(CPU)] } {
-    set CHPL_HOST_ARCH $env(CPU)
+set cpu "[uname machine]"
+if { [string length cpu] } {
+    set CHPL_HOST_ARCH $cpu
 } else {
     set CHPL_HOST_ARCH "UNSET"
 }
@@ -101,7 +102,7 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
         }
     }
 } else {
-    puts stderr "Error: CPU=$cpu"
+    puts stderr "Error: CPU=$CHPL_HOST_ARCH"
     exit 1
 }
 

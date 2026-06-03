@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,17 +18,24 @@
  * limitations under the License.
  */
 
+/**/
+module MasonUpdate {
+
 use FileSystem;
 use List;
 use Map;
+import Version;
 use ArgumentParser;
 use MasonEnv;
-use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
+import MasonLogger;
 use TOML;
 import Path;
+import ThirdParty.Pathlib.path;
+
+import MasonPrereqs;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -46,8 +53,9 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
+private var log = MasonLogger.getLogger("mason update");
 
-proc masonUpdate(args: [?d] string) {
+proc masonUpdate(args: [] string) throws {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
@@ -55,6 +63,7 @@ proc masonUpdate(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
 
   parser.parseArgs(args);
 
@@ -62,63 +71,79 @@ proc masonUpdate(args: [?d] string) {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  return updateLock(skipUpdate, tf, lf);
+  return updateLock(skipUpdate, tf, lf, force=forceFlag.valueAsBool());
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
+                                  show=true, force=false) throws {
 
-  try! {
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd, tf);
-    const tomlPath = projectHome + "/" + Path.relPath(tf);
-    const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openReader(tomlPath, locking=false);
-    const TomlFile = parseToml(openFile);
-    var updated = false;
-    if isFile(tomlPath) {
-      if TomlFile.pathExists('dependencies') {
-        if TomlFile['dependencies']!.A.size > 0 {
-          updateRegistry(skipUpdate, show);
-          updated = true;
-        }
-      }
-      if !updated && show {
-        writeln("Skipping registry update since no dependency found in manifest file.");
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd, tf):path;
+  const tomlPath = projectHome / Path.relPath(tf);
+  const lockPath = projectHome / Path.relPath(lf);
+  const openFile = openReader(tomlPath:string, locking=false);
+  const TomlFile = parseToml(openFile);
+  openFile.close();
+  log.debug("Parsed ", tomlPath:string);
+
+  var updated = false;
+  if tomlPath.isFile() {
+    if TomlFile.pathExists("dependencies") {
+      if force || TomlFile["dependencies"]!.A.size > 0 {
+        log.info("Updating registry");
+        updateRegistry(skipUpdate, show);
+        updated = true;
       }
     }
-    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion < spackVersion then
-      throw new owned MasonError("Mason has been updated. " +
-                  "To install Spack, call: mason external --setup.");
+    if !updated && show {
+      const reason =
+        if skipUpdate
+          then ""
+          else " since no dependency found in manifest file";
+      log.info("Skipping registry update" + reason);
     }
+  }
+
+
+  if !skipUpdate {
+    log.debug("Will do createDepTree");
     const lockFile = createDepTree(TomlFile);
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
         else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+      var err = "%s incompatible with your version of Chapel (%s):\n"
+                  .format(prefix, getChapelVersionInfo():string);
       for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
-      exit(1);
+        err += "  " + msg + "\n";
+      throw new MasonError(err.strip());
     }
     // Generate Lock File
-    genLock(lockFile, lockPath);
-    // Close Memory
-    openFile.close();
+    log.debug("Generating lock file");
+    genLock(lockFile, lockPath:string);
+  } else {
+    log.debug("Skipping lock file generation");
+    if !lockPath.exists() {
+      throw new MasonError("Cannot skip update without an existing lock file.");
+    }
+  }
 
+  if !skipUpdate {
+    log.info("Installing prerequisites");
+    MasonPrereqs.install();
+  } else {
+    log.debug("Skipping prerequisites installation");
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
-  }
+
+  log.debug("updateLock returning");
   return (tf, lf);
 }
 
 
 /* Writes out the lock file */
-proc genLock(lock: borrowed Toml, lf: string) {
+proc genLock(lock: borrowed Toml, lf: string) throws {
   const lockFile = open(lf, ioMode.cw);
   const tomlWriter = lockFile.writer(locking=false);
   tomlWriter.writeln(lock);
@@ -126,13 +151,14 @@ proc genLock(lock: borrowed Toml, lf: string) {
   lockFile.close();
 }
 
-proc checkRegistryChanged() {
+proc checkRegistryChanged() throws {
   for ((_, registry), cached) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
     if !isDir(cached) {
       return;
     }
 
-    const oldRegistry = gitC(cached, "git config --get remote.origin.url", quiet=true).strip();
+    const oldRegistry =
+      gitC(cached, "git config --get remote.origin.url", quiet=true).strip();
 
     if oldRegistry != registry {
       writeln("MASON_REGISTRY changed since last update:");
@@ -141,7 +167,7 @@ proc checkRegistryChanged() {
       writeln();
       writeln("Removing cached registry and sources to avoid conflicts");
 
-      proc tryRemove(name : string) {
+      proc tryRemove(name : string) throws {
         if isDir(name) {
           writeln("Removing ", name);
           rmTree(name);
@@ -155,54 +181,54 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(skipUpdate: bool, show=true) {
+proc updateRegistry(skipUpdate: bool, show=true) throws {
   if skipUpdate then return;
 
   checkRegistryChanged();
-  for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
+  for ((name, registry), registryHome) in
+      zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
-    if isDir(registryHome) {
-      var pullRegistry = 'git pull -q origin master';
+    log.debugf("Updating registry %s (%s) at %s",
+                name, registry, registryHome);
+
+    const registryHomePath = registryHome:path;
+    if registryHomePath.isDir() {
+      var pullRegistry = "git pull -q origin";
       if show then writeln("Updating ", name);
-      gitC(registryHome, pullRegistry);
-    }
-    // Registry has moved or does not exist
-    else {
-      mkdir(MASON_HOME + '/src', parents=true);
-      const localRegistry = registryHome;
-      mkdir(localRegistry, parents=true);
-      const cloneRegistry = 'git clone -q ' + registry + ' .';
+      gitC(registryHomePath, pullRegistry);
+    } else {
+      // Registry has moved or does not exist
+      if !(MASON_HOME:path / "src").isDir() then
+        (MASON_HOME:path / "src").mkdir(parents=true);
+      const localRegistry = registryHomePath;
+      localRegistry.mkdir(parents=true);
       if show then writeln("Updating ", name);
-      gitC(localRegistry, cloneRegistry);
+      cloneSource(registry, localRegistry, quiet=true);
     }
   }
 }
 
-proc verifyChapelVersion(brick:borrowed Toml) {
-  const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
-  var low, hi : VersionInfo;
+proc verifyChapelVersion(brick:borrowed Toml) throws {
+  const current = getChapelVersionInfo();
 
-  var ret = false;
-
-  (low, hi) = parseChplVersion(brick);
-  ret = low <= current && current <= hi;
+  var (low, hi) = parseChplVersion(brick);
+  var ret = low <= current && current <= hi;
 
   return (ret, low, hi);
 }
 
 proc prettyVersionRange(low, hi) {
   if low == hi then
-    return low.str();
+    return low:string;
   else if hi.containsMax() then
-    return low.str() + " or later";
+    return low:string + " or later";
   else
-    return low.str() + ".." + hi.str();
+    return low:string + ".." + hi:string;
 }
 
-proc chplVersionError(brick:borrowed Toml) {
+proc chplVersionError(brick:borrowed Toml) throws {
   const info = verifyChapelVersion(brick);
-  if info(0) == false {
+  if !info(0) {
     const low  = info(1);
     const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
@@ -215,18 +241,17 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: Toml) {
+private proc createDepTree(root: Toml) throws {
   var dp: domain(string, parSafe=false);
   var dps: [dp] shared Toml?;
   var depTree = new shared Toml(dps);
   if root.pathExists("brick") {
     depTree.set("root", new shared Toml(root["brick"]!));
-  }
-  else {
-    stderr.writeln("Could not find brick; Mason cannot update");
-    exit(1);
+  } else {
+    throw new MasonError("Could not find brick; Mason cannot update");
   }
 
+  log.debug("Setting depTree for Chapel dependencies");
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
 
@@ -259,41 +284,52 @@ private proc createDepTree(root: Toml) {
     chplVersionError(brick);
 
     // Lock in the current Chapel version
-    const curVer = getChapelVersionStr();
+    const curVer = getChapelVersionInfo():string;
     brick.set("chplVersion", curVer + ".." + curVer);
 
     if brick.pathExists("dependencies") {
       for item in brick["dependencies"]!.arr {
         const brick = depTree[item!.s]!;
-        item!.s = brick["name"]!.s + " " + brick["version"]!.s + " " + brick["source"]!.s;
+        item!.s = brick["name"]!.s + " " +
+                  brick["version"]!.s + " " +
+                  brick["source"]!.s;
       }
     }
   }
 
   // Check for pkg-config dependencies
+  log.debug("Setting depTree for system dependencies");
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]!);
     depTree.set("system", exDeps);
   }
 
-  // Check for non-Chapel dependencies
-  if root.pathExists("external") {
-    const externals = getExternalPackages(root["external"]!);
-    depTree.set("external", externals);
-  }
+  if root.pathExists("external") then
+    throw new MasonError(
+      "Mason no longer supports external dependencies. " +
+      "If you were relying on this feature, " +
+      "please migrate to use system dependencies instead.");
   return depTree;
 }
 
-private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: string) : shared Toml {
+private proc createDepTrees(depTree: Toml,
+                            deps: list(shared Toml),
+                            name: string): shared Toml throws {
   var depList: list(shared Toml?);
-  while deps.size > 0 {
-    var dep = deps[0];
+  for dep in deps {
 
     var brick       = dep["brick"]!;
     var package     = brick["name"]!.s;
     var version     = brick["version"]!.s;
     var chplVersion = brick["chplVersion"]!.s;
-    var source      = brick["source"]!.s;
+    var source      = if brick.pathExists("source")
+                        then brick["source"]!.s else "";
+    var compopts    = brick.get["compopts"];
+    var system      = dep.get["system"];
+
+    if source == "" {
+      log.warnf("No source specified for package '%s'", package);
+    }
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
@@ -303,7 +339,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
 
     depList.pushBack(new shared Toml(package));
 
-    if depTree.pathExists(package) == false {
+    if !depTree.pathExists(package) {
       var dt: domain(string, parSafe=false);
       var depTbl: [dt] shared Toml?;
       depTree.set(package, depTbl);
@@ -312,13 +348,18 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
     depTree[package]!.set("version", version);
     depTree[package]!.set("chplVersion", chplVersion);
     depTree[package]!.set("source", source);
+    if compopts then
+      depTree[package]!.set("compopts", compopts!);
+    if system {
+      const exDeps = getPCDeps(system!);
+      depTree[package]!.set("system", exDeps);
+    }
 
     if dep!.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    deps.getAndRemove(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
@@ -326,7 +367,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
   return depTree;
 }
 
-private proc addGitDeps(depTree: Toml, ref gitDeps) {
+private proc addGitDeps(depTree: Toml, ref gitDeps) throws {
   //val url branch revision
   for key in gitDeps {
     if !depTree.pathExists(key[0]) {
@@ -353,50 +394,52 @@ private proc addGitDeps(depTree: Toml, ref gitDeps) {
    - differing major versions are not allowed
    - Always newest minor and patch
    - in accordance with semantic versioning  */
-private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
+private proc IVRS(A: borrowed Toml, B: borrowed Toml) throws {
   const name = A["name"]!.s;
   const (okA, Alo, Ahi) = verifyChapelVersion(A);
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
   const version1 = A["version"]!.s;
   const version2 = B["version"]!.s;
-  if okA == false && okB == false {
-    stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
-    stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
-    stderr.writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
+  if !okA && !okB {
+    stderr.writeln("Dependency resolution error: unable to find version of '",
+                   name, "' compatible with your version of Chapel (",
+                   getChapelVersionInfo():string, "):");
+    stderr.writeln("  v", version1, " expecting ",
+                   prettyVersionRange(Alo, Ahi));
+    stderr.writeln("  v", version2, " expecting ",
+                   prettyVersionRange(Blo, Bhi));
     exit(1);
-  } else if okA == true && okB == false {
+  } else if okA && !okB {
     return A;
-  } else if okA == false && okB == true {
+  } else if !okA && okB {
     return B;
   }
 
   if version1 == version2 then return A;
 
-  var vers1 = version1.split('.');
-  var vers2 = version2.split('.');
+  var vers1 = version1.split(".");
+  var vers2 = version2.split(".");
   var v1 = vers1(0): int;
   var v2 = vers2(0): int;
   if vers1(0) != vers2(0) {
-    stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
+    stderr.writeln(
+      "Dependency resolution error: package '", name,
+      "' used by multiple packages expecting different major versions:");
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
-  }
-  else if vers1(1) != vers2(1) {
+  } else if vers1(1) != vers2(1) {
     v1 = vers1(1): int;
     v2 = vers2(1): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
-  }
-  else {
+    } else return B;
+  } else {
     v1 = vers1(2): int;
     v2 = vers2(2): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
+    } else return B;
   }
 }
 
@@ -404,7 +447,7 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getManifests(deps: list((string, shared Toml?))) {
+private proc getManifests(deps: list((string, shared Toml?))) throws {
   var manifests: list(shared Toml);
   for dep in deps {
     var name = dep(0);
@@ -418,9 +461,9 @@ private proc getManifests(deps: list((string, shared Toml?))) {
 
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
-private proc retrieveDep(name: string, version: string) {
+private proc retrieveDep(name: string, version: string) throws {
   for cached in MASON_CACHED_REGISTRY {
-    const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
+    const tomlPath = joinPath(cached, "Bricks", name, version + ".toml");
     if isFile(tomlPath) {
       var tomlFile = open(tomlPath, ioMode.r);
       var depToml = parseToml(tomlFile);
@@ -428,12 +471,14 @@ private proc retrieveDep(name: string, version: string) {
     }
   }
 
-  stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
-  exit(1);
+  throw new MasonError("No toml file found in mason-registry for " +
+                       name +"-"+ version);
 }
 
 /* Returns the Mason.toml for each dep listed as a Toml */
-private proc getGitManifests(deps: list((string, string, string, string))) {
+private proc getGitManifests(
+  deps: list((string, string, string, string))
+) throws {
   var manifests: list(shared Toml);
   for dep in deps {
     var toAdd = retrieveGitDep(dep(0), dep(2));
@@ -444,8 +489,8 @@ private proc getGitManifests(deps: list((string, string, string, string))) {
 
 /* Responsible for parsing the Mason.toml that have been
    already pulled down from git dependencies */
-private proc retrieveGitDep(name: string, branch: string) {
-  var baseDir = MASON_HOME +'/git/';
+private proc retrieveGitDep(name: string, branch: string) throws {
+  var baseDir = MASON_HOME +"/git/";
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, ioMode.r);
@@ -453,13 +498,14 @@ private proc retrieveGitDep(name: string, branch: string) {
     return depToml;
   }
 
-  stderr.writeln("No toml file found in git dependency for " + name +'-'+ branch);
+  stderr.writeln("No toml file found in git dependency for " +
+                 name + "-" + branch);
   exit(1);
 }
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-private proc getDependencies(tomlTbl: Toml) {
+private proc getDependencies(tomlTbl: Toml) throws {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
   for k in tomlTbl.A.keys() {
@@ -472,10 +518,11 @@ private proc getDependencies(tomlTbl: Toml) {
   return deps;
 }
 
-private proc getGitDeps(tomlTbl: Toml) {
+private proc getGitDeps(tomlTbl: Toml) throws {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A.keys() {
-    for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
+  const dependencies = tomlTbl["dependencies"]!;
+  for k in dependencies.A.keys() {
+    for (a, d) in allFields(dependencies[k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
       gitDeps.pushBack((k, a, d));
     }
@@ -483,9 +530,9 @@ private proc getGitDeps(tomlTbl: Toml) {
   return gitDeps;
 }
 
-private proc pullGitDeps(gitDeps, show=false) {
-  if !isDir(MASON_HOME + '/git/') {
-    mkdir(MASON_HOME + '/git/', parents=true);
+private proc pullGitDeps(gitDeps, show=false) throws {
+  if !isDir(MASON_HOME + "/git/") {
+    mkdir(MASON_HOME + "/git/", parents=true);
   }
 
   var gitDepsWithRevision: list((string, string, string, string));
@@ -504,62 +551,53 @@ private proc pullGitDeps(gitDeps, show=false) {
 
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
-  var baseDir = MASON_HOME +'/git/';
+  const baseDir = MASON_HOME:path / "git";
   for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
+    log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'",
+                val, srcURL, origBranch, revision);
 
     // Default to head if branch isn't specified
     var branch = if origBranch == "" then "HEAD" else origBranch;
     const nameVers = val + "-" + branch;
-    const destination = baseDir + nameVers;
-    if !depExists(nameVers, '/git/') {
-      writeln("Downloading dependency: " + nameVers);
-      var getDependency = "git clone -q "+ srcURL + ' ' + destination +'/';
-      runCommand(getDependency);
+    const destination = baseDir / nameVers;
+    if !depExists(nameVers, "/git/") {
+      writef("Downloading dependency: %s\n", nameVers);
+      cloneSource(srcURL, destination, quiet=true);
 
       if (branch != "HEAD") || (revision != "") {
         // Use the revision to checkout, if specified
-        var toCheckout = if revision != "" then revision else branch;
-        var checkout = "git checkout -q " + toCheckout;
-        if show {
-          getDependency = "git clone " + srcURL + ' ' + destination + '/';
-          checkout = "git checkout " + toCheckout;
-        }
-
-        gitC(destination, checkout);
+        const toCheckout = if revision != "" then revision else branch;
+        checkoutSource(destination, toCheckout, quiet=!show);
       }
 
       // get the revision to store in lock if not specified
       if revision == "" {
-        var revParse = "git rev-parse HEAD";
+        const revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
       gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     } else {
-      if revision != "" {
+      var shouldUpdate = revision == "";
+      if shouldUpdate {
         writeln("Fetching latest changes for: " + nameVers + "...");
         var pullDependency = "git fetch -q --all";
         if show then pullDependency = "git fetch --all";
         gitC(destination, pullDependency);
+
+        // make sure to reset to the remote branch to get the latest revision
+        // if revision is not specified
+        var remoteBranch = "origin/" + branch;
+        var reset = "git reset -q --hard " + remoteBranch;
+        if show {
+          reset = "git reset --hard " + remoteBranch;
+        }
+        gitC(destination, reset);
 
         writeln("Checking out specified revision for " + nameVers + "...");
         // Use the revision to checkout, if specified
-        var checkout = "git checkout -q " + revision;
-        if show then checkout = "git checkout " + revision;
-
-        gitC(destination, checkout);
-      } else if branch != "HEAD" {
-        writeln("Fetching latest changes for: " + nameVers + "...");
-        var pullDependency = "git fetch -q --all";
-        if show then pullDependency = "git fetch --all";
-        gitC(destination, pullDependency);
-
-        writeln("Checking out specified revision for " + nameVers + "...");
-
-        var checkout = "git checkout -q " + branch;
-        if show then checkout = "git checkout " + branch;
-
-        gitC(destination, checkout);
+        const toCheckout = if revision != "" then revision else branch;
+        checkoutSource(destination, toCheckout, quiet=!show);
       }
 
       // get the revision to store in lock if not specified
@@ -571,4 +609,6 @@ private proc pullGitDeps(gitDeps, show=false) {
     }
   }
   return gitDepsWithRevision;
+}
+
 }

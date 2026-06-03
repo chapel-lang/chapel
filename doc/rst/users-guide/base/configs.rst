@@ -1,5 +1,3 @@
-:title: Users Guide: Configuration Declarations
-
 .. _ug-configs:
 
 **config** Declarations: command-line overrides

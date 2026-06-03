@@ -51,6 +51,9 @@ else:
         f.write('  const char* GIT_SHA = "{}";\n'.format(git_sha))
         f.write('}\n')
 
+# delete the temp file if it still exists
+if os.path.isfile(tmp_file):
+    os.remove(tmp_file)
 
 if args.build_version:
     if (not os.path.isdir(args.chpl_home)):

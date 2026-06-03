@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -907,7 +907,10 @@ static Type* inferAssociatedType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   FnSymbol* target = tryResolveCall(enterContextCall);
   callStack.pop();
 
-  if (!targetFunctionIsValid(target, false)) return nullptr;
+  if (!targetFunctionIsValid(target, false)) {
+    cleanupHolder(holder);
+    return nullptr;
+  }
 
   handleContextCallExpr(enterContextCall, RET_REF, target);
   resolveFunction(target); // aborts if there are errors

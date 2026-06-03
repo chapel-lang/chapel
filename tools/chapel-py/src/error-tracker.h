@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,7 +56,7 @@ struct ErrorObject : public PythonClassWithContext<ErrorObject, chpl::owned<chpl
       PyType_Slot{Py_tp_str, (void*) str},
       {Py_tp_repr, (void*) repr},
     };
-    PyTypeObject* configuring = PythonClassWithContext<ErrorObject, chpl::owned<chpl::ErrorBase>>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<ErrorObject, chpl::owned<chpl::ErrorBase>>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
     return configuring;
   }
 };

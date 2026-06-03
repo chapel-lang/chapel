@@ -6,6 +6,9 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
 export CHPL_LLVM=bundled
+# avoid building LLVM with the wrong gcc runtime
+# any gcc-runtime will mess it up
+module unload $(module -t list 2>&1 | grep gcc-runtime)
 # To avoid warning about this being ignored with bundled LLVM
 unset CHPL_LLVM_CONFIG
 

@@ -35,11 +35,14 @@ _chpl ()
 --break-on-id \
 --break-on-remove-id \
 --break-on-resolve-id \
+--builtin-runtime \
 --cache-remote \
 --cast-checks \
 --cc-warnings \
 --ccflags \
 --checks \
+--client-server-library \
+--client-server-library-debug \
 --codegen \
 --comm \
 --comm-substrate \
@@ -144,7 +147,6 @@ _chpl ()
 --library-fortran-name \
 --library-header \
 --library-makefile \
---library-ml-debug \
 --library-python \
 --library-python-name \
 --license \
@@ -175,7 +177,6 @@ _chpl ()
 --make \
 --max-c-ident-len \
 --memory-frees \
---minimal-modules \
 --mllvm \
 --module-dir \
 --munge-user-idents \
@@ -187,10 +188,13 @@ _chpl ()
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
+--no-builtin-runtime \
 --no-cache-remote \
 --no-cast-checks \
 --no-cc-warnings \
 --no-checks \
+--no-client-server-library \
+--no-client-server-library-debug \
 --no-codegen \
 --no-compile-time-nil-checking \
 --no-compiler-driver \
@@ -245,7 +249,6 @@ _chpl ()
 --no-io-gen-serialization \
 --no-io-serialize-writeThis \
 --no-iterator-contexts \
---no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
 --no-llvm-wide-opt \
@@ -256,7 +259,6 @@ _chpl ()
 --no-log-ids \
 --no-loop-invariant-code-motion \
 --no-memory-frees \
---no-minimal-modules \
 --no-munge-user-idents \
 --no-munge-with-ids \
 --no-nil-checks \
@@ -278,6 +280,7 @@ _chpl ()
 --no-print-commands \
 --no-print-id-on-error \
 --no-print-passes \
+--no-print-passes-memory \
 --no-print-search-dirs \
 --no-print-unused-functions \
 --no-print-unused-internal-functions \
@@ -302,6 +305,7 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
+--no-union-checks \
 --no-use-color-terminal \
 --no-vectorize \
 --no-verify \
@@ -357,6 +361,7 @@ _chpl ()
 --print-module-resolution \
 --print-passes \
 --print-passes-file \
+--print-passes-memory \
 --print-search-dirs \
 --print-statistics \
 --print-unused-functions \
@@ -390,6 +395,7 @@ _chpl ()
 --report-vectorized-loops \
 --resolve-concrete-fns \
 --return-by-ref \
+--sanitize-exe \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
@@ -409,8 +415,10 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--union-checks \
 --use-color-terminal \
 --using-attribute-toolname \
+--vector-library \
 --vectorize \
 --verify \
 --version \
@@ -562,6 +570,7 @@ _chpl ()
 --no-print-code-size \
 --no-print-commands \
 --no-print-passes \
+--no-print-passes-memory \
 --no-print-search-dirs \
 --no-print-unused-functions \
 --no-privatization \
@@ -573,6 +582,7 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
+--no-union-checks \
 --no-vectorize \
 --no-warn-float-to-float \
 --no-warn-implicit-numeric-conversions \
@@ -603,6 +613,7 @@ _chpl ()
 --print-module-files \
 --print-passes \
 --print-passes-file \
+--print-passes-memory \
 --print-search-dirs \
 --print-unused-functions \
 --privatization \
@@ -610,6 +621,7 @@ _chpl ()
 --remote-serialization \
 --remote-value-forwarding \
 --remove-copy-calls \
+--sanitize-exe \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
@@ -627,7 +639,9 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--union-checks \
 --using-attribute-toolname \
+--vector-library \
 --vectorize \
 --version \
 --warn-float-to-float \

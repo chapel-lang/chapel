@@ -1,0 +1,6 @@
+listContainsPredEdition.chpl:8: warning: use of routines as values is unstable
+listContainsPredEdition.chpl:8: warning: predicate-based 'list.contains' is unstable and may change in future.
+listContainsPredEdition.chpl:9: warning: use of routines as values is unstable
+listContainsPredEdition.chpl:9: warning: predicate-based 'list.find' is unstable and may change in future.
+true
+1

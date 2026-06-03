@@ -513,6 +513,9 @@ NUMANode:10
 # only the highest capacity among 2 local-or-larger memories for one PU, silent
 NUMANode:11
 
+# default NUMA node of a PU
+NUMANode:4
+
 
 # MCDRAM subtype NUMA filter
 NUMANode:3

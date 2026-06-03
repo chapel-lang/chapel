@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -exo pipefail
+
+cd prereq2
+
+mason build
+mason test
+mason run --example
+mason build --example Ex1.chpl
+mason build --example Ex2.chpl
+mason run --example Ex1.chpl
+mason run --example Ex2.chpl

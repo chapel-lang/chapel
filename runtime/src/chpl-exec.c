@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@
 
 #include "chpl-exec.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <sys/wait.h>
 
@@ -40,4 +40,16 @@ int chpl_invoke_using_system(const char* command,
   int status = system(command);
   CHECK_ERROR(status, description, ignore_status);
   return status;
+}
+
+chpl_bool chpl_get_command_output(const char* command,
+                                  char* output, size_t output_size) {
+  FILE* pipe = popen(command, "r");
+  if (!pipe) {
+    return false;
+  }
+  size_t bytes_read = fread(output, sizeof(char), output_size - 1, pipe);
+  output[bytes_read] = '\0';
+  int status = pclose(pipe);
+  return (status == 0);
 }

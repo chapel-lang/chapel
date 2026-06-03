@@ -22,7 +22,7 @@ enum bodyParts {head, shoulders, knees, toes};
 /* Replaces the deprecated bodyParts */
 enum bones {tibia, fibia, skull, rib, kneecap};
 
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated enum spiceGirls {posh, baby, scary, sporty, ginger};

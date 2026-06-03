@@ -14,3 +14,7 @@ export CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes
 #             in the PATH by default. this is specific to the version of macos
 #             installed, and upgrading the OS may make this unnecessary.
 export PATH="$(brew --prefix python3)/libexec/bin:"$PATH
+
+# 2026-05-04: Mac test machines keep hitting OOM, so reduce number of concurrent
+# make jobs.
+export CHPL_MAKE_MAX_CPU_COUNT=4

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
       auto resType = getClassTypeForError(context, err, rv);
       auto qt = QualifiedType(QualifiedType::VAR, resType);
       auto passResult = canPass(context, r.type(), qt);
-      using CPR = CanPassResult::ConversionKind;
+      using CPR = CanPassResult;
       if (passResult.passes() && passResult.conversionKind() == CPR::NONE) {
         catchAll = true;
       }
@@ -243,7 +243,7 @@ namespace resolution {
     exitScope(ast, rv);
     // check for a catchall, or this is a try! or the parent function throws
     if (tryStack.size() == 0 && !exhaustive && !this->canThrow()) {
-      context->error(ast, "Try without a catchall in a non-throwing function");
+      CHPL_REPORT(context, TryNoCatchAll, ast);
     }
   }
 
@@ -265,20 +265,16 @@ namespace resolution {
           // are we in a throwing function or a try?
           if (!this->canThrow() && tryStack.size() == 0) {
             if (mode == ErrorCheckingMode::RELAXED) {
-              context->error(ast, "call to throwing function '%s' without "
-                                  "throws, try, or try! (relaxed mode)",
-                                  bestResFn->untyped()->name().c_str());
+              CHPL_REPORT(context, CallToThrowingFunctionRelaxed, ast, bestResFn->untyped());
             } else if (mode == ErrorCheckingMode::FATAL) {
               // do nothing - we'll let the program halt if it throws
             } else {
-              context->error(ast, "call to throwing function from "
-                                  "non-throwing function");
+              CHPL_REPORT(context, CallToThrowingFunctionFromNon, ast, bestResFn->untyped());
             }
           } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
             // In strict mode, even in throwing functions, all throwing calls must be directly marked
             if (tryStack.size() == 0) {
-              context->error(ast, "call to throwing function '%s' must be marked with try or try! (strict mode)",
-                                  bestResFn->untyped()->name().c_str());
+              CHPL_REPORT(context, CallToThrowingFunctionStrict, ast, bestResFn->untyped());
             }
           } else if (tryStack.size() > 0) {
             // check if any of the enclosing try blocks have a catchall
@@ -290,9 +286,7 @@ namespace resolution {
               }
             }
             if (!foundCatchAll && !canThrow()) {
-              context->error(ast, "call to throwing function '%s' is "
-                                  "in a try but not handled",
-                                  bestResFn->untyped()->name().c_str());
+              CHPL_REPORT(context, ThrowUnhandled, ast, bestResFn->untyped());
             }
           }
         }
@@ -332,7 +326,7 @@ namespace resolution {
     enterScope(ast, rv);
     bool canThrow = tryStack.size() > 0 || this->canThrow();
     if (!canThrow && mode != ErrorCheckingMode::FATAL) {
-      context->error(ast, "cannot throw in a non-throwing function");
+      CHPL_REPORT(context, ThrowInNonThrowingFunction, ast, currentFn);
     }
     return true;
   }
@@ -418,16 +412,21 @@ namespace resolution {
                                                     const AstNode* node) {
     // pragmas on modules override the default error checking mode.
     auto moduleId = parsing::idToModule(context, node->id());
-    auto ag = parsing::idToAttributeGroup(context, moduleId);
-    if (!ag) {
-      // fall through to figuring out the mode from the module kind
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
-      return ErrorCheckingMode::FATAL;
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
-      return ErrorCheckingMode::STRICT;
-    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
-      return ErrorCheckingMode::RELAXED;
+    while (!moduleId.isEmpty()) {
+      auto ag = parsing::idToAttributeGroup(context, moduleId);
+      if (!ag) {
+        // no attibute group on this module; is there a parent module?
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
+        return ErrorCheckingMode::FATAL;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
+        return ErrorCheckingMode::STRICT;
+      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
+        return ErrorCheckingMode::RELAXED;
+      }
+
+      moduleId = parsing::idToParentModule(context, moduleId);
     }
+    // fall through to figuring out the mode from the module kind
 
     auto mode = ErrorCheckingMode::UNKNOWN;
     auto moduleKind = parsing::idToModuleKind(context, node->id());

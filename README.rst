@@ -1,4 +1,4 @@
-.. image:: https://chapel-lang.org/images/chapel-logo-200.png
+.. image:: https://chapel-lang.org/img/Chapel-HPSF-logo-draft.png
 
 The Chapel Language
 ===================
@@ -16,7 +16,7 @@ License
 -------
 Chapel is developed and released under the terms of the Apache 2.0
 license, though it also makes use of third-party packages under their
-own licensing terms.  See the `LICENSE`_ file in this directory for
+own licensing terms.  See the `<LICENSE>`_ file in this directory for
 details.
 
 Resources
@@ -31,7 +31,7 @@ For more information about Chapel, please refer to the following resources:
 Project homepage:      https://chapel-lang.org
 Installing Chapel:     https://chapel-lang.org/download/
 Building from source:  https://chapel-lang.org/docs/usingchapel/QUICKSTART.html
-Sample computations:   https://chapel-lang.org/hellos.html
+Sample computations:   https://chapel-lang.org/docs/examples/
 Learning Chapel:       https://chapel-lang.org/learn/
 Reporting bugs:        https://chapel-lang.org/bugs.html
 Chapel documentation:  https://chapel-lang.org/docs/

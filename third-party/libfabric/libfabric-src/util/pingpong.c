@@ -87,6 +87,7 @@ enum {
 struct pp_opts {
 	uint16_t src_port;
 	uint16_t dst_port;
+	char *src_addr;
 	char *dst_addr;
 	int iterations;
 	int transfer_size;
@@ -280,6 +281,8 @@ static void pp_banner_options(struct ct_pingpong *ct)
 	}
 
 	PP_DEBUG(" * PingPong options:\n");
+	PP_DEBUG("  - %-20s: [%s]\n", "src_addr",
+			(opts.src_addr)? opts.src_addr: "None");
 	PP_DEBUG("  - %-20s: [%" PRIu16 "]\n", "src_port", opts.src_port);
 	PP_DEBUG("  - %-20s: [%s]\n", "dst_addr", opts.dst_addr);
 	PP_DEBUG("  - %-20s: [%" PRIu16 "]\n", "dst_port", opts.dst_port);
@@ -979,7 +982,7 @@ static int generate_test_sizes(struct pp_opts *opts, size_t tx_size, int **sizes
 			n++;
 		}
 	} else {
-		for (i = 0;; i++) {
+		for (i = 0; i < 32; i++) {
 			power_of_two = (i == 0) ? 0 : (1 << i);
 			half_up =
 			    (i == 0) ? 1 : power_of_two + (power_of_two / 2);
@@ -1872,12 +1875,12 @@ static void pp_free_res(struct ct_pingpong *ct)
 {
 	PP_DEBUG("Freeing resources of test suite\n");
 
-	if (ct->mr != &(ct->no_mr))
-		PP_CLOSE_FID(ct->mr);
 	PP_CLOSE_FID(ct->ep);
 	PP_CLOSE_FID(ct->pep);
 	PP_CLOSE_FID(ct->rxcq);
 	PP_CLOSE_FID(ct->txcq);
+	if (ct->mr != &(ct->no_mr))
+		PP_CLOSE_FID(ct->mr);
 	PP_CLOSE_FID(ct->av);
 	PP_CLOSE_FID(ct->eq);
 	PP_CLOSE_FID(ct->domain);
@@ -1999,6 +2002,9 @@ static void pp_pingpong_usage(struct ct_pingpong *ct, char *name, char *desc)
 		"destination control port number (client: 47592)");
 
 	fprintf(stderr, " %-20s %s\n", "-d <domain>", "domain name");
+	fprintf(stderr, " %-20s %s\n", "-f <fabric>", "fabric name");
+	fprintf(stderr, " %-20s %s\n", "-s <source address>",
+		"source address associated with domain name");
 	fprintf(stderr, " %-20s %s\n", "-p <provider>",
 		"specific provider name eg sockets, verbs");
 	fprintf(stderr, " %-20s %s\n", "-e <ep_type>",
@@ -2036,6 +2042,11 @@ static void pp_parse_opts(struct ct_pingpong *ct, int op, char *optarg)
 		ct->hints->fabric_attr->prov_name = strdup(optarg);
 		break;
 
+	/* Fabric */
+	case 'f':
+		ct->hints->fabric_attr->name = strdup(optarg);
+		break;
+
 	/* Endpoint */
 	case 'e':
 		if (!strncasecmp("msg", optarg, 3) && (strlen(optarg) == 3)) {
@@ -2069,6 +2080,11 @@ static void pp_parse_opts(struct ct_pingpong *ct, int op, char *optarg)
 			ct->opts.transfer_size =
 			    (int)parse_ulong(optarg, INT_MAX);
 		}
+		break;
+
+	/* Source address */
+	case 's':
+		ct->opts.src_addr = optarg;
 		break;
 
 	/* Check data */
@@ -2274,6 +2290,25 @@ out:
 	return ret;
 }
 
+static void pp_set_src_hint(struct ct_pingpong *ct)
+{
+	struct addrinfo *results = NULL;
+
+	if (getaddrinfo(ct->opts.src_addr, NULL, NULL, &results))
+		goto out;
+
+	ct->hints->src_addr = calloc(1, results->ai_addrlen);
+	if (!ct->hints->src_addr)
+		goto out;
+
+	ct->hints->src_addrlen = results->ai_addrlen;
+	memcpy(ct->hints->src_addr, results->ai_addr, results->ai_addrlen);
+	ct->hints->addr_format = results->ai_family;
+
+out:
+	freeaddrinfo(results);
+}
+
 int main(int argc, char **argv)
 {
 	int op, ret = EXIT_SUCCESS;
@@ -2298,7 +2333,7 @@ int main(int argc, char **argv)
 
 	ofi_osd_init();
 
-	while ((op = getopt(argc, argv, "hvd:p:e:I:S:B:P:cm:6")) != -1) {
+	while ((op = getopt(argc, argv, "hvd:p:f:e:I:S:s:B:P:cm:6")) != -1) {
 		switch (op) {
 		default:
 			pp_parse_opts(&ct, op, optarg);
@@ -2313,6 +2348,9 @@ int main(int argc, char **argv)
 
 	if (optind < argc)
 		ct.opts.dst_addr = argv[optind];
+
+	if (ct.opts.src_addr)
+		pp_set_src_hint(&ct);
 
 	pp_banner_options(&ct);
 

@@ -1,0 +1,7 @@
+cd CompflagsBug
+
+mason build
+# make sure we get an error each time
+mason build -- -sUnknownFlag=1 || true
+mason build -- -sUnknownFlag=1 || true
+mason build

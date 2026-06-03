@@ -1,0 +1,11 @@
+b main
+b locales.chpl:3
+r
+c
+p Locales
+target var Locales
+c
+p l
+p l.addr.maxTaskPar()
+p here().maxTaskPar()
+q

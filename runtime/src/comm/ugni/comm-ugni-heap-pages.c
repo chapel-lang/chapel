@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,7 +30,8 @@
 #include "chplcgfns.h"
 #include "chpl-env.h"
 #include "comm-ugni-heap-pages.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 
 //
@@ -74,6 +75,7 @@ void set_hps(void)
   // hugepages, then the heap page size is the hugepage size.
   //
   char* ev;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_TARGET_MEM);
   if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
       && chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL
       && (ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) != NULL) {

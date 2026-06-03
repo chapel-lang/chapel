@@ -11,6 +11,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-cray-ex-ofi"
 export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE=16g
 export CHPL_LAUNCHER_PARTITION=bardpeak
+# limited nodes, wait no more than 1hr in queue before moving on to next test
+export CHPL_TEST_MAX_QUEUE_TIME=3600
+
 
 
 # test a small subset of all tests due to limited resources

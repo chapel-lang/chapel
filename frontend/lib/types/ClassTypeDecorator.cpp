@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,26 @@ namespace chpl {
 namespace types {
 
 using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
+
+const char*
+ClassTypeDecorator::decoratorToString(ClassTypeDecoratorEnum d) {
+  switch (d) {
+    case BORROWED:          return "borrowed";
+    case BORROWED_NONNIL:   return "borrowed non-nilable";
+    case BORROWED_NILABLE:  return "borrowed nilable";
+    case UNMANAGED:         return "unmanaged";
+    case UNMANAGED_NONNIL:  return "unmanaged non-nilable";
+    case UNMANAGED_NILABLE: return "unmanaged nilable";
+    case MANAGED:           return "managed";
+    case MANAGED_NONNIL:    return "managed non-nilable";
+    case MANAGED_NILABLE:   return "managed nilable";
+    case GENERIC:           return "generic";
+    case GENERIC_NONNIL:    return "generic non-nilable";
+    case GENERIC_NILABLE:   return "generic nilable";
+  }
+  CHPL_ASSERT(false && "case not handled");
+  return "";
+}
 
 ClassTypeDecoratorEnum
 ClassTypeDecorator::combineDecorators(ClassTypeDecoratorEnum formalDecorator,

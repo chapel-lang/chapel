@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -exo pipefail
+
+cd prereq1
+
+mason build
+mason run

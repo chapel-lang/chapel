@@ -18,6 +18,22 @@ export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
 
+set -exuo pipefail
+
+
+# Use this many `make` threads in parallel within the Docker image build.
+# Note that for multi-arch builds, the build for each arch occurs
+# simultaneously, and each build will use this many threads.
+export DOCKER_BUILD_MAKE_THREADS=${DOCKER_BUILD_MAKE_THREADS:-2}
+
+# Comma-separated list of Docker platforms to build multi-arch image for.
+# This will be passed as the argument to --platform.
+export DOCKER_BUILD_PLATFORMS="${DOCKER_BUILD_PLATFORMS:-linux/amd64,linux/arm64}"
+
+# Namespace (account) to name and push Docker images to. This is the part of
+# the name before the /, like "chapel" in "chapel/chapel-gasnet".
+export DOCKER_IMAGE_NAMESPACE="${DOCKER_IMAGE_NAMESPACE:-chapel}"
+
 # BEGIN FUNCTIONS
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest.
@@ -30,12 +46,18 @@ dockerfile_nightly_patch() {
 1c1
 < FROM chapel/chapel:latest
 ---
-> FROM chapel/chapel:nightly
+> FROM $DOCKER_IMAGE_NAMESPACE/chapel:nightly
 "
 
   patch $patch_args ./Dockerfile << EOF
 $nightlypatch
 EOF
+
+  if [ $? -ne 0 ]
+  then
+        echo "Dockerfile patch for building off nightly failed"
+        exit 1
+  fi
 }
 
 # Build, test, and push a Docker image.
@@ -63,17 +85,17 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  if [ -z "$release_tag" ]
+  docker_build_cmd="docker buildx build --build-arg MAKE_THREADS=$DOCKER_BUILD_MAKE_THREADS --platform=$DOCKER_BUILD_PLATFORMS --push . -t $imageName"
+  if [ -n "$release_tag" ]
   then
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
-  else
     # Also push as 'latest' tag if this is a release build.
     # Use base image name (without tag) to use Docker's default tag 'latest'.
     # This has to be done in a single invocation of 'build' to ensure we don't
     # rebuild the image for the 'latest' tag, which would result in it having
     # a different SHA.
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName" -t "$baseImageName"
+    docker_build_cmd="$docker_build_cmd -t $baseImageName"
   fi
+  $docker_build_cmd
 
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
@@ -83,8 +105,10 @@ update_image() {
   fi
 
   # Run test script inside container
+  CONTAINER_NAME="${imageName//[\/:]/_}-test"
+  docker container rm --force --volumes "$CONTAINER_NAME"
   echo 'writeln("Hello, world!");' > hello.chpl
-  docker run --rm -i "$imageName"  <  "$script"
+  docker run -i --name "$CONTAINER_NAME" "$imageName" < "$script"
   CONTAINER_RUN=$?
   # Clean up scratch chpl file for testing
   rm hello.chpl
@@ -107,22 +131,23 @@ update_all_images() {
   local release_tag="$1"
 
   cd "$CHPL_HOME"
-  update_image chapel/chapel "${CHPL_HOME}/util/cron/docker-chapel.bash" "$release_tag"
+  update_image $DOCKER_IMAGE_NAMESPACE/chapel "${CHPL_HOME}/util/cron/docker-chapel.bash" "$release_tag"
 
   cd "$CHPL_HOME/util/packaging/docker/gasnet"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
+  update_image $DOCKER_IMAGE_NAMESPACE/chapel-gasnet "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
   # Clean up after patch changes
   dockerfile_nightly_patch -R
 
   cd "$CHPL_HOME/util/packaging/docker/gasnet-smp"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet-smp "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
+  update_image $DOCKER_IMAGE_NAMESPACE/chapel-gasnet-smp "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
   # Clean up after patch changes
   dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
 
+RELEASE_VERSION="${RELEASE_VERSION:-}"
 
 if [ -n "$RELEASE_VERSION" ]
 then
@@ -145,7 +170,7 @@ else
 fi
 
 # Build and push nightly images
-update_all_images
+update_all_images ""
 
 # Build and push release-tagged images, if RELEASE_VERSION was specified.
 # Runs after all nightly images, to abort if any fail.

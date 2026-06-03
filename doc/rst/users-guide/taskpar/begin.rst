@@ -1,5 +1,3 @@
-:title: Users Guide: **begin** Statements
-
 **begin** Statements: unstructured tasking
 ==========================================
 

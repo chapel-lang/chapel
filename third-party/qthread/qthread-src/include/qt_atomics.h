@@ -1,3 +1,6 @@
+/* Portions of this file are Copyright (c) 2025 Tactical Computing Labs, LLC;
+ * see COPYING */
+
 #ifndef QT_ATOMICS_H
 #define QT_ATOMICS_H
 
@@ -29,6 +32,9 @@
   QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64
 #define SPINLOCK_BODY()                                                        \
   do { __asm__ __volatile__("yield" ::: "memory"); } while (0)
+#elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_RISCV
+#define SPINLOCK_BODY()                                                        \
+  do { __asm__ __volatile__(".word 0x0100000F" ::: "memory"); } while (0)
 #elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64 ||                            \
   QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32
 // For whatever reason the 29 (mdoio) version of this instruction performed

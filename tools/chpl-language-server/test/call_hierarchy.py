@@ -54,8 +54,9 @@ async def collect_call_tree(
         return None
 
     assert isinstance(item.data, list)
-    assert len(item.data) == 3
-    item_id = item.data[0]
+    assert len(item.data) == 4
+    assert item.data[0] == "fn"
+    item_id = item.data[1]
 
     children = []
     outgoing = await client.call_hierarchy_outgoing_calls_async(

@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -92,12 +92,24 @@ def apply_fixits(
     not_applied = []
     edits_to_apply = []
     for loc, node, rule, fixits in violations:
+        non_ignores = len([f for f in fixits if not f.default_ignore])
+        if non_ignores > 1 and not interactive:
+            # multiple fixits and not interactive, skip to avoid applying the
+            # wrong one
+            continue
+
+        if not interactive:
+            # Do not apply fixits that change semantics automatically.
+            # Too easy to accidentally break a program without a user knowing.
+            fixits = [f for f in fixits if not f.changes_semantics]
+
         if fixits is None or len(fixits) == 0:
             # no fixits to apply, skip
             not_applied.append((loc, node, rule, []))
             continue
+
         if not interactive:
-            # apply the first fixit
+            # apply the first fixit (this could be the default ignore)
             edits_to_apply.extend(fixits[0].edits)
             continue
 
@@ -146,12 +158,12 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
     # Apply edits in reverse order to avoid invalidating the locations of
     # subsequent edits
     for file, edits in edits_per_file.items():
-        edits.sort(key=lambda f: f.start, reverse=True)
+        sorted_edits = sorted(edits, key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
 
         prev_start = None
-        for edit in edits:
+        for edit in sorted_edits:
             line_start, char_start = edit.start
             line_end, char_end = edit.end
 
@@ -210,6 +222,11 @@ def main():
             ]
         ),
         args_for_setting_config_path=["--config", "-c"],
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"chplcheck {chapel.Context().get_compiler_version()}",
     )
     parser.add_argument("filenames", nargs="*")
     parser.add_argument(
@@ -296,7 +313,11 @@ def main():
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as _:
             asts = context.parse(filename)
-            violations = list(driver.run_checks(context, asts))
+            try:
+                violations = list(driver.run_checks(context, asts))
+            except ValueError as e:
+                print(f"Error running checks on {filename}: {e}")
+                continue
 
             # sort the failures in order of appearance
             violations.sort(key=lambda f: f[0].start()[0])

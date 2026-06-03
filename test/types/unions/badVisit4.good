@@ -1,0 +1,1 @@
+badVisit4.chpl:7: error: halt reached - illegal union access: no field is active

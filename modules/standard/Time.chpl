@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -521,11 +521,7 @@ module Time {
   /* Reads this `date` with the same format used by :proc:`date.serialize` */
   proc ref date.deserialize(reader, ref deserializer) throws {
     import JSON.jsonDeserializer;
-
-    const binary = reader._binary(),
-          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
-            isSubtype(reader.deserializerType, jsonDeserializer);
+    param isjson = isSubtype(reader.deserializerType, jsonDeserializer);
 
     if isjson then
       reader.readLiteral('"');
@@ -836,11 +832,7 @@ module Time {
   /* Reads this `time` with the same format used by :proc:`time.serialize` */
   proc ref time.deserialize(reader, ref deserializer) throws {
     import JSON.jsonDeserializer;
-
-    const binary = reader._binary(),
-          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
-            isSubtype(reader.deserializerType, jsonDeserializer);
+    param isjson = isSubtype(reader.deserializerType, jsonDeserializer);
 
     if isjson then
       reader.readLiteral('"');
@@ -1419,11 +1411,7 @@ module Time {
    */
   proc ref dateTime.deserialize(reader, ref deserializer) throws {
     import JSON.jsonDeserializer;
-
-    const binary = reader._binary(),
-          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
-            isSubtype(reader.deserializerType, jsonDeserializer);
+    param isjson = isSubtype(reader.deserializerType, jsonDeserializer);
 
     if isjson then
       reader.readLiteral('"');

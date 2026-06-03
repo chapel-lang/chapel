@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,7 @@ module LocaleModelHelpFlat {
   use CTypes;
   use ChapelBase;
   use ChapelLocale;
+  use ChapelRuntimeInterface;
 
   //////////////////////////////////////////
   //
@@ -46,8 +47,7 @@ module LocaleModelHelpFlat {
   //         chpl_executeOn / chpl_executeOnFast
   //
   export
-  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t // target locale
-                             ):bool {
+  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t): bool {
     const node = chpl_nodeFromLocaleID(loc);
     return (node == chpl_nodeID);
   }
@@ -57,23 +57,22 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
-                      fn: int,              // on-body function idx
-                      args: chpl_comm_on_bundle_p,     // function args
-                      args_size: c_size_t     // args size
-                     ) {
+  proc chpl_localeModelExecuteOn(in loc: chpl_localeID_t,
+                                 fn: int,
+                                 args: chpl_comm_on_bundle_p,
+                                 args_size: c_size_t) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime execute_on function if we can stay local
       // one day, we could rely on this always being handled
       // by the compiler's use of doDirectExecuteOn, but for now
       // the compiler calls this version in some cases.
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-      chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
-                           fn, args, args_size);
+      chpl_executeOn(node, chpl_sublocFromLocaleID(loc),
+                     fn, args, args_size);
     }
   }
 
@@ -83,20 +82,19 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
-                          fn: int,              // on-body function idx
-                          args: chpl_comm_on_bundle_p,     // function args
-                          args_size: c_size_t     // args size
-                         ) {
+  proc chpl_localeModelExecuteOnFast(in loc: chpl_localeID_t,
+                                     fn: int,
+                                     args: chpl_comm_on_bundle_p,
+                                     args_size: c_size_t) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime fast execute_on function if we can stay local
-      chpl_ftable_call(fn, args);
+      chpl_ftableCall(fn, args);
     } else {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-      chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),
-                                fn, args, args_size);
+      chpl_executeOnFast(node, chpl_sublocFromLocaleID(loc),
+                         fn, args, args_size);
     }
   }
 
@@ -105,11 +103,10 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
-                        fn: int,              // on-body function idx
-                        args: chpl_comm_on_bundle_p,     // function args
-                        args_size: c_size_t     // args size
-                       ) {
+  proc chpl_localeModelExecuteOnNb(in loc: chpl_localeID_t,
+                                   fn: int,
+                                   args: chpl_comm_on_bundle_p,
+                                   args_size: c_size_t) {
     //
     // If we're in serial mode, we should use blocking rather than
     // non-blocking "on" in order to serialize the execute_ons.
@@ -120,17 +117,17 @@ module LocaleModelHelpFlat {
     if (node == chpl_nodeID) {
       // don't call the runtime nb execute_on function if we can stay local
       if isSerial {
-        chpl_ftable_call(fn, args);
+        chpl_ftableCall(fn, args);
       } else {
         chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-        chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_none);
+        chpl_commTaskFtableCall(fn, args, args_size, c_sublocid_none);
       }
     } else {
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       if isSerial {
-        chpl_comm_execute_on(node, c_sublocid_none, fn, args, args_size);
+        chpl_executeOn(node, c_sublocid_none, fn, args, args_size);
       } else {
-        chpl_comm_execute_on_nb(node, c_sublocid_none, fn, args, args_size);
+        chpl_executeOnNb(node, c_sublocid_none, fn, args, args_size);
       }
     }
   }

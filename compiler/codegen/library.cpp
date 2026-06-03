@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,21 @@ std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
+static bool shouldGeneratePrototype(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXPORT)) {
+    if (isUserRoutine(fn)) return true;
+
+    if (fn->name == astr("chpl_library_init") ||
+        fn->name == astr("chpl_library_finalize")) {
+      if (auto mod = fn->getModule()) {
+        if (mod->modTag == MOD_INTERNAL) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -76,7 +91,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         }
       }
 
-      if (fMultiLocaleInterop) {
+      if (fClientServerLibrary) {
         // If we've created a multilocale library, memory that is returned to
         // the client code wasn't created by chpl_mem_alloc and friends, so
         // shouldn't be freed using the normal strategies.  But, for
@@ -92,10 +107,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
-        if (fn->hasFlag(FLAG_EXPORT) &&
-            isUserRoutine(fn)) {
-          fn->codegenPrototype();
-        }
+        if (shouldGeneratePrototype(fn)) fn->codegenPrototype();
       }
 
       if (usingGpuLocaleModel()) {
@@ -270,7 +282,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   // try to link these dependencies at compile time, we shunt responsibility
   // off to the user via use of `--library-makefile`.
   //
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     std::string deps = getCompilelineOption("multilocale-lib-deps");
     removeTrailingNewlines(deps);
     fprintf(makefile.fptr, " %s", deps.c_str());
@@ -347,7 +359,7 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   // try to link these dependencies at compile time, we shunt responsibility
   // off to the user via use of `--library-cmakelists`.
   //
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     std::string deps = getCompilelineOption("multilocale-lib-deps");
     removeTrailingNewlines(deps);
     varValue += " ";
@@ -754,7 +766,7 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
 
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     // Multilocale libraries need to take in the number of locales to use as
     // an argument
 
@@ -846,7 +858,7 @@ static void makePYFile() {
     std::string libraries = getCompilelineOption("libraries");
 
     // Erase trailing newline and append multilocale-only dependencies.
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       libraries.erase(libraries.length() - 1);
       libraries += " ";
       libraries += getCompilelineOption("multilocale-lib-deps");
@@ -992,7 +1004,7 @@ void codegen_make_python_module() {
   libraries.erase(libraries.length() - 1);
 
   // Snag extra dependencies for multilocale libraries if needed.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     std::string cmd = "$CHPL_HOME/util/config/compileline";
     cmd += " --multilocale-lib-deps";
     libraries += " ";
@@ -1033,4 +1045,13 @@ bool isUserRoutine(FnSymbol* fn) {
   return !(fn->getModule()->modTag == MOD_INTERNAL ||
            fn->getModule()->modTag == MOD_STANDARD ||
            fn->hasFlag(FLAG_GEN_MAIN_FUNC));
+}
+
+bool isMultiLocaleLibrary() {
+  bool isCommNone = !strcmp(CHPL_COMM, "none");
+  return fLibraryCompile && !isClientServerLibrary() && !isCommNone;
+}
+
+bool isClientServerLibrary() {
+  return fClientServerLibrary || fClientServerLibraryDebug;
 }

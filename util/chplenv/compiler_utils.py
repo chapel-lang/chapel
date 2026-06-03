@@ -1,4 +1,5 @@
-""" Backend compiler utility functions for chplenv modules """
+"""Backend compiler utility functions for chplenv modules"""
+
 import os
 import re
 
@@ -8,18 +9,19 @@ from collections import namedtuple
 
 from utils import error, memoize, run_command
 
+
 # flag is host / target
 @memoize
 def get_compiler_version(flag):
     compiler = chpl_compiler.get(flag)
-    version_string = '0'
-    if 'gnu' in compiler:
+    version_string = "0"
+    if "gnu" in compiler:
         # Asssuming the 'compiler' version matches the gcc version
         # e.g., `mpicc -dumpversion == gcc -dumpversion`
-        gcc_cmd = chpl_compiler.get_compiler_command(flag, 'c')
-        version_string = run_command(gcc_cmd + ['-dumpversion'])
-    elif 'cray-prgenv-cray' == compiler:
-        version_string = os.environ.get('CRAY_CC_VERSION', '0')
+        gcc_cmd = chpl_compiler.get_compiler_command(flag, "c")
+        version_string = run_command(gcc_cmd + ["-dumpversion"])
+    elif "cray-prgenv-cray" == compiler:
+        version_string = os.environ.get("CRAY_CC_VERSION", "0")
     return CompVersion(version_string)
 
 
@@ -31,14 +33,20 @@ def CompVersion(version_string):
     named tuple (major, minor, revision, build). If minor, revision, or build
     are not specified, 0 will be used for their value(s)
     """
-    CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
+    CompVersionT = namedtuple(
+        "CompVersion", ["major", "minor", "revision", "build"]
+    )
+    match = re.search(
+        "(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string
+    )
     if match:
-        major    = int(match.group(1))
-        minor    = int(match.group(3) or 0)
+        major = int(match.group(1))
+        minor = int(match.group(3) or 0)
         revision = int(match.group(5) or 0)
-        build    = int(match.group(7) or 0)
-        return CompVersionT(major=major, minor=minor, revision=revision, build=build)
+        build = int(match.group(7) or 0)
+        return CompVersionT(
+            major=major, minor=minor, revision=revision, build=build
+        )
     else:
         error(
             "Could not convert version '{0}' to a tuple".format(version_string),
@@ -48,11 +56,11 @@ def CompVersion(version_string):
 
 @memoize
 def target_compiler_is_prgenv(bypass_llvm=True):
-    compiler_val = chpl_compiler.get('target')
+    compiler_val = chpl_compiler.get("target")
 
     # But for CHPL_TARGET_COMPILER=llvm, look at the original target compiler
     if bypass_llvm:
-        if compiler_val == 'llvm':
+        if compiler_val == "llvm":
             compiler_val = chpl_compiler.get_prgenv_compiler()
 
     isprgenv = chpl_compiler.compiler_is_prgenv(compiler_val)
@@ -60,8 +68,9 @@ def target_compiler_is_prgenv(bypass_llvm=True):
 
 
 def strip_preprocessor_lines(lines):
-    lines = [line for line in lines if len(line.split('#')[0].strip()) > 0]
+    lines = [line for line in lines if len(line.split("#")[0].strip()) > 0]
     return lines
+
 
 #
 # Determine whether a given compiler's default compilation mode
@@ -79,19 +88,21 @@ def strip_preprocessor_lines(lines):
 @memoize
 def has_std_atomics():
     try:
-        compiler_command = chpl_compiler.get_compiler_command('target', 'c')
+        compiler_command = chpl_compiler.get_compiler_command("target", "c")
         if not compiler_command:
             return False
 
-        version_key='version'
-        atomics_key='atomics'
+        version_key = "version"
+        atomics_key = "atomics"
 
-        cmd_input = '{0}=__STDC_VERSION__\n{1}=__STDC_NO_ATOMICS__'.format(version_key, atomics_key)
-        cmd = compiler_command + ['-E', '-x', 'c', '-']
+        cmd_input = "{0}=__STDC_VERSION__\n{1}=__STDC_NO_ATOMICS__".format(
+            version_key, atomics_key
+        )
+        cmd = compiler_command + ["-E", "-x", "c", "-"]
         output = run_command(cmd, cmd_input=cmd_input)
         output = strip_preprocessor_lines(output.splitlines())
 
-        output_dict = dict(line.split('=') for line in output)
+        output_dict = dict(line.split("=") for line in output)
         version = output_dict[version_key].rstrip("L")
         atomics = output_dict[atomics_key]
 

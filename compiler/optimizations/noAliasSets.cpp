@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -503,7 +503,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
 
   if (fReportAliases) {
     if (fn->getModule()->modTag == MOD_USER) {
-      // Don't produce output for compiler-generated functions
+      // Don't produce output for specific functions in most cases.
       if (developer ||
           (!fn->hasFlag(FLAG_MODULE_INIT) &&
            !fn->hasFlag(FLAG_GEN_MAIN_FUNC))) {

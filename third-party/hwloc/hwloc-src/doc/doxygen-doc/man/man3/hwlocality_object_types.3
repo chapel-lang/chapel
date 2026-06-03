@@ -1,4 +1,4 @@
-.TH "hwlocality_object_types" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -223,7 +223,7 @@ Memory objects are not listed in the main children list, but rather in the dedic
 Memory-side cache have a special depth \fBHWLOC_TYPE_DEPTH_MEMCACHE\fP instead of a normal depth just like other objects in the main tree\&. 
 .TP
 \fB\fIHWLOC_OBJ_DIE \fP\fP
-Die within a physical package\&. A subpart of the physical package, that contains multiple cores\&. Some operating systems (e\&.g\&. Linux) may expose a single die per package even if the hardware does not support dies at all\&. To avoid showing such non-existing dies, the corresponding hwloc backend may filter them out\&. This is functionally equivalent to \fBHWLOC_TYPE_FILTER_KEEP_STRUCTURE\fP being enforced\&. 
+Die within a physical package\&. A subpart of the physical package, that contains multiple cores\&. Some operating systems (e\&.g\&. Linux) may expose a single die per package even if the hardware does not support dies at all\&. To avoid showing such non-existing dies, hwloc will filter them out if all of them are identical to packages\&. This is functionally equivalent to \fBHWLOC_TYPE_FILTER_KEEP_STRUCTURE\fP being enforced for Dies versus Packages\&. 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_compare_types (\fBhwloc_obj_type_t\fP type1, \fBhwloc_obj_type_t\fP type2)"

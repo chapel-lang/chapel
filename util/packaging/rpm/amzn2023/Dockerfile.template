@@ -10,6 +10,8 @@ RUN dnf upgrade -y && \
       which diffutils wget vim sudo \
       llvm-devel clang clang-devel \
       pmix-devel \
+      pkgconf gmp-devel hwloc-devel \
+      libunwind-devel \
       rpm-build rpm-devel rpmlint coreutils patch rpmdevtools chrpath
 
 @@{USER_CREATION}

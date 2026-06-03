@@ -2,7 +2,7 @@
 #-*-sh-*-
 
 #
-# Copyright © 2009-2021 Inria.  All rights reserved.
+# Copyright © 2009-2025 Inria.  All rights reserved.
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 #
@@ -87,6 +87,14 @@ $annotate $srcdir/../../tests/hwloc/xml/power8gpudistances.xml $file2 -- dummy -
 $annotate $file2 $file2 -- dummy -- distances-transform NVLinkBandwidth replace-objs package numa
 
 @DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $srcdir/test-hwloc-annotate.output2 "$file2"
+
+
+$annotate $srcdir/../../tests/hwloc/xml/nvidiaDGX2.xml $file2 -- dummy -- distances-transform NVLinkBandwidth transitive-closure
+@DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $srcdir/test-hwloc-annotate.output3 "$file2"
+
+
+$annotate $srcdir/../../tests/hwloc/xml/nvidiaDGX2.xml $file2 -- dummy -- distances-transform NVLinkBandwidth merge-switch-ports
+@DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $srcdir/test-hwloc-annotate.output4 "$file2"
 
 
 rm -rf "$tmp"

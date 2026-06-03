@@ -1,3 +1,6 @@
+/* Portions of this file are Copyright (c) 2025 Tactical Computing Labs, LLC;
+ * see COPYING */
+
 #ifdef DEBUG_CPUID
 #include <stdio.h>
 #endif
@@ -14,6 +17,23 @@ enum vendor { AMD, Intel, Unknown };
 static int cacheline_bytes = 0;
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_RISCV)
+
+#include <unistd.h>
+
+// https://matrix89.github.io/writes/writes/experiments-in-riscv/
+//
+static unsigned int cpuid() {
+  register unsigned int hart_id = 0;
+  __asm__ __volatile__("csrr %0, mhartid" : "=r"(hart_id) : :);
+  return hart_id;
+}
+
+static void figure_out_cacheline_size(void) {
+  cacheline_bytes = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+}
+
+#else
 
 #if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) ||                                \
      (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64)) &&                              \
@@ -23,6 +43,7 @@ static void cpuid(unsigned int const op,
                   unsigned int *ebx_ptr,
                   unsigned int *ecx_ptr,
                   unsigned int *edx_ptr) {
+
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__)
   unsigned int eax, ebx, ecx, edx;
   unsigned int pic_ebx = 0;
@@ -50,6 +71,7 @@ static void cpuid4(int const cache,
                    unsigned int *ebx_ptr,
                    unsigned int *ecx_ptr,
                    unsigned int *edx_ptr) {
+
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__)
   unsigned int eax, ebx, ecx, edx;
   unsigned int pic_ebx = 0;
@@ -338,6 +360,8 @@ static void figure_out_cacheline_size(void) {
 #endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) ||                   \
           (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) */
 }
+
+#endif
 
 /* returns the cache line size */
 int API_FUNC qthread_cacheline(void) {

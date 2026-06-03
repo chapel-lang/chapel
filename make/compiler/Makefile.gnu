@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -224,9 +224,9 @@ endif
 # haven't seen problems in practice and run testing with asan, I'm
 # squashing as in the previous case.
 #
-# Also skip this warning for GCC 12 since we saw the issue there in
+# Also skip this warning for GCC 11/12 since we saw the issue there in
 # some configurations.
-ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 11; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overread
 endif
 
@@ -367,6 +367,16 @@ endif
 #
 ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 17; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=nonnull
+endif
+
+
+#
+# Avoid warnings-as-errors about unused variables in the runtime
+# this can occur in third-party libraries outside of our control included in
+# the runtime
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 16; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-error=unused-but-set-variable
 endif
 
 

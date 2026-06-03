@@ -1,0 +1,10 @@
+
+# use a clean env
+export PKG_CONFIG_LIBDIR=''
+export PKG_CONFIG_PATH=$PWD/myPackages
+
+mason system pc dummy
+mason system pc myWeirdPackage
+
+mason system pc unknownPackage || echo "Expected failure for unknown package"
+mason system pc dummy.pc || echo "Expected failure for dummy.pc not found"

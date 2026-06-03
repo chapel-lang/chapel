@@ -17,7 +17,7 @@ extern type Blah6;
 @deprecated(notes="Blah8 is deprecated, use Blah9 instead") extern type Blah8;
 extern type Blah9;
 
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated extern type Blah10;

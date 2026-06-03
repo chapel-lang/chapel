@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,7 +141,6 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
-  void checkLambdaReturnIntent(const Function* node);
   void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
@@ -154,7 +153,6 @@ struct Visitor {
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
-  void checkLambdaDeprecated(const Function* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -168,6 +166,7 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
   void checkMainFunctions(const Function* node);
+  void checkUnionElements(const Union* node);
 
   /*
   TODO
@@ -190,6 +189,7 @@ struct Visitor {
   // Warnings.
   void warnUnstableUnions(const Union* node);
   void warnUnstableForeachLoops(const Foreach* node);
+  void warnUnstableForwardingDecls(const ForwardingDecl* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -1125,36 +1125,6 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
-void Visitor::checkLambdaDeprecated(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
-             "procedures using the 'proc' keyword instead");
-}
-
-void Visitor::checkLambdaReturnIntent(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-
-  const char* disallowedReturnType = NULL;
-  switch (node->returnIntent()) {
-    case Function::CONST_REF:
-    case Function::REF:
-      disallowedReturnType = "[const] ref";
-      break;
-    case Function::PARAM:
-      disallowedReturnType = "param";
-      break;
-    case Function::TYPE:
-      disallowedReturnType = "type";
-      break;
-    default:
-      break;
-  }
-  if (disallowedReturnType) {
-    error(node, "'%s' return intent is not allowed in lambdas.",
-          disallowedReturnType);
-  }
-}
-
 void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
@@ -1593,6 +1563,12 @@ void Visitor::warnUnstableForeachLoops(const Foreach* node) {
              "in ways that may break some of their current uses.");
 }
 
+void Visitor::warnUnstableForwardingDecls(const ForwardingDecl* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "forwarding is currently unstable and may change "
+             "in ways that will break some of its current uses.");
+}
+
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
@@ -1809,8 +1785,6 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
-  checkLambdaDeprecated(node);
-  checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
   checkIterNames(node);
@@ -1823,6 +1797,7 @@ void Visitor::visit(const FunctionSignature* node) {
 }
 
 void Visitor::visit(const Union* node) {
+  checkUnionElements(node);
   warnUnstableUnions(node);
 }
 
@@ -1831,6 +1806,7 @@ void Visitor::visit(const Foreach* node) {
 }
 
 void Visitor::visit(const ForwardingDecl* node) {
+  warnUnstableForwardingDecls(node);
   checkForwardingInNonRecordOrClass(node);
 }
 
@@ -2113,6 +2089,20 @@ void Visitor::checkMainFunctions(const Function* fn) {
     if (fn->returnIntent() == Function::PARAM ||
         fn->returnIntent() == Function::TYPE) {
       error(fn, "'proc main' cannot return a 'type' or 'param'");
+    }
+  }
+}
+
+void Visitor::checkUnionElements(const Union* node) {
+  for (auto decl : node->decls()) {
+    if (auto var = decl->toVariable()) {
+      if (var->kind() != Variable::VAR) {
+        error(var, "union fields must be 'var'");
+      } else if (!var->typeExpression()) {
+        error(var, "union fields must have an explicit type");
+      } else if (var->initExpression()) {
+        error(var, "union fields cannot have initializers");
+      }
     }
   }
 }

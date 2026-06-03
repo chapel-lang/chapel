@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -163,7 +163,7 @@ module ChapelHashing {
   inline proc range.hash(): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numImplementationFields(this.type) {
+    for param i in 0..<numImplementationFields(this.type) {
       if isParam(getImplementationField(this, i)) == false &&
          isType(getImplementationField(this, i)) == false &&
          isNothingType(getImplementationField(this, i).type) == false {

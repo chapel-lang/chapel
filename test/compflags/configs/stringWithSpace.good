@@ -1,2 +1,1 @@
-Command-line arg (x):1: syntax error: near 'world'
-error: Error while trying to set config 'x'
+x: hello world y: 10

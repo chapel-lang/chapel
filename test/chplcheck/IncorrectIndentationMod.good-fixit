@@ -1,0 +1,87 @@
+module M1 {
+proc foo() {
+  writeln("hi");
+  writeln("there");
+}
+proc bar() { }
+}
+
+module M2 {
+proc foo() {
+  writeln("hi");
+  writeln("there");
+}
+proc bar() { }
+}
+
+module M3 {
+proc foo() {
+  writeln("hi");
+  writeln("there");
+}
+proc bar() { }
+}
+
+module M4 {
+proc foo() {
+  writeln("hi");
+  writeln("there");
+}
+proc bar() { }
+}
+
+module M5 {
+@chplcheck.ignore("IncorrectIndentation")
+proc foo() {
+writeln("hi");
+writeln("there");
+}
+proc bar() { }
+}
+
+
+module M6 {
+module Nested {
+proc foo() { }
+proc bar() { }
+}
+}
+module M7 {
+module Nested {
+proc foo() { }
+proc bar() { }
+}
+}
+module M8 {
+  module Nested {
+  proc foo() { }
+  proc bar() { }
+  }
+}
+
+module M9 {
+module Nested {
+proc foo() { }
+proc bar() { }
+}
+proc other() { }
+}
+module M10 {
+proc other() { }
+module Nested {
+proc foo() { }
+proc bar() { }
+}
+}
+
+  module M11 {
+  proc foo() {
+    writeln("hi");
+  }
+  proc bar() {
+    writeln("there");
+    writeln("!");
+  }
+  }
+
+proc main() {}

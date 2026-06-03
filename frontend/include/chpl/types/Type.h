@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -231,6 +231,9 @@ class Type {
 
   /** returns true if this represents the locale type */
   bool isLocaleType() const;
+
+  /** returns true if this is the _syncvar record. */
+  bool isSyncType() const;
 
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {

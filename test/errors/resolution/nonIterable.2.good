@@ -1,16 +1,28 @@
 ─── error in nonIterable.chpl:2 [NonIterable] ───
   Cannot iterate over a value of type 'int(64)'.
-  In the following loop:
+  Used as an iterand in a loop here:
       |
     2 | for i in x {}
       |          ⎺
       |
+  
+  The standalone version of the iterator could not be used because this loop does not support parallel iterators.
+  
+  The leader/follower version of the iterator could not be used because this loop does not support parallel iterators.
+  
+  The serial version of the iterator could not be used because an iterator of that kind was not defined for the type.
 
 ─── error in nonIterable.chpl:3 [NonIterable] ───
   Cannot iterate over a value of type 'int(64)'.
-  In the following loop:
+  Used as an iterand in a loop here:
       |
     3 | for i in 1 {}
       |          ⎺
       |
+  
+  The standalone version of the iterator could not be used because this loop does not support parallel iterators.
+  
+  The leader/follower version of the iterator could not be used because this loop does not support parallel iterators.
+  
+  The serial version of the iterator could not be used because an iterator of that kind was not defined for the type.
 

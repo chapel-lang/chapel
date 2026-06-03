@@ -1,7 +1,0 @@
-nonGenericSubclassGenericSuperclass.chpl:13: warning: please use '?' when declaring a variable with generic type
-nonGenericSubclassGenericSuperclass.chpl:13: note: for example with 'Parent(?)'
-nonGenericSubclassGenericSuperclass.chpl:13: In initializer:
-nonGenericSubclassGenericSuperclass.chpl:13: error: cannot default-initialize a variable with generic type
-nonGenericSubclassGenericSuperclass.chpl:13: note: '<temporary>' has generic type 'borrowed Parent'
-nonGenericSubclassGenericSuperclass.chpl:13: note: cannot find initialization point to split-init this variable
-  nonGenericSubclassGenericSuperclass.chpl:19: called as Child.init(x: borrowed Generic(1))

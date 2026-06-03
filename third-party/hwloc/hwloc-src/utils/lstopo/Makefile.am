@@ -1,4 +1,4 @@
-# Copyright © 2009-2020 Inria.  All rights reserved.
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
@@ -52,7 +52,12 @@ lstopo_CFLAGS = $(lstopo_no_graphics_CFLAGS) $(HWLOC_CAIRO_CFLAGS)
 lstopo_LDADD += $(HWLOC_CAIRO_LIBS) $(HWLOC_X11_LIBS)
 endif
 if HWLOC_HAVE_WINDOWS
-bin_PROGRAMS += lstopo lstopo-win
+bin_PROGRAMS += lstopo
+if !HWLOC_HAVE_MSVC
+# only build lstopo-win if NOT building with MSVC (or Clang in MSVC mode) because
+# MSVC doesn't support -mwindows, and lstopo-win would be identical to lstopo
+bin_PROGRAMS += lstopo-win
+endif
 lstopo_SOURCES += lstopo-windows.c
 lstopo_CPPFLAGS += -DLSTOPO_HAVE_GRAPHICS
 if HWLOC_HAVE_USER32
@@ -60,7 +65,10 @@ lstopo_LDADD += -luser32
 endif
 lstopo_win_SOURCES = $(lstopo_SOURCES)
 lstopo_win_CPPFLAGS = $(lstopo_CPPFLAGS)
-lstopo_win_CFLAGS = $(lstopo_CFLAGS) -mwindows
+lstopo_win_CFLAGS = $(lstopo_CFLAGS)
+if !HWLOC_HAVE_MSVC
+lstopo_win_CFLAGS += -mwindows
+endif
 lstopo_win_LDADD = $(lstopo_LDADD)
 endif
 

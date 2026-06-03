@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,14 +29,12 @@
 #include "chpl/uast/Variable.h"
 
 
-static void testAssociative(Context* context,
-                                  std::string domainType,
-                                  std::string idxType,
-                                  bool parSafe) {
+static void testAssociative(std::string domainType,
+                            std::string idxType,
+                            bool parSafe) {
   printf("Testing: %s\n", domainType.c_str());
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -130,10 +128,9 @@ module M {
   assert(guard.errors().size() == 0);
 }
 
-static void testDisallowDomainDomain(Context* context) {
+static void testDisallowDomainDomain() {
+  auto context = buildStdContext();
   ErrorGuard guard(context);
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = "var D: domain(domain(1));";
 
@@ -153,24 +150,20 @@ static void testDisallowDomainDomain(Context* context) {
 }
 
 int main() {
-  // Set up context with standard modules, re-used between tests for
-  // performance.
-  auto context = buildStdContext();
+  testAssociative("domain(int)", "int", false);
+  testAssociative("domain(int, true)", "int", true);
+  testAssociative("domain(string)", "string", false);
 
-  testAssociative(context, "domain(int)", "int", false);
-  testAssociative(context, "domain(int, true)", "int", true);
-  testAssociative(context, "domain(string)", "string", false);
+  testDomainLiteral("{1, 2, 3}", DomainType::Kind::Associative);
+  testDomainLiteral("{\"apple\", \"banana\"}", DomainType::Kind::Associative);
 
-  testDomainLiteral(context, "{1, 2, 3}", DomainType::Kind::Associative);
-  testDomainLiteral(context, "{\"apple\", \"banana\"}", DomainType::Kind::Associative);
+  testDomainBadPass("domain(int)", "domain(string)");
+  testDomainBadPass("domain(1)", "domain(int)");
 
-  testDomainBadPass(context, "domain(int)", "domain(string)");
-  testDomainBadPass(context, "domain(1)", "domain(int)");
+  testDomainIndex("domain(int)", "int");
+  testDomainIndex("domain(string)", "string");
 
-  testDomainIndex(context, "domain(int)", "int");
-  testDomainIndex(context, "domain(string)", "string");
-
-  testDisallowDomainDomain(context);
+  testDisallowDomainDomain();
 
   return 0;
 }

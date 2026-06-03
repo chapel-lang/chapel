@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -414,15 +414,19 @@ returnInfoGetTupleMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
-  if (type->refType)
-    type = type->refType;
+
+  if (!type->refType) makeRefType(type);
+  INT_ASSERT(type->refType);
+  type = type->refType;
   Qualifier q = QUAL_REF;
+
   if (call->get(1)->isWideRef()) {
     q = QUAL_WIDE_REF;
-    if (Type* t = wideRefMap.get(type)) {
-      type = t;
-    }
+    Type* wideRefT = type->getWideRefType();
+    INT_ASSERT(wideRefT);
+    type = wideRefT;
   }
+
   return QualifiedType(type, q);
 }
 
@@ -1035,7 +1039,7 @@ initPrimitive() {
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
   prim_def(PRIM_IS_BOUND, "is bound", returnInfoBool);
-  // PRIM_IS_COERCIBLE arguments are (source type, target type)
+  // PRIM_IS_COERCIBLE arguments are (target type, source type)
   prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
@@ -1187,10 +1191,6 @@ initPrimitive() {
 
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
-  // ('_private_broadcast' sym)
-  // Later, a structure index is inserted ahead
-  // of the symbol, so it ends up as
-  // ('_private_broadcast' index sym).
   prim_def(PRIM_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true);
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);

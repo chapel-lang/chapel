@@ -1,0 +1,123 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+8 | 16 | 32 | 64
+8 | 16 | 32 | 64
+3.2 | 6.4
+3.2i | 6.4i
+3.2 + 4.0i | 6.4 + 8.0i
+false | 12345678901234567890
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=====================================myInt8=====================================
+DW_TAG_variable
+              DW_AT_name	("myInt8")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(6)
+              DW_AT_type	("int(8)")
+================================================================================
+====================================myInt16=====================================
+DW_TAG_variable
+              DW_AT_name	("myInt16")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(8)
+              DW_AT_type	("int(16)")
+================================================================================
+====================================myInt32=====================================
+DW_TAG_variable
+              DW_AT_name	("myInt32")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(10)
+              DW_AT_type	("int(32)")
+================================================================================
+====================================myInt64=====================================
+DW_TAG_variable
+              DW_AT_name	("myInt64")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(12)
+              DW_AT_type	("int(64)")
+================================================================================
+====================================myUInt8=====================================
+DW_TAG_variable
+              DW_AT_name	("myUInt8")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(14)
+              DW_AT_type	("uint(8)")
+================================================================================
+====================================myUInt16====================================
+DW_TAG_variable
+              DW_AT_name	("myUInt16")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(16)
+              DW_AT_type	("uint(16)")
+================================================================================
+====================================myUInt32====================================
+DW_TAG_variable
+              DW_AT_name	("myUInt32")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(18)
+              DW_AT_type	("uint(32)")
+================================================================================
+====================================myUInt64====================================
+DW_TAG_variable
+              DW_AT_name	("myUInt64")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(20)
+              DW_AT_type	("uint(64)")
+================================================================================
+====================================myReal32====================================
+DW_TAG_variable
+              DW_AT_name	("myReal32")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(22)
+              DW_AT_type	("real(32)")
+================================================================================
+====================================myReal64====================================
+DW_TAG_variable
+              DW_AT_name	("myReal64")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(24)
+              DW_AT_type	("real(64)")
+================================================================================
+====================================myImag32====================================
+DW_TAG_variable
+              DW_AT_name	("myImag32")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(26)
+              DW_AT_type	("imag(32)")
+================================================================================
+====================================myImag64====================================
+DW_TAG_variable
+              DW_AT_name	("myImag64")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(28)
+              DW_AT_type	("imag(64)")
+================================================================================
+==================================myComplex64===================================
+DW_TAG_variable
+              DW_AT_name	("myComplex64")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(30)
+              DW_AT_type	("complex(64)")
+================================================================================
+==================================myComplex128==================================
+DW_TAG_variable
+              DW_AT_name	("myComplex128")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(32)
+              DW_AT_type	("complex(128)")
+================================================================================
+=====================================myBool=====================================
+DW_TAG_variable
+              DW_AT_name	("myBool")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(34)
+              DW_AT_type	("bool")
+================================================================================
+====================================myBigInt====================================
+DW_TAG_variable
+              DW_AT_name	("myBigInt")
+              DW_AT_decl_file	("./numerics.chpl")
+              DW_AT_decl_line	(36)
+              DW_AT_type	("BigInteger::bigint")
+================================================================================
+Success!!

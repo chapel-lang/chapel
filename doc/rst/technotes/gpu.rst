@@ -150,11 +150,13 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting NVIDIA GPUs:
 
-  * CUDA toolkit version 11.7+ or 12.x must be installed.
+  * CUDA toolkit version 11.7+, 12.x, or 13.x must be installed.
 
-  * We test with LLVM 20. Older versions may work.
+  * We test with LLVM 22. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
+
+    * Note that LLVM versions older than 22 do not support CUDA 13.
 
   * If using ``CHPL_LLVM=system``, it must have been built with support for
     NVPTX target. You can check supported targets of your LLVM installation by
@@ -162,15 +164,18 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version between 5.0 and 5.4 or between ROCm 6.0 and 6.2 must be
+  * ROCm version between 5.0 and 5.4, 6.3, or ROCm 7 must be
     installed.
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
-    using ROCm 6.x.
+    using ROCm 7.
 
-  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported.
+  * For ROCm 6.3, only LLVM 21 is supported. Note that ROCm 6.x is not
+    actively tested and we recommend using ROCm 7.
+
+  * For ROCm 7.x, only LLVM 21+ is supported.
 
 * Specifically for using the `CPU-as-Device mode`_:
 
@@ -196,10 +201,11 @@ These variables include:
   Portability`_ section.
 
 * ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
-  This must be set while targeting AMD GPUs.  If unset and targeting NVIDIA
-  GPUs, will default to ``sm_60``. This may also be set by passing the ``chpl``
-  compiler ``--gpu-arch=<architecture>``. For more information, see the `Vendor
-  Portability`_ section.
+  This must be set while targeting AMD GPUs. If unset and targeting NVIDIA
+  GPUs, will default to ``sm_75`` for CUDA 13+ and ``sm_60`` otherwise.
+  This may also be set by passing the ``chpl``  compiler
+  ``--gpu-arch=<architecture>``. For more information, see the
+  `Vendor Portability`_ section.
 
 * ``CHPL_CUDA_PATH`` --- specifies path to CUDA toolkit.  If unset, Chapel tries
   to automatically determine this path based on the location of ``nvcc``. This
@@ -265,14 +271,15 @@ automatically detect the path to the relevant runtime. If it is not
 automatically detected (or you would like to use a different installation) you
 may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
 
-The ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
-architecture to compile for. The default value is ``sm_60`` for
-``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
-set GPU architecture.  If using AMD, this variable must be set. `This table in
-the ROCm documentation
-<https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html>`_
-has possible architecture values (see the "LLVM target name" column). For NVIDIA, see
-the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
+The ``CHPL_GPU_ARCH`` environment variable can be set to control the desired
+GPU architecture to compile for. The default value is ``sm_75`` for CUDA 13+
+and ``sm_60`` otherwise for ``CHPL_GPU=nvidia``. You may also use the
+``--gpu-arch`` compiler flag to set GPU architecture.  If using AMD, this
+variable must be set. `This table in the ROCm documentation
+<https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html>`_ has
+possible architecture values (see the "LLVM target name" column). For NVIDIA,
+see the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_
+table.
 
 For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
 list. This causes the Chapel compiler to generate device code for each of the
@@ -701,13 +708,13 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4*
+  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0
 
 * AMD
 
   * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 5.4, 6.0, 6.1, 6.2*
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2, 6.3, 7.0*, 7.1, 7.2
 
 
 GPU Support on Windows Subsystem for Linux

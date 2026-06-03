@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -714,6 +714,15 @@ void nprint_view(const chpl::UniqueString& x) {
 void nprint_view(int id) {
   if (BaseAST* ast = aidWithError(id, "nprint_view"))
     nprint_view(ast);
+}
+
+void nprint_view(astlocT loc) {
+  if (loc.isEmpty()) {
+    printf("<empty location>\n");
+  } else {
+    printf("%s:%d\n", loc.filename(), loc.lineno());
+  }
+  fflush(stdout);
 }
 
 void nprint_view(BaseAST* ast) {

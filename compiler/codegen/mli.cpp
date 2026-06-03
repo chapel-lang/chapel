@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,10 +147,10 @@ std::string str(T value) {
 // This is the main entrypoint for MLI code generation, call this if the
 // necessary conditions are met in codegen().
 //
-void codegenMultiLocaleInteropWrappers(void) {
+void codegenClientServerLibraryWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  MLIContext mli(fMultiLocaleLibraryDebug);
+  MLIContext mli(fClientServerLibraryDebug);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();

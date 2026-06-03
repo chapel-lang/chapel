@@ -20,6 +20,15 @@ def cd(path):
     finally:
         os.chdir(cwd)
 
+@contextmanager
+def mktempdir(prefix=None, dir=None):
+    tmpdir = tempfile.mkdtemp(
+        prefix=prefix, dir=dir
+    )
+    try:
+        yield tmpdir
+    finally:
+        rm_rf(tmpdir)
 
 def run(*args, **kwargs):
     print(f"+ {' '.join(args)}")
@@ -31,14 +40,25 @@ def run(*args, **kwargs):
     return result
 
 
-def make(*args, **kwargs):
-    return run("make", *args, **kwargs)
-
+make_threads = 1
 
 pjoin = os.path.join
 
+def set_make_threads():
+    global make_threads
+    cpu_count = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+    make_threads = int(cpu_count.stdout.decode().strip())
+    return make_threads
+
+
+def make(*args, **kwargs):
+    return run("make", f"-j{make_threads}", *args, **kwargs)
+
+
 def log(*args, **kwargs):
-    print("[gen_release]", *args, **kwargs)
+    _kwargs = {'flush': True}
+    _kwargs.update(kwargs)
+    print("[gen_release]", *args, **_kwargs)
 
 
 def rm_rf(*paths):
@@ -110,29 +130,10 @@ complete_dirs = [
     "tools/chpl-parallel-dbg",
 ]
 
-
-def main():
-    version = ""
-    if len(sys.argv) > 1:
-        version = sys.argv[1]
-
-    reldir = f"chapel-{version}" if version else "chapel"
-
-    # Find CHPL_HOME. If unset, use root of repo relative to this script.
-    chplhome = os.getenv(
-        "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
-    )
-
-    # pointers to temporary directory where chapel will be built
-    basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
-    user = getpass.getuser()
-    tmpdir = tempfile.mkdtemp(
-        prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir
-    )
+def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     archive_dir = pjoin(tmpdir, reldir)
     rootdir = pjoin(tmpdir, "chpl_home")
 
-    rm_rf(tmpdir)
     os.makedirs(archive_dir, exist_ok=True)
 
     # TODO: can we use pythons builtin tar module instead of system commands?
@@ -142,12 +143,13 @@ def main():
     # Just use whatever is found in $CHPL_HOME
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
         # copy the current CHPL_HOME into the directory where chapel will be built
-        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...")
-        with cd(chplhome):
-            p = run(tar_executable, "-cf", "-", ".", stdout=subprocess.PIPE)
-            with cd(archive_dir):
-                run(tar_executable, "-xf", "-", input=p.stdout)
-            del p  # free all the memory used by the tar file
+        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace in", archive_dir)
+        shutil.copytree(chplhome, archive_dir,
+                        dirs_exist_ok=True,
+                        ignore_dangling_symlinks=True, symlinks=True,
+                        ignore=shutil.ignore_patterns(f"*{os.path.basename(tmpdir)}*"),
+                        copy_function=shutil.copy2)
+
         resultdir = pjoin(chplhome, "tar")
     else:
         # check out a clean copy of the sources into the directory where chapel will be built
@@ -215,6 +217,8 @@ def main():
             resultdir = basetmpdir
 
     with cd(archive_dir):
+        set_make_threads()
+        log(f"Will invoke 'make' with {make_threads} threads")
 
         log("Creating the spec tests...")
         make("spectests")
@@ -262,6 +266,11 @@ def main():
         shutil.copytree("test/release/examples", "examples", copy_function=shutil.copy2)
         with cd("util"):
             shutil.copy2("start_test", "../examples/start_test")
+
+        # THIS MUST BE DONE AFTER THE CLOBBER
+        log("Getting the mason dependencies...")
+        with cd("tools/mason"):
+            make("tarball-prep")
 
         # print "[gen_release] Removing Makefiles that are not intended for release...\n";
 
@@ -330,6 +339,23 @@ def main():
 
     log(f"Left result in {tarball_name}")
 
+def main():
+    version = ""
+    if len(sys.argv) > 1:
+        version = sys.argv[1]
+
+    reldir = f"chapel-{version}" if version else "chapel"
+
+    # Find CHPL_HOME. If unset, use root of repo relative to this script.
+    chplhome = os.getenv(
+        "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
+    )
+
+    # pointers to temporary directory where chapel will be built
+    basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
+    user = getpass.getuser()
+    with mktempdir(prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir) as tmpdir:
+        make_tarball(chplhome, basetmpdir, tmpdir, reldir)
 
 if __name__ == "__main__":
     main()

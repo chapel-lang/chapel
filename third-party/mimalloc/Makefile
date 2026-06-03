@@ -74,10 +74,10 @@ configure-mimalloc: FORCE
 	  $(CHPL_MIMALLOC_CFG_OPTIONS)
 
 build-mimalloc: FORCE
-	$(CMAKE) --build $(MIMALLOC_BUILD_DIR)
+	if [ -f $(MIMALLOC_BUILD_DIR)/Makefile ]; then cd $(MIMALLOC_BUILD_DIR) && $(MAKE); else $(CMAKE) --build $(MIMALLOC_BUILD_DIR); fi
 
 install-mimalloc: FORCE
-	$(CMAKE) --install $(MIMALLOC_BUILD_DIR)
+	if [ -f $(MIMALLOC_BUILD_DIR)/Makefile ]; then cd $(MIMALLOC_BUILD_DIR) && $(MAKE) install; else $(CMAKE) --install $(MIMALLOC_BUILD_DIR); fi
 
 FORCE:
 

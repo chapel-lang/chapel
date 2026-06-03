@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -689,6 +689,92 @@ proc foo(x: int) { return global; }
     uast::Function::DEFAULT_RETURN_INTENT);
 }
 
+static void testRaceyOutInoutInPromotion() {
+  printf("testRaceyOutInoutInPromotion\n");
+
+  runProgram(
+      { "proc move(in lhs: int, inout rhs: int) { rhs = lhs; }",
+        "var b: int;",
+        "for i in move(new R(), b) {}", },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+        guard.realizeErrors();
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+
+  runProgram(
+      { "proc move(in lhs: int, out rhs: int) { rhs = lhs; }",
+        "var b: int;",
+        "for i in move(new R(), b) {}", },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+        guard.realizeErrors();
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+
+  // runProgram(
+  //     { "proc foo(out x: int) { x = 10; return x; }",
+  //        "for i in foo(new R()) {}" },
+  //     [](ErrorGuard& guard, const QualifiedType& t) {},
+  //     IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+  //
+  // disabled due to https://github.com/chapel-lang/chapel/issues/28790
+
+  runProgram(
+      { "proc foo(inout x: int) { x = 10; return x; }",
+         "for i in foo(new R()) {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+}
+
+static void testRaceyOutInoutInPromotionMethod() {
+  printf("testRaceyOutInoutInPromotion\n");
+
+  runProgram(
+      { "proc int.move(inout rhs: int) { rhs = this; }",
+        "var b: int;",
+        "for i in (new R()).move(b) {}", },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+        guard.realizeErrors();
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+
+  runProgram(
+      { "proc int.move(out rhs: int) { rhs = this; }",
+        "var b: int;",
+        "for i in (new R()).move(b) {}", },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+        guard.realizeErrors();
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+
+  // runProgram(
+  //     { "proc int.foo(out x: int) { x = 10; return x; }",
+  //        "for i in (new R()).foo(new R()) {}" },
+  //     [](ErrorGuard& guard, const QualifiedType& t) {},
+  //     IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+  //
+  // disabled due to https://github.com/chapel-lang/chapel/issues/28790
+
+  runProgram(
+      { "proc int.foo(inout x: int) { x = 10; return x; }",
+         "for i in (new R()).foo(new R()) {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+}
+
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
@@ -733,6 +819,9 @@ int main() {
   testPromotionReturnIntentOverloadingAll();
   testPromotionReturnIntentOverloadingConstRefValue();
   testPromotionReturnIntentOverloadingValueOnly();
+
+  testRaceyOutInoutInPromotion();
+  testRaceyOutInoutInPromotionMethod();
 
   return 0;
 }

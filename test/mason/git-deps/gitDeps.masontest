@@ -1,0 +1,71 @@
+
+runChecks() {
+  cd myApp
+  mason clean
+  mason build
+  mason run
+  mason build -- -smyDepConfig=17
+  mason run
+  mason test
+  mason build --example example.chpl
+  mason run --example example.chpl
+  cd ..
+}
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+myDepPath=$CWD/myDep
+
+
+echo "TESTING: basic git dependency"
+(cd myDep && rm -rf .git && git init -b main && git add . && git commit -m "initial commit")
+cat > myApp/Mason.toml <<EOF
+[brick]
+name="myApp"
+version="0.1.0"
+chplVersion="2.9.0"
+license="None"
+type="application"
+compopts="-smyAppConfig=123"
+
+[dependencies]
+myDep = { git = "$myDepPath" }
+EOF
+runChecks
+echo "================="
+
+
+echo "TESTING: git dependency with branch specified"
+(cd myDep && git checkout -b myBranch)
+cat > myApp/Mason.toml <<EOF
+[brick]
+name="myApp"
+version="0.1.0"
+chplVersion="2.9.0"
+license="None"
+type="application"
+compopts="-smyAppConfig=123"
+
+[dependencies]
+myDep = { git = "$myDepPath", branch = "myBranch" }
+EOF
+runChecks
+echo "================="
+
+echo "TESTING: git dependency with revision specified"
+REV=$(cd myDep && git rev-parse HEAD)
+cat > myApp/Mason.toml <<EOF
+[brick]
+name="myApp"
+version="0.1.0"
+chplVersion="2.9.0"
+license="None"
+type="application"
+compopts="-smyAppConfig=123"
+
+[dependencies]
+myDep = { git = "$myDepPath", rev = "$REV" }
+EOF
+runChecks
+echo "================="
+
+(cd myDep && rm -rf .git)

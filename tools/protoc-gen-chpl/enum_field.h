@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,12 +21,10 @@
 #ifndef PB_ENUM_FIELD_HH
 #define PB_ENUM_FIELD_HH
 
-#include <string>
-
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.h>
 
-#include <field_base.h>
+#include "field_base.h"
 
 namespace chapel {
 

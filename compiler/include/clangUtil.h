@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,12 +34,16 @@
 #if HAVE_LLVM_VER >= 160
 #include "clang/Basic/AddressSpaces.h"
 #endif
+#include "clang/AST/ASTContext.h"
 
 // forward declare some llvm and clang things
 namespace llvm {
   class Function;
   class Type;
   class Value;
+#if HAVE_LLVM_VER >= 220
+  enum class VectorLibrary;
+#endif
 }
 namespace clang {
   class Decl;
@@ -144,6 +148,26 @@ llvm::FunctionType*
 codegenFunctionTypeLLVM(FunctionType* ft,
                         llvm::AttributeList& outAttrs,
                         std::vector<const char*>& outArgNames);
+
+template <typename Ty,
+          std::enable_if_t<std::is_pointer_v<Ty> &&
+                           std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>, bool> = true>
+const clang::Type* getClangASTType(clang::ASTContext& ctx, Ty decl) {
+#if LLVM_VERSION_MAJOR >= 22
+  if constexpr (std::is_same_v<Ty, clang::TagDecl*>) {
+    return ctx.getCanonicalTagType(decl)->getTypePtr();
+  } else {
+    return ctx.getCanonicalTypeDeclType(decl)->getTypePtr();
+  }
+#else
+  std::ignore = ctx;
+  return decl->getTypeForDecl();
+#endif
+}
+
+#if HAVE_LLVM_VER >= 220
+extern llvm::VectorLibrary fVectorLibLLVM;
+#endif
 
 #endif // HAVE_LLVM
 

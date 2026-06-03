@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2024 Inria.  All rights reserved.
+# Copyright © 2009-2025 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -216,7 +216,7 @@ savebusdir() {
 # we don't support path with \n since it would break in 'find ... | while read ..." above
 savemntpnt() {
   local encodedpath=$1
-  if echo "$1" | grep "\\012" ; then
+  if echo "$1" | grep '\\012' ; then
     echo "Ignoring mount point whose filename contains an end of line."
     return
   fi

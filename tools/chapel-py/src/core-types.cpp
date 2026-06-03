@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -136,10 +136,18 @@ std::string generatePyiFile() {
     ss << "        " << DOCSTR << std::endl; \
     ss << "        \"\"\"" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
+    printedAnything = true; \
+    ss << "    def " << #NAME << "(self):" << std::endl; \
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        " << DOCSTR << std::endl; \
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        ..." << std::endl << std::endl;
   #define ITER_PROTOTYPE(NODE, TYPE) \
     printedAnything = true; \
     ss << "    def __iter__(self) -> typing.Iterator[" << PythonReturnTypeInfo<TYPE>::typeString() << "]:" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define OPERATOR_PROTOTYPE(NODE, NAME, DOCSTR, TYPEFN) METHOD(NODE, NAME, DOCSTR, TYPEFN, /*BODY*/)
   #define CLASS_END(NODE) \
     if (!printedAnything) { \
       ss << "    pass" << std::endl; \
@@ -211,12 +219,6 @@ PyObject* AstNodeObject::richcompare(AstNodeObject *self, PyObject *other, int o
   Py_RETURN_RICHCOMPARE(selfId, otherId, op);
 }
 
-
-void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
-  Py_XDECREF(self->contextObject);
-  callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
-}
-
 PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   if (!self->value_) {
     raiseExceptionForIncorrectlyConstructedType("Type");
@@ -228,6 +230,27 @@ PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
+Py_hash_t ChapelTypeObject::hash(ChapelTypeObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Type");
+    return 0;
+  }
+  return reinterpret_cast<Py_hash_t>(self->value_);
+}
+
+PyObject* ChapelTypeObject::richcompare(ChapelTypeObject* self, PyObject* other, int op) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Type");
+    return nullptr;
+  }
+
+  if (!PyObject_TypeCheck(other, ChapelTypeObject::PythonType)) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+
+  Py_RETURN_RICHCOMPARE(self->value_, ((ChapelTypeObject*) other)->value_, op);
+}
+
 PyObject* ParamObject::str(ParamObject* self) {
   if (!self->value_) {
     raiseExceptionForIncorrectlyConstructedType("Param");
@@ -237,6 +260,43 @@ PyObject* ParamObject::str(ParamObject* self) {
   self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
+}
+
+PyObject* TypedSignatureObject::str(TypedSignatureObject* self) {
+  if (!self->value_.signature) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+PyObject* TypedSignatureObject::repr(TypedSignatureObject* self) {
+  if (!self->value_.signature) {
+    raiseExceptionForIncorrectlyConstructedType("TypedSignature");
+    return nullptr;
+  }
+  std::stringstream ss;
+  self->value_.signature->stringify(ss, CHPL_SYNTAX);
+  if (auto poi = self->value_.poiScope) {
+    poi->stringify(ss, CHPL_SYNTAX);
+  }
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+Py_hash_t TypedSignatureObject::hash(TypedSignatureObject* self) {
+  return chpl::hash(self->value_.signature, self->value_.poiScope);
+}
+PyObject* TypedSignatureObject::richcompare(TypedSignatureObject* self, PyObject* other, int op) {
+  if (other->ob_type != TypedSignatureObject::PythonType) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+  auto otherCast = (TypedSignatureObject*) other;
+  auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
+  auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
+
+  Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
 }
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
@@ -273,6 +333,10 @@ PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
 
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
   return ParamObject::PythonType;
+}
+
+PyTypeObject* parentTypeFor(chpl::ErrorType tag) {
+  return ErrorObject::PythonType;
 }
 
 PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
@@ -350,6 +414,30 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* no
       break;
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::ErrorBase* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->type()) {
+    case chpl::ErrorType::General:
+      toReturn = PyObject_CallObject((PyObject*) GeneralErrorType, args);
+      ((GeneralErrorObject*) toReturn)->parent.value_ = node->clone();
+      break;
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+    case chpl::ErrorType::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->clone(); \
+      break;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
   }
   Py_XDECREF(args);
   return toReturn;

@@ -1,0 +1,5 @@
+mason_home
+myDep/.git
+myApp/target
+myApp/Mason.lock
+myApp/Mason.toml

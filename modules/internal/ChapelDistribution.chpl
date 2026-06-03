@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -758,7 +758,7 @@ module ChapelDistribution {
     var obj: borrowed BaseSparseDom(?);
 
     type idxType = if rank==1 then int else rank*int;
-    var bufDom = domain(1);
+    var bufDom: domain(1);
     var buf: [bufDom] idxType;
     var cur = 0;
 

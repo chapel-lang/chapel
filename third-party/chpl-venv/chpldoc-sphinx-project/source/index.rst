@@ -1,5 +1,5 @@
-chpldoc documentation
-=====================
+|project_name| documentation
+============================
 
 Contents:
 

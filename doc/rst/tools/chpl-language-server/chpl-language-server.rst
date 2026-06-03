@@ -125,6 +125,37 @@ The following features are extra visual aids:
 | Generic        | ``CLS`` can show the various               | ``--show-instantiations`` (default),  |
 | Instantiations | instantiations of a generic function.      | ``--no-show-instantiations``          |
 +----------------+--------------------------------------------+---------------------------------------+
+| Default        | Procedures accepting array formals are     | ``--default-rect-arrays`` (default),  |
+| Instantiations | usually generic over the array's dimension | ``--no-default-rect-arrays``          |
+| For Arrays     | and distribution. ``CLS`` can automatically|                                       |
+|                | create concrete instantiations with        |                                       |
+|                | "regular" (default-rectangular) arrays.    |                                       |
++----------------+--------------------------------------------+---------------------------------------+
+| Common         | When generic functions are instantiated    | ``--common-inlays`` (default),        |
+| Instantiation  | with multiple different types, ``CLS`` can | ``--no-common-inlays``                |
+| Inlays         | show type inlays even for the generic      |                                       |
+|                | version of the function, by finding the    |                                       |
+|                | set of inlays shared between all           |                                       |
+|                | instantiations of the function.            |                                       |
++----------------+--------------------------------------------+---------------------------------------+
+
+Additionally, some of the above features can be tweaked.
+
++----------------+--------------------------------------------+------------------------------------------+
+| Behavior       | Description                                | Flag                                     |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides inlays for type aliases when the     | ``--hide-redundant-type-inlays``         |
+| hide obvious   | inlay exactly matches the right-hand side  | (default),                               |
+| inlays         | of the declaration.                        | ``--no-hide-redundant-type-inlays``      |
+|                |                                            |                                          |
+|                | Example: ``type myType = int(64);``        |                                          |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides potentially obvious inlays even if   | ``--hide-more-redundant-type-inlays``,   |
+| hide more      | the right-hand side of the type alias does | ``--no-hide-more-redundant-type-inlays`` |
+| inlays         | not exactly match the computed type.       | (default)                                |
+|                |                                            |                                          |
+|                | Example: ``type myType = range;``          |                                          |
++----------------+--------------------------------------------+------------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,14 @@
 #include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
-  if (strcmp(CHPL_COMM, "ofi") != 0) {
+  if (strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  CHPL_COMM), "ofi") != 0) {
     chpl_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
   }
 

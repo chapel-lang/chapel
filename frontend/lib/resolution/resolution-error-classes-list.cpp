@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/VisibilityClause.h"
@@ -293,6 +294,56 @@ void ErrorAssignFieldBeforeInit::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorCallToThrowingFunctionRelaxed::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "' without "
+             "throws, try, or try! (relaxed mode)");
+
+  wr.code(call, { call });
+
+  wr.message("The call must either be enclosed in a 'try' or 'try!' block, "
+             "or the enclosing function must be declared with 'throws'.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
+void ErrorCallToThrowingFunctionStrict::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "'  must be marked "
+             "with try or try! (strict mode)");
+
+  wr.code(call, { call });
+
+  wr.message("The call must be explicitly marked with 'try' or 'try!' to "
+             "indicate where errors may propagate from.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
+void ErrorCallToThrowingFunctionFromNon::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, locationOnly(call),
+             "call to throwing function '", sig->name(), "' from a non-throwing context");
+
+  wr.code(call, { call });
+
+  wr.message("The call must be enclosed in a 'try' or 'try!' block, "
+             "or the enclosing function must be declared with 'throws'.");
+
+  wr.note(sig->id(), "The function was declared to throw here:");
+  wr.codeForLocation(sig->id());
+}
+
 void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info_);
   auto& c = std::get<resolution::MostSpecificCandidate>(info_);
@@ -303,7 +354,12 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
              (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
              formalName, "'.");
   if (auto call = ast->toCall()) {
-    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+    int idx = c.constRefCoercionActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
   } else {
     wr.code(ast);
   }
@@ -314,6 +370,30 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
     wr.message("The formal was declared 'const ref' here:");
     wr.code(fmlDecl, { fmlDecl });
   }
+}
+
+void ErrorDeprecatedSyncRead::write(ErrorWriterBase& wr) const {
+  auto type = std::get<0>(info_);
+  auto astForErr = std::get<1>(info_);
+  auto source = std::get<2>(info_);
+  auto dest = std::get<3>(info_);
+
+  // For now, the type prints ugly ('_syncvar(bla)'), so don't show it.
+  std::ignore = type;
+
+  wr.heading(kind_, type_, astForErr, "implicitly reading from a 'sync' value is deprecated.");
+  wr.codeForLocation(astForErr);
+  if (dest != astForErr && dest) {
+    wr.note(dest, "encountered while trying to pass a 'sync' value to this non-'sync' destination");
+    wr.code(dest, { dest });
+  }
+  if (source) {
+    wr.note(source, "to silence this warning, please explicitly call '.read\?\?' on the 'sync' value here:");
+    wr.code(source, { source });
+  } else {
+    wr.note(astForErr, "to silence this warning, please explicitly call '.read\?\?'");
+  }
+  return;
 }
 
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
@@ -648,6 +728,30 @@ static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
   return ret;
 }
 
+static bool allActualsLookLikeIndexing(const resolution::CallInfo& ci) {
+  // technically vacuously true, but not helpful for our use case
+  if (ci.numActuals() == 0) return false;
+
+  for (size_t i = 0; i < ci.numActuals(); i++) {
+    const auto& actual = ci.actual(i);
+    auto t = actual.type().type();
+
+    bool thisNumeric = false;
+    if (actual.type().isUnknownOrErroneous()) {
+      // unknown type, not numeric.
+    } else if (actual.type().isType()) {
+      // `foo(int)`, not indexing.
+    } else if (t->isNumericType()) {
+      thisNumeric = true;
+    }
+
+    if (!thisNumeric) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename GetActual>
 static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const ID& anchorId,
@@ -669,12 +773,26 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
   // helpful.
   bool printedDecentCandidate = false;
 
+  std::unordered_set<int> explainedSplitInitsForActuals;
+
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
 
     bool isThisCandidateDecent = true;
+    // type constructor "candidates" aren't really candidates (they have no ID).
+    // We can use this to specialize the error message.
+    std::string candidateDescription = "the following candidate";
+    ID idForErr = candidate.idForErr();
+    if (idForErr.isEmpty() ||
+        (candidate.initialForErr() &&
+         candidate.initialForErr()->untyped()->isTypeConstructor())) {
+      if (idForErr.isEmpty()) {
+        idForErr = anchorId;
+      }
+      candidateDescription = std::string("the type constructor for '") + ci.name().c_str() + "'";
+    }
 
     auto reason = candidate.reason();
     if (/* skip printing detailed info_ here because computing the formal-actual
@@ -684,14 +802,42 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
-      const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
+      const uast::AstNode* actualExpr = nullptr;
+      bool badSplitInit = false;
+
+      // Can be -1 if the candidate is a method which we tried because
+      // of a freestanding call 'foo()' in a method context.
+      if (candidate.actualIdx() != -1) {
+        actualExpr = getActual(candidate.actualIdx());
+
+        // at this time, 'getActual' may not be total. In particular, it might
+        // return nullptr for the call receiver, since it's relatively
+        // hard to retrieve from the call expression. Only try to report
+        // a split init error if we have an actual expression to point to,
+        // since right now the error message heavily relies on pointing to the actual.
+        if (actualExpr) {
+          badSplitInit = ci.actual(candidate.actualIdx()).expectSplitInit();
+        }
+      }
+
+      // formalDecl can be null if the function is in an 'extern' block, in which
+      // case there is no Chapel AST corresponding to the formal.
 
       wr.message("");
-      wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
-      wr.code(fn->id(), { formalDecl });
+      if (badSplitInit) {
+        wr.note(fn->id(), candidateDescription, " didn't match because it does not initialize ", passedThingArticle, " ", passedThing, " which expects to be initialized:");
+      } else {
+        wr.note(fn->id(), candidateDescription, " didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
+      }
+
+      std::vector<const uast::AstNode*> highlightNodes;
+      if (formalDecl) highlightNodes.push_back(formalDecl);
+      wr.code(fn->id(), highlightNodes);
 
       std::string formalName;
-      if (auto named = formalDecl->toNamedDecl()) {
+      if (!formalDecl ) {
+        /* see above re: formalDecl being null */
+      } else if (auto named = formalDecl->toNamedDecl()) {
         formalName = "'" + named->name().str() + "'";
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
@@ -731,23 +877,22 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
-      } else if (badPass.actualType().isUnknown() &&
-                 offendingActual &&
-                 !offendingActual->initExpression() &&
-                 !offendingActual->typeExpression()) {
+      } else if (badSplitInit) {
         auto formalKind = badPass.formalType().kind();
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
-        wr.note(offendingActual->id(), "The actual ", actualName,
-                   " expects to be split-initialized because it is declared without a type or initialization expression here:");
-        wr.codeForDef(offendingActual);
-        wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
-        wr.code(actualExpr, { actualExpr });
-        actualPrinted = true;
-        wr.message("The call to '", ci.name(), "' cannot initialize ",
-                   actualName,
-                   " because only 'out' formals can be used to split-initialize. However, ",
-                   actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
 
+        if (explainedSplitInitsForActuals.insert(candidate.actualIdx()).second) {
+          wr.note(offendingActual->id(), "The actual ", actualName,
+                     " expects to be split-initialized because it is declared with a generic type and no initialization expression here:");
+          wr.codeForDef(offendingActual);
+          wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
+          wr.code(actualExpr, { actualExpr });
+          actualPrinted = true;
+          wr.message("The call to '", ci.name(), "' cannot initialize ",
+                     actualName,
+                     " because only 'out' formals can be used to split-initialize. However, ",
+                     actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
+        }
       } else {
         wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
                    ", but the ", passedThing, " was ", badPass.actualType(), ".");
@@ -790,6 +935,49 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the ", expectedThing, " and ", passedThing, " types to match exactly.");
       }
+    } else if (reason == resolution::FAIL_ERRORS_THROWN) {
+      // call resolution was interrupted. Potentially applicable candidates
+      // were retroactively rejected with FAIL_ERRORS_THROWN and formalIdx == -1.
+      // If this is one of them, don't print anything. At this point, we
+      // rely on the assumption that the last candidates in the rejected list
+      // all have FAIL_ERRORS_THROWN.
+      if (candidate.formalIdx() == -1) continue;
+
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      bool errorInInitial =
+        candidate.initialForErr()->formalsErroredBitmap()[candidate.formalIdx()];
+      const char* extraText = !errorInInitial ? "after instantiation, " : "";
+      if (candidate.formalIdx() < candidate.untypedForErr()->numFormals()) {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because ", extraText, expectedThing, " ",
+                candidate.formalIdx() + 1," of this candidate was ill-formed:");
+        wr.code(candidate.idForErr(), { candidate.untypedForErr()->formalDecl(candidate.formalIdx()) });
+      } else {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because the 'where' clause for this candidate was ill-formed:");
+        wr.codeForDef(candidate.idForErr());
+      }
+      wr.message("For correctness reasons, candidate selection and disambiguation cannot proceed if any of the candidates "
+                 "is ill-formed.");
+      break;
+    } else if (reason == resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      CHPL_ASSERT(candidate.formalIdx() >= 0 && candidate.formalIdx() < candidate.initialForErr()->numFormals());
+
+      std::string fieldName;
+      auto formal = candidate.untypedForErr()->formalDecl(candidate.formalIdx());
+      if (auto named = formal->toNamedDecl()) {
+        fieldName = ", corresponding to field '" + named->name().str() + "',";
+      }
+
+      wr.note(candidate.idForErr(),
+              "the compiler-generated initializer didn't match because ",
+              expectedThing, " ", candidate.formalIdx() + 1,
+              fieldName, " had a generic type expression:");
+      wr.code(candidate.idForErr(), { formal });
+      wr.note(formal,
+              "currently, calls to initializers cannot omit arguments for fields with generic type expressions.");
+      wr.message("Consider using a 'type' field to make genericity explicit.");
     } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
       bool printedSpecial = false;
       if (auto fn = candidate.initialForErr()) {
@@ -799,7 +987,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
           auto& actual = ci.actual(fa.failingActualIdx());
           if (!actual.byName().isEmpty()) {
             wr.message("");
-            wr.note(candidate.idForErr(), "the following candidate didn't match"
+            wr.note(idForErr, candidateDescription, " didn't match"
                     " because ", passedThing, " ", fa.failingActualIdx() + 1,
                     " was named '", actual.byName(), "', but no ", expectedThing,
                     " with that name was found.");
@@ -809,18 +997,46 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
           auto numFormals = fn->numFormals() - (int) fn->isMethod();
           const char* usePlural = numFormals > 1 ? "s" : "";
           wr.message("");
-          wr.note(candidate.idForErr(), "the following candidate didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
+          wr.note(idForErr, candidateDescription, " didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
           printedSpecial = true;
         }
       }
 
       if (!printedSpecial) {
         wr.message("");
-        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+        wr.note(idForErr, candidateDescription, " didn't match ",
                 "because the provided ", passedThing, "s could not be mapped to its ",
                 expectedThing, "s:");
       }
-      wr.code(candidate.idForErr());
+      wr.codeForLocation(idForErr);
+    } else if (reason == resolution::FAIL_NO_TYPE_CONSTRUCTOR) {
+      // types that don't have corresponding module code will not have an ID
+      // reported here.
+      auto candidateId = idForErr;
+      auto idForErr = candidateId;
+      if (idForErr.isEmpty()) idForErr = anchorId;
+
+      // As a special case, report an error for trying to index into a
+      // type that doesn't support indexing.
+      if (allActualsLookLikeIndexing(ci)) {
+        wr.message("");
+        wr.note(idForErr, "the type '", ci.name(), "' does not support indexing:");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only tuple types can be indexed, but '", ci.name(), "' is not a tuple type.");
+        wr.message("If you were trying to invoke '", ci.name(),
+                   "' as a type constructor, note that only records and classes have type constructors.");
+      } else {
+        wr.message("");
+        wr.note(idForErr, "could not invoke the non-existent type constructor for type '",
+                ci.name(), "':");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only records and classes have type constructors, but '",
+                   ci.name(), "' is not one of these.");
+      }
     } else {
       std::string reasonStr = "";
       if (reason == resolution::FAIL_VARARG_MISMATCH) {
@@ -841,16 +1057,16 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         isThisCandidateDecent = false;
         if (!printedDecentCandidate) {
           wr.message("");
-          wr.note(candidate.idForErr(), "the following candidate didn't match:");
+          wr.note(idForErr, candidateDescription, " didn't match:");
         } else {
           continue;
         }
       } else {
         wr.message("");
-        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+        wr.note(idForErr, candidateDescription, " didn't match ",
                 "because ", reasonStr);
       }
-      wr.code(candidate.idForErr());
+      wr.code(idForErr);
     }
     printedDecentCandidate |= isThisCandidateDecent;
     printCount++;
@@ -1214,7 +1430,7 @@ void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
-  auto superExpr = std::get<const uast::Identifier*>(info_);
+  auto superExpr = std::get<const uast::AstNode*>(info_);
   auto qt = std::get<types::QualifiedType>(info_);
 
   const types::RecordType* recordType = nullptr;
@@ -1505,7 +1721,11 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
 
-  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call](int idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call, &ci](int idx) -> const uast::AstNode* {
+    // in x.foo(a, b, c), the CI actuals are [x, a, b, c] but the call expression
+    // only has the actuals [a, b, c]. Adjust the index to account for this.
+    if (ci.isMethodCall()) idx -= 1;
+
     if (call && 0 <= idx && idx < call->numActuals()) {
       return call->actual(idx);
     }
@@ -1840,6 +2060,39 @@ static bool firstIdFromDecls(
     }
   }
   return false;
+}
+
+void ErrorRaceyOutInoutInPromotion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info_);
+
+  auto formalName = c.fn()->formalName(c.raceyScalarOutFormal());
+  const char* intent = "out";
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.raceyScalarOutFormal());
+  if (fmlDecl) {
+    if (auto vld = fmlDecl->toVarLikeDecl()) {
+      intent = vld->storageKind() == uast::Qualifier::OUT ? "out" : "inout";
+    }
+  }
+
+  wr.heading(kind_, type_, ast, "cannot promote function '",
+             c.fn()->untyped()->name(), "' while keeping the formal '", intent, " ", formalName, "' scalar");
+  if (auto call = ast->toCall()) {
+    int idx = c.raceyScalarOutActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
+  } else {
+    wr.code(ast);
+  }
+  wr.message("'", intent, "' actuals will be written to by each iteration of the promoted function, which can lead to races.");
+
+  if (fmlDecl) {
+    wr.message("The formal was declared '", intent, "' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
 }
 
 void ErrorRecursion::write(ErrorWriterBase& wr) const {
@@ -2202,15 +2455,67 @@ void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
   wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
 }
 
-void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::TupleDecl*>(info_);
-  auto type = std::get<const types::TupleType*>(info_);
-  wr.heading(kind_, type_, decl,
-            "tuple size mismatch in split tuple declaration.");
-  wr.code(decl);
-  wr.message("The left-hand side of the declaration expects a ",
-             decl->numDecls(), "-tuple, but the right-hand side is a ",
-             type->numElements(), "-tuple, '", type, "'.");
+void ErrorThrowInNonThrowingFunction::write(ErrorWriterBase& wr) const {
+  auto throwNode = std::get<const uast::Throw*>(info_);
+  auto fn = std::get<const uast::Function*>(info_);
+
+  wr.heading(kind_, type_, throwNode,
+             "cannot throw in a non-throwing function");
+  wr.code(throwNode, { throwNode });
+  wr.message("Either put the throw inside a try block, or add 'throws' to the function declaration.");
+  if (fn) {
+    wr.note(fn, "the function is declared here:");
+    wr.codeForLocation(fn);
+  }
+}
+
+void ErrorThrowUnhandled::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto sig = std::get<const resolution::UntypedFnSignature*>(info_);
+
+  wr.heading(kind_, type_, call,
+             "call to throwing function '", sig->name(), "' is in a 'try' "
+             "but not handled");
+  wr.code(call, { call });
+}
+
+void ErrorTryNoCatchAll::write(ErrorWriterBase& wr) const {
+  auto tryNode = std::get<const uast::Try*>(info_);
+
+  wr.heading(kind_, type_, tryNode,
+             "try without a catchall in a non-throwing function");
+  wr.code(tryNode, { tryNode });
+
+  wr.message("This allows for unhandled exceptions to propagate out of the "
+             "function, which is not allowed in a non-throwing function. "
+             "Either add a catchall to handle those errors or make the "
+             "function throwing.");
+}
+
+void ErrorTupleDeclAssignMismatchedElems::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto rhsType = std::get<const types::TupleType*>(info_);
+
+  std::string declOrAssign = "";
+  size_t lhsSize = 0;
+  auto td = ast->toTupleDecl();
+  auto op = ast->toOpCall();
+  if (td) {
+    declOrAssign = "declaration";
+    lhsSize = td->numDecls();
+  } else if (op && op->op() == USTR("=") && op->lhs()->isTuple()) {
+    declOrAssign = "assignment";
+    lhsSize = op->lhs()->toTuple()->numActuals();
+  } else {
+    CHPL_ASSERT(false && "invalid input");
+  }
+
+  wr.heading(kind_, type_, ast, "tuple size mismatch in split tuple ",
+             declOrAssign, ".");
+  wr.code(ast);
+  wr.message("The left-hand side of the ", declOrAssign, " expects a ", lhsSize,
+             "-tuple, but the right-hand side is a ", rhsType->numElements(),
+             "-tuple, '", rhsType, "'.");
 }
 
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {

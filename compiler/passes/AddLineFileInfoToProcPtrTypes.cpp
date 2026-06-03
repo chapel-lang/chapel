@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,45 +33,32 @@ namespace {
 }
 
 bool Pass::shouldProcess(Symbol* sym) {
-  if (isTypeSymbol(sym)) return false;
-  return isFnSymbol(sym) || isFunctionType(sym->type);
+  return shouldProcessIfNonForeignLinkage(sym);
 }
 
-// This is used by "adjustSymbolType". Note that all the type constructor
-// does is append the line/file formals to the end of the type - there is
-// no check to see if they have already been appended.
-static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
-  if (auto ft = toFunctionType(t)) {
-    if (!ft->hasForeignLinkage()) {
-      return ft->getWithLineFileInfo();
+Type* Pass::computeAdjustedType(Type* t) const {
+  if (auto ft = toFunctionType(t->getValType())) {
+    auto [line, file] = FunctionType::constructLineFileInfoFormals();
+
+    if (ft->numFormals() >= 2) {
+      if (*(ft->formals().end() - 1) == file &&
+          *(ft->formals().end() - 2) == line) {
+        // TODO: This is just a heuristic, but it's the best we can do at
+        //       the moment. To truly make this operation idempotent, we
+        //       need to address the TODO in 'runPassOverAllSymbols' or
+        //       add extra information to 'FunctionType' to let us detect
+        //       if this has already been done.
+        //
+        // Do not change if the formals match the line/file formals.
+        return t;
+      }
     }
+
+    // Otherwise, compute the new type and match the ref level.
+    auto ret = ft->getWithLineFileInfo();
+
+    return ret;
   }
 
   return t;
-}
-
-void Pass::process(Symbol* sym) {
-  auto adjustTypeFn = adjustProcedureTypeToHaveLineNumbers;
-  bool shouldAdjustSymbolType = true;
-
-  if (auto fn = toFnSymbol(sym)) {
-    if (!fn->isUsedAsValue()) {
-      // If the function is not used as a value then its type should not be
-      // adjusted. Clear its type - it can be recomputed later if needed.
-      shouldAdjustSymbolType = false;
-      fn->type = dtUnknown;
-    }
-
-    // As a special case, we have to handle the 'fn->retType' separately.
-    fn->retType = adjustTypeFn(fn->retType);
-  }
-
-  if (isTypeSymbol(sym)) {
-    // Don't adjust type symbols!
-    shouldAdjustSymbolType = false;
-  }
-
-  if (shouldAdjustSymbolType) {
-    adjustSymbolType(sym, adjustTypeFn);
-  }
 }

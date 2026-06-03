@@ -7,6 +7,7 @@ arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
 constPointer: OK
+constants: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK
@@ -31,6 +32,7 @@ arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
 constPointer: OK
+constants: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK

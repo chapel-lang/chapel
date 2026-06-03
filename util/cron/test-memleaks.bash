@@ -9,5 +9,5 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="memleaks"
 
-$UTIL_CRON_DIR/nightly -cron -memleaks -memleakslog $(memleaks_log full) -no-futures $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -memleaks -memleakslog $(memleaks_log full) -no-futures $(get_nightly_paratest_args 8)
 save_memleaks_log full

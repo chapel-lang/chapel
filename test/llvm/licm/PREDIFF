@@ -1,0 +1,20 @@
+#!/bin/bash
+TESTNAME=$1
+OUTFILE=$2
+
+LL_FILE=$TESTNAME.ll
+if [ ! -f "$LL_FILE" ]; then
+  echo "Expected LLVM IR file $LL_FILE not found!" >> $OUTFILE
+  exit 0
+fi
+LL_FILE_SIMPLIFIED=$TESTNAME.simple.ll
+
+LLVM_CONFIG=`${CHPL_HOME}/util/chplenv/chpl_llvm.py --llvm-config`
+BINDIR=`${LLVM_CONFIG} --bindir`
+OPT="${BINDIR}/opt"
+
+# run some passes to simplify the IR for easier checking
+$OPT -S -passes='mem2reg,simplifycfg' $LL_FILE -o $LL_FILE_SIMPLIFIED
+# run FileCheck
+$CHPL_HOME/test/llvm/RunFileCheck "$TESTNAME" "$LL_FILE_SIMPLIFIED" "--enable-var-scope"
+cat $LL_FILE_SIMPLIFIED >> $OUTFILE
