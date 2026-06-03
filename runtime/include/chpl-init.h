@@ -31,8 +31,8 @@ extern "C" {
 
 #ifndef LAUNCHER
 
-void chpl_rt_preUserCodeHook(void);
-void chpl_rt_postUserCodeHook(void);
+void chpl_rt_pre_user_code_sync(chpl_rt_prginfo* prg);
+
 const char* allocate_string_literals_buf(int64_t s);
 void deallocate_string_literals_buf(void);
 

@@ -910,7 +910,7 @@ static void buildChplEntryPoints() {
                                                         gFalse)));
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
-  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_preUserCodeSync"));
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
@@ -985,7 +985,6 @@ static void buildChplEntryPoints() {
                                              new_IntSymbol(0, INT_SIZE_64)));
   }
 
-  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
   chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
   chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
