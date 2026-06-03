@@ -1440,10 +1440,10 @@ module Math {
   }
 
   // Stable lcm() versions  in the preview edition
-  
+
   @chpldoc.nodoc
   proc lcm_help(x, y): x.type do return x / gcd(x,y) * y;
-  
+
   /* Returns the least common multiple of the integer arguments `x`
      and `y`. */
   @edition(first="preview")
@@ -1488,7 +1488,7 @@ module Math {
   // Unstable lcm() versions in the 2.0 edition (identical to the
   // above; this is just our best practice today, unfortunately.
   // See #28923 for some musing on how to improve this.
-  
+
   /* Returns the least common multiple of the integer arguments `x`
      and `y`. */
   @edition(last="2.0")
@@ -1537,7 +1537,7 @@ module Math {
   @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
   proc lcm(x: uint, y: uint): uint do return lcm_help(x,y);
 
-  
+
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(32)): real(32) {
