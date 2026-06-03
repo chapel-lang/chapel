@@ -1439,6 +1439,8 @@ module Math {
     return x;
   }
 
+  // Stable lcm() versions  in the preview edition
+  
   @chpldoc.nodoc
   proc lcm_help(x, y): x.type do return x / gcd(x,y) * y;
   
@@ -1483,6 +1485,9 @@ module Math {
   proc lcm(x: uint, y: uint): uint do return lcm_help(x,y);
 
 
+  // Unstable lcm() versions in the 2.0 edition (identical to the
+  // above; this is just our best practice today, unfortunately.
+  // See #28923 for some musing on how to improve this.
   
   /* Returns the least common multiple of the integer arguments `x`
      and `y`. */
