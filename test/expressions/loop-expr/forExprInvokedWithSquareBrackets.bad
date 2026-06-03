@@ -1,0 +1,6 @@
+forExprInvokedWithSquareBrackets.chpl:3: In function 'foo':
+forExprInvokedWithSquareBrackets.chpl:4: error: unresolved call 'chpl__loopexpr_iter25(iterator=range(int(64),both,one), tag=iterKind, followThis=1*range(int(64),both,one))'
+forExprInvokedWithSquareBrackets.chpl:11: note: this candidate did not match: chpl__loopexpr_iter25(iterator)
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:642: note: because call uses named argument tag
+forExprInvokedWithSquareBrackets.chpl:11: note: but function contains no formal named tag
+  forExprInvokedWithSquareBrackets.chpl:11: called as foo(x: iterator yielding int(64))
