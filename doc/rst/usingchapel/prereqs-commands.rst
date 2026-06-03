@@ -71,7 +71,7 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 42, 43, 44::
+  * Fedora 43, 44::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
@@ -85,7 +85,7 @@
       sudo pkg install llvm
 
 
-  * OpenSuse Leap 15.6, 16.0::
+  * OpenSuse Leap 16.0::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake libunwind-devel
       sudo zypper install findutils diffutils
