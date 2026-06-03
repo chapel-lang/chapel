@@ -3,8 +3,6 @@
 //
 
 /* START_EXAMPLE_0 */
-//
-
 use DynamicLoading;
 
 // A binary may or may not exist at this path.

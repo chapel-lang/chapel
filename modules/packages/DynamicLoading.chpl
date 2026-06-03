@@ -25,8 +25,6 @@
 /*
 Support for dynamic loading in Chapel.
 
-.. note::
-
 This module provides the ability to load a binary at runtime. Procedures
 contained in a dynamically loaded binary can be retrieved and called on
 any locale without compile-time knowledge of their names or locations.
