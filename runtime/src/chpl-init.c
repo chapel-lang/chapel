@@ -352,9 +352,7 @@ void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
 // of standard module initialization are privatized and must be executed on
 // each locale in order for the Chapel program to function correctly.
 //
-void chpl_std_module_init(void) {
-  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
-
+void chpl_rt_init_program_standard_modules(chpl_rt_prginfo* prg) {
   // Set up the string literals on every locale before other code is run.
   // Note that this calls a function pointer from the program info's data.
   CHPL_RT_PRGINFO_DATA(prg, chpl__initStringLiterals)();
@@ -396,14 +394,14 @@ void chpl_std_module_init(void) {
 // The function previously known as "chpl_main".
 //
 // Chapel standard module initialization has been factored out
-// into chpl-init.c:chapel_std_module_init().
+// into chpl-init.c:chpl_rt_init_program_standard_modules().
 //
 void chpl_executable_init(void) {
-  chpl_std_module_init();
+  chpl_rt_prginfo* prg = CHPL_RT_PRGINFO_ROOT;
+
+  chpl_rt_init_program_standard_modules(prg);
 
   if (chpl_nodeID == 0) {
-    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
-
     // Get the main argument.
     chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
@@ -415,7 +413,6 @@ void chpl_executable_init(void) {
     //
     main_arg_ptr->return_value = chpl_gen_main(main_arg_ptr);
   }
-
 }
 
 void chpl_execute_module_deinit(c_fn_ptr deinitFun) {

@@ -84,7 +84,7 @@ module ChapelProgramEntrypoints {
                              argv: chpl_opaque_argv_array): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
-    extern proc chpl_std_module_init(): void;
+    extern proc chpl_rt_init_program_standard_modules(): void;
     extern proc chpl_libraryModuleLevelSetup(): void;
 
     if chpl_isLibInitialized {
@@ -106,7 +106,9 @@ module ChapelProgramEntrypoints {
     // TODO: There really needs to be a better way to do this. Is the normal
     //       casting not working because the proc-ptr is a class right now?
     //       How am I supposed to trigger a local pointer to be created again?
-    const p1: c_fn_ptr = __primitive("capture fn", chpl_std_module_init, true);
+    const p1: c_fn_ptr = __primitive("capture fn",
+                                     chpl_rt_init_program_standard_modules,
+                                     true);
     const p2 = p1 : c_ptr(void);
 
     chpl_task_callMain(p2);
