@@ -392,6 +392,7 @@ module ChapelDynamicLoading {
 
     proc _initializeLoadedModules(out err: owned DynLoadError?): void {
       var errGuard: chpl_lockGuard(err.type);
+      var origin = here;
 
       coforall loc in Locales do on loc {
         var errHere;
@@ -405,7 +406,7 @@ module ChapelDynamicLoading {
                                          errHere);
         if errHere != nil {
           // TODO: Consolidate instead of just keeping one.
-          manage errGuard.write() as e do e = errHere;
+          on origin do manage errGuard.write() as e do e = errHere;
         } else {
           p();
         }
