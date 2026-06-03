@@ -4794,9 +4794,9 @@ Expr* TConverter::convertGroupedAssign(
   INT_ASSERT(rhsQt.type()->isTupleType());
   auto rhsSym = storeInTempIfNeeded(rhsExpr, rhsQt);
 
-  auto numElts = lhs->numActuals();
+  int numElts = lhs->numActuals();
   INT_ASSERT(re->hasAssociatedActions());
-  INT_ASSERT(re->associatedActions().size() == numElts);
+  INT_ASSERT(re->associatedActions().size() == (size_t)numElts);
   for (int i = 0; i < numElts; i++) {
     auto lhsAst = lhs->actual(i);
     types::QualifiedType lhsQt;
