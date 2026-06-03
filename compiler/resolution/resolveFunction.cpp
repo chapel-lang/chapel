@@ -265,6 +265,10 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
     }
   }
 
+  if (!strcmp(formal->name, "sssss")) {
+    printf("Updating if ref formal for sssss\n");
+  }
+  
   bool needRefIntent = false;
   if (needRefFormal(fn, formal, &needRefIntent) == true) {
     makeRefType(formal->type);
@@ -333,9 +337,11 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
     retval = true;
     *needRefIntent = true;
 
+    /*
   } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
              isRecordWrappedType(formal->type) == true) {
     retval = true;
+    */
 
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
