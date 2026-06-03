@@ -187,6 +187,7 @@ void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
 
   return ret;
 }
+
 static void execute_on_family_common_setup(chpl_rt_prginfo* prg,
                                            c_nodeid_t node,
                                            c_sublocid_t subloc,
