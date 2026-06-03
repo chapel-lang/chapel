@@ -42,7 +42,8 @@ module ChapelRuntimeInterface {
     fn(ptrToPrgInfoHere, idx, ptrToWidePtr);
   }
 
-  export proc chpl_initProgramStandardModules() {
+  export /** So that it can be passed as a callback to the runtime. */
+  proc chpl_initProgramStandardModules() {
     param cname = 'chpl_rt_init_program_standard_modules';
     extern cname proc fn(prg: c_ptr(chpl_rt_prginfo)): void;
     fn(ptrToPrgInfoHere);

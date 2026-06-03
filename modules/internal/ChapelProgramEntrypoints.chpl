@@ -19,7 +19,10 @@
  */
 
 module ChapelProgramEntrypoints {
-  use ChapelBase, ChapelProgramRegistration, CTypes;
+  use ChapelBase;
+  use ChapelProgramRegistration;
+  use ChapelRuntimeInterface;
+  use CTypes;
 
   // This is an opaque alias for "char" used to make sure the compiler will
   // generate the proper type instead of e.g., "int(8)" as is usually done
@@ -56,6 +59,17 @@ module ChapelProgramEntrypoints {
     return c_ptrTo(chpl_genMainArg);
   }
 
+  private proc initTaskDynamicEndCount() {
+    var endCount = _endCountAlloc(forceLocalTypes=false);
+    chpl_task_setDynamicEndCount(endCount);
+  }
+
+  private proc destroyTaskDynamicEndCount() {
+    var endCount = chpl_task_getDynamicEndCount();
+    _waitEndCount(endCount);
+    _endCountFree(endCount);
+  }
+
   //
   // A program using Chapel as a library might look like:
   //
@@ -84,7 +98,6 @@ module ChapelProgramEntrypoints {
                              argv: chpl_opaque_argv_array): void;
     // TODO: A lie, 'chpl_main' is actually a local function pointer.
     extern proc chpl_task_callMain(chpl_main: c_ptr(void)): void;
-    extern proc chpl_rt_init_program_standard_modules(): void;
     extern proc chpl_libraryModuleLevelSetup(): void;
 
     if chpl_isLibInitialized {
@@ -103,11 +116,12 @@ module ChapelProgramEntrypoints {
     // if the runtime is already initialized.
     chpl_rt_init(ptr, argc, argv);
 
+    // NOTE: This init function is a shim defined in 'ChapelRuntimeInterface'.
     // TODO: There really needs to be a better way to do this. Is the normal
     //       casting not working because the proc-ptr is a class right now?
     //       How am I supposed to trigger a local pointer to be created again?
     const p1: c_fn_ptr = __primitive("capture fn",
-                                     chpl_rt_init_program_standard_modules,
+                                     chpl_initProgramStandardModules,
                                      true);
     const p2 = p1 : c_ptr(void);
 
@@ -115,7 +129,7 @@ module ChapelProgramEntrypoints {
 
     // @dlongnecke-cray, 11/16/2020
     // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
-    chpl_libraryModuleLevelSetup();
+    initTaskDynamicEndCount();
 
     // Now that module initialization is done, set the flag to 'true'.
     chpl_isLibInitialized = true;
@@ -128,7 +142,7 @@ module ChapelProgramEntrypoints {
 
     if !chpl_isLibInitialized || chpl_isLibFinalized then return;
 
-    chpl_libraryModuleLevelCleanup();
+    destroyTaskDynamicEndCount();
     chpl_deinitModules();
     chpl_finalize(0, 1);
 
