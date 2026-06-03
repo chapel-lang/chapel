@@ -40,9 +40,11 @@ module ChapelReduce {
   }
 
   proc _iteratorRecord._scan(op) {
+    /*
     for param i in 0..<getNumFields(this.type) do
       writeln(getFieldName(this.type, i));
     writeln(this._shape_, ": ", this._shape_.type:string);
+*/
     var arr = [val in this] val;
     return chpl__scanIterator(op, arr);
   }
