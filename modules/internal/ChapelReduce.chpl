@@ -43,7 +43,7 @@ module ChapelReduce {
     var arr = this; // materialize iterator as array
     return chpl__scanIterator(op, arr);
   }
-  
+
   @unstable("scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204")
   proc chpl__scanIterator(op, data) {
     use Reflection;
