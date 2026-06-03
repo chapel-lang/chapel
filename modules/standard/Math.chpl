@@ -148,6 +148,7 @@ Error Functions
 Algorithms
 ^^^^^^^^^^
 :proc:`~Math.gcd`
+:proc:`~Math.lcm`
 
 .. _math-bessel:
 
@@ -1438,6 +1439,7 @@ module Math {
     return x;
   }
 
+  @chpldoc.nodoc
   proc lcm_help(x, y): x.type do return x / gcd(x,y) * y;
   
   /* Returns the least common multiple of the integer arguments `x`
