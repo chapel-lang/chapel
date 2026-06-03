@@ -1,6 +1,5 @@
 unstableScans.chpl:3: warning: scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204
 unstableScans.chpl:4: warning: scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204
-unstableScans.chpl:4: warning: scan has been serialized (see issue #12482)
 unstableScans.chpl:5: warning: scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204
 unstableScans.chpl:6: warning: scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204
 unstableScans.chpl:6: warning: scan has been serialized (see issue #12482)
