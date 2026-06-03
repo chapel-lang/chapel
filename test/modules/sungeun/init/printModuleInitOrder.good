@@ -14,6 +14,9 @@ Initializing Modules:
      ChapelDebugPrint
       ChapelIOStringifyHelper
     ChapelTaskDataHelp
+    ChapelRuntimeInterface
+     ChapelProgramRegistration
+      ChapelSetProgramInfoDataEntries
     LocaleModel
      LocaleModelHelpFlat
       LocaleModelHelpSetup
@@ -66,9 +69,6 @@ Initializing Modules:
     ChapelStaticVars
     ChapelDynamicLoading
     ChapelProgramEntrypoints
-     ChapelProgramRegistration
-      ChapelSetProgramInfoDataEntries
-    ChapelRuntimeInterface
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

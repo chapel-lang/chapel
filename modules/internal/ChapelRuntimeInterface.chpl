@@ -21,6 +21,12 @@
 module ChapelRuntimeInterface {
   use ChapelBase, ChapelProgramRegistration, CTypes;
 
+  // Records with empty bodies are intentionally opaque.
+  extern record chpl_localeID_t {};
+  extern record chpl_comm_on_bundle_t {};
+  extern record chpl_task_bundle_t {};
+  extern type chpl_comm_on_bundle_p;
+  extern type chpl_task_bundle_p;
   extern type wide_ptr_t;
 
   inline proc ptrToPrgInfoHere do return chpl_programInfoHere.asPtr();
@@ -57,5 +63,100 @@ module ChapelRuntimeInterface {
                          idx: int(32),
                          size: c_size_t): void;
     fn(ptrToPrgInfoHere, idx, size);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_executeOn(node: int, subloc: int, fid: int,
+                            arg: chpl_comm_on_bundle_p,
+                            arg_size: c_size_t) {
+    param cname = 'chpl_rt_comm_execute_on';
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), node: int,
+                         subloc: int, fid: int,
+                         arg: chpl_comm_on_bundle_p,
+                         arg_size: c_size_t): void;
+    fn(ptrToPrgInfoHere, node, subloc, fid, arg, arg_size);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_executeOnFast(node: int, subloc: int, fid: int,
+                          arg: chpl_comm_on_bundle_p,
+                          arg_size: c_size_t) {
+    param cname = 'chpl_rt_comm_execute_on_fast';
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), node: int,
+                         subloc: int, fid: int,
+                         arg: chpl_comm_on_bundle_p,
+                         arg_size: c_size_t): void;
+    fn(ptrToPrgInfoHere, node, subloc, fid, arg, arg_size);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_executeOnNb(node: int, subloc: int, fid: int,
+                        arg: chpl_comm_on_bundle_p,
+                        arg_size: c_size_t) {
+    param cname = 'chpl_rt_comm_execute_on_nb';
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), node: int,
+                         subloc: int, fid: int,
+                         arg: chpl_comm_on_bundle_p,
+                         arg_size: c_size_t): void;
+    fn(ptrToPrgInfoHere, node, subloc, fid, arg, arg_size);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_addTask(fid: int, args: chpl_task_bundle_p,
+                    args_size: c_size_t,
+                    subloc_id: int) {
+    param cname = 'chpl_rt_task_add_task';
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), fid: int,
+                         args: chpl_task_bundle_p,
+                         args_size: c_size_t,
+                         subloc_id: int): void;
+    fn(ptrToPrgInfoHere, fid, args, args_size, subloc_id);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_commTaskFtableCall(fid: int, args: chpl_comm_on_bundle_p,
+                               args_size: c_size_t,
+                               subloc_id: int) {
+    param cname = 'chpl_rt_comm_task_ftable_call';
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), fid: int,
+                         args: chpl_comm_on_bundle_p,
+                         args_size: c_size_t,
+                         subloc_id: int): void;
+    fn(ptrToPrgInfoHere, fid, args, args_size, subloc_id);
+  }
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_ftableCall(fid: int, args: c_ptr(void)) {
+    param cname = 'chpl_rt_ftable_call';
+    // TODO: No need to actually call into the runtime to do this.
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), fid: int,
+                         bundle: c_ptr(void)): void;
+    fn(ptrToPrgInfoHere, fid, args);
+  }
+
+  inline proc chpl_ftableCall(fid: int, args: chpl_comm_on_bundle_p) {
+    const ptr = __primitive('cast', c_ptr(void), args);
+    chpl_ftableCall(fid, ptr);
+  }
+
+  inline proc chpl_ftableCall(fid: int, args: chpl_task_bundle_p) {
+    const ptr = __primitive('cast', c_ptr(void), args);
+    chpl_ftableCall(fid, ptr);
   }
 }

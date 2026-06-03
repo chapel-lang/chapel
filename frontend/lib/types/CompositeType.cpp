@@ -202,7 +202,7 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
 }
 
 const RecordType* CompositeType::getLocaleIDType(Context* context) {
-  auto [id, name] = parsing::getLocaleIdTypeFromTopLevelLocaleModelHelpRuntimeModule(context);
+  auto [id, name] = parsing::getLocaleIdTypeFromTopLevelChapelRuntimeInterfaceModule(context);
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());

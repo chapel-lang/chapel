@@ -657,3 +657,9 @@ void cb_task_end (const chpl_task_cb_info_t *info) {
 
   }
 }
+
+const char* chpl_rt_finfo_name(int idx) {
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_finfo);
+    return chpl_finfo[idx].name;
+}

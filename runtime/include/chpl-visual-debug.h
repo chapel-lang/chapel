@@ -62,6 +62,8 @@ void chpl_vdebug_tagname(const char* tagname, int tagno);
 //  mark the current task as a xxxVdebug() task and all children
 extern void chpl_vdebug_mark(void);
 
+extern const char* chpl_rt_finfo_name(int idx);
+
 #ifdef __cplusplus
 }
 #endif

@@ -4218,74 +4218,50 @@ static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
 static void amWaitForDone(amDone_t*);
 
 
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t argSize,
-                          int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t argSize,
+                                  int ln,
+                                  int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
 }
 
 
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t argSize,
-                             int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t *arg,
+                                     size_t argSize,
+                                     int ln,
+                                     int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
 }
 
 
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t argSize,
-                               int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t *arg,
+                                       size_t argSize,
+                                       int ln,
+                                       int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
 }
 
@@ -5271,7 +5247,7 @@ void amWrapExecOnBody(void* p) {
 
   chpl_comm_bundleData_t* comm = &((chpl_comm_on_bundle_t*) p)->comm;
 
-  chpl_ftable_call(comm->fid, p);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, comm->fid, p);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(p));
   if (comm->pAmDone != NULL) {
@@ -5333,7 +5309,8 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   //
   // Now we can finally call the body function.
   //
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) xol));
   if (comm->pAmDone != NULL) {

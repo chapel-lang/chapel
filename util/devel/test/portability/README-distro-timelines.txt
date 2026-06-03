@@ -79,7 +79,7 @@ x 38 EOL May 2024
 x 39 EOL Nov 2024
 x 40 EOL May 2025
 x 41 EOL Nov 2025
-  42 EOL May 2026
+x 42 EOL May 2026
   43 EOL Dec 2026
   44 EOL Jun 2027
   45 release Oct 2026
@@ -133,7 +133,7 @@ x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
 x 15.4 EOL Nov 2023
 x 15.5 EOL Dec 2024
-  15.6 EOL Apr 2026
+x 15.6 EOL Apr 2026
   16.0 EOL Oct 2027
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
@@ -176,3 +176,4 @@ x 23.10 "Mantic Minotaur"   EOL Jul 2024
 x 24.10 "Oracular Oriole"   EOL Jul 2025
 x 25.04 "Plucky Puffin"     EOL Jan 2026
   25.10 "Questing Quokka"   EOL Jul 2026
+  26.10 "Stonking Stingray" (releasing Oct 2026)
