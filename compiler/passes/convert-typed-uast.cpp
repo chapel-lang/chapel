@@ -2807,7 +2807,7 @@ struct ConvertTypeHelper {
 
     cname = "_tuple_";
     name = "";
-    if (isStarTuple) {
+    if (isStarTuple && !args.empty()) {
       TypeSymbol* nameTS = args[0];
       if (omitRef)
         nameTS = nameTS->type->getValType()->symbol;
@@ -2861,7 +2861,7 @@ struct ConvertTypeHelper {
     }
 
     const types::TupleType* ret = t;
-    if (anyChanged) {
+    if (anyChanged && t->numElements() > 0) {
       ret = types::TupleType::getQualifiedTuple(context(), std::move(v));
     }
 
