@@ -1570,7 +1570,7 @@ static QualifiedType computeFlattenedRefType(QualifiedType qt) {
 
 static void setQualRef(Symbol* sym) {
   if (!strcmp(sym->name, "sssss")) {
-    printf("Processing sssss\n");
+    //    printf("Processing sssss\n");
   }
   auto qt1 = sym->qualType();
   auto qt2 = computeFlattenedRefType(qt1);
@@ -1585,7 +1585,7 @@ static void setQualRef(Symbol* sym) {
     if (qt2.isRefOrWideRef()) {
       if (ArgSymbol* arg = toArgSymbol(sym)) {
         if (!strcmp(arg->name, "sssss")) {
-          printf("Processing foo(%s)\n", arg->name);
+          //          printf("Processing foo(%s)\n", arg->name);
         }
         // Invariant should already be maintained, so just assert.
         if (qt2.isConst()) {

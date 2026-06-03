@@ -266,7 +266,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   }
 
   if (!strcmp(formal->name, "sssss")) {
-    printf("Updating if ref formal for sssss\n");
+    //    printf("Updating if ref formal for sssss\n");
   }
   
   bool needRefIntent = false;
