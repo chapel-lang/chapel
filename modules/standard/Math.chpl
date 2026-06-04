@@ -148,6 +148,7 @@ Error Functions
 Algorithms
 ^^^^^^^^^^
 :proc:`~Math.gcd`
+:proc:`~Math.lcm`
 
 .. _math-bessel:
 
@@ -1437,6 +1438,105 @@ module Math {
     }
     return x;
   }
+
+  // Stable lcm() versions  in the preview edition
+
+  @chpldoc.nodoc
+  proc lcm_help(x, y): x.type do return x / gcd(x,y) * y;
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: int(8), y: int(8)): int(8) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: int(16), y: int(16)): int(16) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: int(32), y: int(32)): int(32) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: int, y: int): int do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: uint(8), y: uint(8)): uint(8) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: uint(16), y: uint(16)): uint(16) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: uint(32), y: uint(32)): uint(32) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(first="preview")
+  proc lcm(x: uint, y: uint): uint do return lcm_help(x,y);
+
+
+  // Unstable lcm() versions in the 2.0 edition (identical to the
+  // above; this is just our best practice today, unfortunately.
+  // See #28923 for some musing on how to improve this.
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: int(8), y: int(8)): int(8) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: int(16), y: int(16)): int(16) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: int(32), y: int(32)): int(32) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: int, y: int): int do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: uint(8), y: uint(8)): uint(8) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: uint(16), y: uint(16)): uint(16) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: uint(32), y: uint(32)): uint(32) do return lcm_help(x,y);
+
+  /* Returns the least common multiple of the unsigned integer arguments `x`
+     and `y`. */
+  @edition(last="2.0")
+  @unstable("'lcm()' is currently unstable and will be stabilized in a future edition")
+  proc lcm(x: uint, y: uint): uint do return lcm_help(x,y);
+
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")

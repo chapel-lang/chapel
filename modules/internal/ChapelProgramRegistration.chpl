@@ -38,8 +38,8 @@ module ChapelProgramRegistration {
 
     inline proc type nullId param: uint do return 0;
     inline proc type rootId param: uint do return 1;
-    inline proc nullId param do return this.type.nullId;
-    inline proc rootId param do return this.type.rootId;
+    inline proc nullId param: uint do return this.type.nullId;
+    inline proc rootId param: uint do return this.type.rootId;
 
     inline proc ref asPtr() do return c_ptrTo(_info);
 

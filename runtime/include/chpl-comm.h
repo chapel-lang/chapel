@@ -106,6 +106,34 @@ void chpl_rt_comm_task_ftable_call(
                                   lineno, filename);
 }
 
+static inline
+void chpl_rt_comm_bundle_ftable_call(chpl_comm_on_bundle_t* bundle) {
+  // TODO: Right now this assumes that the bundle is remote. If we had
+  // comm-layer-independent access to the calling node, we could make a
+  // choice to translate via program ID or use the local program pointer.
+  // TODO: Which would also necessitate that we do another pass to make
+  // sure all the partially built "on bundles" everywhere have the local
+  // address set...
+  chpl_task_bundle_t* tb = &bundle->task_bundle;
+  chpl_rt_prg_id prg_id = bundle->prg_id;
+  int64_t fid = tb ? tb->requested_fid : -1;
+
+  // Need these things to do a call at all...
+  assert(prg_id != CHPL_RT_PRGINFO_NULL_ID);
+  assert(tb != NULL);
+  assert(tb->requested_fid >= 0);
+
+  // Translate the numeric ID into a program data pointer on this locale.
+  chpl_rt_prginfo* prg = CHPL_RT_PRGINFO_FETCH(prg_id);
+  if (prg == NULL) {
+    chpl_internal_error("Failed to translate program ID");
+  }
+
+  // Now just call the entry using the program's ftable.
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
+  (*chpl_ftable[fid])(bundle);
+}
+
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
