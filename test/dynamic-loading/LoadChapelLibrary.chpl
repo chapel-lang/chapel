@@ -9,6 +9,11 @@ config param numProcPtrsToConstructInExecutable = 0;
 // Call this setup function in both the library and executable.
 perProgramSetupInModuleInit(numProcPtrsToConstructInExecutable);
 
+// TODO: Need to support the situation where a loaded program has more
+// global variables than the root program - today the program crashes with
+// an internal error from the runtime.
+var tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10: int;
+
 //
 // TODO / TODO / TODO
 // Replace/remove this record with a helper module.
@@ -189,7 +194,7 @@ proc testCoforallCallingSerial0(ref lib: dynamicLibrary) {
   var counter: atomic int;
   const hi = 16;
 
-  // This is a really goofy loop.
+  // This is a really goofy loop that just serves to spawn a bunch of tasks.
   while counter.read() != hi do
     coforall i in 0..<hi do
       if i == counter.read() {
@@ -205,8 +210,9 @@ proc testCoforallCallingSerial0(ref lib: dynamicLibrary) {
 proc testCoforallCallingSerial1(ref lib: dynamicLibrary) {
   var counter: atomic int;
 
+  // Just a goofy summation '(k*(k+1))/2' but doubled...
   coforall i in 1..hi with (ref lib) {
-    // At least one first-time load in the loop. Then fast-path access.
+    // At least one first-time load under contention. Then fast-path access.
     type fnType = proc(a: int, b: int): int;
     const fn = try! lib.load('addCoforallCallingSerial1', fnType);
 
