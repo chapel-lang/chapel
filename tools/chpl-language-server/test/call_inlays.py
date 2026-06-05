@@ -23,7 +23,7 @@ from util.config import CLS_PATH
             "--literal-arg-inlays",
             "--no-type-inlays",
             "--no-param-inlays",
-            "--no-fn-type-inlays",
+            "--no-return-type-inlays",
             "--end-markers=none",
         ],
         client_factory=get_base_client,

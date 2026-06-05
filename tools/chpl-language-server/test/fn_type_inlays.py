@@ -186,7 +186,7 @@ async def check_fn_variants(
             sys.executable,
             CLS_PATH(),
             "--resolver",
-            "--fn-type-inlays",
+            "--return-type-inlays",
             "--no-type-inlays",
             "--no-param-inlays",
             "--no-literal-arg-inlays",
