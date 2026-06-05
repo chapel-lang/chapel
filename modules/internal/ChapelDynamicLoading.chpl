@@ -75,7 +75,7 @@ module ChapelDynamicLoading {
   //  -- The '1st' index is reserved to represent the root program.
   //
   // TODO: Split out counters for program IDs so there is no overlap.
-  var chpl_ptrCacheIdxCounter: atomic int = 1;
+  var chpl_ptrCacheIdxCounter: atomic int = 2;
 
   class chpl_LocalPtrCache {
     var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
