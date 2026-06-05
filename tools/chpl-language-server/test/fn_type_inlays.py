@@ -37,11 +37,11 @@ class FnDecl:
     """
 
     name: str
+    return_expr: str
     params: str = ""  # parameters without enclosing parens
     return_intent: str = ""
     throws: bool = False
     where_expr: str = ""
-    return_expr: str = "42"
     yield_expr: str = ""  # defaults to return_expr
     expected_type: str = ""  # expected inlay if any
     explicit_return_type: str = (
