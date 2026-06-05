@@ -273,7 +273,8 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
   }
 
   // Want this to be an unstable warning, and not trigger for internal or
-  // standard modules unless the appropriate flag is used
+  // standard modules unless the appropriate flag is used, nor for
+  // compiler-generated functions
   auto mod = fn->getModule();
   bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
                              fWarnUnstableInternal);
@@ -281,7 +282,7 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
                              fWarnUnstableStandard);
   if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
                         mod->modTag == MOD_USER) &&
-      !fNoConstArgChecks) {
+      !fNoConstArgChecks && !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
 
     // Hash the argument at the start of the function
     CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH,
