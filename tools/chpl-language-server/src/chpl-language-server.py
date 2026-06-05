@@ -659,6 +659,17 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def _fn_return_type_for_inlay(
+        self, fn: chapel.Function, sig: chapel.TypedSignature
+    ) -> Optional[chapel.QualifiedType]:
+        """
+        Return whatever type should be shown as an inlay, if possible.
+        May invoke resolution to infer the return type from the body.
+        For iterators, the "return type" is technically an iterator record, but
+        an explicit return type specifies the yield type, so return that.
+        """
+        return sig.yield_type() if fn.kind() == "iter" else sig.return_type()
+
     def _try_generic_fn_return_type_str(
         self,
         fn: chapel.Function,
@@ -673,9 +684,6 @@ class ChapelLanguageServer(LanguageServer):
         type in terms of these placeholders, and then replacing placeholders
         with the names of the formals/type queries they correspond to.
         """
-        if not self.generic_fn_type_inlays:
-            return None
-
         if fn.return_type() is not None:
             return None
 
@@ -687,10 +695,7 @@ class ChapelLanguageServer(LanguageServer):
             return None
 
         with context.track_errors():
-            if fn.kind() == "iter":
-                qt = template_sig.yield_type()
-            else:
-                qt = template_sig.return_type()
+            qt = self._fn_return_type_for_inlay(fn, template_sig)
         if qt is None:
             return None
 
@@ -779,7 +784,7 @@ class ChapelLanguageServer(LanguageServer):
         if sig.needs_instantiation():
             return None
 
-        qt = sig.yield_type() if fn.kind() == "iter" else sig.return_type()
+        qt = self._fn_return_type_for_inlay(fn, sig)
         if qt is None:
             return None
 
@@ -846,7 +851,7 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
-        if type_str is None:
+        if type_str is None and self.generic_fn_type_inlays:
             type_str = self._try_generic_fn_return_type_str(
                 fn, fi.context.context
             )
