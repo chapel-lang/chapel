@@ -191,7 +191,7 @@ async def check_fn_variants(
             CLS_PATH(),
             "--resolver",
             "--return-type-inlays",
-            "--generic-fn-type-inlays",
+            "--generic-return-type-inlays",
             "--no-type-inlays",
             "--no-param-inlays",
             "--no-literal-arg-inlays",
