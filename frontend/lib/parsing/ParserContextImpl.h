@@ -1341,6 +1341,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       makeIntent(Function::DEFAULT_RETURN_INTENT),
                       YYLTYPE::create(),
                       false,
+                      YYLTYPE::create(),
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr,
                       YYLTYPE::create(),
@@ -1705,6 +1706,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   builder->noteDeclNameLocation(f.get(), identNameLoc);
   builder->noteDeclHeaderLocation(f.get(), convertLocation(fp.headerLoc));
   builder->noteCurlyBracesLocation(f.get(), convertLocation(fp.curlyLoc));
+  builder->noteThrowsKeywordLocation(f.get(), convertLocation(fp.throwsLoc));
 
   // If we are not a method then the receiver intent is discarded,
   // because there is no receiver formal to store it in.
