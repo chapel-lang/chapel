@@ -769,7 +769,14 @@ void CallInitDeinit::processTupleRhsHelper(VarFrame* frame,
 
   // Save the AssociatedAction from the init of the tuple as a whole, under
   // which the per-element actions will be nested.
-  CHPL_ASSERT(re.associatedActions().size() == 1);
+  // This helper expects a top-level copy-init to have been resolved by
+  // the above call; skip it if something went wrong with that.
+  auto numAAs = re.associatedActions().size();
+  if (numAAs == 0) {
+    return;
+  } else if (numAAs > 1) {
+    CHPL_ASSERT(false && "shouldn't be possible");
+  }
   auto topLevelAction = std::move(re.associatedActions().front());
   CHPL_ASSERT(topLevelAction.action() == AssociatedAction::COPY_INIT ||
               topLevelAction.action() == AssociatedAction::INIT_OTHER);
