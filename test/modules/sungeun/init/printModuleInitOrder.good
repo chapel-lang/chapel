@@ -65,7 +65,6 @@ Initializing Modules:
     LocalesArray
     ChapelTaskTable
     MemTracking
-    ExportWrappers
     ChapelStaticVars
     ChapelDynamicLoading
     ChapelProgramEntrypoints

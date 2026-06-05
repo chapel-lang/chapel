@@ -42,6 +42,20 @@ module ChapelRuntimeInterface {
     fn(ptrToPrgInfoHere, idx, ptrToWidePtr);
   }
 
+  export /** So that it can be passed as a callback to the runtime. */
+  proc chpl_initProgramStandardModules() {
+    param cname = 'chpl_rt_init_program_standard_modules';
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo)): void;
+    fn(ptrToPrgInfoHere);
+  }
+
+  export /** So the compiler can see it. */
+  proc chpl_preUserCodeSync() {
+    param cname = 'chpl_rt_pre_user_code_sync';
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo)): void;
+    fn(ptrToPrgInfoHere);
+  }
+
   // These pragmas will be useful for debugging what is going on when a RT
   // shim is called. As well, some runtime functions need this information
   // to be passed.
