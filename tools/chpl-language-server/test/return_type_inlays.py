@@ -359,7 +359,9 @@ async def test_fn_type_inlay_generic_twice(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-async def test_fn_type_inlay_type_query_in_complex_access(client: LanguageClient):
+async def test_fn_type_inlay_type_query_in_complex_access(
+    client: LanguageClient,
+):
     """
     Check a case mentioned explicitly in our comments in which a type query's
     placeholder type makes it as the return type via a field access.
