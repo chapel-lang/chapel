@@ -111,8 +111,8 @@ The following features are extra visual aids:
 | Inlays         | be displayed where a return type           | ``--no-return-type-inlays``           |
 |                | annotation would normally occur.           |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
-| Generic Return | In some cases, the language server can     | ``--generic-fn-type-inlays``,         |
-| Type Inlays    | infer a general return type for a generic  | ``--no-generic-fn-type-inlays``       |
+| Generic Return | In some cases, the language server can     | ``--generic-return-type-inlays``,     |
+| Type Inlays    | infer a general return type for a generic  | ``--no-generic-return-type-inlays``   |
 |                | function, written in terms of its formals  | (default)                             |
 |                | (e.g., ``myFormal.type``).                 |                                       |
 +----------------+--------------------------------------------+---------------------------------------+

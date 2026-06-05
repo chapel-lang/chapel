@@ -1614,8 +1614,8 @@ class CLSConfig:
         )
         chplcheck().config.add_bool_flag(
             self.parser,
-            "generic-fn-type-inlays",
-            "generic_fn_type_inlays",
+            "generic-return-type-inlays",
+            "generic_return_type_inlays",
             True,
         )
         chplcheck().config.add_bool_flag(

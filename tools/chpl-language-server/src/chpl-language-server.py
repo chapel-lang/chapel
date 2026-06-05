@@ -183,7 +183,7 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.get("type_inlays")
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.return_type_inlays: bool = config.get("return_type_inlays")
-        self.generic_fn_type_inlays: bool = config.get("generic_fn_type_inlays")
+        self.generic_return_type_inlays: bool = config.get("generic_return_type_inlays")
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
@@ -851,7 +851,7 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
-        if type_str is None and self.generic_fn_type_inlays:
+        if type_str is None and self.generic_return_type_inlays:
             type_str = self._try_generic_fn_return_type_str(
                 fn, fi.context.context
             )
