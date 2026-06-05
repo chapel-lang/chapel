@@ -53,6 +53,7 @@ def infer_docker_os(package):
         "amzn2023": "amazonlinux:2023",
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
+        "ubuntu26": "ubuntu:26.04",
         "debian12": "debian:12",
         "debian13": "debian:13",
     }
