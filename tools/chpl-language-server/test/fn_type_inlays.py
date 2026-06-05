@@ -339,6 +339,47 @@ async def test_fn_type_inlay_type_query_via_type_proc(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_fn_type_inlay_generic_twice(client: LanguageClient):
+    """
+    Check a case covered by our logic in which a formal has a placeholder
+    type but the placeholder type comes from somewhere else (previous formal)
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "snd",
+                params="x, y: x.type",
+                return_expr="y",
+                expected_type="x.type",
+                do_body=True,
+            )
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_type_query_in_complex_access(client: LanguageClient):
+    """
+    Check a case mentioned explicitly in our comments in which a type query's
+    placeholder type makes it as the return type via a field access.
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "weird",
+                params="x: list(?tq).eltType",
+                return_expr="x",
+                expected_type="tq",
+                do_body=True,
+            )
+        ],
+        preamble=["use List;"],
+    )
+
+
+@pytest.mark.asyncio
 async def test_fn_type_inlay_return_intent_type(client: LanguageClient):
     """
     Ensure return type annotations for functions with explicit return intents.
