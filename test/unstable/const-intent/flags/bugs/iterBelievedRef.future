@@ -1,0 +1,8 @@
+bug: compiler warns about need for 'ref' intent on varargs iterator taking array
+
+This iterator doesn't modify its array argument, yet the compiler
+complains about it needing a 'ref' intent now that arrays aren't
+passed by const anymore.  This seems incorrect.
+
+I was thinking that the same thing would happen with a tuple
+argument, but it did not seem to.
