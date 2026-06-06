@@ -131,7 +131,8 @@ void chpl_rt_comm_bundle_ftable_call(chpl_comm_on_bundle_t* bundle) {
 
   // Now just call the entry using the program's ftable.
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
-  (*chpl_ftable[fid])(bundle);
+  const chpl_fn_p on_fn = chpl_ftable[fid];
+  on_fn(bundle);
 }
 
 // Do a GET in a nonblocking fashion, returning a handle which can be used to

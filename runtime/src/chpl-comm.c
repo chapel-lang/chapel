@@ -192,20 +192,25 @@ static void execute_on_family_common_setup(chpl_rt_prginfo* prg,
                                            c_nodeid_t node,
                                            c_sublocid_t subloc,
                                            chpl_fn_int_t fid,
-                                           chpl_comm_on_bundle_t *arg,
+                                           chpl_comm_on_bundle_t* on_bundle,
                                            size_t arg_size,
                                            int ln,
                                            int32_t fn) {
-  chpl_task_bundle_t* tb = &arg->task_bundle;
+  chpl_task_bundle_t* task_bundle = &on_bundle->task_bundle;
 
-  // This is needed so that we can translate program info across locales.
-  arg->prg_id = prg->id;
-
-  // Local pointer is probably not needed, but just set it anyway.
-  tb->prg = prg;
-
-  // Also set the 'arg->kind'. It can be overridden by a comm-layer if needed.
-  arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
+  // Set things in the on/task bundles before passing off to the comm layer.
+  //
+  // TODO: Why do we pass the 'fid'/'arg_size'/'ln'/'fn' args separately
+  //       from the "on bundle" rather than just storing them inside the
+  //       bundle's fields? That doesn't make any sense to me, and it also
+  //       can cause problems within the tasking layer where I'm trying to
+  //       move towards invoking per-program ftable functions using the
+  //       "on bundle" directly rather than disparate fields grabbed from
+  //       a packet header passed to e.g., a GASNet AM.
+  on_bundle->prg_id             = prg->id;
+  task_bundle->prg              = prg;
+  task_bundle->requested_fid    = fid;
+  on_bundle->kind               = CHPL_ARG_BUNDLE_KIND_COMM;
 }
 
 void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,

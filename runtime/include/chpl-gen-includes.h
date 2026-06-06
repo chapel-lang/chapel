@@ -47,7 +47,8 @@ static inline
 void chpl_rt_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                          void* bundle) {
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
-  (*chpl_ftable[fid])(bundle);
+  const chpl_fn_p on_fn = chpl_ftable[fid];
+  on_fn(bundle);
 }
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
