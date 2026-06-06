@@ -912,10 +912,12 @@ static void buildChplEntryPoints() {
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
   chpl_gen_main->insertAtTail(new CallExpr("chpl_preUserCodeSync"));
 
+  // We always generate this function, but it may not always be called.
+  auto initCmdModsFn = buildInitProgramCommandLineModulesFn();
+
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
   if (!fClientServerLibrary) {
-    auto initCmdModsFn = buildInitProgramCommandLineModulesFn();
     chpl_gen_main->insertAtTail(new CallExpr(initCmdModsFn));
 
   } else {
