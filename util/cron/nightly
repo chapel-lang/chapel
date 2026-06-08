@@ -582,7 +582,7 @@ if ($build == 1) {
 
   if ($c2chapel == 1) {
       print "Making c2chapel\n";
-      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt c2chapel", "make c2chapel", $emailOnError);
+      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt c2chapel", "make c2chapel", $exitOnError);
   }
 
   if ($chplcheck == 1) {
