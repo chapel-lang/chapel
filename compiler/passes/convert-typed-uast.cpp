@@ -4810,7 +4810,7 @@ Expr* TConverter::convertGroupedAssign(
 
     // Get the corresponding associated action
     auto action = re->associatedActions()[i];
-    INT_ASSERT(action.tupleEltIdx().has_value());
+    INT_ASSERT(action.tupleEltIdx());
     INT_ASSERT(*action.tupleEltIdx() == i);
     INT_ASSERT(action.action() == AssociatedAction::ASSIGN);
 
