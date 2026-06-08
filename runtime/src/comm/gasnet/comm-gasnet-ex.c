@@ -473,6 +473,12 @@ static void fork_nb_large_wrapper(large_fork_task_t* f) {
                                      Arg0(arg_on_caller),
                                      Arg1(arg_on_caller)));
 
+  // NOTE: These must match. Currently we 'GET' the entire "on bundle" from
+  //       the remote and then execute the ftable call using it. If we ever
+  //       decide to e.g., fetch only the bundle data and not the whole
+  //       bundle, then this will break (thus the assert).
+  assert(arg->task_bundle.requested_fid == lg->hdr.fid);
+
   // Call the user function
   chpl_rt_comm_bundle_ftable_call(arg);
 
