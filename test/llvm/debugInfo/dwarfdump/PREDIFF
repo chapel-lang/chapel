@@ -29,13 +29,14 @@ class Verifier:
             return None
 
         try:
-            sp.check_call(
+            sp.run(
                 [
                     self.llvm_dwarfdump,
                     "--debug-info",
                     "--verify",
                     self.dwarfDumpTarget,
                 ],
+                check=True,
                 stdout=sp.PIPE,
                 stderr=sp.STDOUT,
             )
