@@ -29,7 +29,7 @@
 #include "chpl-wide-ptr-fns.h"
 
 #include "chpl-prefetch.h" // for chpl_prefetch
-#include "chpl-cache.h" // chpl_cache_enabled, chpl_cache_comm_get etc
+#include "chpl-cache.h" // chpl_rt_is_cache_enabled_fast, chpl_cache_comm_get etc
 #include "chpl-gpu.h" // for comm between device and host
 
 // Don't warn about chpl_comm_get e.g. in this file.
@@ -47,6 +47,15 @@ extern "C" {
 
 #define CHPL_COMM_UNKNOWN_ID -1
 
+static ___always_inline int chpl_rt_is_cache_enabled_fast(void) {
+  extern const int CHPL_CACHE_REMOTE;
+
+  // The remote cache is not compatible with ASan, and it uses thread local
+  // storage, so if tasks can migrate between threads we lose our ability to
+  // correctly fence.
+  return CHPL_CACHE_REMOTE && !CHPL_RT_USING_ASAN &&
+         !chpl_task_canMigrateThreads();
+}
 
 static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
@@ -55,7 +64,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_get(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -77,7 +86,7 @@ void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
     chpl_gpu_comm_get(dst_subloc, addr, src_node, src_subloc, raddr, size,
                       commID, ln, fn);
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_get(addr, src_node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -102,7 +111,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
       chpl_prefetch((unsigned char*)raddr + offset);
     }
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_prefetch(node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -119,7 +128,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_put(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -142,7 +151,7 @@ void chpl_gen_comm_put_to_subloc(void* addr,
     chpl_gpu_comm_put(dst_node, dst_subloc, raddr, src_subloc, addr, size,
                       commID, ln, fn);
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
       chpl_cache_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -168,7 +177,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, c_subloci
   if( 0 ) {
 #endif // HAS_GPU_LOCALE
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_get_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
@@ -193,7 +202,7 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, c_subloci
   if( 0 ) {
 #endif // HAS_GPU_LOCALE
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_put_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
@@ -208,7 +217,7 @@ void chpl_gen_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -222,7 +231,7 @@ void chpl_gen_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
 #endif
   } else {
@@ -238,7 +247,7 @@ void chpl_gen_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
 #endif
   } else {
@@ -251,7 +260,7 @@ void chpl_gen_comm_getput_unordered_task_fence(void)
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
+  } else if( chpl_rt_is_cache_enabled_fast() ) {
     chpl_cache_comm_getput_unordered_task_fence();
 #endif
   } else {
