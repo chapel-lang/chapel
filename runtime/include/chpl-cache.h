@@ -37,17 +37,17 @@ extern "C" {
 #endif
 
 #if defined(__SANITIZE_ADDRESS__)
-#define CHPL_ASAN 1
+#define CHPL_RT_USING_ASAN 1
 #endif
 
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
-#define CHPL_ASAN 1
+#define CHPL_RT_USING_ASAN 1
 #endif
 #endif
 
-#if !defined(CHPL_ASAN)
-#define CHPL_ASAN 0
+#if !defined(CHPL_RT_USING_ASAN)
+#define CHPL_RT_USING_ASAN 0
 #endif
 
 static inline
@@ -57,7 +57,7 @@ void chpl_cache_warn_if_disabled(void)
                           CHPL_CACHE_REMOTE);
 
   if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
-    if (CHPL_ASAN) {
+    if (CHPL_RT_USING_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
                    "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
     } else if (chpl_task_canMigrateThreads()) {
@@ -76,10 +76,9 @@ int chpl_cache_enabled(void)
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to
   // correctly fence.
-  return CHPL_CACHE_REMOTE && !CHPL_ASAN && !chpl_task_canMigrateThreads();
+  return CHPL_CACHE_REMOTE && !CHPL_RT_USING_ASAN &&
+         !chpl_task_canMigrateThreads();
 }
-#undef CHPL_ASAN
-
 
 // Initialize the remote data cache layer.
 void chpl_cache_init(void);
