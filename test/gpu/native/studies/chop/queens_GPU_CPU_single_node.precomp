@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
+set -ex
+
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 CHOP_BRANCH=main
 CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
 CHOP_BRANCH=${CHOP_BRANCH:-main}
-
-set -ex
 
 # Clone ChOp
 rm -rf ChOp
