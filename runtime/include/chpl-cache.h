@@ -29,13 +29,6 @@
 #include "chpl-tasks.h"
 #include "chpl-error.h"
 
-#ifdef HAS_CHPL_CACHE_FNS
-// This is a cache for remote data.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(__SANITIZE_ADDRESS__)
 #define CHPL_RT_USING_ASAN 1
 #endif
@@ -48,6 +41,13 @@ extern "C" {
 
 #if !defined(CHPL_RT_USING_ASAN)
 #define CHPL_RT_USING_ASAN 0
+#endif
+
+#ifdef HAS_CHPL_CACHE_FNS
+// This is a cache for remote data.
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 static inline
