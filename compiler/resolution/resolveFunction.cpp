@@ -333,10 +333,6 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
     retval = true;
     *needRefIntent = true;
 
-  } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
-             isRecordWrappedType(formal->type) == true) {
-    retval = true;
-
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
              (isUnion(formal->type)  == true ||

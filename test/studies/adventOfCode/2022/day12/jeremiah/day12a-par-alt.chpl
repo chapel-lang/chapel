@@ -42,7 +42,7 @@ proc explore(
         explore(nextPos, end, elevs, minTo, pathLen + 1);
 }
 
-iter nextPositions(pos, elevs, minTo, nextPathLen) {
+iter nextPositions(pos, elevs, ref minTo, nextPathLen) {
     // try moving in each direction
     label checkingMoves for move in ((1, 0), (-1, 0), (0, 1), (0, -1)) {
         const next = pos + move;
