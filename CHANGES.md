@@ -17,6 +17,7 @@ Configuration / Build Changes
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* added RHEL versions of RPMs released for HPE Cray EX systems
 * added `c2chapel` to Chapel's binary release formats
 
 Syntactic / Naming Changes
@@ -182,6 +183,7 @@ Portability / Platform-specific Improvements
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
+* fixed deprecation warnings for `ArgMin`/`ArgMax` interface with CUDA 12.9
 
 Generated Executable Flags
 --------------------------
@@ -206,6 +208,7 @@ Error Messages for Build Issues
 
 Documentation Improvements
 --------------------------
+* consolidated and updated file lists in README.files
 * improved the licensing documentation w.r.t. when third-party software is used
 * updated GASNet links in the documentation to point to its new GitHub location
 * updated URLs in `README.rst` to avoid the need for server-side redirects
@@ -232,12 +235,16 @@ Documentation Improvements for Tools
   (see https://chapel-lang.org/docs/2.9/tools/mason/guide/ci.html#more-advanced-ci-setups)
 * added troubleshooting docs for working around `c2chapel` parsing errors  
   (see https://chapel-lang.org/docs/2.9/tools/c2chapel/c2chapel.html#troubleshooting)
+* fixed link to wrong "Inline markup" section in `chpldoc` docs
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* removed outdated mentions of the Cray XC module from usage instructions
+* documented support testing limitations for FreeBSD  
+  (see https://chapel-lang.org/docs/2.9/usingchapel/prereqs.html#outdated-freebsd-testing)
 
 Technical Note Improvements
 ---------------------------
@@ -325,10 +332,12 @@ Bug Fixes for the Runtime
 
 Developer-oriented changes: Process
 -----------------------------------
+* enabled `shellcheck` linting on shell scripts, except in `test`/`third-party`
 
 Developer-oriented changes: Documentation
 -----------------------------------------
 * made all example codes in the `Classes` spec chapter testable
+* consolidated and updated file lists in README.files
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -355,6 +364,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
+* implemented variable scope-related analyses over tuple elements
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -364,11 +374,20 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
+* disabled shebang mangling and debuginfo in the HPE Cray EX RPM for RHEL build
 
 Developer-oriented changes: Testing System
 ------------------------------------------
 * improved error messages when error-on-compile tests lack `.good` files
 * fixed the CI python format check to check all python files
+
+* used more cores by default in many nightly build/test scripts
+* changed to keep test run containers around until next run
+* fixed a bug where EX RPM builds that start and end on different dates fail
+* refactored Docker build script to make ad hoc adjustments easier
+* made test config log filenames unique per-user to avoid conflicts
+* added logging start time and number of cores in several build/test scripts
+
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
@@ -383,6 +402,7 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* removed long-unused `updateSVNLOG` script
 
 
 version 2.8
