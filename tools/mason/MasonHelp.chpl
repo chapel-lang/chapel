@@ -160,7 +160,6 @@ proc masonHelp() {
       -V, --version       Print version info and exit
           --color=[mode]  Select color mode ('always', 'never', or 'auto')
 
-
   Mason commands:
       new         Create a new Mason project
       init        Initialize a Mason project inside an existing directory
