@@ -27,6 +27,10 @@
 // DO NOT INCLUDE THIS HEADER WITHIN RUNTIME CODE!
 //
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This header fixes issues with '--incremental' compilation.
 //
@@ -78,5 +82,9 @@ extern const c_string chpl_filenameTable[];
 extern const int chpl_filenameTableSize;
 extern void* const chpl_private_broadcast_table[];
 extern const int chpl_private_broadcast_table_len;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
