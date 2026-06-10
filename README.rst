@@ -44,5 +44,12 @@ Social media:          https://chapel-lang.org/socials/
 =====================  ========================================================
 
 .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.svg
+   :target: https://hpsf.io/
+   :width: 240px
+
 .. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
+   :target: https://hpsf.io/projects/chapel/
+   :scale: 50%
+
 .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.svg
+   :target: https://www.linuxfoundation.org/
