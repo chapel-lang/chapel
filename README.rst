@@ -45,27 +45,11 @@ Social media:          https://chapel-lang.org/socials/
 
 .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.svg
    :target: https://hpsf.io/
-   :height: 50px
+   :height: 75px
    :align: left
 .. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
    :target: https://hpsf.io/projects/chapel/
-   :height: 50px
-   :align: center
+   :height: 75px
 .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.svg
    :target: https://www.linuxfoundation.org/
-   :height: 50px
-   :align: right
-
-
-.. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.svg
-   :target: https://hpsf.io/
-   :width: 30 %
-   :align: middle
-.. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
-   :target: https://hpsf.io/projects/chapel/
-   :width: 10 %
-   :align: middle
-.. image:: https://chapel-lang.org/img/logos/lf-stacked-color.svg
-   :target: https://www.linuxfoundation.org/
-   :width: 30 %
-   :align: middle
+   :height: 75px
