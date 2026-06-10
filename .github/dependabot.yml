@@ -6,3 +6,5 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 15
+    assignees:
+      - "arifthpe"
