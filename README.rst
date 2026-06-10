@@ -47,7 +47,7 @@ Social media:          https://chapel-lang.org/socials/
    :width: 100%
    :class: borderless
 
-   * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.svg
+   * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
           :target: https://hpsf.io/
           :height: 75px
          
@@ -56,7 +56,7 @@ Social media:          https://chapel-lang.org/socials/
           :height: 75px
           :align: center
 
-     - .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.svg
+     - .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.jpg
           :target: https://www.linuxfoundation.org/
           :height: 75px
           :align: right
