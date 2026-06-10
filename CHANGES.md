@@ -23,9 +23,17 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added support for `==` and `!=` on `union` values to support comparisons  
+  (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#default-comparison-operators))
+* added support for `**` on `param real` values to `int` and `real` exponents
+  (see https://chapel-lang.org/docs/2.9/language/spec/expressions.html#exponentiation-operators)
 
 Language Feature Improvements
 -----------------------------
+* parallelized scan expressions over array-like expressions  
+  (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
+* re-implemented record comparisons as module code in the preview edition  
+  (see https://chapel-lang.org/docs/2.9/language/spec/records.html#default-comparison-operators)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -35,6 +43,8 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
+* added a least common multiple procedure in the `Math` library  
+  (see https://chapel-lang.org/docs/2.9/modules/standard/Math.html#Math.lcm)
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
@@ -77,6 +87,7 @@ Syntax Highlighters
 
 Other Tool Improvements
 -----------------------
+* updated `c2chapel` to support full C99 via pycparser 3.0/pycparserext 2026.1
 
 Compiler Flags
 --------------
@@ -113,6 +124,9 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the quality of error messages for non-`param bool` where-clauses  
+  (e.g., `where myNonParamBool` or `where myParamReal` generate better errors)
+* added a warning when relying on array arguments to `iter`s being `ref`
 
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
@@ -122,12 +136,14 @@ Error Messages for Build Issues
 
 Documentation Improvements
 --------------------------
+* updated URLs in `README.rst` to avoid the need for server-side redirects
 
 Language Specification Improvements
 -----------------------------------
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* updated `DynamicLoading` docs to remove `-suseProcedurePointers` requirement
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -158,6 +174,7 @@ Deprecated / Unstable / Removed Library Features
 
 Bug Fixes
 ---------
+* fixed bugs related to passing arrays to iteraators by non-`ref` intents
 
 Bug Fixes for Libraries
 -----------------------
@@ -191,12 +208,14 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* simplified non-`param` versions of `**` to reduce compiler involvement
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* updated `make chpl-venv` to avoid using outdated package versions
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -218,6 +237,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* improved error messages when error-on-compile tests lack `.good` files
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
