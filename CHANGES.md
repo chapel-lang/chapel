@@ -157,6 +157,7 @@ Compiler Flags
 Compiler Improvements
 ---------------------
 * added support for LLVM 22 as the compiler back-end
+* changed the default representation of first-class procedures to use pointers
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -242,6 +243,8 @@ Documentation Improvements to the 'man' Pages
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* updated docs for building `libfabric` to target a Slingshot-based system  
+  (see https://chapel-lang.org/docs/2.9/platforms/networks/slingshot.html)
 * removed outdated mentions of the Cray XC module from usage instructions
 * documented support testing limitations for FreeBSD  
   (see https://chapel-lang.org/docs/2.9/usingchapel/prereqs.html#outdated-freebsd-testing)
@@ -259,6 +262,7 @@ Runtime Library Improvements
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of LLVM to 22.1.6
+* updated the bundled version of `libfabric` to 2.5.1
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -361,6 +365,15 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* made a number of changes in support of full-featured procedure pointers:
+  - added support for '.retType' and '.argTypes' methods
+  - added support for implicit coercions for passed arguments
+  - added support for promoted expressions using procedure pointers
+  - added support for casting of procedure pointers to strings
+  - updated UnitTest module to use procedure pointers
+  - fixed a bug preventing records from being returned by value
+  - improved reflection capabilities for procedure pointers
+
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
