@@ -39,11 +39,16 @@ A union is defined with the following syntax:
      union-statement union-statement-list
 
    union-statement:
+     variable-declaration-statement
      procedure-declaration-statement
      iterator-declaration-statement
-     variable-declaration-statement
      empty-statement
 
+The identifier following the ``union`` keyword defines the name of the
+union, while the variable declaration statements define its fields and
+their types.  Procedure and iterator declaration statements define
+methods on the union.
+     
 If the ``extern`` keyword appears before the ``union`` keyword, then an
 external union type is declared. An external union is used within Chapel
 for type and field resolution, but no corresponding backend definition
@@ -58,16 +63,16 @@ type is supplied by a library or the execution environment.
 Union Types
 ~~~~~~~~~~~
 
-The syntax of a union type is summarized as follows:
+A union type is referred to using the identifier representing its
+name:
 
 .. code-block:: syntax
 
    union-type:
      identifier
 
-The union type is specified by the name of the union type. This
-simplification from class and record types is possible because generic
-unions are not supported.
+This is simpler than class and record types because generic unions are
+not currently supported.
 
 .. index::
    single: unions; fields
@@ -188,8 +193,9 @@ When these comparisons are applied to two union values of distinct
 types, a compiler error is generated.
 
 These default comparisons consider two union values to be equal if (a)
-both union have the same active field and (b) those fields are
-considered equal via `==`.  Otherwise they are considered not equal.
+both unions have the same active field and (b) the respective values
+of this field are considered equal using `==`.  Otherwise they are
+considered not equal.
 
 
 .. index::
