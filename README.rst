@@ -6,11 +6,10 @@ The Chapel Language
 What is Chapel?
 ---------------
 Chapel is a modern programming language designed for productive
-parallel computing at scale. Chapel's design and implementation have
-been undertaken with portability in mind, permitting it to run on the
-CPUS and GPUS of laptops, desktops, commodity clusters, and the cloud,
-in addition to the high-end supercomputers that originally motivated
-it.
+parallel computing at scale.  Its design and implementation have been
+undertaken with portability in mind, permitting it to run on the CPUS
+and GPUS of laptops, desktops, commodity clusters, and the cloud, in
+addition to the high-end supercomputers that Chapel was designed for.
 
 For more information about Chapel, see its website at
 https://chapel-lang.org
@@ -37,15 +36,13 @@ Install Chapel:        https://chapel-lang.org/download/
 Sample computations:   https://chapel-lang.org/docs/examples/
 Chapel documentation:  https://chapel-lang.org/docs/
 GitHub repository:     https://github.com/chapel-lang/chapel
-Reporting bugs:        https://github.com/chapel-lang/chapel/issues
 Discussion forums:     https://chapel-lang.org/forums/
-Community resources:   https://chapel-lang.org/community/
 Social media:          https://chapel-lang.org/socials/
+Chapel Community:      https://chapel-lang.org/community/
 =====================  ========================================================
 
 .. list-table::
    :width: 100%
-   :widths: 25 25 25
    :class: borderless
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
