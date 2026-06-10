@@ -11,11 +11,12 @@ OUTFILE=$2
 # The lines starting with these words report leak stats.
 cat $OUTFILE | grep "dict" >  $OUTFILE.tmphead
 cat $OUTFILE | grep "list" >> $OUTFILE.tmphead
+cat $OUTFILE | grep "tuple" >> $OUTFILE.tmphead
 
 # cp $OUTFILE.tmphead $OUTFILE.tmphead.step1
 
 # The remaining lines (inverse grep) are just part of the test.
-cat $OUTFILE | grep -v -e "dict" -e "list" > $OUTFILE.tmptail
+cat $OUTFILE | grep -v -e "dict" -e "list" -e "tuple" > $OUTFILE.tmptail
 # cp $OUTFILE.tmptail $OUTFILE.tmptail.step1
 
 # If the number is preceded by a '+', remove it.
