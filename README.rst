@@ -45,6 +45,7 @@ Social media:          https://chapel-lang.org/socials/
 
 .. list-table::
    :width: 100%
+   :widths: 33% 33% 33%
    :class: borderless
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
