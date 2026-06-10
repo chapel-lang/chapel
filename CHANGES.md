@@ -70,9 +70,10 @@ Changes / Feature Improvements in Standard Libraries
 * updated `FileSystem.[listDir|walkDirs|findFiles]()` to throw errors  
   (see https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.listDir)
 
-
 New Package Module Features
 ---------------------------
+* extended `DynamicLoading` to support parallel/distributed Chapel libraries  
+  (see TODO)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
