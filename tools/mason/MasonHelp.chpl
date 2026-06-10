@@ -158,7 +158,8 @@ proc masonHelp() {
   Options:
       -h, --help          Display this message
       -V, --version       Print version info and exit
-          --no-color      Do not format text printed on console
+          --color=[mode]  Select color mode ('always', 'never', or 'auto')
+
 
   Mason commands:
       new         Create a new Mason project
