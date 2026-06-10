@@ -19,8 +19,8 @@ License
 -------
 Chapel is developed and released under the terms of the Apache 2.0
 license, though it also makes use of third-party packages under their
-own licensing terms.  See the `<LICENSE>`_ file in this directory for
-details.
+own licensing terms.  See https://chapel-lang.org/license/ or the
+`<LICENSE>`_ file in this directory for details.
 
 Resources
 ---------
