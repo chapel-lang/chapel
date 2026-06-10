@@ -1039,10 +1039,12 @@ module ChapelDynamicLoading {
 
         // While holding the LOCALE-0 lock, set on all other locales.
         if requestedUniqueIdx && numLocales > 1 {
-          coforall loc in Locales[1..] do on loc {
-            local do manage chpl_localPtrCache.guard.write() as m {
-              const ptr = lookupPtrFromLocalFtable(idx);
-              m.add(ptr, ret);
+          coforall loc in Locales do on loc {
+            if loc.id != 0 {
+              local do manage chpl_localPtrCache.guard.write() as m {
+                const ptr = lookupPtrFromLocalFtable(idx);
+                m.add(ptr, ret);
+              }
             }
           }
         }
