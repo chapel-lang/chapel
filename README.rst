@@ -41,6 +41,8 @@ Social media:          https://chapel-lang.org/socials/
 Chapel Community:      https://chapel-lang.org/community/
 =====================  ======================================
 
+|
+
 .. list-table::
    :class: borderless
 
