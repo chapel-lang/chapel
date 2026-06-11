@@ -29,6 +29,8 @@ For more information about Chapel, please refer to the following resources:
    If you are viewing this file locally, we recommend referring to
    doc/README.rst for local references to documentation and resources.
 
+.. class:: align-center
+   
 =====================  ========================================================
 Project website:       https://chapel-lang.org
 Try Chapel online:     https://chapel-lang.org/tryit/
@@ -42,7 +44,6 @@ Chapel Community:      https://chapel-lang.org/community/
 =====================  ========================================================
 
 .. list-table::
-   :width: 50%
    :class: borderless
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
