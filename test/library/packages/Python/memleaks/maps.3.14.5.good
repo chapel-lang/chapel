@@ -1,6 +1,6 @@
-dict      2xxx
-list       7xx
-tuple     1xxx
+dict      xxxx
+list       xxx
+tuple     xxxx
 d size 3
 d size after deleting second 2
 d size after swap 3

@@ -27,11 +27,9 @@ mv $OUTFILE.scratch $OUTFILE.tmphead
 cat $OUTFILE.tmphead | sed -e 's/[[:space:]]*$//g' > $OUTFILE.scratch
 mv $OUTFILE.scratch $OUTFILE.tmphead
 
-# Next, replace all but the first digit of every number with 'x'. Using
-# 'perl' here saved me a crazy headache trying to do this with 'sed'.
-# TODO: If the variance in leaks is such that the first digit changes, then
-#       just replace the whole line with 'x' (also easier to write...).
-cat $OUTFILE.tmphead | perl -pe 's/([0-9])([0-9]+)/$1 . "x" x length($2)/ge' > $OUTFILE.scratch
+# Next, replace all digits of every number with 'x'. Using 'perl' here saved me
+# a crazy headache trying to do this with 'sed'.
+cat $OUTFILE.tmphead | perl -pe 's/([0-9]+)/"x" x length($1)/ge' > $OUTFILE.scratch
 mv $OUTFILE.scratch $OUTFILE.tmphead
 
 # Sort.
