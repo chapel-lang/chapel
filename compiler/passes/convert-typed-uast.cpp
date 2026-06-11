@@ -2572,6 +2572,7 @@ struct ConvertTypeHelper {
   Type* visit(const types::AnyNumericType* t) { return dtNumeric; }
   Type* visit(const types::AnyOwnedType* t) { return dtOwned; }
   Type* visit(const types::AnyPodType* t) { return dtAnyPOD; }
+  Type* visit(const types::AnyProcType* t) { return dtAnyProc; }
   Type* visit(const types::AnyRealType* t) { return dtAnyReal; }
   Type* visit(const types::AnyRecordType* t) { return dtAnyRecord; }
   Type* visit(const types::AnySharedType* t) { return dtShared; }
@@ -2806,7 +2807,7 @@ struct ConvertTypeHelper {
 
     cname = "_tuple_";
     name = "";
-    if (isStarTuple) {
+    if (isStarTuple && !args.empty()) {
       TypeSymbol* nameTS = args[0];
       if (omitRef)
         nameTS = nameTS->type->getValType()->symbol;
@@ -2860,7 +2861,7 @@ struct ConvertTypeHelper {
     }
 
     const types::TupleType* ret = t;
-    if (anyChanged) {
+    if (anyChanged && t->numElements() > 0) {
       ret = types::TupleType::getQualifiedTuple(context(), std::move(v));
     }
 
@@ -4778,14 +4779,14 @@ Expr* TConverter::convertGroupedAssign(
   //   (Tuple a, b)
   //   (FnCall helper)
   //
-  // and there are associated 'ASSIGN' actions on 'a' and 'b'
+  // and there are associated 'ASSIGN' actions for both 'a' and 'b' on the '='
   auto op = node->toOpCall();
   if (!op || op->op() != USTR("=")) return nullptr;
 
-  auto lhs = op->actual(0)->toTuple();
+  auto lhs = op->lhs()->toTuple();
   if (!lhs) return nullptr;
 
-  auto rhs = op->actual(1);
+  auto rhs = op->rhs();
   INT_ASSERT(rhs->isFnCall());
 
   types::QualifiedType rhsQt;
@@ -4793,7 +4794,10 @@ Expr* TConverter::convertGroupedAssign(
   INT_ASSERT(rhsQt.type()->isTupleType());
   auto rhsSym = storeInTempIfNeeded(rhsExpr, rhsQt);
 
-  for (int i = 0; i < lhs->numActuals(); i++) {
+  int numElts = lhs->numActuals();
+  INT_ASSERT(re->hasAssociatedActions());
+  INT_ASSERT(re->associatedActions().size() == (size_t)numElts);
+  for (int i = 0; i < numElts; i++) {
     auto lhsAst = lhs->actual(i);
     types::QualifiedType lhsQt;
     auto lhsExpr = convertExpr(lhsAst, rv, &lhsQt);
@@ -4804,15 +4808,16 @@ Expr* TConverter::convertGroupedAssign(
                                 new_CStringSymbol(astr("x", istr(i))));
     getElem = storeInTempIfNeeded(getElem, rhsQt.type()->toTupleType()->elementType(i));
 
-    auto re = rv.byAst(lhsAst);
-    INT_ASSERT(re.hasAssociatedActions());
-    INT_ASSERT(re.associatedActions().size() == 1);
-    auto action = re.associatedActions()[0];
+    // Get the corresponding associated action
+    auto action = re->associatedActions()[i];
+    INT_ASSERT(action.tupleEltIdx());
+    INT_ASSERT(*action.tupleEltIdx() == i);
     INT_ASSERT(action.action() == AssociatedAction::ASSIGN);
 
     // Assign it to the LHS element.
     const ResolvedFunction* rf;
-    auto elide = paramElideCallOrNull(action.fn(), re.poiScope(), &rf);
+    auto eltRe = rv.byAst(lhsAst);
+    auto elide = paramElideCallOrNull(action.fn(), eltRe.poiScope(), &rf);
     INT_ASSERT(!elide);
     auto calledFn = findOrConvertFunction(rf);
     CallExpr* ret = new CallExpr(calledFn, lhsExpr, getElem);

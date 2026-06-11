@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2017-2022 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -42,6 +43,7 @@
 #include <net/if.h>
 #include <ofi_util.h>
 #include <ofi_iov.h>
+#include <inttypes.h>
 
 
 static int (*xnet_start_op[xnet_op_max])(struct xnet_ep *ep);
@@ -115,7 +117,7 @@ xnet_get_save_rx(struct xnet_ep *ep, uint64_t tag)
 	assert(ep->cur_rx.hdr_done == ep->cur_rx.hdr_len &&
 	       !ep->cur_rx.claim_ctx);
 
-	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Saving msg tag 0x%zx src %zu\n",
+	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Saving msg tag 0x%" PRIx64 " src %" PRIu64 "\n",
 	       tag, ep->peer->fi_addr);
 	rx_entry = xnet_alloc_xfer(xnet_srx2_progress(ep->srx));
 	if (!rx_entry)
@@ -254,7 +256,7 @@ void xnet_complete_saved(struct xnet_xfer_entry *saved_entry, void *msg_data)
 
 	msg_len = xnet_msg_len(&saved_entry->hdr);
 	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "Completing saved msg "
-	       "tag 0x%zx src %zu size %zu\n", saved_entry->tag,
+	       "tag 0x%" PRIx64 " src %" PRIx64 " size %zu\n", saved_entry->tag,
 	       saved_entry->src_addr, msg_len);
 
 	if (msg_len) {
@@ -287,7 +289,7 @@ void xnet_recv_saved(struct xnet_rdm *rdm, struct xnet_xfer_entry *saved_entry,
 	progress = xnet_rdm2_progress(rdm);
 	assert(xnet_progress_locked(progress));
 	FI_DBG(&xnet_prov, FI_LOG_EP_DATA, "recv matched saved msg "
-	       "tag 0x%zx src %zu\n", saved_entry->tag, saved_entry->src_addr);
+	       "tag 0x%" PRIx64 " src %" PRIx64 "\n", saved_entry->tag, saved_entry->src_addr);
 
 	if (saved_entry->ctrl_flags & XNET_FREE_BUF) {
 		buf2free = saved_entry->user_buf;
@@ -949,7 +951,7 @@ static int xnet_handle_write(struct xnet_ep *ep)
 		return -FI_ENOMEM;
 
 	if (ep->cur_rx.hdr.base_hdr.flags & XNET_REMOTE_CQ_DATA) {
-		rx_entry->cq_flags = (FI_COMPLETION | FI_REMOTE_WRITE |
+		rx_entry->cq_flags = (FI_COMPLETION | FI_RMA | FI_REMOTE_WRITE |
 				      FI_REMOTE_CQ_DATA);
 		rma_iov = (struct ofi_rma_iov *) ((uint8_t *) &rx_entry->hdr +
 			   sizeof(rx_entry->hdr.cq_data_hdr));
@@ -1330,7 +1332,7 @@ static void xnet_progress_cqe(struct xnet_progress *progress,
 	struct xnet_pep *pep;
 
 	assert(xnet_io_uring);
-	sockctx = (struct ofi_sockctx *) cqe->user_data;
+	sockctx = (struct ofi_sockctx *)(uintptr_t) cqe->user_data;
 	assert(sockctx);
 	assert(sockctx->uring_sqe_inuse);
 	if (!(cqe ->flags & IORING_CQE_F_MORE))
@@ -1493,25 +1495,25 @@ xnet_handle_events(struct xnet_progress *progress,
 
 	assert(ofi_genlock_held(progress->active_lock));
 	for (i = 0; i < nfds; i++) {
-		fid = events[i].data.ptr;
+		fid = OFI_EPOLL_EVT_DATA(events[i]);
 		assert(fid);
 
-		pin = events[i].events & POLLIN;
-		pout = events[i].events & POLLOUT;
-		perr = events[i].events & POLLERR;
+		pin = OFI_EPOLL_EVT_HAS_INPUT(events[i]);
+		pout = OFI_EPOLL_EVT_HAS_OUTPUT(events[i]);
+		perr = OFI_EPOLL_EVT_HAS_ERR(events[i]);
 
 		switch (fid->fclass) {
 		case FI_CLASS_EP:
-			xnet_run_ep(events[i].data.ptr, pin, pout, perr);
+			xnet_run_ep(OFI_EPOLL_EVT_DATA(events[i]), pin, pout, perr);
 			break;
 		case FI_CLASS_PEP:
-			xnet_accept_sock(events[i].data.ptr);
+			xnet_accept_sock(OFI_EPOLL_EVT_DATA(events[i]));
 			break;
 		case FI_CLASS_CONNREQ:
-			xnet_run_conn(events[i].data.ptr, pin, pout, perr);
+			xnet_run_conn(OFI_EPOLL_EVT_DATA(events[i]), pin, pout, perr);
 			break;
 		case XNET_CLASS_URING:
-			xnet_progress_uring(progress, events[i].data.ptr);
+			xnet_progress_uring(progress, OFI_EPOLL_EVT_DATA(events[i]));
 			break;
 		default:
 			assert(fid->fclass == XNET_CLASS_PROGRESS);

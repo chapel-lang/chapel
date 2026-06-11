@@ -1745,7 +1745,7 @@ setupFunctionDecl(FnSymbol*   fn,
 
   if (optWhere)
   {
-    fn->where = new BlockStmt(optWhere);
+    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));;
   }
 
   if (optLifetimeConstraints)
@@ -2386,6 +2386,8 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
           ts->deprecationMsg = theVs->deprecationMsg;
           ts->unstableMsg = theVs->unstableMsg;
+          ts->firstEdition = theVs->firstEdition;
+          ts->lastEdition = theVs->lastEdition;
         }
 
         DefExpr* newde = new DefExpr(ts);

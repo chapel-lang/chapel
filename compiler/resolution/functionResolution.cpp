@@ -903,6 +903,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtAnyProc && isFunctionType(actualType)) {
+    return true;
+  }
+
   if (formalType == dtNumeric &&
       (isIntType(actualType)  ||
        isUIntType(actualType) ||
@@ -2854,7 +2858,6 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
-static bool resolveFunctionPointerCall(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 static void resolveInitRef(CallExpr* call);
@@ -2934,7 +2937,7 @@ void resolveCall(CallExpr* call) {
     if (resolveClassBorrowMethod(call))
       return;
 
-    if (resolveFunctionPointerCall(call))
+    if (resolveFunctionPointerCall(call, false))
       return;
 
     if (call->isNamedAstr(astr_coerceCopy)) {
@@ -3375,7 +3378,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // TODO: Ideally, we would be able to leverage the existing machinery for
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
-static bool resolveFunctionPointerCall(CallExpr* call) {
+bool resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved) {
+  if (resolved) *resolved = false; // set this in case of early return
+
   auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
@@ -3383,10 +3388,12 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // TODO: Support default arguments?
   if (call->numActuals() != ft->numFormals()) {
-    USR_FATAL(call, "incorrect number of arguments - expected '%d', "
-                    "but found '%d'",
-                    ft->numFormals(),
-                    call->numActuals());
+    if (!checkOnly) {
+      USR_FATAL(call, "incorrect number of arguments - expected '%d', "
+                      "but found '%d'",
+                      ft->numFormals(),
+                      call->numActuals());
+    }
     return true;
   }
 
@@ -3397,13 +3404,15 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
       auto se = toSymExpr(base);
       const char* name = se ? se->symbol()->name : nullptr;
 
-      if (name) {
-        USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
-                               "case) do not support named arguments yet",
-                               name);
-      } else {
-        USR_FATAL_CONT(actual, "calls to function values do not support "
-                               "named arguments yet");
+      if (!checkOnly) {
+        if (name) {
+          USR_FATAL_CONT(actual, "calls to function values ('%s' in this "
+                                 "case) do not support named arguments yet",
+                                 name);
+        } else {
+          USR_FATAL_CONT(actual, "calls to function values do not support "
+                                 "named arguments yet");
+        }
       }
     }
   }
@@ -3434,47 +3443,61 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
                           ft);
     anyPromotes = anyPromotes || promotes;
     if (!ok) {
-      if (onceForErrorHeader) {
-        USR_FATAL_CONT(call, "failed to resolve call");
-        onceForErrorHeader = false;
+      if (!checkOnly) {
+        if (onceForErrorHeader) {
+          USR_FATAL_CONT(call, "failed to resolve call");
+          onceForErrorHeader = false;
+        }
+
+        USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
+                               "passed to formal '%s'",
+                               toString(actualType),
+                               toString(formalType));
       }
 
-      USR_FATAL_CONT(actual, "because actual argument with type '%s' is "
-                             "passed to formal '%s'",
-                             toString(actualType),
-                             toString(formalType));
+      return true;
     }
   }
 
-  // Instead of refactoring promotion wrapping machinery, create a wrapper for
+  if (resolved) *resolved = true;
+
+  if (checkOnly) return true;
+
+  // Instead of refactoring wrapper machinery, create a wrapper for
   // this particular call and resolve it normally.
-  if (anyPromotes) {
-    static int promoWrapperId = 0;
-    auto name = astr("chpl_fnptr_promo_wrapper_", std::to_string(promoWrapperId++).c_str());
-    FnSymbol* fn = new FnSymbol(name);
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
-    for (int i = 0; i < ft->numFormals(); i++) {
-      auto formal = ft->formal(i);
-      ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
-      fn->insertFormalAtTail(arg);
-      wrappedCall->insertAtTail(new SymExpr(arg));
-    }
+  static int wrapperId = 0;
+  auto name = astr("chpl_fnptr_wrapper_", std::to_string(wrapperId++).c_str());
+  FnSymbol* fn = new FnSymbol(name);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  if (ft->throws()) fn->throwsErrorInit();
+  CallExpr* wrappedCall = new CallExpr(call->baseExpr->copy());
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    ArgSymbol* arg = new ArgSymbol(formal->intent(), formal->name(), formal->type());
+    fn->insertFormalAtTail(arg);
+    wrappedCall->insertAtTail(new SymExpr(arg));
+  }
 
-    fn->retType = ft->returnType();
-    if (ft->returnType() != dtVoid) {
-      VarSymbol* ret = newTemp("fnptr_promo_wrapper_ret", ft->returnType());
-      fn->body->insertAtTail(new DefExpr(ret));
-      fn->body->insertAtTail(new CallExpr(PRIM_MOVE, ret, wrappedCall));
-      fn->body->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-    } else {
-      fn->body->insertAtTail(wrappedCall);
-    }
+  fn->retType = ft->returnType();
+  fn->retTag = ft->returnIntent();
+  if (ft->returnType() != dtVoid) {
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, wrappedCall));
+  } else {
+    fn->body->insertAtTail(wrappedCall);
+  }
 
-    call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  call->getStmtExpr()->insertBefore(new DefExpr(fn));
+  normalize(fn);
 
-    call->baseExpr->replace(new SymExpr(fn));
-    resolveNormalCall(call);
+  auto old = call->baseExpr;
+  call->baseExpr->replace(new SymExpr(fn));
+  resolveNormalCall(call);
+
+  if (!anyPromotes) {
+    // Then replace the call to the wrapper with the call to the procedure
+    // pointer, so long as there is no promotion.
+    call->baseExpr->replace(old);
+    fn->defPoint->remove();
   }
 
   return true;

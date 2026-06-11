@@ -621,17 +621,40 @@ static void moveAndCheckInterfaceConstraints() {
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
     if (fn != nullptr) {
-      if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
-        if (fn->where == block) {
+
+      // If this 'implements' statement appears within a 'where'
+      // clause, it should take one of the following forms at this
+      // point:
+      //
+      // - BlockStmt
+      //   - CallExpr("chpl_validateWhere")
+      //     - ImplementsStmt()
+      //     - CallExpr("&&")
+      //       - ImplementsStmt() | expr
+      //       - expr | ImplementsStmt()
+      //
+      // The following conditional strives to pluck 'implements'
+      // statements out of this pattern, leaving anything else
+      // intact, or removing it if nothing's left.
+      //
+      if (CallExpr* call = toCallExpr(icon->parentExpr)) {
+        // unwrap the compiler-inserted where-clause validation if it's there
+        if (call->isNamed("chpl_validateWhere")) {
           icon->remove();
           fn->addInterfaceConstraint(icon);
-          if (block->body.empty())
-            block->remove();
+          if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
+            call->remove();
+            if (block->body.empty()) {
+              block->remove();
+            } else {
+              INT_FATAL("Unexpected non-empty block in where clause");
+            }
+          } else {
+            INT_FATAL("Unexpected parent expression in where clause");
+          }
           continue;
-        }
-      } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
-        if (isInWhereBlock(fn, call)) {
-          if (! call->isNamed("&&")) {
+        } else if (isInWhereBlock(fn, call)) {
+          if (!call->isNamed("&&")) {
             USR_FATAL_CONT(icon, "combining an 'implements' constraint"
                   " with others is currently supported only using '&&'");
             continue;
@@ -646,6 +669,8 @@ static void moveAndCheckInterfaceConstraints() {
         if (icon->list == &(ifcInfo->interfaceConstraints))
           continue; // this constraint is already in the right spot, due to
                     // handleReceiverFormals() -> desugarInterfaceAsType()
+      } else {
+        INT_FATAL("Unexpected case in moveAndCheckInterfaceConstraints()");
       }
     }
 

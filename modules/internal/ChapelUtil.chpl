@@ -193,13 +193,6 @@ module ChapelUtil {
     return result;
   }
 
-  //
-  // These two are called from the emitted chpl_gen_main(), and
-  // defined in the runtime.
-  //
-  extern proc chpl_rt_preUserCodeHook();
-  extern proc chpl_rt_postUserCodeHook();
-
   extern proc allocate_string_literals_buf(s: int): c_ptrConst(c_char);
   extern proc deallocate_string_literals_buf(): void;
 

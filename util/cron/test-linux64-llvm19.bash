@@ -10,9 +10,10 @@ export CHPL_LLVM_GCC_PREFIX='none' # spack llvm is configured with proper gcc
 
 # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
 llvm_version=$($CHPL_LLVM_CONFIG --version)
-if [ "$llvm_version" != "19.1.7" ]; then
+llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
+if [ "$llvm_version_major" != "19" ]; then
   echo "Wrong LLVM version"
-  echo "Expected Version: 19.1.7 Actual Version: $llvm_version"
+  echo "Expected Version: 19 Actual Version: $llvm_version"
   exit 2
 fi
 

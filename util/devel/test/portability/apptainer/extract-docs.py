@@ -81,6 +81,8 @@ def title(name):
         name = '25.04 "Plucky Puffin"'
     if name == "Questing":
         name = '25.10 "Questing Quokka"'
+    if name == "Resolute":
+        name = '26.04 "Resolute Raccoon"'
     return name
 
 

@@ -159,13 +159,10 @@ struct fi_peer_eq_context {
  */
 struct fid_peer_srx;
 
-/* Castable to dlist_entry */
 struct fi_peer_rx_entry {
-	struct fi_peer_rx_entry *next;
-	struct fi_peer_rx_entry *prev;
 	struct fid_peer_srx *srx;
 	fi_addr_t addr;
-	size_t size;
+	size_t msg_size;
 	uint64_t tag;
 	uint64_t cq_data;
 	uint64_t flags;
@@ -177,12 +174,20 @@ struct fi_peer_rx_entry {
 	struct iovec *iov;
 };
 
+struct fi_peer_match_attr {
+	fi_addr_t addr;
+	size_t msg_size;
+	uint64_t tag;
+};
+
 struct fi_ops_srx_owner {
 	size_t	size;
-	int	(*get_msg)(struct fid_peer_srx *srx, fi_addr_t addr,
-			size_t size, struct fi_peer_rx_entry **entry);
-	int	(*get_tag)(struct fid_peer_srx *srx, fi_addr_t addr,
-			uint64_t tag, struct fi_peer_rx_entry **entry);
+	int	(*get_msg)(struct fid_peer_srx *srx,
+			   struct fi_peer_match_attr *attr,
+			   struct fi_peer_rx_entry **entry);
+	int	(*get_tag)(struct fid_peer_srx *srx,
+			   struct fi_peer_match_attr *attr,
+			   struct fi_peer_rx_entry **entry);
 	int	(*queue_msg)(struct fi_peer_rx_entry *entry);
 	int	(*queue_tag)(struct fi_peer_rx_entry *entry);
 	void	(*foreach_unspec_addr)(struct fid_peer_srx *srx,

@@ -660,6 +660,10 @@ CLASS_BEGIN(Function)
                Nilable<const chpl::uast::Decl*>, return node->thisFormal())
   PLAIN_GETTER(Function, throws, "Check if this Function node is marked throws",
                bool, return node->throws())
+  PLAIN_GETTER(Function, throws_location, "Get the Location of this Function node's 'throws' keyword, if any",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateThrowsKeywordWithAst(context, node);
+               return getValidLocation(loc))
   PLAIN_GETTER(Function, where_clause, "Get the where clause for this Function node",
                Nilable<const chpl::uast::AstNode*>, return node->whereClause())
   PLAIN_GETTER(Function, initial_signature, "Compute the initial typed signature of this Function node",

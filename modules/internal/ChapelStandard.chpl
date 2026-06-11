@@ -50,6 +50,7 @@ module ChapelStandard {
   public use ChapelReduce;
   public use ChapelSyncvar;
   public use ChapelTaskDataHelp;
+  public use ChapelRuntimeInterface;
   public use LocaleModel;
   public use ChapelLocale;
   public use ChapelPrivatization;

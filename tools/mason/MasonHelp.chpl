@@ -81,30 +81,6 @@ class MasonEnvHelpHandler : HelpHandler {
   }
 }
 
-class MasonExternalHelpHandler : HelpHandler {
-  override proc printHelp() {
-    masonExternalHelp();
-  }
-}
-
-class MasonExternalFindHelpHandler : HelpHandler {
-  override proc printHelp() {
-    masonExternalFindHelp();
-  }
-}
-
-class MasonExternalInfoHelpHandler : HelpHandler {
-  override proc printHelp() {
-    masonExternalInfoHelp();
-  }
-}
-
-class MasonExternalSearchHelpHandler : HelpHandler {
-  override proc printHelp() {
-    masonExternalSearchHelp();
-  }
-}
-
 class MasonInstallHelpHandler : HelpHandler {
   override proc printHelp() {
     masonInstallHelp();
@@ -182,7 +158,7 @@ proc masonHelp() {
   Options:
       -h, --help          Display this message
       -V, --version       Print version info and exit
-          --no-color      Do not format text printed on console
+          --color=[mode]  Select color mode ('always', 'never', or 'auto')
 
   Mason commands:
       new         Create a new Mason project
@@ -198,7 +174,6 @@ proc masonHelp() {
       doc         Build this project's documentation
       system      Integrate with system packages found via pkg-config
       test        Compile and run tests found in /test
-      external    Integrate external dependencies into Mason packages
       publish     Publish package to mason-registry
       modules     Print the dependencies of a Mason project
   """.dedent().strip();
@@ -336,7 +311,6 @@ Usage:
 
 Options:
     -h, --help                  Display this message
-        --external              Add/Remove dependency from external dependencies
         --system                Add/Remove dependency from system dependencies
 
 Not listing an option will add/remove the dependency from the Mason
@@ -377,202 +351,6 @@ proc masonEnvHelp() {
 
   Environment variables set by the user will be printed with an
   asterisk at the end of the line.
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonExternalHelp() {
-  const s = """
-  Use, install and search for external packages to build Mason packages with
-
-  Usage:
-      mason external [options] [<args>...]
-      mason external [options]
-
-  Options:
-      search                      Search for a specific external package
-      compiler                    List and search for compilers on system
-      install                     Install an external package
-      uninstall                   Uninstall an external package
-      info                        Show information about an external package
-      find                        Find information about installed external
-                                  packages
-      -V, --version               Display Spack version
-      -h, --help                  Display this message
-          --setup                 Download and install Spack backend
-          --spec                  Display Spack specification help
-
-  Please see Mason documentation for more instructions on using external
-  packages
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonExternalFindHelp() {
-  const s = """
-Find external packages on your system and get information about them
-
-Usage:
-    mason external find [options]
-    mason external find [options] <package>
-
-    <package>: a Spack spec expression indicating the package to find
-
-Options:
-    -h, --help                  Display this message
-
-Display Options:
-    -s, --short                 Show only specs (default)
-    -p, --paths                 Show paths to package install directories
-    -d, --deps                  Show full dependency DAG of installed packages
-    -l, --long                  Show dependency hashes as well as versions
-    -L, --very-long             Show full dependency hashes as well as versions
-    -t TAGS, --tags TAGS        Filter a package query by tags
-        --show-flags            Show spec compiler flags
-        --show-full-compiler    Show full compiler specs
-        --variants              Show variants in output (can be long)
-    -e, --explicit              Show only specs that were installed explicitly
-    -E, --implicit              Show only specs that were installed as
-                                dependencies
-    -u, --unknown               Show only specs Spack does not have a package
-                                for
-    -m, --missing               Show missing dependencies as well as installed
-                                specs
-    -M, --only-missing          Show only missing dependencies
-    -N, --namespace             Show fully qualified package names
-
-When no package is listed, all installed external packages will be listed.
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonExternalInfoHelp() {
-  const s = """
-  Get information about external packages and system architecture
-
-  Usage:
-      mason external info [options] <package>
-
-      <package>: a Spack spec expression indicating the package to retrieve
-                 information on
-
-  Options:
-      -h, --help                  Display this message
-          --arch                  Print architecture information about current
-                                  system
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonExternalSearchHelp() {
-  const s = """
-  Search for external packages
-
-  Usage:
-      mason external search [options] <search string>
-
-  Options:
-      -h, --help                  Display this message
-      -d, --desc                  Parse descriptions of package to include more
-                                  search results
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonInstallHelp() {
-  const s = """
-Install external packages onto your system
-
-Usage:
-    mason external install [options] <package>
-
-    <package>: a Spack spec expression indicating the package to install
-
-Options:
-    -h, --help                     Display this message
-    --only {package,dependencies}  Select the mode of installation. The default
-                                   is to install the package along with all its
-                                   dependencies. Alternatively one can decide to
-                                   install only the package or only the
-                                   dependencies
-    --jobs JOBS                    Explicitly set number of make jobs. Default
-                                   is #cpus
-    --overwrite                    Reinstall an existing spec, even if it has
-                                   dependents
-    --keep-prefix                  Don't remove the install prefix if
-                                   installation fails
-    --keep-stage                   Don't remove the build stage if installation
-                                   succeeds
-    --restage                      If a partial install is detected, delete
-                                   prior state
-    --use-cache                    Check for pre-built packages in mirrors
-    --show-log-on-error            Print full build log to stderr if build fails
-    --source                       Install source files in prefix
-    --no-checksum                  Do not check packages against checksum
-    --fake                         Fake install for debug purposes.
-    --file                         Install from file. Read specs to install from
-                                   .yaml
-    --clean                        Sanitize the environment from variables that
-                                   can affect how packages find libraries or
-                                   headers
-    --dirty                        Maintain the current environment without
-                                   trying to
-                                   sanitize it
-    --test {root,all}              If 'root' is chosen, run package tests during
-                                   installation for top-level packages (but skip
-                                   tests for dependencies). If 'all' is chosen,
-                                   run package tests during installation for all
-                                   packages. If neither are chosen, don't run
-                                   tests for any packages.
-    --run-tests                    Run package tests during installation
-                                   (same as --test=all)
-    --log-format {junit}           Format to be used for log files
-    --log-file LOG_FILE            Filename for the log file. If not passed a
-                                   default will be used
-    --yes-to-all                   Assume 'yes' is the answer to every
-                                   confirmation request
-
-External Mason packages can be installed as follows:
-    mason external install <full Spack spec expression>
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonUninstallHelp() {
-  const s = """
-  Uninstall external packages on your system
-
-  Usage:
-      mason external uninstall [options] <package>
-
-      <package>: a Spack spec expression indicating the package to install
-
-  Options:
-      -h, --help                  Display this message
-          --force                 Remove regardless of dependents
-          --all                   USE CAREFULLY. remove ALL installed packages
-                                  that match supplied spec
-          --dependents            Also uninstall any dependent packages
-
-  External Mason packages can be uninstalled as follows:
-      mason external uninstall <full Spack spec expression>
-  """.dedent().strip();
-  writeln(s);
-}
-
-proc masonCompilerHelp() {
-  const s = """
-  Find and view compilers on your system
-
-  Usage:
-      mason external compiler [options]
-
-  Options:
-      -h, --help                  Display this message
-          --find                  Find compilers on your system
-          --edit                  Open the compilers configuration file in
-                                  $EDITOR
-          --list                  List the compilers on your system
   """.dedent().strip();
   writeln(s);
 }

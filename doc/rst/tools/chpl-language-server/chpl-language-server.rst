@@ -100,11 +100,16 @@ use them, enable ``--resolver``.
 
 The following features are extra visual aids:
 
+
 +----------------+--------------------------------------------+---------------------------------------+
 | Feature        | Description                                | Flag                                  |
 +----------------+--------------------------------------------+---------------------------------------+
 | Type Inlays    | Type information can be displayed inline   | ``--type-inlays`` (default),          |
 |                | as an inlay hint.                          | ``--no-type-inlays``                  |
++----------------+--------------------------------------------+---------------------------------------+
+| Return Type    | Inferred return types for functions can    | ``--return-type-inlays`` (default),   |
+| Inlays         | be displayed where a return type           | ``--no-return-type-inlays``           |
+|                | annotation would normally occur.           |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
 | Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
 |                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |

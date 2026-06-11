@@ -196,7 +196,6 @@ vrb_msg_inject_fast(struct fid_ep *ep_fid, const void *buf, size_t len,
 static ssize_t vrb_msg_ep_injectdata_fast(struct fid_ep *ep_fid, const void *buf, size_t len,
 					     uint64_t data, fi_addr_t dest_addr)
 {
-	ssize_t ret;
 	struct vrb_ep *ep =
 		container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
 
@@ -206,9 +205,7 @@ static ssize_t vrb_msg_ep_injectdata_fast(struct fid_ep *ep_fid, const void *buf
 	ep->wrs->sge.addr = (uintptr_t) buf;
 	ep->wrs->sge.length = (uint32_t) len;
 
-	ret = vrb_post_send(ep, &ep->wrs->msg_wr, 0);
-	ep->wrs->msg_wr.opcode = IBV_WR_SEND;
-	return ret;
+	return vrb_post_send(ep, &ep->wrs->msg_wr, 0);
 }
 
 const struct fi_ops_msg vrb_msg_ep_msg_ops_ts = {

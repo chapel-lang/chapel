@@ -73,7 +73,7 @@ _usd_post_send_one(
         vlan_tag_insert, vlan_tag, loopback);
     wmb();
 
-    wr = vnic_cached_posted_index((dma_addr_t)packet, length, index);
+    wr = vnic_cached_posted_index((dma_addr_t)(uintptr_t)packet, length, index);
     iowrite64(wr, &vwq->ctrl->posted_index);
 
     wq->uwq_next_desc = (struct wq_enet_desc *)

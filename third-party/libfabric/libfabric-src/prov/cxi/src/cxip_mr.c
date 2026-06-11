@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
  *
  * Copyright (c) 2017 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2018,2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2018,2020-2023,2026 Hewlett Packard Enterprise Development LP
  */
 
 #include "config.h"
@@ -65,13 +65,209 @@ static void cxip_ep_mr_remove(struct cxip_mr *mr)
 	dlist_remove(&mr->ep_entry);
 }
 
+
+/*
+ * cxip_mr_handle_remote_write() - Handle remote write with immediate data.
+ *
+ * Processes PUT events containing immediate data (from fi_writedata) and
+ * generates completion entries to the target endpoint's receive CQ.
+ *
+ * The completion is written with FI_RMA | FI_REMOTE_WRITE | FI_REMOTE_CQ_DATA
+ * flags to indicate a remote RMA write with immediate data.
+ */
+static int cxip_mr_handle_remote_write(struct cxip_mr *mr,
+				       const union c_event *event,
+				       uint64_t remote_cq_data)
+{
+	struct cxip_ep *ep;
+	struct cxip_rxc *rxc;
+	fi_addr_t src_addr = FI_ADDR_NOTAVAIL;
+	uint64_t flags;
+	size_t len;
+	void *buf;
+	int ret;
+	uint32_t initiator;
+	uint16_t vni;
+	struct cxip_addr addr;
+
+	if (!mr->ep) {
+		CXIP_DBG("MR not bound to endpoint, skipping completion\n");
+		return FI_SUCCESS;
+	}
+
+	ep = mr->ep;
+	rxc = ep->ep_obj->rxc;
+
+	if (!rxc || !rxc->recv_cq) {
+		CXIP_DBG("No receive CQ bound, skipping completion\n");
+		return FI_SUCCESS;
+	}
+
+	/* Build completion entry with immediate data */
+	flags = FI_RMA | FI_REMOTE_WRITE | FI_REMOTE_CQ_DATA;
+	len = event->tgt_long.mlength;
+	buf = (void *)((uintptr_t)mr->buf + event->tgt_long.start);
+
+	/* Extract initiator and VNI from event for source address resolution */
+	initiator = event->tgt_long.initiator.initiator.process;
+	vni = event->tgt_long.vni;
+
+	/* Resolve source address if FI_SOURCE capability is enabled */
+	if (rxc->attr.caps & FI_SOURCE) {
+		src_addr = cxip_recv_req_src_addr(rxc, initiator, vni, false);
+
+		/* Generate normal completion if address resolved OR FI_SOURCE_ERR not set.
+		 * Only generate error if BOTH address failed AND FI_SOURCE_ERR is set.
+		 * This matches the semantic in recv_req_event_success().
+		 */
+		if (src_addr != FI_ADDR_NOTAVAIL ||
+		    !(rxc->attr.caps & FI_SOURCE_ERR)) {
+			ret = ofi_peer_cq_write(&rxc->recv_cq->util_cq,
+						(void *)(uintptr_t)mr->mr_fid.fid.context,
+						flags, len, buf, remote_cq_data, 0, src_addr);
+			if (ret != FI_SUCCESS)
+				CXIP_WARN("Failed to submit remote write completion: %d\n", ret);
+			return ret;
+		}
+
+		addr.nic = CXI_MATCH_ID_EP(rxc->pid_bits, initiator);
+		addr.pid = CXI_MATCH_ID_PID(rxc->pid_bits, initiator);
+
+		src_addr = cxip_av_lookup_auth_key_fi_addr(rxc->ep_obj->av, vni);
+
+		struct fi_cq_err_entry err_entry = {};
+		err_entry.err = FI_EADDRNOTAVAIL;
+		err_entry.err_data = &addr;
+		err_entry.err_data_size = sizeof(addr);
+		err_entry.op_context = (void *)(uintptr_t)mr->mr_fid.fid.context;
+		err_entry.src_addr = src_addr;
+		err_entry.flags = flags;
+		err_entry.len = len;
+		err_entry.buf = buf;
+
+		ret = ofi_peer_cq_write_error(&rxc->recv_cq->util_cq, &err_entry);
+
+		return ret;
+	}
+
+	/* FI_SOURCE not enabled - use FI_ADDR_NOTAVAIL */
+	ret = ofi_peer_cq_write(&rxc->recv_cq->util_cq,
+				(void *)(uintptr_t)mr->mr_fid.fid.context,
+				flags, len, buf, remote_cq_data, 0, src_addr);
+	if (ret != FI_SUCCESS) {
+		CXIP_WARN("Failed to submit remote write completion: %d\n", ret);
+		return ret;
+	}
+
+	CXIP_DBG("Generated remote write completion: data=0x%" PRIx64 " len=%zu\n",
+		 remote_cq_data, len);
+
+	return FI_SUCCESS;
+}
+
+/*
+ * cxip_mr_sol_event_cb() - Callback for solicited event (writedata) LE.
+ *
+ * For standard MRs with writedata support enabled, two separate request IDs
+ * and callbacks are used:
+ *   - mr->req with cxip_mr_cb() handles regular RMA operations
+ *   - mr->writedata_req with cxip_mr_sol_event_cb() handles writedata operations
+ *
+ * This callback is invoked for the second LE that handles writedata operations
+ * (with sol_event match bit set). When a PUT event is received with status OK
+ * (C_RC_OK), the solicited event completion is processed by generating a
+ * completion entry with immediate data to the target endpoint's receive CQ.
+ */
+static int cxip_mr_sol_event_cb(struct cxip_ctrl_req *req, const union c_event *event)
+{
+	struct cxip_mr *mr = req->mr.mr;
+	int evt_rc = cxi_event_rc(event);
+	int ret;
+
+	switch (event->hdr.event_type) {
+	case C_EVENT_ACK:
+		/* Ignore command completion ACKs */
+		break;
+
+	case C_EVENT_LINK:
+		assert(mr->writedata_mr_state == CXIP_MR_DISABLED);
+
+		if (evt_rc == C_RC_OK) {
+			mr->writedata_mr_state = CXIP_MR_LINKED;
+			CXIP_DBG("MR writedata PTE linked: %p\n", mr);
+			break;
+		}
+
+		mr->writedata_mr_state = CXIP_MR_LINK_ERR;
+		CXIP_WARN("MR writedata PTE link: %p failed %d\n", mr, evt_rc);
+		break;
+
+	case C_EVENT_UNLINK:
+		assert(evt_rc == C_RC_OK);
+		assert(mr->writedata_mr_state == CXIP_MR_LINKED);
+		mr->writedata_mr_state = CXIP_MR_UNLINKED;
+		CXIP_DBG("MR writedata PTE unlinked: %p\n", mr);
+		break;
+
+	case C_EVENT_PUT:
+		/* Count access events if MR event counting is enabled */
+		if (mr->count_events)
+			ofi_atomic_inc32(&mr->access_events);
+
+		/* Solicited event: process writedata completion only if status is OK */
+		if (evt_rc == C_RC_OK) {
+			/* Extract immediate data from event header_data field */
+			uint64_t imm = event->tgt_long.header_data;
+
+			ret = cxip_mr_handle_remote_write(mr, event, imm);
+			if (ret != FI_SUCCESS)
+				CXIP_WARN("Failed to handle solicited event: %d\n", ret);
+		} else {
+			CXIP_WARN("Solicited event PUT failed: %s\n", cxi_rc_to_str(evt_rc));
+		}
+		break;
+
+	case C_EVENT_MATCH:
+		/* Count match events if MR event counting is enabled */
+		if (mr->count_events)
+			ofi_atomic_inc32(&mr->match_events);
+
+		/* Match events can occur on writedata LE, just track them */
+		if (evt_rc != C_RC_OK)
+			CXIP_WARN(CXIP_UNEXPECTED_EVENT,
+				  cxi_event_to_str(event), cxi_rc_to_str(evt_rc));
+		break;
+
+	default:
+		CXIP_WARN(CXIP_UNEXPECTED_EVENT,
+			  cxi_event_to_str(event), cxi_rc_to_str(evt_rc));
+	}
+
+	return FI_SUCCESS;
+}
+
 /*
  * cxip_mr_cb() - Process MR LE events.
  */
 int cxip_mr_cb(struct cxip_ctrl_req *req, const union c_event *event)
 {
-	struct cxip_mr *mr = req->mr.mr;
+	struct cxip_mr *mr;
 	int evt_rc = cxi_event_rc(event);
+
+	/* During standard MR PtlTE invalidation it is possible a released
+	 * reference could generate a target event with C_RC_MST_CANCELLED;
+	 * this should be ignored.
+	 */
+	if (evt_rc == C_RC_MST_CANCELLED) {
+		CXIP_DBG("Ignoring MR LE invalidate canceled status\n");
+		return FI_SUCCESS;
+	}
+
+	mr = req->mr.mr;
+
+	/* This callback handles the regular (non-writedata) LE.
+	 * Writedata events are handled by cxip_mr_sol_event_cb.
+	 */
 
 	switch (event->hdr.event_type) {
 	case C_EVENT_LINK:
@@ -98,7 +294,8 @@ int cxip_mr_cb(struct cxip_ctrl_req *req, const union c_event *event)
 		CXIP_DBG("MR PTE unlinked: %p\n", mr);
 		break;
 	case C_EVENT_MATCH:
-		ofi_atomic_inc32(&mr->match_events);
+		if (mr->count_events)
+			ofi_atomic_inc32(&mr->match_events);
 
 		if (evt_rc != C_RC_OK)
 			goto log_err;
@@ -112,8 +309,6 @@ int cxip_mr_cb(struct cxip_ctrl_req *req, const union c_event *event)
 
 		if (evt_rc != C_RC_OK)
 			goto log_err;
-
-		/* TODO handle fi_writedata/fi_inject_writedata */
 		break;
 	default:
 log_err:
@@ -130,7 +325,7 @@ static int cxip_mr_wait_append(struct cxip_ep_obj *ep_obj,
 	/* Wait for PTE LE append status update */
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_LINKED &&
 		 mr->mr_state != CXIP_MR_LINK_ERR);
 
@@ -160,9 +355,12 @@ static int cxip_mr_enable_std(struct cxip_mr *mr)
 	};
 	uint32_t le_flags;
 
+	mr->req.ep_obj = ep_obj;
 	mr->req.cb = cxip_mr_cb;
+	mr->req.mr.mr = mr;
+	CXIP_DBG("Standard MR callback registered: mr=%p rma_events=%d\n", mr, mr->rma_events);
 
-	le_flags = C_LE_UNRESTRICTED_BODY_RO;
+	le_flags = C_LE_UNRESTRICTED_BODY_RO | C_LE_RESTART_SEQ;
 	if (mr->attr.access & FI_REMOTE_WRITE)
 		le_flags |= C_LE_OP_PUT;
 	if (mr->attr.access & FI_REMOTE_READ)
@@ -170,32 +368,131 @@ static int cxip_mr_enable_std(struct cxip_mr *mr)
 	if (mr->cntr)
 		le_flags |= C_LE_EVENT_CT_COMM;
 
-	/* TODO: to support fi_writedata(), we will want to leave
-	 * success events enabled for mr->rma_events true too.
+	/* For dual entry mode, create two LEs with separate request IDs:
+	 * 1. mr->req with cxip_mr_cb handles regular RMA operations
+	 * 2. mr->writedata_req with cxip_mr_sol_event_cb handles writedata operations
+	 * Each request has its own callback for independent event processing.
 	 */
-	if (!mr->count_events)
-		le_flags |= C_LE_EVENT_SUCCESS_DISABLE;
+	if (mr->domain->rma_cq_data_size) {
+		uint32_t regular_le_flags;
+		uint32_t writedata_le_flags;
+		uint64_t writedata_key_raw;
+		struct cxip_mr_key writedata_key;
 
-	ret = cxip_pte_append(ep_obj->ctrl.pte,
-			      mr->len ? CXI_VA_TO_IOVA(mr->md->md, mr->buf) : 0,
-			      mr->len, mr->len ? mr->md->md->lac : 0,
-			      C_PTL_LIST_PRIORITY, mr->req.req_id,
-			      key.key, 0, CXI_MATCH_ID_ANY,
-			      0, le_flags, mr->cntr, ep_obj->ctrl.tgq, true);
-	if (ret != FI_SUCCESS) {
-		CXIP_WARN("Failed to write Append command: %d\n", ret);
-		return ret;
+		/* Initialize writedata state */
+		mr->writedata_mr_state = CXIP_MR_DISABLED;
+
+		/* First LE: for regular operations, disable success events
+		 * only if MR event counting is not enabled
+		 */
+		regular_le_flags = le_flags;
+		if (!mr->count_events)
+			regular_le_flags |= C_LE_EVENT_SUCCESS_DISABLE | C_LE_EVENT_COMM_DISABLE;
+
+		ret = cxip_pte_append(ep_obj->ctrl.pte,
+				      mr->len ? CXI_VA_TO_IOVA(mr->md->md, mr->buf) : 0,
+				      mr->len, mr->len ? mr->md->md->lac : 0,
+				      C_PTL_LIST_PRIORITY, mr->req.req_id,
+				      key.key, 0, CXI_MATCH_ID_ANY,
+				      0, regular_le_flags, mr->cntr, ep_obj->ctrl.tgq, true);
+		if (ret != FI_SUCCESS) {
+			CXIP_WARN("Failed to write Append command for regular LE: %d\n", ret);
+			return ret;
+		}
+
+		ret = cxip_mr_wait_append(ep_obj, mr);
+		if (ret)
+			return ret;
+
+		/* Second LE: for writedata operations with dedicated callback.
+		 * This uses a separate request ID (writedata_req) so each case has
+		 * its own callback for independent event handling.
+		 */
+		writedata_le_flags = le_flags;
+		/* Enable communication events for writedata */
+		CXIP_DBG("MR enabling writedata events: mr=%p\n", mr);
+
+		/* Use writedata_req for the second LE with dedicated callback */
+		mr->writedata_req.cb = cxip_mr_sol_event_cb;
+		mr->writedata_req.mr.mr = mr;
+		writedata_key_raw = cxip_key_set_writedata(key.raw);
+		writedata_key.raw = writedata_key_raw;
+
+		ret = cxip_pte_append(ep_obj->ctrl.pte,
+				      mr->len ? CXI_VA_TO_IOVA(mr->md->md, mr->buf) : 0,
+				      mr->len, mr->len ? mr->md->md->lac : 0,
+				      C_PTL_LIST_PRIORITY, mr->writedata_req.req_id,
+				      writedata_key.key, 0, CXI_MATCH_ID_ANY,
+				      0, writedata_le_flags, mr->cntr, ep_obj->ctrl.tgq, true);
+		if (ret != FI_SUCCESS) {
+			CXIP_WARN("Failed to write Append command for writedata LE: %d\n", ret);
+			return ret;
+		}
+
+		/* Wait for writedata LE to link */
+		do {
+			sched_yield();
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
+		} while (mr->writedata_mr_state != CXIP_MR_LINKED &&
+			 mr->writedata_mr_state != CXIP_MR_LINK_ERR);
+
+		if (mr->writedata_mr_state == CXIP_MR_LINK_ERR)
+			return -FI_ENOSPC;
+	} else {
+		/* Original single LE logic */
+		/* Enable communication events for RMA events; leave success events enabled */
+		if (mr->rma_events) {
+			CXIP_DBG("MR enabling RMA events: mr=%p le_flags=0x%x\n", mr, le_flags);
+		}
+
+		/* Enable success events when counters are not requested */
+		if (!mr->count_events)
+			le_flags |= C_LE_EVENT_SUCCESS_DISABLE;
+
+		ret = cxip_pte_append(ep_obj->ctrl.pte,
+				      mr->len ? CXI_VA_TO_IOVA(mr->md->md, mr->buf) : 0,
+				      mr->len, mr->len ? mr->md->md->lac : 0,
+				      C_PTL_LIST_PRIORITY, mr->req.req_id,
+				      key.key, 0, CXI_MATCH_ID_ANY,
+				      0, le_flags, mr->cntr, ep_obj->ctrl.tgq, true);
+		if (ret != FI_SUCCESS) {
+			CXIP_WARN("Failed to write Append command: %d\n", ret);
+			return ret;
+		}
+
+		ret = cxip_mr_wait_append(ep_obj, mr);
+		if (ret)
+			return ret;
 	}
-
-	ret = cxip_mr_wait_append(ep_obj, mr);
-	if (ret)
-		return ret;
 
 	mr->enabled = true;
 
 	CXIP_DBG("Standard MR enabled: %p (key: 0x%016lX)\n", mr, mr->key);
 
 	return FI_SUCCESS;
+}
+
+/* If MR event counts are recorded then we can check event counts to determine
+ * if invalidate can be skipped.
+ */
+static bool cxip_mr_disable_check_count_events(struct cxip_mr *mr,
+					       uint64_t timeout)
+{
+	struct cxip_ep_obj *ep_obj = mr->ep->ep_obj;
+	uint64_t end = ofi_gettime_ns() + timeout;
+
+	while (true) {
+
+		if (ofi_atomic_get32(&mr->match_events) ==
+		    ofi_atomic_get32(&mr->access_events))
+			return true;
+
+		if (ofi_gettime_ns() >= end)
+			return false;
+
+		sched_yield();
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
+	}
 }
 
 /*
@@ -207,35 +504,53 @@ static int cxip_mr_disable_std(struct cxip_mr *mr)
 {
 	int ret;
 	struct cxip_ep_obj *ep_obj = mr->ep->ep_obj;
+	bool count_events_disabled;
 
 	/* TODO: Handle -FI_EAGAIN. */
 	ret = cxip_pte_unlink(ep_obj->ctrl.pte, C_PTL_LIST_PRIORITY,
 			      mr->req.req_id, ep_obj->ctrl.tgq);
-	assert(ret == FI_SUCCESS);
+	if (ret != FI_SUCCESS)
+		CXIP_FATAL("Unable to queue unlink command: %d\n", ret);
 
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_UNLINKED);
 
-	/* If MR event counts are recorded then we can check event counts
-	 * to determine if invalidate can be skipped.
-	 */
-	if (!mr->count_events || ofi_atomic_get32(&mr->match_events) !=
-	    ofi_atomic_get32(&mr->access_events)) {
-		/* TODO: Temporary debug helper for DAOS to track if
-		 * Match events detect a need to flush.
-		 */
-		if (mr->count_events)
-			CXIP_WARN("Match events required pte LE invalidate\n");
+	/* For dual entry, also unlink the writedata LE */
+	if (mr->domain->rma_cq_data_size) {
+		ret = cxip_pte_unlink(ep_obj->ctrl.pte, C_PTL_LIST_PRIORITY,
+				      mr->writedata_req.req_id, ep_obj->ctrl.tgq);
+		if (ret != FI_SUCCESS)
+			CXIP_FATAL("Unable to queue writedata unlink command: %d\n", ret);
 
-		ret = cxil_invalidate_pte_le(ep_obj->ctrl.pte->pte, mr->key,
-					     C_PTL_LIST_PRIORITY);
-		if (ret)
-			CXIP_WARN("MR %p key 0x%016lX invalidate failed %d\n",
-				  mr, mr->key, ret);
+		/* Wait for writedata LE to be unlinked */
+		do {
+			sched_yield();
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
+		} while (mr->writedata_req.mr.mr->mr_state != CXIP_MR_UNLINKED);
 	}
 
+	if (mr->count_events) {
+		count_events_disabled = cxip_mr_disable_check_count_events(mr, cxip_env.mr_cache_events_disable_poll_nsecs);
+		if (count_events_disabled)
+			goto disabled_success;
+
+		CXIP_WARN("Match events required pte LE invalidate: match_events=%u access_events=%u\n",
+			  ofi_atomic_get32(&mr->match_events),
+			  ofi_atomic_get32(&mr->access_events));
+	}
+
+	ret = cxil_invalidate_pte_le(ep_obj->ctrl.pte->pte, mr->key,
+				     C_PTL_LIST_PRIORITY);
+	if (ret)
+		CXIP_FATAL("MR %p key 0x%016lX invalidate failed %d\n", mr,
+			   mr->key, ret);
+
+	/* Flush the event queue to ensure any MR events have been read. */
+	cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
+
+disabled_success:
 	mr->enabled = false;
 
 	CXIP_DBG("Standard MR disabled: %p (key: 0x%016lX)\n", mr, mr->key);
@@ -281,8 +596,12 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 	uint32_t le_flags;
 	uint64_t ib = 0;
 	int pid_idx;
+	bool target_relaxed_order;
 
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 	mr->req.cb = cxip_mr_cb;
+	CXIP_DBG("Optimized MR callback registered: mr=%p rma_events=%d\n",
+		 mr, mr->rma_events);
 
 	ret = cxip_pte_alloc_nomap(ep_obj->ptable, ep_obj->ctrl.tgt_evtq,
 				   &opts, cxip_mr_opt_pte_cb, mr, &mr->pte);
@@ -307,15 +626,15 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 		goto err_pte_free;
 	}
 
-	ret = cxip_pte_set_state(mr->pte, ep_obj->ctrl.tgq, C_PTLTE_ENABLED, 0);
+	ret = cxip_pte_set_state(mr->pte, ep_obj->ctrl.tgq, C_PTLTE_ENABLED,
+				 CXIP_PTE_IGNORE_DROPS);
 	if (ret != FI_SUCCESS) {
 		/* This is a bug, we have exclusive access to this CMDQ. */
 		CXIP_WARN("Failed to enqueue command: %d\n", ret);
 		goto err_pte_free;
 	}
 
-	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE |
-		   C_LE_UNRESTRICTED_BODY_RO;
+	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE;
 	if (mr->attr.access & FI_REMOTE_WRITE)
 		le_flags |= C_LE_OP_PUT;
 	if (mr->attr.access & FI_REMOTE_READ)
@@ -323,15 +642,10 @@ static int cxip_mr_enable_opt(struct cxip_mr *mr)
 	if (mr->cntr)
 		le_flags |= C_LE_EVENT_CT_COMM;
 
-	/* When FI_FENCE is not requested, restricted operations can used PCIe
-	 * relaxed ordering. Unrestricted operations PCIe relaxed ordering is
-	 * controlled by an env for now.
-	 */
-	if (!(ep_obj->caps & FI_FENCE)) {
+	if (target_relaxed_order) {
 		ib = 1;
-
-		if (cxip_env.enable_unrestricted_end_ro)
-			le_flags |= C_LE_UNRESTRICTED_END_RO;
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 	}
 
 	ret = cxip_pte_append(mr->pte,
@@ -381,7 +695,7 @@ static int cxip_mr_disable_opt(struct cxip_mr *mr)
 
 	do {
 		sched_yield();
-		cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+		cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 	} while (mr->mr_state != CXIP_MR_UNLINKED);
 
 cleanup:
@@ -404,6 +718,7 @@ static void cxip_mr_prov_opt_to_std(struct cxip_mr *mr)
 
 	key.opt = false;
 	mr->mr_fid.key = key.raw;
+	mr->mr_state = CXIP_MR_DISABLED;
 	mr->optimized = false;
 }
 
@@ -442,7 +757,9 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	struct cxip_mr *_mr;
 	uint32_t le_flags;
 	uint64_t ib = 0;
+	bool target_relaxed_order;
 
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 	mr_cache = &ep_obj->ctrl.opt_mr_cache[lac];
 	ofi_atomic_inc32(&mr_cache->ref);
 
@@ -501,7 +818,7 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	}
 
 	ret = cxip_pte_set_state(_mr->pte, ep_obj->ctrl.tgq,
-				 C_PTLTE_ENABLED, 0);
+				 C_PTLTE_ENABLED, CXIP_PTE_IGNORE_DROPS);
 	if (ret != FI_SUCCESS) {
 		/* This is a bug, we have exclusive access to this CMDQ. */
 		CXIP_WARN("Failed to enqueue command: %d\n", ret);
@@ -509,17 +826,12 @@ static int cxip_mr_prov_cache_enable_opt(struct cxip_mr *mr)
 	}
 
 	le_flags = C_LE_EVENT_COMM_DISABLE | C_LE_EVENT_SUCCESS_DISABLE |
-		   C_LE_UNRESTRICTED_BODY_RO | C_LE_OP_PUT | C_LE_OP_GET;
+		C_LE_OP_PUT | C_LE_OP_GET;
 
-	/* When FI_FENCE is not requested, restricted operations can used PCIe
-	 * relaxed ordering. Unrestricted operations PCIe relaxed ordering is
-	 * controlled by an env for now.
-	 */
-	if (!(ep_obj->caps & FI_FENCE)) {
+	if (target_relaxed_order) {
 		ib = 1;
-
-		if (cxip_env.enable_unrestricted_end_ro)
-			le_flags |= C_LE_UNRESTRICTED_END_RO;
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 	}
 
 	ret = cxip_pte_append(_mr->pte, 0, -1ULL, lac,
@@ -601,6 +913,9 @@ static int cxip_mr_prov_cache_enable_std(struct cxip_mr *mr)
 	union cxip_match_bits mb;
 	union cxip_match_bits ib;
 	uint32_t le_flags;
+	bool target_relaxed_order;
+
+	target_relaxed_order = cxip_ep_obj_mr_relaxed_order(ep_obj);
 
 	/* TODO: Handle enabling for each bound endpoint */
 	mr_cache = &ep_obj->ctrl.std_mr_cache[lac];
@@ -643,8 +958,10 @@ static int cxip_mr_prov_cache_enable_std(struct cxip_mr *mr)
 	ib.mr_lac = 0;
 	ib.mr_cached = 0;
 
-	le_flags = C_LE_EVENT_SUCCESS_DISABLE | C_LE_UNRESTRICTED_BODY_RO |
-		   C_LE_OP_PUT | C_LE_OP_GET;
+	le_flags = C_LE_EVENT_SUCCESS_DISABLE | C_LE_OP_PUT | C_LE_OP_GET;
+	if (target_relaxed_order)
+		le_flags |= C_LE_UNRESTRICTED_END_RO |
+			C_LE_UNRESTRICTED_BODY_RO;
 
 	ret = cxip_pte_append(ep_obj->ctrl.pte, 0, -1ULL,
 			      mb.mr_lac, C_PTL_LIST_PRIORITY,
@@ -725,6 +1042,14 @@ static void cxip_mr_domain_remove(struct cxip_mr *mr)
 	ofi_spin_unlock(&mr->domain->mr_domain.lock);
 }
 
+static bool cxip_is_valid_mr_key(uint64_t key)
+{
+	if (key & ~CXIP_MR_KEY_MASK)
+		return false;
+
+	return true;
+}
+
 /*
  * cxip_mr_domain_insert() - Validate uniqueness and insert
  * client key in the domain hash table.
@@ -744,7 +1069,7 @@ static int cxip_mr_domain_insert(struct cxip_mr *mr)
 
 	mr->key = mr->attr.requested_key;
 
-	if (!cxip_generic_is_valid_mr_key(mr->key))
+	if (!cxip_is_valid_mr_key(mr->key))
 		return -FI_EKEYREJECTED;
 
 	bucket = fasthash64(&mr->key, sizeof(mr->key), 0) %
@@ -812,18 +1137,10 @@ static int cxip_prov_cache_init_mr_key(struct cxip_mr *mr,
 	key.lac_off = mr->len ? CXI_VA_TO_IOVA(md, mr->buf) : 0;
 	mr->key = key.raw;
 
-	CXIP_DBG("Init cached MR key 0x%016lX, lac: %d, off:0x%016lX\n",
-		 key.raw, key.lac, (uint64_t)key.lac_off);
+	CXIP_DBG("Init cached MR key 0x%016lX, lac: %d, off:0x%016lX, rma_events: %d, opt: %d\n",
+		 key.raw, key.lac, (uint64_t)key.lac_off, mr->rma_events, key.opt);
 
 	return FI_SUCCESS;
-}
-
-static bool cxip_is_valid_mr_key(uint64_t key)
-{
-	if (key & ~CXIP_MR_KEY_MASK)
-		return false;
-
-	return true;
 }
 
 static bool cxip_is_valid_prov_mr_key(uint64_t key)
@@ -1007,7 +1324,7 @@ void cxip_ctrl_mr_cache_flush(struct cxip_ep_obj *ep_obj)
 
 		do {
 			sched_yield();
-			cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 		} while (mr_cache->ctrl_req->mr.mr->mr_state !=
 			 CXIP_MR_UNLINKED);
 
@@ -1043,7 +1360,7 @@ void cxip_ctrl_mr_cache_flush(struct cxip_ep_obj *ep_obj)
 
 		do {
 			sched_yield();
-			cxip_ep_tgt_ctrl_progress_locked(ep_obj);
+			cxip_ep_tgt_ctrl_progress_locked(ep_obj, true);
 		} while (mr_cache->ctrl_req->mr.mr->mr_state !=
 			 CXIP_MR_UNLINKED);
 
@@ -1100,8 +1417,9 @@ int cxip_mr_enable(struct cxip_mr *mr)
 	if (!mr->domain->is_prov_key)
 		mr->mr_util = &cxip_client_key_mr_util_ops;
 	else if (mr->md && mr->md->cached && mr->domain->prov_key_cache &&
-		 !mr->cntr && !mr->count_events && !mr->rma_events)
-		mr->mr_util = &cxip_prov_key_cache_mr_util_ops;
+		 !mr->cntr && !mr->count_events && !mr->rma_events &&
+		 !mr->domain->rma_cq_data_size)
+		 mr->mr_util = &cxip_prov_key_cache_mr_util_ops;
 	else
 		mr->mr_util = &cxip_prov_key_mr_util_ops;
 
@@ -1250,6 +1568,15 @@ static int cxip_mr_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 			break;
 		}
 
+		/* Zero length MRs do not have MD. */
+		if (mr->md &&
+		    ep->ep_obj->require_dev_reg_copy[mr->md->info.iface] &&
+		    !mr->md->handle_valid) {
+			CXIP_WARN("Cannot bind to endpoint without required dev reg support\n");
+			ret = -FI_EOPNOTSUPP;
+			break;
+		}
+
 		mr->ep = ep;
 		ofi_atomic_inc32(&ep->ep_obj->ref);
 		break;
@@ -1309,6 +1636,8 @@ static struct fi_ops cxip_mr_fi_ops = {
 static void cxip_mr_fini(struct cxip_mr *mr)
 {
 	cxip_domain_ctrl_id_free(mr->domain, &mr->req);
+	if (mr->domain->rma_cq_data_size)
+		cxip_domain_ctrl_id_free(mr->domain, &mr->writedata_req);
 	cxip_domain_prov_mr_id_free(mr->domain, mr);
 }
 
@@ -1339,8 +1668,14 @@ static int cxip_mr_init(struct cxip_mr *mr, struct cxip_domain *dom,
 	mr->rma_events = flags & FI_RMA_EVENT;
 
 	/* Support length 1 IOV only for now */
-	mr->buf = mr->attr.mr_iov[0].iov_base;
-	mr->len = mr->attr.mr_iov[0].iov_len;
+	if (flags & FI_MR_DMABUF) {
+		mr->buf = (void *)((uintptr_t)attr->dmabuf->base_addr +
+				   attr->dmabuf->offset);
+		mr->len = attr->dmabuf->len;
+	} else {
+		mr->buf = mr->attr.mr_iov[0].iov_base;
+		mr->len = mr->attr.mr_iov[0].iov_len;
+	}
 
 	/* Allocate unique MR buffer ID if remote access MR */
 	if (mr->attr.access & (FI_REMOTE_READ | FI_REMOTE_WRITE)) {
@@ -1350,8 +1685,21 @@ static int cxip_mr_init(struct cxip_mr *mr, struct cxip_domain *dom,
 			ofi_spin_destroy(&mr->lock);
 			return -FI_ENOSPC;
 		}
+
+		/* Allocate second buffer ID for writedata dual entry if enabled */
+		if (dom->rma_cq_data_size) {
+			ret = cxip_domain_ctrl_id_alloc(dom, &mr->writedata_req);
+			if (ret) {
+				CXIP_WARN("Failed to allocate writedata MR buffer ID: %d\n", ret);
+				cxip_domain_ctrl_id_free(dom, &mr->req);
+				ofi_spin_destroy(&mr->lock);
+				return -FI_ENOSPC;
+			}
+			mr->writedata_req.mr.mr = mr;
+		}
 	} else {
 		mr->req.req_id = -1;
+		mr->writedata_req.req_id = -1;
 	}
 
 	mr->mr_id = -1;
@@ -1360,6 +1708,18 @@ static int cxip_mr_init(struct cxip_mr *mr, struct cxip_domain *dom,
 	mr->mr_state = CXIP_MR_DISABLED;
 
 	return FI_SUCCESS;
+}
+
+static uint64_t ofi_access_to_cxi_access(uint64_t access)
+{
+	uint64_t cxi_access = 0;
+
+	if (access & (FI_WRITE | FI_SEND | FI_REMOTE_READ))
+		cxi_access |= CXI_MAP_READ;
+	if (access & (FI_RECV | FI_READ | FI_REMOTE_WRITE))
+		cxi_access |= CXI_MAP_WRITE;
+
+	return cxi_access;
 }
 
 /*
@@ -1372,6 +1732,7 @@ static int cxip_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	struct cxip_domain *dom;
 	struct cxip_mr *_mr;
 	int ret;
+	uint64_t access;
 
 	if (fid->fclass != FI_CLASS_DOMAIN || !attr || attr->iov_count <= 0)
 		return -FI_EINVAL;
@@ -1406,8 +1767,14 @@ static int cxip_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		_mr->mr_fid.key = _mr->key;
 
 	if (_mr->len) {
-		ret = cxip_map(_mr->domain, (void *)_mr->buf, _mr->len, 0,
-			       &_mr->md);
+		access = ofi_access_to_cxi_access(attr->access);
+
+		/* Do not check whether cuda_api_permitted is set at this point,
+		 * because the mr is not bound to an endpoint.  Check instead in
+		 * cxip_mr_bind().
+		 */
+		ret = cxip_map(_mr->domain, (void *)_mr->buf, _mr->len,
+			       access, 0, &_mr->md);
 		if (ret) {
 			CXIP_WARN("Failed to map MR buffer: %d\n", ret);
 			goto err_remove_mr;

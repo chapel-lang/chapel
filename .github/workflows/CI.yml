@@ -26,7 +26,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -39,7 +39,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -50,7 +50,7 @@ jobs:
         ./util/buildRelease/smokeTest quickstart chapel-py docs
         tar -cvf docs.tar.gz -C doc/html .
     - name: upload docs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: documentation
         path: docs.tar.gz
@@ -63,7 +63,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -78,7 +78,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
@@ -91,7 +91,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
@@ -116,7 +116,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -128,7 +128,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 100000
     - name: Set ownership
@@ -157,7 +157,7 @@ jobs:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
       - name: checkout commits on PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: ${{ env.PR_NUM_COMMITS }}
       - name: check commits for large files
@@ -210,7 +210,7 @@ jobs:
     needs: make_doc
     steps:
       - name: download docs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: documentation
 
@@ -220,15 +220,20 @@ jobs:
           echo "${{ secrets.WEBSITE_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.WEBSITE_KNOWN_HOSTS}}" > ~/.ssh/known_hosts
 
-      - name: push docs
-        run: |
-          echo "extract docs"
-          tar -xvf docs.tar.gz
-          echo "Publish module docs to web server"
-          # py-modindex.html is not needed
-          rm -f py-modindex.html
-          # Remove all hidden files except .htaccess
-          find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
-          rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
-          rm ~/.ssh/id_rsa
-          rm ~/.ssh/known_hosts
+      - name: push docs (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 60
+          retry_wait_seconds: 30
+          command: |
+            echo "extract docs"
+            tar -xvf docs.tar.gz
+            echo "Publish module docs to web server"
+            # py-modindex.html is not needed
+            rm -f py-modindex.html
+            # Remove all hidden files except .htaccess
+            find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
+            rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+            rm ~/.ssh/id_rsa
+            rm ~/.ssh/known_hosts

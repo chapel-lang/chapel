@@ -115,12 +115,13 @@ headers by modifying ``tools/c2chapel/utils/custom.h``.
 Troubleshooting
 ~~~~~~~~~~~~~~~
 
-``c2chapel`` does not perfectly parse all C99 files and you may want to parse
-other C files that are not C99 compliant. If you encounter parsing errors, you can try the following:
+``c2chapel`` ought to parse all C99 files and should handle some C11
+files as well; however, our testing is far from complete.  If you
+encounter parsing errors, you can try the following:
 
-* Use the ``--gnu-extensions`` flag to allow GNU extensions in the C99 file.
+* Use the ``--gnu-extensions`` flag to allow GNU extensions in the C file.
 
-* Comment out the offending lines in the C99 file and re-run ``c2chapel``. You
+* Comment out the offending lines in the C file and re-run ``c2chapel``. You
   can use the generated Chapel code to help you determine which lines are
   causing parsing errors.
 
@@ -139,19 +140,7 @@ other C files that are not C99 compliant. If you encounter parsing errors, you c
 Future Work
 -----------
 
-``c2chapel`` does not currently handle the entirety of C99, so some human
-intervention may be required (e.g. commenting out unhandled portions of the
-file). There are also some limitations based on Chapel's extern capability.
-See https://chapel-lang.org/bugs.html for instructions on reporting bugs.
-
 Known issues:
 
 - fake standard headers are incomplete
 - choice between ``ref``/``c_ptr`` for formals is not intuitive or easily controlled
-
-Contributors
-------------
-| Ben Harshbarger [HPE]
-| Nikhil Padmanabhan [Yale University]
-| Ben McDonald [HPE]
-|

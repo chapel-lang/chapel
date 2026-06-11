@@ -84,6 +84,11 @@
 #define VERBS_QP_RETRY 7	// limit on RC QP retries for rnr or timeout
 #define VERBS_QP_MAX_RETRY 7	// max allowed by verbs for QP_RETRY
 
+#ifdef RNDV_MOD
+#define RV_FR_PAGE_LIST_LEN_MIN		0
+#define RV_FR_PAGE_LIST_LEN_DEFAULT	1024
+#endif
+
 // hardcoded for now
 #define VERBS_RECV_QP_FRACTION 4	// size RC QPs as 1/FRACTION of the
 									// final UD RECV QP size
@@ -107,7 +112,7 @@
 									// if 1, post as we recv them
 #define VERBS_SEND_CQ_REAP 256	// check for completions when this many unreaped
 #define VERBS_PORT 1			// default port if not specified
-#define VERBS_RECV_CQE_BATCH 1	// how many CQEs to ask for at a time
+#define VERBS_RECV_CQE_BATCH 32	// how many CQEs to ask for at a time
 #define UD_ADDITION (40)		// extra bytes at start of UD recv buffer
 								// defined in verbs API to accomidate IB GRH
 #define BUFFER_HEADROOM 0		// how much extra to allocate in buffers
@@ -126,9 +131,35 @@
 // we can stash the flag in the low bits of wr_id
 #define VERBS_SQ_WR_ID_SEND		0x0
 #define VERBS_SQ_WR_ID_RDMA_WRITE	0x1
+#ifdef PSM_RC_RECONNECT
+#define VERBS_SQ_WR_ID_DRAIN_MARKER	0x2
+#define VERBS_SQ_WR_ID_MASK		0x3
+#define VERBS_SQ_DRAIN_BAD_LKEY		55	// lkey to ensure WQE not sent
+#else
 #define VERBS_SQ_WR_ID_MASK		0x1
-#define VERBS_SQ_WR_OP(wr_id)		((wr_id)&VERBS_SQ_WR_ID_MASK)
+#endif
+#define VERBS_SQ_WR_PTR(wr_id)		((wr_id) & ~VERBS_SQ_WR_ID_MASK)
+#define VERBS_SQ_WR_OP(wr_id)		((wr_id) & VERBS_SQ_WR_ID_MASK)
+#ifdef PSM_RC_RECONNECT
+#define VERBS_SQ_WR_OP_STR(wr_id) (VERBS_SQ_WR_OP(wr_id)==VERBS_SQ_WR_ID_SEND? \
+										"Send" \
+										: VERBS_SQ_WR_OP(wr_id)==VERBS_SQ_WR_ID_RDMA_WRITE? \
+											"RDMA Write":"Drain")
+#else
 #define VERBS_SQ_WR_OP_STR(wr_id) (VERBS_SQ_WR_OP(wr_id)?"RDMA Write":"Send")
+#endif
+
+#ifdef PSM_HAVE_RDMA_ERR_CHK
+#define VERBS_QP_DRAIN_DELAY_USEC 5	// delay between checks for QP to drain
+#endif
+
+#ifdef USE_RDMA_READ
+#define RDMA_READ_AVAILABLE(ep) ((ep)->verbs_ep.max_qp_init_rd_atom && (ep)->verbs_ep.max_qp_rd_atom)
+#endif
+
+#ifdef PSM_RC_RECONNECT
+struct psm3_verbs_rc_qp;
+#endif
 
 struct verbs_sbuf {
 	struct verbs_sbuf *next;
@@ -136,7 +167,13 @@ struct verbs_sbuf {
 	struct ips_scb *scb;	// only set if used Send DMA
 #ifdef USE_RC
 	struct psm3_verbs_send_allocator *allocator;
-#endif
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+#endif /* PSM_RC_RECONNECT */
+#endif /* USE_RC */
+#ifdef PSM_DEBUG
+	const char* freed_by;
+#endif /* PSM_DEBUG */
 };
 typedef struct verbs_sbuf *sbuf_t;
 #define sbuf_to_buffer(buf)	((buf)->buffer)
@@ -252,10 +289,17 @@ struct psm3_verbs_send_allocator {
 };
 typedef struct psm3_verbs_send_allocator *psm3_verbs_send_allocator_t;
 
+#ifdef USE_RC
+#define RC_SRQ_MIN_RANK_CNT 5
+#endif
+
 // receive buffer pool
 // we use the same basic mechanisms for UD and RC QP buffer pools
 // but sizes may differ
 // when USE_RC, we need a separate recv pool per QP so we can prepost bufs.
+// For RC QP recv pools container_of can be used to determine the psm3_verbs_rc_qp
+// rc_qp->draining always equals rc_qp->recv_pool.draining, but we keep
+// recv_pool.draining for a simpler and quicker test in the post_recv datapath
 struct psm3_verbs_recv_pool {
 	union { // secondary reference to QP or SRQ these buffers are for
 		struct ibv_qp *qp;	// when ! for_srq
@@ -271,7 +315,14 @@ struct psm3_verbs_recv_pool {
 	struct ibv_mr *recv_buffer_mr;
 #ifdef USE_RC
 	uint32_t addition;	// UD_ADDITION for UD QP, 0 for RC QP
-	uint32_t for_srq;	// if this for an SRQ or QP?
+	uint32_t for_srq:1;	// if this for an SRQ or QP?
+#ifdef PSM_RC_RECONNECT
+	uint32_t draining:1;	// is corresponding QP draining
+	uint32_t reserved:30;
+	uint32_t posted;	// WQEs posted to RQ + buffers still in use
+#else
+	uint32_t reserved:31;
+#endif
 #endif
 #if VERBS_RECV_QP_COALLESCE > 1
 			// list of ready to post WQEs and SGEs
@@ -285,6 +336,32 @@ struct psm3_verbs_recv_pool {
 };
 typedef struct psm3_verbs_recv_pool *psm3_verbs_recv_pool_t;
 
+#ifdef PSM_RC_RECONNECT
+// this structure tracks an RC QP.  The QP may be the active QP for an ep
+// or a QP waiting to be drained.
+struct psm3_verbs_rc_qp {
+	ips_epaddr_t *ipsaddr;	// parent
+	SLIST_ENTRY(psm3_verbs_rc_qp) next;	// ipsaddr->verbs.rc_qps
+#ifdef PSM_RC_RECONNECT_SRQ
+	SLIST_ENTRY(psm3_verbs_rc_qp) drain_next;// verbs_ep->qps_draining
+#endif
+	struct ibv_qp *qp;	// QP context points to struct psm3_verbs_rc_qp
+	struct psm3_verbs_recv_pool recv_pool;
+	struct psm3_verbs_send_allocator send_allocator;
+	uint32_t send_posted;	// send WQEs posted and waiting for CQE
+	uint8_t reconnect_count;// ipsaddr->reconnect_count when RC QP created
+	uint8_t initialized:1;	// QP moved to at least Init
+	uint8_t draining:1;	// draining started
+};
+
+static inline
+struct psm3_verbs_rc_qp *psm3_verbs_rc_qp_from_recv_pool(psm3_verbs_recv_pool_t pool)
+{
+	// sames as container_of(pool, struct psm3_verbs_rc_qp, recv_pool);
+	return  ((struct psm3_verbs_rc_qp *) ((uint8_t *)(pool) - offsetof(struct psm3_verbs_rc_qp, recv_pool)));
+}
+
+#endif
 // this structure can be part of psm2_ep
 // one instance of this per local end point (NIC)
 // we will create a single PD and UD QP with related resources to
@@ -306,23 +383,38 @@ struct psm3_verbs_ep {
 	struct ibv_qp_cap qp_cap;   // capabilities of QP we got
 #ifdef USE_RC
 	struct ibv_srq	*srq;
+#ifdef PSM_RC_RECONNECT_SRQ
+	SLIST_HEAD(rc_qp_draining, psm3_verbs_rc_qp) qps_draining;// only for SRQ
+#endif
 #endif
 	uint32_t qkey;
 	//uint8_t link_layer;         // IBV_LINK_LAYER_ETHERNET or other
 	uint8_t active_rate;
+#if defined(USE_RDMA_READ)
+#if defined(USE_RC)
+	uint8_t max_qp_rd_atom;
+	uint8_t max_qp_init_rd_atom;
+#endif // USE_RC
+#endif
 	struct psm3_verbs_send_pool send_pool;
 	struct psm3_verbs_send_allocator send_allocator;
 	uint32_t send_rdma_outstanding;	// number of outstanding RDMAs
+#ifdef PSM_RC_RECONNECT
+	uint32_t send_drain_outstanding;// number of rc_qp's being drained
+#endif
+#ifdef PSM_DEBUG
+	uint8_t in_completion_update;	// help detect recursive completion_update()
+#endif
 	uint32_t send_reap_thresh;	// TBD if should be here or in pool
 	struct psm3_verbs_recv_pool recv_pool;
+#ifdef USE_RC
+	struct psm3_verbs_recv_pool srq_recv_pool;
+#endif
 #if VERBS_RECV_CQE_BATCH > 1
 	struct ibv_wc recv_wc_list[VERBS_RECV_CQE_BATCH];
 	int recv_wc_count;	// number left in recv_wc_list
 	int recv_wc_next;	// next index
 #else
-#ifdef USE_RC
-	struct psm3_verbs_recv_pool srq_recv_pool;
-#endif
 	// if asked to revisit a packet we save it here
 	rbuf_t revisit_buf;
 	uint32_t revisit_payload_size;
@@ -342,11 +434,15 @@ struct psm3_verbs_ep {
 #ifdef RNDV_MOD
 	uint8_t rv_num_conn; /** PSM3_RV_QP_PER_CONN */
 	uint32_t rv_q_depth; /** PSM3_RV_Q_DEPTH */
-	uint32_t rv_reconnect_timeout; /* PSM3_RV_RECONNECT_TIMEOUT */
 	uint32_t rv_hb_interval; /* PSM3_RV_HEARTBEAT_INTERVAL */
 	uint64_t max_fmr_size; /* Max fast-registration mr size in bytes */
+	uint32_t rv_fr_page_list_len; /* PSM3_RV_FR_PAGE_LIST_LEN */
 #endif
 };
+
+// is the given qp_num the main UD QP for the EP
+#define psm3_verbs_is_ud_qp_num(ep, num) \
+	((ep)->verbs_ep.qp->qp_num == (num))
 
 // given index, return buffer start
 #define send_buffer_start(pool, i) ((pool)->send_buffer_size *(i))
@@ -391,12 +487,40 @@ extern psm2_error_t modify_rc_qp_to_rtr(psm2_ep_t ep, struct ibv_qp *qp,
 				const ips_path_rec_t *path_rec, uint32_t initpsn);
 extern psm2_error_t modify_rc_qp_to_rts(psm2_ep_t ep, struct ibv_qp *qp,
 				const struct psm_rc_qp_attr *req_attr, uint32_t initpsn);
+#ifdef PSM_RC_RECONNECT
+extern struct psm3_verbs_rc_qp *psm3_verbs_active_rc_qp(ips_epaddr_t *ipsaddr);
+extern psm2_error_t psm3_verbs_create_rc_qp(psm2_ep_t ep,
+		ips_epaddr_t *ipsaddr);
+extern psm2_error_t psm3_verbs_have_rc_qp(ips_epaddr_t *ipsaddr,
+		uint8_t reconnect_count);
+#ifdef PSM_RC_RECONNECT_SRQ
+extern struct psm3_verbs_rc_qp *psm3_verbs_lookup_rc_qp(ips_epaddr_t *ipsaddr,
+		uint32_t qp_num);
+#endif
+extern psm2_error_t psm3_verbs_drain_rc_qp(psm2_ep_t ep,
+		struct psm3_verbs_rc_qp *rc_qp, int move_to_err);
+extern void psm3_verbs_free_rc_qp(const char *why, struct psm3_verbs_rc_qp *rc_qp);
+extern void psm3_verbs_free_rc_qp_if_empty(const char *why,
+		struct psm3_verbs_rc_qp *rc_qp);
+static inline void psm3_verbs_free_rc_qp_if_drained(const char *why,
+		struct psm3_verbs_rc_qp *rc_qp)
+{
+	if (rc_qp->draining)
+		psm3_verbs_free_rc_qp_if_empty(why, rc_qp);
+}
+static inline void psm3_verbs_dec_posted(struct psm3_verbs_rc_qp *rc_qp)
+{
+	psmi_assert(rc_qp->send_posted);
+	rc_qp->send_posted--;
+} 
+#endif
+
 #endif
 extern int psm3_verbs_poll_type(int poll_type, psm2_ep_t ep);
 extern psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
             psm3_verbs_send_pool_t pool,
             uint32_t send_total, uint32_t send_buffer_size);
-extern psm2_error_t psm_verbs_init_send_allocator(
+extern void psm_verbs_init_send_allocator(
             psm3_verbs_send_allocator_t allocator,
             psm3_verbs_send_pool_t pool);
 extern psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
@@ -405,6 +529,9 @@ extern psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
 extern void psm_verbs_free_send_pool(psm3_verbs_send_pool_t pool);
 extern void psm_verbs_free_recv_pool(psm3_verbs_recv_pool_t pool);
 extern sbuf_t psm3_ep_verbs_alloc_sbuf(psm3_verbs_send_allocator_t allocator,
+#ifdef PSM_RC_RECONNECT
+					struct psm3_verbs_rc_qp *rc_qp,
+#endif
 					sbuf_t *prev_sbuf);
 extern void psm3_ep_verbs_unalloc_sbuf(psm3_verbs_send_allocator_t allocator,
 								 sbuf_t sbuf, sbuf_t prev_sbuf);
@@ -412,7 +539,19 @@ extern void psm3_ep_verbs_free_sbuf(
 #ifndef USE_RC
 				psm3_verbs_send_allocator_t allocator,
 #endif
-				sbuf_t buf, uint32_t count);
+				sbuf_t buf, uint32_t count
+#ifdef PSM_RC_RECONNECT
+				, int can_free_rc_qp
+#endif
+#ifdef PSM_DEBUG
+				// to help debug double free
+				, const char *caller
+				, const char *caller_mid
+#endif
+				);
+#ifdef PSM_RC_RECONNECT
+extern void psm3_ep_verbs_send_drained(psm3_verbs_send_allocator_t allocator);
+#endif
 extern psm2_error_t psm3_ep_verbs_post_recv(
 #ifndef USE_RC
 				psm3_verbs_recv_pool_t pool,
@@ -421,7 +560,11 @@ extern psm2_error_t psm3_ep_verbs_post_recv(
 extern psm2_error_t psm3_ep_verbs_prepost_recv(psm3_verbs_recv_pool_t pool);
 
 extern psm2_error_t psm3_verbs_post_rdma_write_immed(psm2_ep_t ep,
+#ifdef PSM_RC_RECONNECT
+				struct psm3_verbs_rc_qp *rc_qp,
+#else
 				struct ibv_qp *qp,
+#endif
 				void *loc_buf, struct psm3_verbs_mr *loc_mr,
 				uint64_t rem_buf, uint32_t rkey,
 				size_t len, uint32_t immed, uint64_t wr_id);

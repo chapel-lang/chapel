@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
  *
- * Copyright (c) 2022 Hewlett Packard Enterprise Development LP
+ * Copyright (c) 2022-2024 Cray Inc. All rights reserved.
  */
 
 /* Notes:
@@ -123,7 +123,7 @@ void cxip_dbl_to_rep(struct cxip_repsum *x, double d)
 		// Subnormal values, zero
 		x->M = BIN(1);
 		w = OFF(1);
- 	}
+	}
 
 	/**
 	 * Copy the mantissa into the correct locations within T[].

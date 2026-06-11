@@ -124,7 +124,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_AND:
   case PRIM_OR:
   case PRIM_XOR:
-  case PRIM_POW:
   case PRIM_MIN:
   case PRIM_MAX:
   case PRIM_SQRT:

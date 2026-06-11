@@ -28,10 +28,14 @@
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-diags.h"
+#include "chpl-comm-callbacks.h"
+#include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-internal.h"
+#include "chpl-linefile-support.h"
 #include "chpl-gpu-diags.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
+#include "chpl-prginfo.h"
 #include "chpl-topo.h"
 
 // Don't get warning macros for chpl_comm_get etc.
@@ -49,23 +53,19 @@ static int32_t   localRank = -1;
 static int32_t   numColocalesOnNode = 1;
 
 
-//
-// Global variable broadcast support.
-//
-void chpl_comm_register_global_var(int i, wide_ptr_t *ptr_to_wide_ptr) {
-  chpl_globals_registry[i] = ptr_to_wide_ptr;
+void chpl_rt_comm_private_broadcast(chpl_rt_prginfo* prg, int32_t id,
+                                    size_t size) {
+  chpl_rt_comm_private_broadcast_impl(prg, id, size);
 }
 
-
-void chpl_comm_broadcast_global_vars(int numGlobals) {
+void chpl_rt_comm_broadcast_global_vars(chpl_rt_prginfo* prg) {
   //
   // On node 0: gather up the global variables' wide pointers into a
   //            buffer; return that buffer if it needs deallocating
   //            after the communication, otherwise NULL.
   // On other nodes: retrieve the node 0 local address of that buffer.
   //
-  wide_ptr_t* buf_on_0;
-  buf_on_0 = chpl_comm_broadcast_global_vars_helper();
+  wide_ptr_t* buf_on_0 = chpl_rt_comm_broadcast_global_vars_impl(prg);
 
   //
   // On node 0: barrier to ensure the other nodes have the global vars;
@@ -84,6 +84,9 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       chpl_mem_free(buf_on_0, 0, 0);
     }
   } else {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
+
     wide_ptr_t* buf;
     size_t size = chpl_numGlobalsOnHeap * sizeof(*buf);
     buf = (wide_ptr_t*)
@@ -97,41 +100,190 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
+// Populate the runtime's table of private broadcast constants.
+void* chpl_rt_private_broadcast_table_for_rt[] = {
+  #define EXPAND_PER_ENTRY(sym__) ((void*) &sym__),
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  NULL
+  #undef EXPAND_PER_ENTRY
+};
 
-void** chpl_rt_priv_bcast_tab;
-int chpl_rt_priv_bcast_tab_len;
+// Length of runtime table.
+size_t chpl_rt_private_broadcast_table_for_rt_len =
+          chpl_rt_runtime_private_broadcast_table_for_rt_num_entries;
 
-#define _RT_PRV_BCAST_M(sym) sizeof(sym),
-size_t chpl_rt_priv_bcast_lens[chpl_rt_prv_tab_num_idxs] =
-         { CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M) };
-#undef _RT_PRV_BCAST_M
+// Byte lengths of runtime table entries.
+size_t chpl_rt_private_broadcast_table_for_rt_byte_lens[] = {
+  #define EXPAND_PER_ENTRY(sym__) sizeof(sym__),
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  0
+  #undef EXPAND_PER_ENTRY
+};
 
-void chpl_comm_init_prv_bcast_tab(void) {
-  //
-  // Make a copy of chpl_private_broadcast_table[], but with some more of
-  // our own entries following the compiler-emitted ones.
-  //
-  chpl_rt_priv_bcast_tab_len = chpl_private_broadcast_table_len
-                               + chpl_rt_prv_tab_num_idxs;
-  chpl_rt_priv_bcast_tab =
-    chpl_mem_allocMany(chpl_rt_priv_bcast_tab_len,
-                       sizeof(chpl_rt_priv_bcast_tab[0]),
+// State for the old 'unified' broadcast table.
+void** chpl_rt_unified_private_broadcast_table = NULL;
+int chpl_rt_unified_private_broadcast_table_len = 0;
+bool chpl_rt_use_unified_private_broadcast_table = false;
+
+void chpl_rt_comm_init_unified_private_broadcast_table(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
+                          chpl_private_broadcast_table);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
+                          chpl_private_broadcast_table_len);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_COMM);
+
+  bool is_gasnet = !strcmp(CHPL_COMM, "gasnet");
+
+  // Only really changes OFI comm layer, COMM=none shouldn't use this.
+  chpl_rt_use_unified_private_broadcast_table = !is_gasnet;
+
+  chpl_rt_unified_private_broadcast_table_len =
+            chpl_private_broadcast_table_len +
+            chpl_rt_private_broadcast_table_for_rt_len;
+
+  chpl_rt_unified_private_broadcast_table =
+    chpl_mem_allocMany(chpl_rt_unified_private_broadcast_table_len,
+                       sizeof(chpl_rt_unified_private_broadcast_table[0]),
                        CHPL_RT_MD_COMM_UTIL, 0, 0);
 
-  // Duplicate the compiler-emitted entries.
-  memcpy(chpl_rt_priv_bcast_tab,
+  // Copy over the compiler-emitted entries from the root program.
+  memcpy(chpl_rt_unified_private_broadcast_table,
          chpl_private_broadcast_table,
          chpl_private_broadcast_table_len
          * sizeof(chpl_private_broadcast_table[0]));
 
   // Fill in our entries that follow those.
-#define _RT_PRV_BCAST_M(sym)                                            \
-  chpl_rt_priv_bcast_tab[chpl_private_broadcast_table_len               \
-                         + chpl_rt_prv_tab_ ## sym ## _idx] = &sym;
-  CHPL_RT_PRV_BCAST_TAB_ENTRIES(_RT_PRV_BCAST_M)
-#undef _RT_PRV_BCAST_M
+  #define EXPAND_PER_ENTRY(sym__) do {                        \
+    const int idx = chpl_private_broadcast_table_len          \
+                  + CHPL_RT_BCAST_TABLE_FOR_RT_ENTRY(sym__);  \
+    chpl_rt_unified_private_broadcast_table[idx] = &sym__;    \
+  } while (0);
+  CHPL_RT_RUNTIME_PRIVATE_BROADCAST_TABLE_ENTRIES(EXPAND_PER_ENTRY)
+  #undef EXPAND_PER_ENTRY
 }
 
+void* chpl_rt_comm_fetch_broadcast_table(chpl_rt_prginfo* prg,
+                                         chpl_rt_prg_id prg_id,
+                                         size_t* out_table_len) {
+  size_t table_len = 0;
+  void** ret = NULL;
+  bool use_rt_table = prg_id == CHPL_RT_PRGINFO_NULL_ID && prg == NULL;
+
+  if (use_rt_table) {
+    ret = chpl_rt_private_broadcast_table_for_rt;
+    table_len = chpl_rt_private_broadcast_table_for_rt_len;
+
+  } else {
+    chpl_rt_prginfo* p = prg ? prg : CHPL_RT_PRGINFO_FETCH(prg_id);
+    assert(p != NULL);
+    // It is OK to discard constness here, table is read-only anyways.
+    ret = (void*) CHPL_RT_PRGINFO_DATA(p, chpl_private_broadcast_table);
+    table_len = CHPL_RT_PRGINFO_DATA(p, chpl_private_broadcast_table_len);
+  }
+
+  assert(ret != NULL && table_len != 0);
+
+  if (out_table_len != NULL) *out_table_len = table_len;
+
+  return ret;
+}
+
+static void execute_on_family_common_setup(chpl_rt_prginfo* prg,
+                                           c_nodeid_t node,
+                                           c_sublocid_t subloc,
+                                           chpl_fn_int_t fid,
+                                           chpl_comm_on_bundle_t* on_bundle,
+                                           size_t arg_size,
+                                           int ln,
+                                           int32_t fn) {
+  chpl_task_bundle_t* task_bundle = &on_bundle->task_bundle;
+
+  // Set things in the on/task bundles before passing off to the comm layer.
+  //
+  // TODO: Why do we pass the 'fid'/'arg_size'/'ln'/'fn' args separately
+  //       from the "on bundle" rather than just storing them inside the
+  //       bundle's fields? That doesn't make any sense to me, and it also
+  //       can cause problems within the tasking layer where I'm trying to
+  //       move towards invoking per-program ftable functions using the
+  //       "on bundle" directly rather than disparate fields grabbed from
+  //       a packet header passed to e.g., a GASNet AM.
+  on_bundle->prg_id             = prg->id;
+  task_bundle->prg              = prg;
+  task_bundle->requested_fid    = fid;
+  on_bundle->kind               = CHPL_ARG_BUNDLE_KIND_COMM;
+}
+
+void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
+                             c_sublocid_t subloc,
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg,
+                             size_t arg_size,
+                             int ln,
+                             int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
+  chpl_comm_diags_incr(execute_on);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
+  chpl_rt_comm_execute_on_impl(prg, node, subloc, fid, arg,
+                               arg_size, ln, fn);
+}
+
+void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                c_sublocid_t subloc,
+                                chpl_fn_int_t fid,
+                                chpl_comm_on_bundle_t* arg,
+                                size_t arg_size,
+                                int ln,
+                                int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
+  chpl_comm_diags_incr(execute_on_nb);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
+  chpl_rt_comm_execute_on_nb_impl(prg, node, subloc, fid, arg,
+                                  arg_size, ln, fn);
+}
+
+void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int ln,
+                                  int32_t fn) {
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+    chpl_comm_cb_info_t cb_data =
+      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+       .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
+    chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
+  chpl_comm_diags_incr(execute_on_fast);
+
+  execute_on_family_common_setup(prg, node, subloc, fid, arg,
+                                 arg_size, ln, fn);
+
+  chpl_rt_comm_execute_on_fast_impl(prg, node, subloc, fid, arg,
+                                    arg_size, ln, fn);
+}
 
 static pthread_once_t maxHeapSize_once = PTHREAD_ONCE_INIT;
 static ssize_t maxHeapSize;

@@ -38,14 +38,6 @@
 #include <sys/types.h>
 #include <ofi_util.h>
 
-
-/* Must be castable to struct fi_eq_cm_entry */
-struct xnet_cm_entry {
-	fid_t			fid;
-	struct fi_info		*info;
-	uint8_t			data[XNET_MAX_CM_DATA_SIZE];
-};
-
 /* The underlying socket has the POLLIN event set.  The entire
  * CM message should be readable, as it fits within a single MTU
  * and is the first data transferred over the socket.
@@ -63,7 +55,7 @@ xnet_recv_cm_msg(SOCKET sock, struct xnet_cm_msg *msg)
 			"Failed to read cm header, ret: %zd, sockerr: %d\n",
 			ret, ofi_sockerr());
 		msg->hdr.seg_size = 0;
-		return ofi_sockerr() ? -ofi_sockerr() : -FI_EIO;
+		return ret >= 0 ? -FI_EIO : -ofi_sockerr();
 	}
 
 	return 0;
@@ -105,7 +97,7 @@ xnet_handle_cm_msg(SOCKET sock, struct xnet_cm_msg *msg, uint8_t exp_msg)
 			FI_WARN(&xnet_prov, FI_LOG_EP_CTRL,
 				"Failed to read cm data, ret: %zd, sockerr: %d\n",
 				ret, ofi_sockerr());
-			ret = ofi_sockerr() ? -ofi_sockerr() : -FI_EIO;
+			ret = ret >= 0 ? -FI_EIO : -ofi_sockerr();
 			goto err;
 		}
 	}
@@ -186,6 +178,7 @@ void xnet_req_done(struct xnet_ep *ep)
 	FI_DBG(&xnet_prov, FI_LOG_EP_CTRL, "connect request done\n");
 	assert(xnet_progress_locked(xnet_ep2_progress(ep)));
 
+	xnet_disable_keepalive(ep);
 	ret = xnet_recv_cm_msg(ep->bsock.sock, ep->cm_msg);
 	if (ret == 0)
 		ret = xnet_handle_cm_msg(ep->bsock.sock, ep->cm_msg, ofi_ctrl_connresp);
@@ -340,6 +333,16 @@ void xnet_connect_done(struct xnet_ep *ep)
 		ret = (ret < 0)? -ofi_sockerr() : -status;
 		FI_WARN_SPARSE(&xnet_prov, FI_LOG_EP_CTRL,
 				"connection failure (sockerr %d)\n", ret);
+		goto disable;
+	}
+
+	/* Enable keepalive to make sure the socket status can be reset in time
+	 * if the remote peer is restarted after it gets connreq but not replies.
+	 */
+	ret = xnet_enable_keepalive(ep);
+	if (ret) {
+		FI_WARN(&xnet_prov, FI_LOG_EP_CTRL, "%p set tcp keepalive failure:%d\n",
+			ep, ret);
 		goto disable;
 	}
 

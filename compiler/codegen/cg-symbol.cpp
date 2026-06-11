@@ -2134,7 +2134,11 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
     case clang::CodeGen::ABIArgInfo::Kind::Expand: {
       INT_FATAL("Invalid ABI kind for return argument");
     } break;
-
+#if LLVM_VERSION_MAJOR >= 22
+    case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific: {
+      INT_FATAL("TargetSpecific ABI argument not implemented");
+    } break;
+#endif
     //
     // No default -> compiler warning if more added
     //
@@ -2339,6 +2343,15 @@ codegenFunctionTypeLLVMImpl(
           clang::CharUnits align = argInfo->getIndirectAlign();
           if (argInfo->getIndirectByVal()) {
             b.addAlignmentAttr(align.getQuantity());
+          } else {
+#if LLVM_VERSION_MAJOR >= 22
+            // mark dead on return for records only for non-sret indirect
+            auto isMaybeStructLike = isPrimitiveType(formalInfo->type()) &&
+                                     formalInfo->type()->symbol->hasFlag(FLAG_EXTERN);
+            if ((isRecord(formalInfo->type()) || isMaybeStructLike) &&
+                !outAttrs.hasParamAttr(i, llvm::Attribute::StructRet))
+              b.addAttribute(llvm::Attribute::DeadOnReturn);
+#endif
           }
 
           llvmAddAttr(ctx, outAttrs, argTys.size(), b);
@@ -2422,6 +2435,12 @@ codegenFunctionTypeLLVMImpl(
                                         formalInfo->type());
           pushAllFieldTypesRecursively(cname, t, argTys, outArgNames);
         } break;
+
+#if LLVM_VERSION_MAJOR >= 22
+        case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+          INT_FATAL("TargetSpecific ABI argument not implemented");
+          break;
+#endif
       }
 
     } else {

@@ -39,10 +39,15 @@ module ChapelReduce {
     return arr;
   }
 
+  proc _iteratorRecord._scan(op) {
+    var arr = this; // materialize iterator as array
+    return chpl__scanIterator(op, arr);
+  }
+
   @unstable("scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204")
   proc chpl__scanIterator(op, data) {
     use Reflection;
-    param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
+    param supportsPar = canResolveMethod(data, "_scan", op);
     if (supportsPar) {
       return data._scan(op);
     } else {

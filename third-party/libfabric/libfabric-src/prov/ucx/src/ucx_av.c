@@ -68,7 +68,12 @@ static int ucx_av_remove(struct fid_av *fi_av, fi_addr_t *fi_addr, size_t count,
 		return -FI_ENOEQ;
 
 	for (i = 0; i < count; ++i) {
-		ep_ave = (struct ucx_ave *) fi_addr[i];
+		ep_ave = (struct ucx_ave *)
+			ofi_array_at_max(&av->ave_array, fi_addr[i],
+					 av->count);
+		if (!ep_ave)
+			return -FI_EINVAL;
+
 		ucp_ep_destroy((ucp_ep_h) ep_ave->uep);
 	}
 	return FI_SUCCESS;
@@ -163,7 +168,7 @@ static int ucx_av_insert(struct fid_av *fi_av, const void *addr, size_t count,
 			ep_ave->addr = NULL;
 		}
 
-		fi_addr[i] = (fi_addr_t)ep_ave;
+		fi_addr[i] = (fi_addr_t)av->count;
 
 		status = ucp_ep_create(ep->worker, &ep_params, &ep_ave->uep);
 		if (status == UCS_OK) {
@@ -224,8 +229,12 @@ static int ucx_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 	struct ucx_av *mav;
 	size_t realsz;
 
-	ave = (struct ucx_ave*) fi_addr;
 	mav = container_of(av, struct ucx_av, av.fid);
+	ave = (struct ucx_ave *) ofi_array_at_max(&mav->addr_array, fi_addr,
+						  mav->count);
+	if (!ave)
+		return -FI_EINVAL;
+
 	realsz = MIN(*addrlen, mav->addr_len);
 	memcpy(addr, ave->addr, realsz);
 	*addrlen = mav->addr_len;
@@ -236,6 +245,10 @@ static struct fi_ops ucx_fi_ops = {
 	.size = sizeof(struct fi_ops),
 	.close = ucx_av_close,
 	.bind = ucx_av_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+	.tostr = fi_no_tostr,
+	.ops_set = fi_no_ops_set
 };
 
 static struct fi_ops_av ucx_av_ops = {
@@ -243,6 +256,10 @@ static struct fi_ops_av ucx_av_ops = {
 	.insert = ucx_av_insert,
 	.remove = ucx_av_remove,
 	.lookup = ucx_av_lookup,
+	.insertsvc = fi_no_av_insertsvc,
+	.insertsym = fi_no_av_insertsym,
+	.straddr = fi_no_av_straddr,
+	.av_set = fi_no_av_set,
 };
 
 int ucx_av_open(struct fid_domain *fi_domain, struct fi_av_attr *attr,
@@ -250,19 +267,19 @@ int ucx_av_open(struct fid_domain *fi_domain, struct fi_av_attr *attr,
 {
 	struct ucx_domain *domain;
 	struct ucx_av *av;
-	int type = FI_AV_MAP;
+	int type = FI_AV_TABLE;
 	int is_async = 0;
 
 	domain = container_of(fi_domain, struct ucx_domain, u_domain.domain_fid);
 
 	if (attr) {
 		switch (attr->type) {
-		case FI_AV_MAP:
+		case FI_AV_TABLE:
 			type = attr->type;
 			break;
 		case FI_AV_UNSPEC:
-			/* Set FI_AV_MAP by default */
-			type = FI_AV_MAP;
+			/* Set FI_AV_TABLE by default */
+			type = FI_AV_TABLE;
 			break;
 		default:
 			return -EINVAL;

@@ -8,9 +8,10 @@ Community-developed modules are available as Mason packages on the
 These packages can be downloaded and used through :ref:`mason <readme-mason>`,
 Chapel's package manager.
 
-Browsing available packages is best done through the ``mason`` command line
-tool, via ``mason search``. They can also be found by browsing the Mason
-registry repository.
+The available packages can be found either through the
+`Mason registry <https://chapel-lang.org/packages/>`_ or through the command
+line with ``mason search``.
+
 
 For details on contributing a package to the Mason registry, see the
 documentation on :ref:`submitting a package <submit-a-package>`.

@@ -1,0 +1,18 @@
+foldAND.chpl:9: warning: resolve true branch
+foldAND.chpl:12: warning: resolve false branch
+foldAND.chpl:20: warning: resolve false branch
+foldAND.chpl:26: warning: resolve true branch
+foldAND.chpl:29: warning: resolve false branch
+foldAND.chpl:35: warning: resolve true branch
+foldAND.chpl:38: warning: resolve false branch
+TRUE && non-param:
+getBool called
+passed if
+FALSE && non-param:
+passed else
+non-param && TRUE:
+getBool called
+passed if
+non-param && FALSE:
+getBool called
+passed else

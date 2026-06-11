@@ -21,12 +21,10 @@
 #ifndef PB_ENUM_FIELD_HH
 #define PB_ENUM_FIELD_HH
 
-#include <string>
-
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.h>
 
-#include <field_base.h>
+#include "field_base.h"
 
 namespace chapel {
 

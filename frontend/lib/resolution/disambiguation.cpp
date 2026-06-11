@@ -40,6 +40,7 @@ struct DisambiguationContext;
 struct DisambiguationCandidate {
   const TypedFnSignature* fn = nullptr;
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
+  const CallInfo& call;
   FormalActualMap formalActualMap;
   int idx = 0;
   PromotedFormalMap promotedFormals;
@@ -54,7 +55,8 @@ struct DisambiguationCandidate {
                           QualifiedType forwardingTo,
                           const CallInfo& call,
                           int idx)
-    : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx),
+    : fn(fn), forwardingTo(forwardingTo), call(call),
+      formalActualMap(fn, call), idx(idx),
       promotedFormals(), nImplicitConversionsComputed(false),
       anyNegParamToUnsigned(false), nImplicitConversions(0),
       nParamNarrowingImplicitConversions(0), visibilityDistance(-1)
@@ -65,7 +67,7 @@ struct DisambiguationCandidate {
   void computeConversionInfo(const DisambiguationContext& dctx);
 
   MostSpecificCandidate toMostSpecificCandidate(ResolutionContext* rc, const Scope* callInScope, const PoiScope* callInPoiScope) const {
-    return MostSpecificCandidate::fromTypedFnSignature(rc, fn, formalActualMap, callInScope, callInPoiScope, promotedFormals);
+    return MostSpecificCandidate::fromTypedFnSignature(rc, fn, call, formalActualMap, callInScope, callInPoiScope, promotedFormals);
   }
 };
 
@@ -1820,7 +1822,7 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
   if (faTypeExpr->isTuple()) {
     return true;
   } else if (auto op = faTypeExpr->toOpCall()) {
-    if (op->numActuals() == 2 && op->op() == USTR("*")) return true;
+    if (op->isBinaryOp() && op->op() == USTR("*")) return true;
   } else if (auto fnCall = faTypeExpr->toFnCall()) {
     if (parsing::isCallToClassManager(fnCall) &&
         fnCall->numActuals() >= 1) return true;

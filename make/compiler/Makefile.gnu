@@ -370,6 +370,16 @@ WARN_CXXFLAGS += -Wno-error=nonnull
 endif
 
 
+#
+# Avoid warnings-as-errors about unused variables in the runtime
+# this can occur in third-party libraries outside of our control included in
+# the runtime
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 16; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-error=unused-but-set-variable
+endif
+
+
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
 else

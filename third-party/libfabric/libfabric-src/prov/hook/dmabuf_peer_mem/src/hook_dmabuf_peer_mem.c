@@ -185,7 +185,7 @@ static void get_mr_fd(struct dmabuf_peer_mem_mr *mr,
 		goto out;
 
 	err = ze_hmem_get_base_addr(iov->iov_base, iov->iov_len,
-				    (void **)&mr->base, &mr->size);
+				    (void **)&mr->base, (size_t *)&mr->size);
 	if (err)
 		goto out;
 

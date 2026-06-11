@@ -1,0 +1,8 @@
+unionSelect.chpl:13: error: unresolved call '==(int(64), u)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:159: note: this candidate did not match: ==(a: int(8), b: int(8))
+unionSelect.chpl:13: note: because actual argument #1 with type 'int(64)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:159: note: is passed to formal 'a: int(8)'
+unionSelect.chpl:13: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:160: note:   ==(a: int(16), b: int(16))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:161: note:   ==(a: int(32), b: int(32))
+note: and 100 other candidates, use --print-all-candidates to see them

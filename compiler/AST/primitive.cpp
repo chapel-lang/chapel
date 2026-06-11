@@ -1191,10 +1191,6 @@ initPrimitive() {
 
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
-  // ('_private_broadcast' sym)
-  // Later, a structure index is inserted ahead
-  // of the symbol, so it ends up as
-  // ('_private_broadcast' index sym).
   prim_def(PRIM_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true);
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);

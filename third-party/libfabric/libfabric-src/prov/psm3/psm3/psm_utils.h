@@ -437,7 +437,7 @@ void psm3_print_identify(const char *fmt, ...) \
 #ifdef PSM_HAVE_REG_MR
 unsigned psm3_parse_senddma(void);
 #endif
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 unsigned psmi_parse_gpudirect(void);
 unsigned psmi_parse_gpudirect_rdma_send_limit(int force);
 unsigned psmi_parse_gpudirect_rdma_recv_limit(int force);
@@ -454,38 +454,6 @@ void psm3_syslog(psm2_ep_t ep, int to_console, int level,
 		 const char *format, ...);
 void *psm3_memcpyo(void *dst, const void *src, size_t n);
 uint32_t psm3_crc(unsigned char *buf, int len);
-
-/*
- * Internal CPUID detection
- */
-#define CPUID_FAMILY_MASK       0x00000f00
-#define CPUID_MODEL_MASK        0x000000f0
-#define CPUID_EXMODEL_MASK      0x000f0000
-
-/*
- * CPUID return values
- */
-#define CPUID_FAMILY_XEON       0x00000600
-#define CPUID_MODEL_PHI_GEN2    87
-#define CPUID_MODEL_PHI_GEN2M   133
-/*
- * cpuid function 0, returns "GeniuneIntel" in EBX,ECX,EDX
- * due to Little Endian and Hex it is not so obvious
- */
-#define CPUID_GENUINE_INTEL_EBX 0x756e6547 /* "uneG" - Little Endian "Genu" */
-#define CPUID_GENUINE_INTEL_ECX 0x6c65746e /* "Ieni" - Little Endian "ineI" */
-#define CPUID_GENUINE_INTEL_EDX 0x49656e69 /* "letn" - Little Endian "ntel" */
-
-/*
- * These values are internal only, not real register values
- */
-#define CPUID_GENUINE_INTEL     0xf0000000
-#define CPUID_MODEL_UNDEFINED   -1
-
-/*
- * Global model so we can tune defaults better for specific cpu's
- */
-extern uint32_t psm3_cpu_model;
 
 /*
  * Diagnostics, all in psm_diags.c
@@ -527,6 +495,18 @@ void psm3_parse_multi_ep();
  *		nonpri_reg_mr - non-priority register MR failure (ENOMEM)
  *		pri_reg_mr - priority register MR failure (ENOMEM)
  *		gdrmmap - GPU gdrcopy pin and mmap failure
+ *		connrecvlost - discard connect/discon packet on receive
+ *			 before processing
+ *		slowconn - slow down receive processing during connect/discon
+ *			 packet processing
+ *		delayconn - slow down connection establishment call to force
+ *			 misalignment with peer so issue connect after they have
+ *			 completed their connect
+ *		delaydisc - slow down disconnect call to force
+ *			 misalignment with peer so issue disconnect after they have
+ *			 completed their disconnect
+ *
+ *
  */
 extern int psm3_faultinj_enabled; /* use macro to test */
 extern int psm3_faultinj_verbose; /* use IS_FAULT macro to test */

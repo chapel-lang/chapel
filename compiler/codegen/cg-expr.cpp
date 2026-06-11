@@ -3104,8 +3104,13 @@ static GenRet codegenCallExprInner(GenRet function,
           }
 
           case clang::CodeGen::ABIArgInfo::Kind::Expand:
-            INT_FATAL("not implemented");
+            INT_FATAL("Expand ABI argument not implemented");
             break;
+#if LLVM_VERSION_MAJOR >= 22
+            case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+              INT_FATAL("TargetSpecific ABI argument not implemented");
+              break;
+#endif
         }
       } else {
 
@@ -4744,9 +4749,13 @@ DEFINE_PRIM(RETURN) {
         }
 
         case clang::CodeGen::ABIArgInfo::Kind::Expand:
-          INT_FATAL("not implemented yet");
+          INT_FATAL("Expand ABI return not implemented yet");
           break;
-
+#if LLVM_VERSION_MAJOR >= 22
+        case clang::CodeGen::ABIArgInfo::Kind::TargetSpecific:
+          INT_FATAL("TargetSpecific ABI argument not implemented");
+          break;
+#endif
         // No default -> compiler warning if more added
       }
 
@@ -5196,9 +5205,6 @@ DEFINE_PRIM(LOGICALAND_ASSIGN) {
 }
 DEFINE_PRIM(LOGICALOR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " ||= ", codegenLogicalOr);
-}
-DEFINE_PRIM(POW) {
-    ret = codegenCallExpr("pow", call->get(1), call->get(2));
 }
 
 DEFINE_PRIM(MIN) {
@@ -6193,17 +6199,26 @@ DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
     }
 #endif
 
-    codegenCall("chpl_comm_register_global_var",
-                idx,
+    codegenCall("chpl_registerGlobalVar", idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
+
 DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {
-    codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
+  // Call the module code wrapper.
+  std::vector<GenRet> args(2);
+  args[0] = call->get(1);   // Line
+  args[1] = call->get(2);   // File
+  codegenCallWithArgs("chpl_broadcastGlobalVars", args);
 }
+
 DEFINE_PRIM(PRIVATE_BROADCAST) {
-    codegenCall("chpl_comm_broadcast_private",
-                call->get(1),
-                codegenSizeof(call->get(2)->typeInfo()));
+  // Call the module code wrapper.
+  std::vector<GenRet> args(4);
+  args[0] = call->get(1);
+  args[1] = codegenSizeof(call->get(2)->typeInfo());
+  args[2] = call->linenum();
+  args[3] = new_IntSymbol(getFilenameTableIndex(call->fname()), INT_SIZE_32);
+  codegenCallWithArgs("chpl_privateBroadcast", args);
 }
 
 DEFINE_PRIM(INT_ERROR) {
@@ -7166,13 +7181,13 @@ void CallExpr::codegenInvokeOnFun() {
   // get(4) is a dummy class type for the argument bundle
 
   if (fn->hasFlag(FLAG_NON_BLOCKING))
-    fname = "chpl_executeOnNB";
+    fname = "chpl_localeModelExecuteOnNb";
 
   else if (fn->hasFlag(FLAG_FAST_ON))
-    fname = "chpl_executeOnFast";
+    fname = "chpl_localeModelExecuteOnFast";
 
   else
-    fname = "chpl_executeOn";
+    fname = "chpl_localeModelExecuteOn";
 
   argBundle  = codegenValue(get(2));
   bundleSize = codegenValue(get(3));

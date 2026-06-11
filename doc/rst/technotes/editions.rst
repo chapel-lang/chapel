@@ -165,18 +165,16 @@ remain in the preview until they are deemed sufficiently complete.
   and ``FileSystem.walkDirs()`` iterators throw when they encounter an error,
   rather than just printing the error to stdout.
 
+- Exponentiation operator overloads (``**``) are supported for ``param
+  real`` values taken to ``param real`` or ``integral`` exponents and
+  considered stable.
+
 - Default comparison operators on records (``==``, ``!=``, ``<``,
   ``<=``, ``>``, ``>=``) are defined as module code accepting two
   generic arguments of type ``record`` rather than being inserted by
-  the compiler in cases where it believes the user did not define such
-  operators for a given record type.  For most programs, this should
-  not result in any behavior change, and we encourage you to reach out
-  and let us know if you find otherwise.
-
-  The most significant anticipated behavioral change is for records
-  that only have tertiary definitions of such operators (which is to
-  say, ones that are defined in a different module than the record
-  itself).  In such cases, these default, module-defined comparison
-  operators will be available for the record type in scopes where the
-  tertiary operators are not available.  We consider this to be an
-  improvement.
+  the compiler.  These defaults only support comparing two records of
+  matching type.  This change should not result in behavior changes
+  for most programs, unless a record type's only comparison operators
+  are defined using tertiary methods.  In such cases, a default
+  comparison operator will now be available in scopes that do not have
+  access to the tertiary method.

@@ -1,0 +1,8 @@
+bug: 'for' expression can't be invoked with square brackets
+
+It seems that when we capture a 'for' expression as an iterator
+record, we can't invoke it with square brackets.  I consider this a
+bug, as the square bracket loop is meant to result in parallel
+execution if possible, and to fall back to serial execution otherwise.
+I have a feeling that there's nothing deep going on here, simply a
+path through our execution that hasn't ever been plumbed through.

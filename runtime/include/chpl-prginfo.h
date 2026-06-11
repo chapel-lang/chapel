@@ -65,7 +65,7 @@
   locale by writing (e.g., for a 'chpl_rt_prginfo*' named 'prg' and
   for a data named 'foo'):
 
-  CHPL_RT_PRGINFO_DATA_TEMP(prg, foo);
+  CHPL_RT_PRGINFO_DECLARE(prg, foo);
 
   This will declare a temporary in the current scope with the name 'foo' that
   has the C type for the constant.
@@ -111,27 +111,35 @@ typedef struct qio_channel_s qio_channel_t;
   #undef CHPL_RT_DEBUG_PRGINFO_ACCESS
 #endif
 
+/** Prefix for typedef generated for each data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_PREFIX chpl_rt_
+
+/** Suffix for typedef generated for each data entry. */
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_SUFFIX _type
+
+// Helpers to perform macro token concatenation.
+#define CHPL_RT_CONCAT_INNER__(a__, b__) a__ ## b__
+#define CHPL_RT_CONCAT__(a__, b__) CHPL_RT_CONCAT_INNER__(a__, b__)
+#define CHPL_RT_CONCAT3__(a__, b__, c__) \
+  CHPL_RT_CONCAT__(a__, CHPL_RT_CONCAT__(b__, c__))
+
 /** Get the typedef for a specific program data entry. */
-#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) chpl_rt_ ## name__ ## _type
+#define CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) \
+  CHPL_RT_CONCAT3__(CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_PREFIX, name__, \
+                    CHPL_RT_PRGINFO_DATA_ENTRY_TYPE_SUFFIX)
+
+/** Get the C type of a callback. */
+#define CHPL_RT_PRGINFO_CALLBACK_TYPE(name__, ret_type__, ...) \
+  ret_type__ (*)(__VA_ARGS__)
 
 // Expand out unique typedefs for each data entry.
-#define ENTRY_NAME__(name__) CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__)
-#define E_CONSTANT(name__, type__) typedef type__ ENTRY_NAME__(name__);
+#define E_CONSTANT(name__, type__) \
+  typedef type__ CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__);
 #define E_CALLBACK(name__, ret_type__, ...) \
-  typedef ret_type__ (*ENTRY_NAME__(name__))(__VA_ARGS__);
+  typedef ret_type__ (*CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__))(__VA_ARGS__);
 #include "chpl-prginfo-data-macro-adapter.h"
-#undef ENTRY_NAME__
 
-/** Get a unique enum value for a given data entry. */
-#define CHPL_RT_PRGINFO_DATA_ENTRY_IDX(name__) \
-    CHPL_RT_PRGINFO_DATA_ENTRY_ ## name__
-
-// TODO: Where the heck does this live (i.e., launcher or us?). It was
-//       declared in 'chplcgfns.h', but clearly that's not correct as
-//       it is not code-generated (and that header is going away).
-extern char* chpl_executionCommand;
-
-// Whether or not the runtime is compiled as a dynamic library or not.
+/** Whether or not the runtime is compiled as a dynamic library or not. */
 extern int chpl_rt_is_dynamic_library;
 
 // The type of a unique program identifier. These are assigned by the runtime
@@ -150,27 +158,31 @@ typedef uint64_t chpl_rt_prg_id;
 #define CHPL_RT_PRGINFO_ROOT \
   (chpl_rt_prginfo_from_id_here(CHPL_RT_PRGINFO_ROOT_ID))
 
+// TODO: Eventually replace all references to this with either a program
+//       pointer or a deliberate use of 'CHPL_RT_PRGINFO_ROOT'.
+#define CHPL_RT_ROOT_PROGRAM_PLACEHOLDER CHPL_RT_PRGINFO_ROOT
+
 /** Retrieve a program's info on the current locale given an ID. */
 #define CHPL_RT_PRGINFO_FETCH(id__) (chpl_rt_prginfo_from_id_here(id__))
 
-/** Retrieve data from a program. */
+/** Materialize the value of a program data entry. */
 #if !defined(CHPL_RT_DEBUG_PRGINFO_ACCESS) || \
              CHPL_RT_DEBUG_PRGINFO_ACCESS <= 0
   #define CHPL_RT_PRGINFO_DATA(prg__, data_name__) (prg__->data.data_name__)
 #else
-  #define CHPL_RT_PRGINFO_DATA(prg__, data_name__)                          \
-    (*((CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(data_name__))                       \
-      chpl_rt_prginfo_data_debug_print_hook(CHPL_RT_DEBUG_PRGINFO_ACCESS,   \
-                                            prg__,                          \
-                                            &(prg__->data.data_name__),     \
-                                            #data_name__,                   \
-                                            __FILE__,                       \
-                                            __FUNCTION__,                   \
-                                            __LINE__)))
+  #define CHPL_RT_PRGINFO_DATA(prg__, data_name__)                         \
+    (chpl_rt_prginfo_data_debug_print_hook(CHPL_RT_DEBUG_PRGINFO_ACCESS,   \
+                                           prg__,                          \
+                                           &(prg__->data.data_name__),     \
+                                           #data_name__,                   \
+                                           __FILE__,                       \
+                                           __FUNCTION__,                   \
+                                           __LINE__),                      \
+                                           (prg__->data.data_name__))
 #endif
 
 /** Declares a local that is a copy of a program data, with the same name. */
-#define CHPL_RT_PRGINFO_DATA_TEMP(prg__, data_name__)             \
+#define CHPL_RT_PRGINFO_DECLARE(prg__, data_name__)               \
   CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(data_name__) data_name__ =      \
       CHPL_RT_PRGINFO_DATA(prg__, data_name__)
 
@@ -196,6 +208,14 @@ chpl_rt_prg_id chpl_rt_prginfo_id(chpl_rt_prginfo* prg);
 
 /** Get the load path of a program info. */
 const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg);
+
+/** Fetch a pointer to the main argument for a given program. */
+static inline chpl_main_argument*
+chpl_rt_prginfo_main_argument(chpl_rt_prginfo* prg) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_genMainArgPtr);
+  chpl_main_argument* ret = chpl_genMainArgPtr();
+  return ret;
+}
 
 // Private implementation details.
 #include "chpl-prginfo-detail.h"

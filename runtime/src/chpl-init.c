@@ -48,10 +48,6 @@
 
 static const int32_t myFilename = CHPL_FILE_IDX_INTERNAL;
 
-chpl_main_argument chpl_gen_main_arg;
-
-char* chpl_executionCommand;
-
 void* chpl_string_literals_buffer;
 
 const char* allocate_string_literals_buf(int64_t s) {
@@ -68,10 +64,12 @@ void deallocate_string_literals_buf(void) {
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  if (CHPL_RT_PRGINFO_DATA(prg, mainHasArgs)) {
+    chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
-  if (mainHasArgs) {
-    chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
-    chpl_gen_main_arg.argc++;
+    main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
+    main_arg_ptr->argc++;
   } else {
     char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], "\"");
     chpl_error(message, lineno, filename);
@@ -90,6 +88,10 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_executionCommand);
+
   chpl_executionCommand =
     (char*)chpl_mem_allocMany(length+1, sizeof(char),
                               CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
@@ -100,18 +102,10 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   }
 }
 
+static void root_program_only_synchronization(void) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_taskRunningCntReset);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_taskRunningCntInc);
 
-//
-// Pre-user-code hook
-//
-// This is called on all locales.  The call on locale 0 is made from the
-// compiler-emitted code in chpl_gen_main(), right before we enter user
-// code.  The call on non-0 locales is made from chpl_main(), above.
-//
-void chpl_rt_preUserCodeHook(void) {
-  //
-  // The module initialization functions have all completed on each
-  // node, locally, before we are called.
   //
   // The module init code can leave the running task counts incorrect.
   // Once module init is complete, we can set those counts to the right
@@ -119,7 +113,6 @@ void chpl_rt_preUserCodeHook(void) {
   // all other nodes.  We have to barrier first because on-stmts during
   // module init can change the running task count on any node.
   //
-  chpl_comm_barrier("pre-user-code hook: init done");
   chpl_taskRunningCntReset(0, 0);
   if (chpl_nodeID == 0) {
     chpl_taskRunningCntInc(0, 0);
@@ -132,7 +125,7 @@ void chpl_rt_preUserCodeHook(void) {
   // which will adjust the running task count, so we have to do another
   // barrier to make sure the task counts are stable before doing it.
   //
-  chpl_comm_barrier("pre-user-code hook: task counts stable");
+  chpl_comm_barrier("pre-user-code sync: task counts stable");
   chpl_setMemFlags();
 
   //
@@ -140,23 +133,26 @@ void chpl_rt_preUserCodeHook(void) {
   // have set up memory tracking (if needed) before node 0 enters the
   // user code and execution starts spreading around the nodes.
   //
-  chpl_comm_barrier("pre-user-code hook: mem tracking inited");
+  chpl_comm_barrier("pre-user-code sync: mem-tracking inited");
 }
 
+//
+// Pre-user-code synchronization.
+//
+// This is called on all locales. The call on L0 is made from the generated
+// code in 'chpl_gen_main()', right before L0 begins initializing user
+// modules, or in the compiler-generated 'chpl_initLoadedProgramModulesHere()'
+// if the program is loaded.
+//
+void chpl_rt_pre_user_code_sync(chpl_rt_prginfo* prg) {
 
-//
-// Post-user-code hook
-//
-// This is called on all locales.  The call on locale 0 is made from the
-// compiler-emitted code in chpl_gen_main(), right after we finish user
-// code.  The call on non-0 locales is made from chpl_main(), above.
-//
-void chpl_rt_postUserCodeHook(void) {
-  //
-  // empty
-  //
+  // All locales must enter a barrier before execution can proceed.
+  chpl_comm_barrier("pre-user-code hook: init done");
+
+  if (prg == CHPL_RT_PRGINFO_ROOT) {
+    root_program_only_synchronization();
+  }
 }
-
 
 static void chpl_setlocale_utf8(void) {
   const char* got = NULL;
@@ -202,12 +198,19 @@ static int is_runtime_initialized = 0;
 //
 // Initialize the Chapel runtime.
 //
-void chpl_rt_init(int argc, char* argv[]) {
+void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv) {
   if (is_runtime_initialized) return; else is_runtime_initialized = 1;
 
-  int32_t execNumLocales;
-  int runInGDB;
-  int runInLLDB;
+  int32_t execNumLocales = 0;
+  int runInGDB = 0;
+  int runInLLDB = 0;
+
+  // First thing: bind the root program so that other code can function.
+  int is_root_prg_bound = chpl_rt_prginfo_register_root_here(root_prg);
+
+  // Realistically, this should never fire.
+  assert(is_root_prg_bound);
+  (void) is_root_prg_bound;
 
   // Check that we can get the page size.
   assert( sys_page_size() > 0 );
@@ -268,12 +271,18 @@ void chpl_rt_init(int argc, char* argv[]) {
 
   chpl_comm_barrier("about to leave comm init code");
 
-  CreateConfigVarTable();      // get ready to start tracking config vars
-  chpl_gen_main_arg.argv = chpl_malloc(argc * sizeof(char*));
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
-  chpl_gen_main_arg.return_value = 0;
+  // Call a callback from the program data to initialize the config table.
+  CHPL_RT_PRGINFO_DATA(root_prg, CreateConfigVarTable)();
+
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(root_prg);
+
+  main_arg_ptr->argv = chpl_malloc(argc * sizeof(char*));
+  main_arg_ptr->argv[0] = argv[0];
+  main_arg_ptr->argc = 1;
+  main_arg_ptr->return_value = 0;
+
   parseArgs(false, parse_normally, &argc, argv);
+
   recordExecutionCommand(argc, argv);
 
   chpl_topo_post_args_init();
@@ -337,23 +346,24 @@ void chpl_rt_init(int argc, char* argv[]) {
 // of standard module initialization are privatized and must be executed on
 // each locale in order for the Chapel program to function correctly.
 //
-void chpl_std_module_init(void) {
-  // chpl__initStringLiterals runs the constructors for all string literals. We
-  // need to setup the literals on every locale before any other chapel code is
-  // run.
-  chpl__initStringLiterals();
-  chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
+void chpl_rt_init_program_standard_modules(chpl_rt_prginfo* prg) {
+  // Set up the string literals on every locale before other code is run.
+  // Note that this calls a function pointer from the program info's data.
+  CHPL_RT_PRGINFO_DATA(prg, chpl__initStringLiterals)();
+
+  // Allocate globals on the heap. Does nothing if not in multi-locale.
+  CHPL_RT_PRGINFO_DATA(prg, chpl__heapAllocateGlobals)();
 
   if (chpl_nodeID == 0) {
     //
     // This just sets all of the initialization predicates to false.
     // Must occur before any other call to a chpl__init_<foo> function.
     //
-    chpl__init_preInit(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_preInit)(0, myFilename);
 
     // Initialize the internal modules.
-    chpl__init_PrintModuleInitOrder(0, myFilename);
-    chpl__init_ChapelStandard(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_PrintModuleInitOrder)(0, myFilename);
+    CHPL_RT_PRGINFO_DATA(prg, chpl__init_ChapelStandard)(0, myFilename);
 
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
@@ -369,8 +379,7 @@ void chpl_std_module_init(void) {
     // On non-0 locales, just call the pre- and post-user-code hooks
     // directly.
     //
-    chpl_rt_preUserCodeHook();
-    chpl_rt_postUserCodeHook();
+    chpl_rt_pre_user_code_sync(prg);
   }
 }
 
@@ -378,18 +387,25 @@ void chpl_std_module_init(void) {
 // The function previously known as "chpl_main".
 //
 // Chapel standard module initialization has been factored out
-// into chpl-init.c:chapel_std_module_init().
+// into chpl-init.c:chpl_rt_init_program_standard_modules().
 //
 void chpl_executable_init(void) {
+  chpl_rt_prginfo* prg = CHPL_RT_PRGINFO_ROOT;
 
-  chpl_std_module_init();
+  chpl_rt_init_program_standard_modules(prg);
+
   if (chpl_nodeID == 0) {
+    // Get the main argument.
+    chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
+    // Fetch 'chpl_gen_main' from the root program's data.
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_gen_main);
+
     //
     // Call the compiler-generated main() routine
     //
-    chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
+    main_arg_ptr->return_value = chpl_gen_main(main_arg_ptr);
   }
-
 }
 
 void chpl_execute_module_deinit(c_fn_ptr deinitFun) {

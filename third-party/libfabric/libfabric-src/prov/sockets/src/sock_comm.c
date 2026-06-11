@@ -34,6 +34,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -63,7 +64,7 @@ static ssize_t sock_comm_send_socket(struct sock_conn *conn,
 		}
 	}
 	if (ret > 0)
-		SOCK_LOG_DBG("wrote to network: %lu\n", ret);
+		SOCK_LOG_DBG("wrote to network: %zd\n", ret);
 	return ret;
 }
 
@@ -119,7 +120,7 @@ ssize_t sock_comm_send(struct sock_pe_entry *pe_entry,
 	ret = MIN(ofi_rbavail(&pe_entry->comm_buf), len);
 	ofi_rbwrite(&pe_entry->comm_buf, buf, ret);
 	ofi_rbcommit(&pe_entry->comm_buf);
-	SOCK_LOG_DBG("buffered %lu\n", ret);
+	SOCK_LOG_DBG("buffered %zd\n", ret);
 	return ret;
 }
 
@@ -146,7 +147,7 @@ static ssize_t sock_comm_recv_socket(struct sock_conn *conn,
 	}
 
 	if (ret > 0)
-		SOCK_LOG_DBG("read from network: %lu\n", ret);
+		SOCK_LOG_DBG("read from network: %zd\n", ret);
 	return ret;
 }
 
@@ -182,7 +183,7 @@ ssize_t sock_comm_recv(struct sock_pe_entry *pe_entry, void *buf, size_t len)
 
 	read_len = MIN(len, ofi_rbused(&pe_entry->comm_buf));
 	ofi_rbread(&pe_entry->comm_buf, buf, read_len);
-	SOCK_LOG_DBG("read from buffer: %lu\n", read_len);
+	SOCK_LOG_DBG("read from buffer: %zd\n", read_len);
 	return read_len;
 }
 
@@ -202,7 +203,7 @@ ssize_t sock_comm_peek(struct sock_conn *conn, void *buf, size_t len)
 	}
 
 	if (ret > 0)
-		SOCK_LOG_DBG("peek from network: %lu\n", ret);
+		SOCK_LOG_DBG("peek from network: %zd\n", ret);
 	return ret;
 }
 

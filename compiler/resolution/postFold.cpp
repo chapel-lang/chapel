@@ -1031,6 +1031,13 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->name != astr_defaultOf) {
       retval = true;
     }
+  } else if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    auto retType = ft->returnType();
+    if ((isRecord(retType) || isConstrainedType(retType)) &&
+        retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+      retval = true;
+    }
   }
 
   return retval;

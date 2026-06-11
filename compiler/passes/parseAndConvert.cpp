@@ -196,9 +196,11 @@ static void checkCanLoadBundledModule(const char* name) {
     chpl::parsing::getExistingFileInModuleSearchPath(gContext, fname);
   if (p.empty()) {
     USR_FATAL_CONT("Could not find bundled module '%s'", name);
-    if (0 == strcmp(name, "ChapelSysCTypes")) {
-      USR_PRINT("Missing ChapelSysCTypes indicates an incomplete build");
+    if (0 == strcmp(name, "ChapelSysCTypes") ||
+        0 == strcmp(name, "ChapelSetProgramInfoDataEntries")) {
+      USR_PRINT("Missing '%s' indicates an incomplete build", name);
     }
+
     USR_STOP();
   }
 }
@@ -208,6 +210,7 @@ static void checkCanLoadBundledModules() {
   checkCanLoadBundledModule("ChapelBase");
   checkCanLoadBundledModule("ChapelStandard");
   checkCanLoadBundledModule("ChapelSysCTypes");
+  checkCanLoadBundledModule("ChapelSetProgramInfoDataEntries");
   checkCanLoadBundledModule("Errors");
 }
 

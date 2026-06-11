@@ -1,0 +1,7 @@
+dict      xxxx
+list       xxx
+tuple     xxxx
+d size 3
+d size after deleting second 2
+d size after swap 3
+d size after clear 0

@@ -68,7 +68,7 @@ static int mrail_domain_map_raw(struct mrail_domain *mrail_domain,
 
 	memcpy(mr_map, map->raw_key, map->key_size);
 
-	*(map->key) = (uint64_t)mr_map;
+	*(map->key) = (uint64_t)(uintptr_t)mr_map;
 
 	return 0;
 }
@@ -196,7 +196,7 @@ static int mrail_mr_reg(struct fid *domain_fid, const void *buf, size_t len,
 		}
 		mrail_mr->rails[rail].base_addr =
 			(fi->domain_attr->mr_mode & FI_MR_VIRT_ADDR) ?
-			(uint64_t)buf : 0;
+			(uint64_t)(uintptr_t)buf : 0;
 	}
 
 	mrail_mr->mr_fid.fid.fclass = FI_CLASS_MR;
@@ -247,7 +247,7 @@ static int mrail_mr_regv(struct fid *domain_fid, const struct iovec *iov,
 		}
 		mrail_mr->rails[rail].base_addr =
 			(fi->domain_attr->mr_mode & FI_MR_VIRT_ADDR) ?
-			(uint64_t)iov[0].iov_base : 0;
+			(uint64_t)(uintptr_t)iov[0].iov_base : 0;
 	}
 
 	mrail_mr->mr_fid.fid.fclass = FI_CLASS_MR;
@@ -295,7 +295,7 @@ static int mrail_mr_regattr(struct fid *domain_fid, const struct fi_mr_attr *att
 		}
 		mrail_mr->rails[rail].base_addr =
 			(fi->domain_attr->mr_mode & FI_MR_VIRT_ADDR) ?
-			(uint64_t)attr->mr_iov[0].iov_base : 0;
+			(uint64_t)(uintptr_t)attr->mr_iov[0].iov_base : 0;
 	}
 
 	mrail_mr->mr_fid.fid.fclass = FI_CLASS_MR;

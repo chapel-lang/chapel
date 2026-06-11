@@ -734,6 +734,8 @@ void setupModuleSearchPaths(
 
   searchPath.push_back(internal + "/comm/" + chplComm);
 
+  searchPath.push_back(internal + "/gen");
+
   searchPath.push_back(internal);
 
   // move on to standard modules

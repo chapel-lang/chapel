@@ -54,6 +54,11 @@
 
 #include "verbs_hal.h"
 
+#define _HFI_CONNDBG_OR_MMDBG(fmt, ...) \
+	do { \
+		if (_HFI_CONNDBG_ON || _HFI_MMDBG_ON) \
+			_HFI_DBG_ALWAYS(fmt, ##__VA_ARGS__); \
+	} while (0)
 
 static inline struct _hfp_verbs *get_psm_verbs_hi(void)
 {
@@ -84,6 +89,13 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_context_check_status(struct p
 static PSMI_HAL_INLINE int psm3_hfp_verbs_faultinj_allowed(const char *name,
 			psm2_ep_t ep)
 {
+	// The recvlost fault injection in ips_proto_help.h is N/A to
+	// verbs with RC QPs and without reconnect since we assume a reliable
+	// RC QP transport for some of the packets
+	if (strcmp(name, "recvlost") == 0
+		&& (! ep || (IPS_PROTOEXP_FLAG_USER_RC_QP(ep->rdmamode)
+				 		&& ! ep->allow_reconnect)))
+                return 0;
 	return 1;
 }
 #endif
@@ -181,7 +193,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_proto_init(
 }
 
 // Fetch current link state to update linkinfo fields in ips_proto:
-// 	ep_base_lid, ep_lmc, ep_link_rate, QoS tables, CCA tables
+// 	ep_base_lid, ep_lmc, ep_link_rate
 // These are all fields which can change during a link bounce.
 // Note "active" state is not adjusted as on link down PSM will wait for
 // the link to become usable again so it's always a viable/active device
@@ -218,10 +230,13 @@ static PSMI_HAL_INLINE int psm3_hfp_verbs_ips_fully_connected(ips_epaddr_t *ipsa
 	ret = psm3_rv_connected(ipsaddr->verbs.rv_conn);
 	if (ret < 0 && errno != EIO) {
 		int save_errno = errno;
-		perror("can't query rv connection\n");
+		_HFI_ERROR("can't query rv connection: %s (%d)\n",
+			strerror(errno), errno);
 		errno = save_errno;
 	}
 	ipsaddr->verbs.rv_connected = (1 == ret);
+	if (ret == 1)
+		_HFI_CONNDBG("[ipsaddr %p] RV fully connected\n", ipsaddr);
 	return ret;
 #else /* RNDV_MOD */
 	return 1;
@@ -237,13 +252,16 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 				ips_epaddr_t *ipsaddr,
 				const struct ips_connect_reqrep *req)
 {
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+#endif
 #ifdef RNDV_MOD
-	ipsaddr->verbs.remote_gid = req->verbs.gid;
-	ipsaddr->verbs.remote_rv_index = req->verbs.rv_index;
+	ipsaddr->verbs.remote_gid = req->verbs.rv.gid;
+	ipsaddr->verbs.remote_rv_index = req->verbs.rv.rv_index;
 	if (ipsaddr->verbs.rv_conn) {
 		psmi_assert(IPS_PROTOEXP_FLAG_KERNEL_QP(proto->ep->rdmamode));
 		psmi_assert(proto->ep->rv);
-		if (!  psm3_nonzero_gid(&req->verbs.gid)) {
+		if (!  psm3_nonzero_gid(&req->verbs.rv.gid)) {
 			_HFI_ERROR("mismatched PSM3_RDMA config, remote end not in mode 1\n");
 			return PSM2_INTERNAL_ERR;
 			// TBD - if we wanted to allow mismatched config to run in UD mode
@@ -253,7 +271,9 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 			// both sides are ready, so we can start rv_connect now
 			if (! ipsaddr->pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY]->verbs.pr_connecting) {
 				struct ib_user_path_rec path;
-				_HFI_MMDBG("rv_connect to: %s\n",
+				_HFI_CONNDBG_OR_MMDBG(
+					"[ipsaddr %p] rv connect to %s\n",
+					ipsaddr, 
 					psm3_ibv_gid_fmt(ipsaddr->verbs.remote_gid, 0));
 				// pg_path has negotiated pr_mtu and pr_static_rate
 				psm3_verbs_ips_path_rec_to_ib_user_path_rec(proto->ep,
@@ -266,14 +286,20 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 				ipsaddr->pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY]->verbs.pr_connecting = 1;
 			}
 		}
-	// } else if (psm3_nonzero_gid(&req->verbs.gid)) {
+	// } else if (psm3_nonzero_gid(&req->verbs.rv.gid)) {
 	//	 We could fail here, but we just let remote end decide
 	//	_HFI_ERROR("mismatched PSM3_RDMA config, remote end in mode 1\n");
 	//	return PSM2_INTERNAL_ERR;
 	}
 #endif // RNDV_MOD
 #ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	if (rc_qp) {
+		psmi_assert(! rc_qp->draining);
+#else
 	if (ipsaddr->verbs.rc_qp) {
+#endif
 		psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode));
 #ifdef RNDV_MOD
 		psmi_assert(proto->ep->rv
@@ -283,15 +309,24 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 			_HFI_ERROR("mismatched PSM3_RDMA config, remote end not in mode 2 or 3\n");
 			return PSM2_INTERNAL_ERR;
 			// TBD - if we wanted to allow mismatched config to run in UD mode
+#ifdef PSM_RC_RECONNECT
+			//psm3_verbs_free_rc_qp("mismatched config", rc_qp);
+#else
 			//rc_qp_destroy(ipsaddr->verbs.rc_qp);
 			//ipsaddr->verbs.rc_qp = NULL;
+#endif
 		} else {
 			// we got a REQ or a REP, we can move to RTR
 			if (! proto->ep->verbs_ep.srq) {
 				// if we are only doing RDMA, we don't need any buffers, but we need a
 				// pool object for RQ coallesce, so we create a pool with 0 size buffers
+#ifdef PSM_RC_RECONNECT
+				if (PSM2_OK != psm_verbs_alloc_recv_pool(proto->ep, 0, rc_qp->qp, &rc_qp->recv_pool,
+						min(proto->ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION, ipsaddr->verbs.rc_qp_max_recv_wr),
+#else
 				if (PSM2_OK != psm_verbs_alloc_recv_pool(proto->ep, 0, ipsaddr->verbs.rc_qp, &ipsaddr->verbs.recv_pool,
 						min(proto->ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION, ipsaddr->verbs.rc_qp_max_recv_wr),
+#endif
 					  (proto->ep->rdmamode == IPS_PROTOEXP_FLAG_RDMA_USER)? 0
 						// want to end up with multiple of cache line (64)
 						// pr_mtu is negotiated max PSM payload, not including hdrs
@@ -305,12 +340,27 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 				}
 			}
 
+#ifdef USE_RDMA_READ
+			ipsaddr->verbs.remote_recv_seq_addr = req->verbs.urc.recv_addr;
+			ipsaddr->verbs.remote_recv_seq_rkey = req->verbs.urc.recv_rkey;
+#endif
+#ifdef PSM_RC_RECONNECT
+			if (modify_rc_qp_to_init(proto->ep, rc_qp->qp)) {
+#else
 			if (modify_rc_qp_to_init(proto->ep, ipsaddr->verbs.rc_qp)) {
+#endif
 				_HFI_ERROR("qp_to_init failed\n");
 				return PSM2_INTERNAL_ERR;
 			}
+#ifdef PSM_RC_RECONNECT
+			rc_qp->initialized = 1;
+#endif
 			if (! proto->ep->verbs_ep.srq) {
+#ifdef PSM_RC_RECONNECT
+				if (PSM2_OK != psm3_ep_verbs_prepost_recv(&rc_qp->recv_pool)) {
+#else
 				if (PSM2_OK != psm3_ep_verbs_prepost_recv(&ipsaddr->verbs.recv_pool)) {
+#endif
 					_HFI_ERROR("prepost failed\n");
 					return PSM2_INTERNAL_ERR;
 				}
@@ -318,12 +368,47 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 			// RC QP MTU will be set to min of req->verbs.qp_attr and pr_mtu
 			// TBD - we already factored in req vs pr to update pr no need
 			// for modify_cq_qp_to_rtr to repeat it
+#ifdef PSM_RC_RECONNECT
+			if (modify_rc_qp_to_rtr(proto->ep, rc_qp->qp, &req->verbs.qp_attr,
+#else
 			if (modify_rc_qp_to_rtr(proto->ep, ipsaddr->verbs.rc_qp, &req->verbs.qp_attr,
+#endif
 					ipsaddr->pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY], //TBD path_rec
 					req->initpsn)) {
 				_HFI_ERROR("qp_to_rtr failed\n");
 				return PSM2_INTERNAL_ERR;
 			}
+#ifdef PSM_RC_RECONNECT_SRQ
+			if (proto->ep->verbs_ep.srq) {
+				// mark just 1 to indicate we expect a
+				// QP_LAST_WQE_RECEIVED async event when drained
+				rc_qp->recv_pool.posted = 1;
+			}
+#endif
+			if (! IPS_CONNECT_VER_ALLOW_RECONNECT(req->hdr.connect_verno)) {
+				// remote doesn't support user RC QP reconnect
+				ipsaddr->allow_reconnect = 0;
+			}
+#ifdef PSM_RC_RECONNECT
+			_HFI_CONNDBG("[ipsaddr %p] RC QP %u rcnt %u to RTR, rmt QP %u use SRQ=%d recv_pool %u of %u\n",
+				ipsaddr, rc_qp->qp->qp_num, rc_qp->reconnect_count,
+#else
+			_HFI_CONNDBG("[ipsaddr %p] RC QP %u to RTR, rmt QP %u use SRQ=%d recv_pool %u of %u\n",
+				ipsaddr, ipsaddr->verbs.rc_qp->qp_num,
+#endif
+				req->verbs.qp_attr.qpn,
+				proto->ep->verbs_ep.srq != NULL,
+#ifdef PSM_RC_RECONNECT
+				proto->ep->verbs_ep.srq?0:
+					rc_qp->recv_pool.recv_total,
+				proto->ep->verbs_ep.srq?0:
+					rc_qp->recv_pool.recv_buffer_size);
+#else
+				proto->ep->verbs_ep.srq?0:
+					ipsaddr->verbs.recv_pool.recv_total,
+				proto->ep->verbs_ep.srq?0:
+					ipsaddr->verbs.recv_pool.recv_buffer_size);
+#endif
 		}
 	// } else if (req->verbs.qp_attr.qpn) {
 	//	 We could fail here, but we just let remote end decide
@@ -332,6 +417,78 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 	}
 #endif
 	return PSM2_OK;
+}
+
+/* handle HAL specific connection processing as part of starting an RC QP
+ * reconnect for RDMA=2 or 3 mode.
+ * always frees rc_qp if now empty, even if drain_rc_qp() has other issues
+ * flags is 0 when req is supplied, otherwise it is supplied by a caller in HAL
+ * and for verbs it indicates if QP draining should be started
+ */
+static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_start_reconnect(
+				struct ips_proto *proto,
+				ips_epaddr_t *ipsaddr,
+				const struct ips_connect_reqrep *req,
+				unsigned flags)
+{
+#ifdef PSM_RC_RECONNECT
+	// only valid if had an existing RC QP
+	psm2_error_t err;
+	struct psm3_verbs_rc_qp *rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	psmi_assert(rc_qp);
+	psmi_assert(! rc_qp->draining);
+	psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode));
+	psmi_assert(ipsaddr->allow_reconnect);
+	psmi_assert(proto->ep->reconnect_timeout);
+
+	// until our QP is reconnected, use the UD QP's allocator and inline
+	ipsaddr->verbs.curr_allocator =  &proto->ep->verbs_ep.send_allocator;
+	ipsaddr->verbs.curr_qp =  proto->ep->verbs_ep.qp;
+	ipsaddr->verbs.curr_max_inline_data = proto->ep->verbs_ep.qp_cap.max_inline_data;
+	if ((proto->ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC)
+		_HFI_CONNDBG_OR_MMDBG("[ipsaddr %p] user RC disabled\n", ipsaddr);
+	ipsaddr->verbs.curr_rc_qp = NULL;
+	ipsaddr->verbs.rc_connected = 0;
+
+	// start destroy of existing RC QP (ipsaddr->verbs.rc_qp), but must
+	// wait for drain of CQEs and WQEs so recover buffers.
+	// if req supplied, then reconnect is due to a remote packet
+	// and we may need to move QP to error.  Otherwise we were called
+	// by error CQE processing and QP is already in ERROR state
+	err = psm3_verbs_drain_rc_qp(proto->ep, rc_qp, req != NULL || flags);
+	if (err) {
+		// HFI_ERROR already output
+		return err;	// caller will fatal error
+	}
+	// rc_qp may have been freed by drain_rc_qp
+
+	// create a replacement QP and put at start of list
+	err = psm3_verbs_create_rc_qp(proto->ep, ipsaddr);
+	if (err) {
+		// HFI_ERROR already output
+		return err;	// caller will fatal error
+	}
+	rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	psm_verbs_init_send_allocator(&rc_qp->send_allocator,
+				      &proto->ep->verbs_ep.send_pool);
+
+	_HFI_CONNDBG("[ipsaddr %p] replacement RC QP %u rcnt %u\n", ipsaddr,
+				rc_qp->qp->qp_num, rc_qp->reconnect_count);
+	if (req) {
+		// the req includes remote QP information so we can move to RTR
+		err = psm3_hfp_verbs_ips_ipsaddr_set_req_params(proto, ipsaddr, req);
+		if (err) {
+			// failed to allocate recv_pool or move QP to RTR
+			// since replacement QP never got to RTR, safe to
+			// simply destroy QP and free here
+			psm3_verbs_free_rc_qp("failed RTR on start_reconnect", rc_qp);
+			return err;	// caller will fatal error
+		}
+	}
+	return PSM2_OK;
+#else
+	return PSM2_EPID_NETWORK_ERROR;
+#endif
 }
 
 /* handle HAL specific connection processing as part of processing an
@@ -344,22 +501,58 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_process_connect_r
 				const struct ips_connect_reqrep *req)
 {
 #ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	psm2_error_t err;
+	struct psm3_verbs_rc_qp *rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+	if (rc_qp) {
+		psmi_assert(! rc_qp->draining);
+#else
 	if (ipsaddr->verbs.rc_qp) {
+#endif
 		psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode));
 		psmi_assert(req->verbs.qp_attr.qpn); // checked in set_req_params
 		// we got a a REP, we can move to RTS
+#ifdef PSM_RC_RECONNECT
+		psmi_assert(rc_qp->initialized);
+		if (PSM2_OK != (err = modify_rc_qp_to_rts(proto->ep, rc_qp->qp,
+			&req->verbs.qp_attr, proto->runid_key))) { // initpsn we sent
+			if (ipsaddr->allow_reconnect
+				&& err == PSM2_EPID_RC_CONNECT_ERROR) {
+				// QP got an error while in RTR, can't move to RTS
+				// need to start reconnect
+				return PSM2_EPID_RC_CONNECT_ERROR;
+			}
+#else
 		if (modify_rc_qp_to_rts(proto->ep, ipsaddr->verbs.rc_qp,
 			&req->verbs.qp_attr, proto->runid_key)) { // initpsn we sent
-			_HFI_ERROR("qp_to_rts failed\n");
+#endif
+			// _HFI_ERROR already output
 			return PSM2_INTERNAL_ERR;
 		}
+#ifdef PSM_RC_RECONNECT
+		_HFI_CONNDBG("[ipsaddr %p] RC QP %u rcnt %u to RTS\n",
+			ipsaddr, rc_qp->qp->qp_num, rc_qp->reconnect_count);
+#else
+		_HFI_CONNDBG("[ipsaddr %p] RC QP %u to RTS\n",
+			ipsaddr, ipsaddr->verbs.rc_qp->qp_num);
+#endif
 		if ((proto->ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
 			// use RC QPs for eager and RDMA
 			// now we can use our own send Q and send allocator
-			ipsaddr->verbs.use_allocator =  &ipsaddr->verbs.send_allocator;
-			ipsaddr->verbs.use_qp =  ipsaddr->verbs.rc_qp;
-			ipsaddr->verbs.use_max_inline_data = ipsaddr->verbs.rc_qp_max_inline_data;
-			_HFI_MMDBG("RC enabled\n");
+#ifdef PSM_RC_RECONNECT
+			ipsaddr->verbs.curr_allocator =  &rc_qp->send_allocator;
+			ipsaddr->verbs.curr_qp =  rc_qp->qp;
+#else
+			ipsaddr->verbs.curr_allocator =  &ipsaddr->verbs.send_allocator;
+			ipsaddr->verbs.curr_qp =  ipsaddr->verbs.rc_qp;
+#endif
+			ipsaddr->verbs.curr_max_inline_data = ipsaddr->verbs.rc_qp_max_inline_data;
+#ifdef PSM_RC_RECONNECT
+			psmi_assert(! rc_qp->draining);
+			ipsaddr->verbs.curr_rc_qp = rc_qp;
+#endif
+			_HFI_CONNDBG_OR_MMDBG("[ipsaddr %p] user RC enabled\n",
+				ipsaddr);
 		}
 		ipsaddr->verbs.rc_connected = 1;
 	}
@@ -383,26 +576,53 @@ static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_proto_build_connect_message(
 		// only supply gid if we want to use kernel rv
 		if (IPS_PROTOEXP_FLAG_KERNEL_QP(proto->ep->rdmamode)
 				&& proto->ep->rv) {
-			req->verbs.gid = proto->ep->verbs_ep.lgid;
-			req->verbs.rv_index = proto->ep->verbs_ep.rv_index;
+			req->verbs.rv.gid = proto->ep->verbs_ep.lgid;
+			req->verbs.rv.rv_index = proto->ep->verbs_ep.rv_index;
 		} else
 #endif
 		{
-			memset(&req->verbs.gid, 0, sizeof(req->verbs.gid));
-			req->verbs.rv_index = 0;
+			memset(&req->verbs.rv.gid, 0, sizeof(req->verbs.rv.gid));
+			req->verbs.rv.rv_index = 0;
 		}
 #if defined(USE_RC)
-		if (ipsaddr->verbs.rc_qp) {
-			psmi_assert(IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode));
+		if (IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode)) {
+#ifdef PSM_RC_RECONNECT
+			// if we fail to allocate the QP, caller will
+			// have aborted and never gotten to this point
+			struct psm3_verbs_rc_qp *rc_qp =
+			    SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+			psmi_assert(rc_qp);
+			psmi_assert(! rc_qp->draining);
+#else
+			psmi_assert(ipsaddr->verbs.rc_qp);
+#endif
 			req->initpsn = proto->runid_key;// pid, not ideal, better than const
+#ifdef PSM_RC_RECONNECT
+			req->verbs.qp_attr.qpn = rc_qp->qp->qp_num;
+#else
 			req->verbs.qp_attr.qpn = ipsaddr->verbs.rc_qp->qp_num;
-			req->verbs.qp_attr.mtu = opa_mtu_int_to_enum(req->mtu);
+#endif
+			req->verbs.qp_attr.mtu = opa_mtu_int_to_enum(proto->ep->mtu);
 			req->verbs.qp_attr.srq = 0;
 			req->verbs.qp_attr.resv = 0;
 			req->verbs.qp_attr.target_ack_delay = 0; // TBD; - from local device
 			req->verbs.qp_attr.resv2 = 0;
+#ifdef USE_RDMA_READ
+			// Send our RDMA Read capabilities
+			req->verbs.qp_attr.responder_resources = proto->ep->verbs_ep.max_qp_rd_atom;
+			req->verbs.qp_attr.initiator_depth = proto->ep->verbs_ep.max_qp_init_rd_atom;
+
+			if (IPS_PROTOEXP_FLAG_RDMA_QP(proto->ep->rdmamode) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
+				req->verbs.urc.recv_addr = (uintptr_t)ipsaddr->verbs.recv_seq_mr->addr;
+				req->verbs.urc.recv_rkey = ipsaddr->verbs.recv_seq_mr->rkey;
+			} else {
+				req->verbs.urc.recv_addr = 0;
+				req->verbs.urc.recv_rkey = 0;
+			}
+#else
 			req->verbs.qp_attr.responder_resources = 0;
 			req->verbs.qp_attr.initiator_depth = 0;
+#endif
 			memset(&req->verbs.qp_attr.resv3, 0, sizeof(req->verbs.qp_attr.resv3));
 		} else
 #endif // USE_RC
@@ -436,8 +656,8 @@ static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_init_addressing(
 	ipsaddr->hash = ipsaddr->verbs.remote_qpn;
 
 	psm3_epid_get_av(epid, lidp, gidp);
-	_HFI_CONNDBG("qpn=0x%x lid=0x%x GID=%s\n",
-			ipsaddr->verbs.remote_qpn, *lidp,
+	_HFI_CONNDBG("[ipsaddr=%p] QP %u lid=0x%x GID=%s\n",
+			ipsaddr, ipsaddr->verbs.remote_qpn, *lidp,
 			psm3_gid128_fmt(*gidp, 0));
 }
 
@@ -452,44 +672,83 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_init_connections(
 			ips_epaddr_t *ipsaddr)
 {
 	psm2_error_t err = PSM2_OK;
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp = NULL;
+#endif
 
 #ifdef USE_RC
 	if (IPS_PROTOEXP_FLAG_USER_RC_QP(proto->ep->rdmamode)
 #ifdef RNDV_MOD
-		// if verbs_ep allows us to open w/o rv_open then we can't use RC QP
+		// if verbs_ep allows us to open w/o rv_open then we can use RC QP
 		&& (proto->ep->rv
 			|| proto->ep->mr_cache_mode != MR_CACHE_MODE_KERNEL)
 #endif
 		) {
+		ipsaddr->allow_reconnect = proto->ep->allow_reconnect;
+#ifdef PSM_RC_RECONNECT
+		err = psm3_verbs_create_rc_qp(proto->ep, ipsaddr);
+		if (err) {
+			// _HFI_ERROR already output
+			err = PSM2_INTERNAL_ERR;
+			goto fail;
+		}
+		rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+		psm_verbs_init_send_allocator(&rc_qp->send_allocator,
+					      &proto->ep->verbs_ep.send_pool);
+#else
 		struct ibv_qp_cap qp_cap;
 		ipsaddr->verbs.rc_qp = rc_qp_create(proto->ep, ipsaddr, &qp_cap);
 		if (! ipsaddr->verbs.rc_qp) {
+			// _HFI_ERROR already output
 			_HFI_ERROR("unable to create RC QP\n");
 			err = PSM2_INTERNAL_ERR;
 			goto fail;
 		}
-		if ((proto->ep->rdmamode&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
-			// we need to make sure we can't overflow send Q
-			if (qp_cap.max_send_wr < proto->ep->verbs_ep.send_pool.send_total) {
-				_HFI_ERROR("RC QP Send Q too small\n");
-				err = PSM2_INTERNAL_ERR;
-				goto fail;
-			}
-		}
 		ipsaddr->verbs.rc_qp_max_recv_wr = qp_cap.max_recv_wr;
 		ipsaddr->verbs.rc_qp_max_inline_data = qp_cap.max_inline_data;
-		if (PSM2_OK != psm_verbs_init_send_allocator(&ipsaddr->verbs.send_allocator,
-							&proto->ep->verbs_ep.send_pool)) {
-			_HFI_ERROR("can't init RC QP send allocator\n");
-			err = PSM2_INTERNAL_ERR;
+		psm_verbs_init_send_allocator(&ipsaddr->verbs.send_allocator,
+					      &proto->ep->verbs_ep.send_pool);
+#endif
+		_HFI_CONNDBG("[ipsaddr %p] RC QP %u\n",
+#ifdef PSM_RC_RECONNECT
+				ipsaddr, rc_qp->qp->qp_num);
+#else
+				ipsaddr, ipsaddr->verbs.rc_qp->qp_num);
+#endif
+	}
+	// until our QP is connected, use the UD QP's allocator and inline
+	ipsaddr->verbs.curr_allocator =  &proto->ep->verbs_ep.send_allocator;
+	ipsaddr->verbs.curr_qp =  proto->ep->verbs_ep.qp;
+	ipsaddr->verbs.curr_max_inline_data = proto->ep->verbs_ep.qp_cap.max_inline_data;
+#ifdef PSM_RC_RECONNECT
+	ipsaddr->verbs.curr_rc_qp = NULL;
+#endif
+#ifdef USE_RDMA_READ
+	if (IPS_PROTOEXP_FLAG_RDMA_QP(proto->ep->rdmamode) == IPS_PROTOEXP_FLAG_RDMA_USER_RC) {
+		struct ips_flow *flow = &ipsaddr->flows[EP_FLOW_GO_BACK_N_PIO];
+
+		errno = 0;
+		ipsaddr->verbs.recv_seq_mr = ibv_reg_mr(proto->ep->verbs_ep.pd,
+			&flow->recv_seq_num, sizeof(flow->recv_seq_num),
+			IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
+		if (!ipsaddr->verbs.recv_seq_mr) {
+			_HFI_ERROR("Unable register recv_seq_num MR on %s: %s\n",
+				proto->ep->dev_name, strerror(errno));
+			goto fail;
+		}
+
+		errno = 0;
+		ipsaddr->verbs.remote_recv_psn_mr = ibv_reg_mr(proto->ep->verbs_ep.pd,
+			&ipsaddr->verbs.remote_recv_psn, sizeof(ipsaddr->verbs.remote_recv_psn),
+			IBV_ACCESS_LOCAL_WRITE);
+		if (!ipsaddr->verbs.remote_recv_psn_mr) {
+			_HFI_ERROR("Unable register remote_recv_psn MR on %s: %s\n",
+				proto->ep->dev_name, strerror(errno));
 			goto fail;
 		}
 	}
-	// until our QP is connected, use the UD QP's allocator and inline
-	ipsaddr->verbs.use_allocator =  &proto->ep->verbs_ep.send_allocator;
-	ipsaddr->verbs.use_qp =  proto->ep->verbs_ep.qp;
-	ipsaddr->verbs.use_max_inline_data = proto->ep->verbs_ep.qp_cap.max_inline_data;
-#endif
+#endif /* USE_RDMA_READ */
+#endif /* USE_RC */
 
 #ifdef RNDV_MOD
 	if (IPS_PROTOEXP_FLAG_KERNEL_QP(proto->ep->rdmamode)
@@ -528,6 +787,8 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_init_connections(
 //TBD - should we make this non-fatal?  Just regress to UD mode and output ERROR
 				goto fail;
 			}
+			_HFI_CONNDBG("[ipsaddr %p] RV create conn to %s\n",
+				ipsaddr, psm3_epid_fmt_internal(epid, 0));
 		}
 	}
 #endif // RNDV_MOD
@@ -538,11 +799,26 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_init_connections(
 fail:
 #endif
 #ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	if (rc_qp) {
+		psm3_verbs_free_rc_qp("failed init_connections", rc_qp);
+#else /* PSM_RC_RECONNECT */
         if (ipsaddr->verbs.rc_qp) {
                 rc_qp_destroy(ipsaddr->verbs.rc_qp);
                 ipsaddr->verbs.rc_qp = NULL;
+#endif /* PSM_RC_RECONNECT */
+#ifdef USE_RDMA_READ
+		if (ipsaddr->verbs.recv_seq_mr) {
+			ibv_dereg_mr(ipsaddr->verbs.recv_seq_mr);
+			ipsaddr->verbs.recv_seq_mr = NULL;
+		}
+		if (ipsaddr->verbs.remote_recv_psn_mr) {
+			ibv_dereg_mr(ipsaddr->verbs.remote_recv_psn_mr);
+			ipsaddr->verbs.remote_recv_psn_mr = NULL;
+		}
+#endif /* USE_RDMA_READ */
         }
-#endif
+#endif /* USE_RC */
 	return err;
 }
 
@@ -552,8 +828,8 @@ fail:
 static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_free(
 			ips_epaddr_t *ipsaddr, struct ips_proto *proto)
 {
+	_HFI_CONNDBG_OR_MMDBG("[ipsaddr %p] free_epaddr\n", ipsaddr);
 #ifdef RNDV_MOD
-	_HFI_MMDBG("free_epaddr\n");
 	if (ipsaddr->verbs.rv_conn) {
 		//psm3_rv_destroy_conn(ipsaddr->verbs.rv_conn);
 		// TBD - call rv_disconnect or maybe rv_destroy_conn
@@ -568,8 +844,15 @@ static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_free(
 		// be races for callbacks and events already queued
 	}
 #endif // RNDV_MOD
-#ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	struct psm3_verbs_rc_qp *rc_qp;
+	while (NULL != (rc_qp = SLIST_FIRST(&ipsaddr->verbs.rc_qps))) {
+		psm3_verbs_free_rc_qp("ipsaddr_free", rc_qp);
+	}
+#elif defined(USE_RC)
 	if (ipsaddr->verbs.rc_qp) {
+		_HFI_CONNDBG("[ipsaddr %p] destroy RC QP %u\n", ipsaddr,
+			ipsaddr->verbs.rc_qp->qp_num);
 		rc_qp_destroy(ipsaddr->verbs.rc_qp);
 		ipsaddr->verbs.rc_qp = NULL;
 	}
@@ -592,25 +875,86 @@ static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_flow_init(
 }
 
 /* handle HAL specific connection processing as part of processing an
- * outbound PSM disconnect Request or Reply or an inbound disconnect request
+ * outbound PSM disconnect Request or an inbound disconnect request
+ * or cleanup of a failed connect Request.
+ * Coded defensively in case called more than once in a row
+ * for a given ipsaddr or even called for one which never reached the
+ * fully_connected state (such as a timeout during connect).
+ * When called the remote peer may not yet be aware we are disconnecting
+ * but we need to stop using any HAL specific resources for this ipsaddr
+ * (such as sending on user RC QPs).
+ * In near future ipsaddr_done_disconnect will be called to finish any HAL
+ * specific resource shutdown for this ipsaddr.
  */
-static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_disconnect(
-			struct ips_proto *proto, ips_epaddr_t *ipsaddr)
+static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_start_disconnect(
+			struct ips_proto *proto, ips_epaddr_t *ipsaddr, uint8_t force)
 {
 #ifdef USE_RC
-	// This is redundant if transfer_frame uses UD for all
-	// control messages, but it also makes sure we stop using
-	// RC for any non-control messages (should be none) after disconnect.
+	if (ipsaddr->verbs.curr_qp != proto->ep->verbs_ep.qp)
+		_HFI_CONNDBG_OR_MMDBG("[ipsaddr %p] user RC disabled\n", ipsaddr);
 	// Use the UD QP's allocator and inline now and going forward
-	ipsaddr->verbs.use_allocator =  &proto->ep->verbs_ep.send_allocator;
-	ipsaddr->verbs.use_qp =  proto->ep->verbs_ep.qp;
-	ipsaddr->verbs.use_max_inline_data = proto->ep->verbs_ep.qp_cap.max_inline_data;
-	_HFI_MMDBG("RC discon\n");
+	// This makes sure we stop using RC.  We will still be able to use
+	// UD for all control messages and any non-control messages.
+	// There should be no non-control messages after outgoing disconnect.
+	ipsaddr->verbs.curr_allocator =  &proto->ep->verbs_ep.send_allocator;
+	ipsaddr->verbs.curr_qp =  proto->ep->verbs_ep.qp;
+	ipsaddr->verbs.curr_max_inline_data = proto->ep->verbs_ep.qp_cap.max_inline_data;
+#ifdef PSM_RC_RECONNECT
+	ipsaddr->verbs.curr_rc_qp = NULL;
+#endif
+#endif
+}
+
+/* handle HAL specific connection processing as part of processing an
+ * outbound PSM disconnect Request or Reply or an inbound disconnect request
+ * or cleanup of a failed connect Request.
+ * Coded defensively in case called more than once in a row
+ * for a given ipsaddr or even called for one which never reached the
+ * fully_connected state (such as a timeout during connect).
+ * When called the remote peer should now be aware we are disconnecting
+ * (or we are forcing or timed out waiting for a reply), so we can now begin
+ * to shutdown any HAL specific resources for this ipsaddr (such as draining
+ * user RC QPs).
+ */
+static PSMI_HAL_INLINE void psm3_hfp_verbs_ips_ipsaddr_done_disconnect(
+			struct ips_proto *proto, ips_epaddr_t *ipsaddr, uint8_t force)
+{
+#ifdef USE_RC
+#ifdef PSM_RC_RECONNECT
+	if (! force && ipsaddr->allow_reconnect) {
+		struct psm3_verbs_rc_qp *rc_qp =
+					SLIST_FIRST(&ipsaddr->verbs.rc_qps);
+		psmi_assert(proto->ep->reconnect_timeout);
+		if (rc_qp) {
+			if (rc_qp->draining) {
+				_HFI_CONNDBG("[ipsaddr %p] RC QP %u already draining\n",
+					rc_qp->ipsaddr, rc_qp->qp->qp_num);
+				psm3_verbs_free_rc_qp_if_empty("done_disconnect", rc_qp);
+			} else {
+				// start destroy of RC QP, but first wait for
+				// drain of CQEs and WQEs so recover buffers.
+				// QP should not yet be in QPS_ERR, but may be
+				// in Reset, RTR or RTS
+				// even if fail to start drain, will still free
+				// rc_qp once timewait delay expires, so can ignore
+				// error return from drain_rc_qp
+				_HFI_CONNDBG("[ipsaddr %p] RC QP %u start draining\n",
+					rc_qp->ipsaddr, rc_qp->qp->qp_num);
+				(void)psm3_verbs_drain_rc_qp(proto->ep, rc_qp, 1);
+				// ignore any errors, _HFI_ERROR already output
+				// rc_qp may have been freed by drain_rc_qp
+			}
+		} else {
+			_HFI_CONNDBG("[ipsaddr %p] RC QPs already freed\n",
+				ipsaddr);
+		}
+	}
+#endif
 	// we let ipsaddr free destroy the QP and it's buffers
 #endif
 }
 
-/* Handle HAL specific initialization of ibta path record query, CCA
+/* Handle HAL specific initialization of ibta path record query
  * and dispersive routing
  */
 static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ibta_init(
@@ -650,7 +994,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ptl_pollintr(
 					 next_timeout, pollok, pollcyc, pollintr);
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 static PSMI_HAL_INLINE void psm3_hfp_verbs_gdr_close(void)
 {
 }
@@ -661,7 +1005,7 @@ static PSMI_HAL_INLINE void* psm3_hfp_verbs_gdr_convert_gpu_to_host_addr(unsigne
 	return psm3_verbs_gdr_convert_gpu_to_host_addr(buf, size, flags,
                                 ep);
 }
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 
 #include "verbs_spio.c"
 
@@ -670,7 +1014,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_spio_transfer_frame(struct ip
 					uint32_t *payload, uint32_t length,
 					uint32_t isCtrlMsg, uint32_t cksum_valid,
 					uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, uint32_t is_gpu_payload
 #endif
 	)
@@ -678,7 +1022,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_spio_transfer_frame(struct ip
 	return psm3_verbs_spio_transfer_frame(proto, flow, scb,
 					 payload, length, isCtrlMsg,
 					 cksum_valid, cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, is_gpu_payload
 #endif
 	);
@@ -689,7 +1033,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_transfer_frame(struct ips_pro
 					uint32_t *payload, uint32_t length,
 					uint32_t isCtrlMsg, uint32_t cksum_valid,
 					uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, uint32_t is_gpu_payload
 #endif
 	)
@@ -697,7 +1041,7 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_transfer_frame(struct ips_pro
 	return psm3_verbs_spio_transfer_frame(proto, flow, scb,
 					 payload, length, isCtrlMsg,
 					 cksum_valid, cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, is_gpu_payload
 #endif
 	);

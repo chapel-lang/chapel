@@ -71,6 +71,7 @@
 #include "chpltypes.h"
 #include "chpl-visual-debug.h"
 #include "chpl-error.h"
+#include "chpl-prginfo-program-only-decls.h"
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"

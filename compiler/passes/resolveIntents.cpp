@@ -273,7 +273,8 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
   }
 
   // Want this to be an unstable warning, and not trigger for internal or
-  // standard modules unless the appropriate flag is used
+  // standard modules unless the appropriate flag is used, nor for
+  // compiler-generated functions
   auto mod = fn->getModule();
   bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
                              fWarnUnstableInternal);
@@ -281,7 +282,7 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
                              fWarnUnstableStandard);
   if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
                         mod->modTag == MOD_USER) &&
-      !fNoConstArgChecks) {
+      !fNoConstArgChecks && !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
 
     // Hash the argument at the start of the function
     CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH,
@@ -470,6 +471,27 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
     } else {
       // In the common case, just compute based on the old intent and type.
       newIntent = concreteIntent(formal.intent(), formal.type());
+    }
+
+    if (newIntent == INTENT_OUT ||
+        newIntent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      newIntent = INTENT_REF;
+    } else if (newIntent == INTENT_IN) {
+      // Replicates and merges some of the logic from `resolveArgIntent`
+      auto type = formal.type()->getValType();
+      bool addedTmp = (isRecord(type) || isUnion(type) ||
+                       isConstrainedType(type));
+
+      // How can we anticipate this for procedure pointers?
+      if (ft->isExtern())
+        addedTmp = false;
+
+      if (addedTmp &&
+          ft->returnIntent() != RET_PARAM &&
+          formalRequiresTemp(formal)) {
+          newIntent = INTENT_REF;
+      }
     }
 
     bool isFormal = true;

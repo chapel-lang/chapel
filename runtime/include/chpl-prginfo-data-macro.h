@@ -31,6 +31,16 @@
 E_CONSTANT(mainHasArgs, int)
 
 /** CODE-GENERATED
+    The launcher setting that was used when this program was compiled.
+*/
+E_CONSTANT(CHPL_LAUNCHER, const char*)
+
+/** CODE-GENERATED
+    The path to '$CHPL_HOME/third-party' when this program was compiled.
+*/
+E_CONSTANT(CHPL_THIRD_PARTY, const char*)
+
+/** CODE-GENERATED
     Whether or not 'main' should preserve the delimiter when parsing args.
 */
 E_CONSTANT(mainPreserveDelimiter, int)
@@ -53,7 +63,7 @@ E_CALLBACK_RT(chpl_task_setCommDiagsTemporarilyDisabled, void, chpl_bool)
 /** CODE-GENERATED
     Table of private broadcast constants.
 */
-E_CONSTANT_RT(chpl_private_broadcast_table, void**)
+E_CONSTANT_RT(chpl_private_broadcast_table, void* const*)
 
 /** CODE-GENERATED
     Length of table of private broadcast constants.
@@ -63,10 +73,17 @@ E_CONSTANT_RT(chpl_private_broadcast_table_len, int)
 /** CODE-GENERATED
     TODO: Not exactly sure what this thing is. Table of serializers for RVF?
 */
-E_CONSTANT_RT(chpl_global_serialize_table, void**)
+E_CONSTANT_RT(chpl_global_serialize_table, void* const*)
 
-/** CODE-GENERATED
+/** CODE-GENERATED | WRITEABLE
+
     A table of local addresses of wide pointers containing global vars.
+    This table is writeable memory. Its size is specified by the constant
+    'chpl_numGlobalsOnHeap', defined below.
+
+    This table is used primarily by 'chpl_comm_broadcast_global_vars()',
+    which assists in broadcasting the addresses of heap-allocated globals
+    to every locale at program initialization.
 */
 E_CONSTANT_RT(chpl_globals_registry, wide_ptr_t**)
 
@@ -78,7 +95,7 @@ E_CONSTANT_RT(chpl_numGlobalsOnHeap, int)
 /** CODE-GENERATED
     The function table.
 */
-E_CONSTANT_RT(chpl_ftable, chpl_fn_p*)
+E_CONSTANT_RT(chpl_ftable, const chpl_fn_p*)
 
 /** CODE-GENERATED (TODO NOT USED)
     Length of the function table.
@@ -88,18 +105,18 @@ E_CONSTANT_RT(chpl_ftableSize, int64_t)
 /** MODULE-CODE: ChapelLocale.chpl
     Call to increment the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntInc, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntInc, void, int64_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to decrement the task running count. Seemingly only invoked
     by the compiler at codegen time (see 'gChplDecRunningTask').
 */
-E_CALLBACK_RT(chpl_taskRunningCntDec, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntDec, void, int64_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to reset the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntReset, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl_taskRunningCntReset, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Function which constructs the config variable table.
@@ -115,27 +132,34 @@ E_CALLBACK_RT(chpl__initStringLiterals, void, void)
     Module initializer which sets initialization flags to false.
     TODO: Why? Won't zero-initialization set these to false?
 */
-E_CALLBACK_RT(chpl__init_preInit, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_preInit, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'PrintModuleInitOrder' module.
 */
-E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'ChapelStandard' module.
 */
-E_CALLBACK_RT(chpl__init_ChapelStandard, void, int32_t ln, int32_t fn)
+E_CALLBACK_RT(chpl__init_ChapelStandard, void, int64_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Main entrypoint for this program.
 */
 E_CALLBACK_RT(chpl_gen_main, int64_t, chpl_main_argument* _arg)
 
+/** MODULE-CODE: ChapelProgramEntrypoints.chpl | WRITEABLE
+    Get a writeable pointer to the main argument stored on this locale.
+*/
+E_CALLBACK(chpl_genMainArgPtr, chpl_main_argument*, void)
+
 /** CODE-GENERATED
     Contains filenames, and maybe other strings besides?
+
+    TODO: Get rid of this 'const c_string' nonsense.
 */
-E_CONSTANT(chpl_filenameTable, c_string*)
+E_CONSTANT(chpl_filenameTable, const c_string*)
 
 /** CODE-GENERATED
     Length of the filename table.
@@ -151,7 +175,7 @@ E_CONSTANT(chpl_filenameTableSize, int32_t)
     chpl-mem.h).  This is that compiler-generated array, and how many
     entries it has (also defined in the generated code).
 */
-E_CONSTANT_RT(chpl_mem_descs, const char**)
+E_CONSTANT_RT(chpl_mem_descs, const char* const*)
 
 /** CODE-GENERATED
     Length of the memory description table.
@@ -177,6 +201,11 @@ E_CALLBACK_RT(chpl_memTracking_returnConfigVals, void,
     Text of the compiler invocation used to create this program.
 */
 E_CONSTANT_RT(chpl_compileCommand, const char*)
+
+/** CODE-GENERATED | WRITEABLE
+    Pointer used to store the execution command used to run this program.
+*/
+E_CONSTANT_RT(chpl_executionCommand, char*)
 
 /** CODE-GENERATED
     Directory where the compiler invocation took place.
@@ -215,14 +244,16 @@ E_CONSTANT(CHPL_LLVM_BIN_DIR, const char*)
     Chapel line number). TODO: Could we just refactor this whole table
     to be defined in the runtime and use a 'struct' instead for clarity?
 */
-E_CONSTANT_RT(chpl_filenumSymTable, int*)
+E_CONSTANT_RT(chpl_filenumSymTable, const int*)
 
 /** CODE-GENERATED
     One piece of the symbol table. This is a flat 1D array with 2 elements
     per entry, so you need to scale indices by (idx*2). This portion of
     the table contains two 'const char*' per entry: (C name, Chapel name).
+
+    TODO: Get rid of this 'const c_string' nonsense.
 */
-E_CONSTANT_RT(chpl_funSymTable, const char**)
+E_CONSTANT_RT(chpl_funSymTable, const c_string*)
 
 /** CODE-GENERATED
     The number of entries in the combined 'Chapel symbol table'.
@@ -252,7 +283,7 @@ E_CALLBACK_RT(chpl_localeModel_sublocToExecutionSubloc, c_sublocid_t,
 /** CODE-GENERATED
     Value of '$CHPL_COMM' when this program was compiled.
 */
-E_CONSTANT_RT(CHPL_COMM, const char*)
+E_CONSTANT(CHPL_COMM, const char*)
 
 /** CODE-GENERATED
     If '--stack-checks' was set when this program was compiled.
@@ -262,7 +293,7 @@ E_CONSTANT_RT(CHPL_STACK_CHECKS, int)
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_PLATFORM' when this program was compiled.
 */
-E_CONSTANT_RT(CHPL_TARGET_PLATFORM, const char*)
+E_CONSTANT(CHPL_TARGET_PLATFORM, const char*)
 
 /** CODE-GENERATED
     Value of '$CHPL_TARGET_MEM' when this program was compiled.

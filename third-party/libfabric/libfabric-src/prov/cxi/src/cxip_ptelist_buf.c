@@ -132,8 +132,8 @@ cxip_ptelist_buf_alloc(struct cxip_ptelist_bufpool *pool)
 		}
 	}
 
-	ret = cxip_map(rxc->base.domain, buf->data, pool->attr.buf_size,
-		       OFI_MR_NOCACHE, &buf->md);
+	ret = cxip_ep_obj_map(rxc->base.ep_obj, buf->data, pool->attr.buf_size,
+			      CXI_MAP_WRITE, OFI_MR_NOCACHE, &buf->md);
 	if (ret)
 		goto err_unreg_buf;
 
@@ -355,7 +355,7 @@ void cxip_ptelist_bufpool_fini(struct cxip_ptelist_bufpool *pool)
 	}
 
 	do {
-		cxip_evtq_progress(&rxc->base.rx_evtq);
+		cxip_evtq_progress(&rxc->base.rx_evtq, true);
 	} while (ofi_atomic_get32(&pool->bufs_linked));
 
 	cxip_ptelist_buf_dlist_free(&pool->active_bufs);

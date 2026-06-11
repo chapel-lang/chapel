@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <message_field.h>
+#include "message_field.h"
 
 namespace chapel {
 

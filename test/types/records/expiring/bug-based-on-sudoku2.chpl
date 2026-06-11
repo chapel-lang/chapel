@@ -29,7 +29,7 @@ proc val(arg: R) {
   return arg.x;
 }
 
-iter iterateAllOf(tuple...?k) {
+iter iterateAllOf(const ref tuple...?k) {
   for param i in 0..k-1 {
     for j in tuple(i) {
       yield j;

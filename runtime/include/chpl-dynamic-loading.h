@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _CHPL_DYNAMIC_LOADING_H_
-#define _CHPL_DYNAMIC_LOADING_H_
+#ifndef CHPL_RT_DYNAMIC_LOADING_H
+#define CHPL_RT_DYNAMIC_LOADING_H
 
 #ifdef __cplusplus
 extern "C" {

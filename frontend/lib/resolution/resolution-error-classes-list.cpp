@@ -354,7 +354,12 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
              (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
              formalName, "'.");
   if (auto call = ast->toCall()) {
-    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+    int idx = c.constRefCoercionActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
   } else {
     wr.code(ast);
   }
@@ -2057,6 +2062,39 @@ static bool firstIdFromDecls(
   return false;
 }
 
+void ErrorRaceyOutInoutInPromotion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info_);
+
+  auto formalName = c.fn()->formalName(c.raceyScalarOutFormal());
+  const char* intent = "out";
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.raceyScalarOutFormal());
+  if (fmlDecl) {
+    if (auto vld = fmlDecl->toVarLikeDecl()) {
+      intent = vld->storageKind() == uast::Qualifier::OUT ? "out" : "inout";
+    }
+  }
+
+  wr.heading(kind_, type_, ast, "cannot promote function '",
+             c.fn()->untyped()->name(), "' while keeping the formal '", intent, " ", formalName, "' scalar");
+  if (auto call = ast->toCall()) {
+    int idx = c.raceyScalarOutActual();
+    if (c.fromExplicitMethodCall()) idx -= 1; // receiver is not in actual list
+    if (idx >= 0) {
+      CHPL_ASSERT(idx < call->numActuals());
+      wr.code(call, { call->actual(idx) });
+    }
+  } else {
+    wr.code(ast);
+  }
+  wr.message("'", intent, "' actuals will be written to by each iteration of the promoted function, which can lead to races.");
+
+  if (fmlDecl) {
+    wr.message("The formal was declared '", intent, "' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorRecursion::write(ErrorWriterBase& wr) const {
   auto queryName = std::get<UniqueString>(info_);
   wr.heading(kind_, type_, ID(),
@@ -2454,15 +2492,30 @@ void ErrorTryNoCatchAll::write(ErrorWriterBase& wr) const {
              "function throwing.");
 }
 
-void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::TupleDecl*>(info_);
-  auto type = std::get<const types::TupleType*>(info_);
-  wr.heading(kind_, type_, decl,
-            "tuple size mismatch in split tuple declaration.");
-  wr.code(decl);
-  wr.message("The left-hand side of the declaration expects a ",
-             decl->numDecls(), "-tuple, but the right-hand side is a ",
-             type->numElements(), "-tuple, '", type, "'.");
+void ErrorTupleDeclAssignMismatchedElems::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto rhsType = std::get<const types::TupleType*>(info_);
+
+  std::string declOrAssign = "";
+  size_t lhsSize = 0;
+  auto td = ast->toTupleDecl();
+  auto op = ast->toOpCall();
+  if (td) {
+    declOrAssign = "declaration";
+    lhsSize = td->numDecls();
+  } else if (op && op->op() == USTR("=") && op->lhs()->isTuple()) {
+    declOrAssign = "assign";
+    lhsSize = op->lhs()->toTuple()->numActuals();
+  } else {
+    CHPL_ASSERT(false && "invalid input");
+  }
+
+  wr.heading(kind_, type_, ast, "tuple size mismatch in split tuple ",
+             declOrAssign, ".");
+  wr.code(ast);
+  wr.message("The left-hand side of the ", declOrAssign, " expects a ", lhsSize,
+             "-tuple, but the right-hand side is a ", rhsType->numElements(),
+             "-tuple, '", rhsType, "'.");
 }
 
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {

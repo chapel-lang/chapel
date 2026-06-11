@@ -31,6 +31,7 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chplcgfns.h"
 #include "chpl-locale-model.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 
@@ -43,11 +44,12 @@ extern "C" {
 // one argument.
 //
 static inline
-void chpl_ftable_call(chpl_fn_int_t fid, void* bundle)
-{
-  (*chpl_ftable[fid])(bundle);
+void chpl_rt_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                         void* bundle) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
+  const chpl_fn_p on_fn = chpl_ftable[fid];
+  on_fn(bundle);
 }
-
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_localeid_t.

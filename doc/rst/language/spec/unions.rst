@@ -20,25 +20,6 @@ an unset state so that no field contains data.
    their current uses.
 
 .. index::
-   single: types; unions
-   single: union types
-.. _Union_Types:
-
-Union Types
------------
-
-The syntax of a union type is summarized as follows:
-
-.. code-block:: syntax
-
-   union-type:
-     identifier
-
-The union type is specified by the name of the union type. This
-simplification from class and record types is possible because generic
-unions are not supported.
-
-.. index::
    single: union
    single: declarations; union
 .. _Union_Declarations:
@@ -58,16 +39,40 @@ A union is defined with the following syntax:
      union-statement union-statement-list
 
    union-statement:
+     variable-declaration-statement
      procedure-declaration-statement
      iterator-declaration-statement
-     variable-declaration-statement
      empty-statement
 
+The identifier following the ``union`` keyword defines the name of the
+union, while the variable declaration statements define its fields and
+their types.  Procedure and iterator declaration statements define
+methods on the union.
+     
 If the ``extern`` keyword appears before the ``union`` keyword, then an
 external union type is declared. An external union is used within Chapel
 for type and field resolution, but no corresponding backend definition
 is generated. It is presumed that the definition of an external union
 type is supplied by a library or the execution environment.
+
+.. index::
+   single: types; unions
+   single: union types
+.. _Union_Types:
+
+Union Types
+~~~~~~~~~~~
+
+A union type is referred to using the identifier representing its
+name:
+
+.. code-block:: syntax
+
+   union-type:
+     identifier
+
+This is simpler than class and record types because generic unions are
+not currently supported.
 
 .. index::
    single: unions; fields
@@ -147,6 +152,51 @@ the field name as a member of the union type.
       1
 
 Union fields should not be specified with initialization expressions.
+
+
+Common Operations
+-----------------
+
+.. index::
+   single: unions; assignment
+.. _Union_Assignment:
+
+Union Assignment
+~~~~~~~~~~~~~~~~
+
+Union assignment is by value. The active field of the union on the
+right-hand side of the assignment is assigned to same field of the
+union on the left-hand side, and this field is made active.
+
+.. index::
+   single: unions; equality
+   single: unions; inequality
+   single: unions; ==
+   single: unions; !=
+   single: == (union)
+   single: != (union)
+.. _Union_Comparison_Operators:
+
+Default Comparison Operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Default comparison operators are defined for unions such that if no
+more specific comparison is found, these defaults will be used.  These
+default comparisons are defined using the following signatures:
+
+.. code-block:: chapel
+
+   operator ==(a: union, b: union) : bool
+   operator !=(a: union, b: union) : bool
+
+When these comparisons are applied to two union values of distinct
+types, a compiler error is generated.
+
+These default comparisons consider two union values to be equal if (a)
+both unions have the same active field and (b) the respective values
+of this field are considered equal using `==`.  Otherwise they are
+considered not equal.
+
 
 .. index::
    single: unions; pattern matching
@@ -243,16 +293,6 @@ conditionals.
 
       x is active with value 3
 
-.. index::
-   single: unions; assignment
-.. _Union_Assignment:
-
-Union Assignment
-----------------
-
-Union assignment is by value. The field set by the union on the
-right-hand side of the assignment is assigned to the union on the
-left-hand side of the assignment and this same field is marked as set.
 
 .. index::
    single: unions; methods

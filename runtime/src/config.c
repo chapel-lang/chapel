@@ -26,6 +26,7 @@
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
+#include "chpl-prginfo.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
 #include "chpl-error.h"
@@ -314,6 +315,7 @@ static configVarType* lookupConfigVar(const char* moduleName,
 void initSetValue(const char* varName, const char* value,
                   const char* moduleName,
                   int32_t lineno, int32_t filename) {
+  chpl_rt_prginfo* root = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
@@ -343,7 +345,8 @@ void initSetValue(const char* varName, const char* value,
       chpl_warning(configVar->deprecationMsg, lineno, filename);
     }
     #endif
-  } else if (warnUnstable && configVar->unstable) {
+  } else if (CHPL_RT_PRGINFO_DATA(root, warnUnstable) &&
+             configVar->unstable) {
     #ifndef LAUNCHER
     if (chpl_nodeID == 0) {
       chpl_warning(configVar->unstableMsg, lineno, filename);
@@ -475,8 +478,8 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
       handleUnexpectedConfigVar(moduleName, varName, lineno, filename);
     }
   } else {
-    char* value = equalsSign + 1;
-    if (equalsSign && *value) {
+    char* value = equalsSign ? equalsSign + 1 : NULL;
+    if (value && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
     } else if (!strcmp(configVar->defaultType, "bool")) {
       initSetValue(varName, "true", moduleName, lineno, filename);

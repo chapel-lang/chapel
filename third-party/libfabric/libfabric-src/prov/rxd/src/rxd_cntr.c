@@ -72,8 +72,8 @@ static int rxd_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int time
 		}
 		ofi_genlock_unlock(&cntr->ep_list_lock);
 
-		ret = fi_wait(&cntr->wait->wait_fid, ep_retry == -1 ?
-			      timeout : rxd_get_timeout(ep_retry));
+		ret = ofi_wait(&cntr->wait->wait_fid, ep_retry == -1 ?
+			       timeout : rxd_get_timeout(ep_retry));
 		if (ep_retry != -1 && ret == -FI_ETIMEDOUT)
 			ret = 0;
 	} while (!ret);

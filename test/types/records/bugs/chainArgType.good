@@ -1,0 +1,4 @@
+chainArgType.chpl:12: error: unresolved call 'foo(r1, r2)'
+chainArgType.chpl:7: note: this candidate did not match: foo(x: record, y: x.type)
+chainArgType.chpl:12: note: because actual argument #2 with type 'r2'
+chainArgType.chpl:7: note: is passed to formal 'y: r1'

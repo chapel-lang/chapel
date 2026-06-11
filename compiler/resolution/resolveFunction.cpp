@@ -333,10 +333,6 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
     retval = true;
     *needRefIntent = true;
 
-  } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
-             isRecordWrappedType(formal->type) == true) {
-    retval = true;
-
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
              (isUnion(formal->type)  == true ||
@@ -2484,6 +2480,25 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
       (backendRequiresCopyForIn(formal->type) ||
        fn->hasFlag(FLAG_INLINE) ||
        fn->hasFlag(FLAG_ITERATOR_FN)))
+    );
+}
+
+// Matches the logic above for the case when we don't have an FnSymbol to work
+// with.
+bool formalRequiresTemp(FunctionType::Formal formal) {
+  return
+    //
+    // 'out' requires a temp currently
+    //
+    (formal.intent() == INTENT_OUT ||
+     //
+     // 'in' and 'const in' also require a copy, but for simple types
+     // (like ints or class references), we can rely on C's copy when
+     // passing the argument, as long as the routine is not
+     // inlined or an iterator.
+     //
+     ((formal.intent() == INTENT_IN || formal.intent() == INTENT_CONST_IN) &&
+      backendRequiresCopyForIn(formal.type()))
     );
 }
 

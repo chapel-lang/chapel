@@ -19,17 +19,31 @@
  */
 void efa_rdm_peer_construct(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep, struct efa_conn *conn)
 {
+	int ret;
 	memset(peer, 0, sizeof(struct efa_rdm_peer));
 
-	peer->efa_fiaddr = conn->fi_addr;
+	peer->ep = ep;
+	peer->conn = conn;
 	peer->is_self = efa_is_same_addr(&ep->base_ep.src_addr, conn->ep_addr);
 	peer->host_id = peer->is_self ? ep->host_id : 0;	/* Peer host id is exchanged via handshake */
-	peer->num_read_msg_in_flight = 0;
 	peer->num_runt_bytes_in_flight = 0;
-	ofi_recvwin_buf_alloc(&peer->robuf, efa_env.recvwin_size);
+	/* allocate the robuf circular queue from the pre-allocated buffer pool */
+	ret = efa_recvwin_buf_alloc(&peer->robuf, efa_env.recvwin_size, true, ep->peer_robuf_pool);
+	if (OFI_UNLIKELY(ret == -FI_ENOMEM)) {
+		/* ran out of memory while creating the peer reorder buffer */
+		EFA_WARN(FI_LOG_EP_CTRL, "Unable to allocate peer->robuf\n");
+		return;
+	}
 	dlist_init(&peer->outstanding_tx_pkts);
 	dlist_init(&peer->txe_list);
 	dlist_init(&peer->rxe_list);
+	dlist_init(&peer->overflow_pke_list);
+
+	if (conn->shm_fi_addr != FI_ADDR_NOTAVAIL) {
+		peer->is_local = 1;
+	}
+
+	efa_rdm_rxe_map_construct(&peer->rxe_map);
 }
 
 /**
@@ -46,17 +60,10 @@ void efa_rdm_peer_destruct(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep)
 	struct efa_rdm_ope *txe;
 	struct efa_rdm_ope *rxe;
 	struct efa_rdm_pke *pkt_entry;
-	/*
-	 * TODO: Add support for wait/signal until all pending messages have
-	 * been sent/received so we do not attempt to complete a data transfer
-	 * or internal transfer after the EP is shutdown.
-	 */
-	if ((peer->flags & EFA_RDM_PEER_REQ_SENT) &&
-	    !(peer->flags & EFA_RDM_PEER_HANDSHAKE_RECEIVED))
-		EFA_WARN_ONCE(FI_LOG_EP_CTRL, "Closing EP with unacked CONNREQs in flight\n");
+	struct efa_rdm_peer_overflow_pke_list_entry *overflow_pke_list_entry;
 
 	if (peer->robuf.pending)
-		ofi_recvwin_free(&peer->robuf);
+		efa_recvwin_free(&peer->robuf, true);
 
 	if (!ep) {
 		/* ep is NULL means the endpoint has been closed.
@@ -68,14 +75,20 @@ void efa_rdm_peer_destruct(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep)
 
 	/* we cannot release outstanding TX packets because device
 	 * will report completion of these packets later. Setting
-	 * the address to FI_ADDR_NOTAVAIL, so efa_rdm_ep_get_peer()
-	 * will return NULL for the address, so the completion will
-	 * be ignored.
+	 * pkt_entry->peer to NULL so the completion will be ignored.
 	 */
 	dlist_foreach_container(&peer->outstanding_tx_pkts,
 				struct efa_rdm_pke,
 				pkt_entry, entry) {
-		pkt_entry->addr = FI_ADDR_NOTAVAIL;
+		pkt_entry->peer = NULL;
+	}
+
+	dlist_foreach_container_safe(&peer->overflow_pke_list,
+				     struct efa_rdm_peer_overflow_pke_list_entry,
+				     overflow_pke_list_entry, entry, tmp) {
+		dlist_remove(&overflow_pke_list_entry->entry);
+		efa_rdm_pke_release_rx(overflow_pke_list_entry->pkt_entry);
+		ofi_buf_free(overflow_pke_list_entry);
 	}
 
 	dlist_foreach_container_safe(&peer->txe_list,
@@ -103,7 +116,7 @@ void efa_rdm_peer_destruct(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep)
 
 /**
  * @brief run incoming packet_entry through reorder buffer
- * queue the packe entry if msg_id is larger then expected.
+ * queue the packet entry if msg_id is larger than expected.
  * If queue failed, abort the application and print error message.
  *
  * @param[in]		peer		peer
@@ -111,16 +124,15 @@ void efa_rdm_peer_destruct(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep)
  * @param[in,out]	pkt_entry	packet entry, will be released if successfully queued
  * @returns
  * 0 if `msg_id` of `pkt_entry` matches expected msg_id.
- * 1 if `msg_id` of `pkt_entry` is larger then expected, and the packet entry is queued successfully
+ * 1 if `msg_id` of `pkt_entry` is larger than expected, and the packet entry is queued successfully
  * -FI_EALREADY if `msg_id` of `pkt_entry` is smaller than expected.
  */
 int efa_rdm_peer_reorder_msg(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep,
 			     struct efa_rdm_pke *pkt_entry)
 {
-	struct efa_rdm_pke *ooo_entry;
-	struct efa_rdm_pke *cur_ooo_entry;
 	struct efa_rdm_robuf *robuf;
 	struct efa_rdm_rtm_base_hdr *rtm_hdr;
+	struct efa_rdm_pke *ooo_entry;
 	uint32_t msg_id;
 
 	assert(efa_rdm_pke_get_base_hdr(pkt_entry)->type >= EFA_RDM_REQ_PKT_BEGIN);
@@ -151,31 +163,71 @@ int efa_rdm_peer_reorder_msg(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep,
 			EFA_WARN(FI_LOG_EP_CTRL,
 			       "Error: message id has already been processed. received: %" PRIu32 " expected: %"
 			       PRIu32 "\n", msg_id, ofi_recvwin_next_exp_id(robuf));
+
+#if ENABLE_DEBUG
+			/* Print debug info on duplicate message */
+			EFA_WARN(FI_LOG_EP_CTRL,
+			         "  pkt_entry=%p gen=%u\n"
+			         "  Debug info history:\n",
+			         pkt_entry, pkt_entry->gen);
+			efa_rdm_pke_print_debug_info(pkt_entry);
+#endif
 			return -FI_EALREADY;
 		} else {
-			fprintf(stderr,
-				"Current receive window size (%d) is too small to hold incoming messages.\n"
-				"As a result, you application cannot proceed.\n"
-				"Receive window size can be increased by setting the environment variable:\n"
-				"              FI_EFA_RECVWIN_SIZE\n"
-				"\n"
-				"Your job will now abort.\n\n", efa_env.recvwin_size);
-			abort();
+			/* Current receive window size is too small to hold incoming messages.
+			 * Store the overflow messages in a double linked list, and move it 
+			 * back to receive window later.
+			 */
+			struct efa_rdm_peer_overflow_pke_list_entry *overflow_pke_list_entry;
+
+			overflow_pke_list_entry = ofi_buf_alloc(ep->overflow_pke_pool);
+			if (OFI_UNLIKELY(!overflow_pke_list_entry)) {
+				EFA_WARN(FI_LOG_EP_CTRL, "Unable to allocate an overflow_pke_list_entry.\n");
+				return -FI_ENOMEM;
+			}
+
+			ooo_entry = efa_rdm_pke_get_ooo_pke(pkt_entry);
+			if (!ooo_entry)
+				return -FI_ENOMEM;
+
+			overflow_pke_list_entry->pkt_entry = ooo_entry;
+
+			dlist_insert_head(&overflow_pke_list_entry->entry, &peer->overflow_pke_list);
+
+			EFA_DBG(FI_LOG_EP_CTRL,
+				"Current receive window size is too small to hold incoming messages."
+				"Storing overflow msg_id %d in overflow_pke_list.\n",
+				msg_id);
+
+			return 1;
 		}
 	}
 
-	if (OFI_LIKELY(efa_env.rx_copy_ooo)) {
-		assert(pkt_entry->alloc_type == EFA_RDM_PKE_FROM_EFA_RX_POOL);
-		ooo_entry = efa_rdm_pke_clone(pkt_entry, ep->rx_ooo_pkt_pool, EFA_RDM_PKE_FROM_OOO_POOL);
-		if (OFI_UNLIKELY(!ooo_entry)) {
-			EFA_WARN(FI_LOG_EP_CTRL,
-				"Unable to allocate rx_pkt_entry for OOO msg\n");
-			return -FI_ENOMEM;
-		}
-		efa_rdm_pke_release_rx(pkt_entry);
-	} else {
-		ooo_entry = pkt_entry;
-	}
+	ooo_entry = efa_rdm_pke_get_ooo_pke(pkt_entry);
+	if (!ooo_entry)
+		return -FI_ENOMEM;
+
+	return efa_rdm_peer_recvwin_queue_or_append_pke(ooo_entry, msg_id, robuf);
+}
+
+/**
+ * @brief Queue the packet entry in the receive window when its msg_id is larger
+ * than expected. If using the multi-req protocol and a packet entry with the
+ * same msg_id already exists in the receive window, append this pkt_entry to
+ * the existing packet entry.
+ *
+ * @param[in]		ooo_entry	ooo packet entry
+ * @param[in]		msg_id		msg id of the pkt_entry
+ * @param[in, out]	robuf		receive window of the peer
+ *
+ * @returns
+ * 1 when the packet entry is queued successfully.
+ */
+int efa_rdm_peer_recvwin_queue_or_append_pke(struct efa_rdm_pke *ooo_entry,
+					     uint32_t msg_id,
+					     struct efa_rdm_robuf *robuf)
+{
+	struct efa_rdm_pke *cur_ooo_entry;
 
 	cur_ooo_entry = *ofi_recvwin_get_msg(robuf, msg_id);
 	if (cur_ooo_entry) {
@@ -191,6 +243,46 @@ int efa_rdm_peer_reorder_msg(struct efa_rdm_peer *peer, struct efa_rdm_ep *ep,
 }
 
 /**
+ * @brief After processing recvwin_size of pkt entries, iterate over the
+ * overflow_pke_list and move the pkt entry to receive window if it fits.
+ *
+ * @param[in,out]	peer 		peer
+ * 
+ */
+void efa_rdm_peer_move_overflow_pke_to_recvwin(struct efa_rdm_peer *peer)
+{
+	struct efa_rdm_peer_overflow_pke_list_entry *overflow_pke_list_entry;
+	struct efa_rdm_pke *overflow_pkt_entry;
+	struct dlist_entry *tmp;
+	uint32_t msg_id;
+
+	if (dlist_empty(&peer->overflow_pke_list)) {
+		return;
+	}
+
+	dlist_foreach_container_safe (
+		&peer->overflow_pke_list,
+		struct efa_rdm_peer_overflow_pke_list_entry,
+		overflow_pke_list_entry, entry, tmp) {
+		overflow_pkt_entry = overflow_pke_list_entry->pkt_entry;
+		msg_id = efa_rdm_pke_get_rtm_msg_id(overflow_pkt_entry);
+
+		if (ofi_recvwin_id_valid((&peer->robuf), msg_id)) {
+			efa_rdm_peer_recvwin_queue_or_append_pke(
+				overflow_pkt_entry, msg_id, (&peer->robuf));
+
+			dlist_remove(&overflow_pke_list_entry->entry);
+			ofi_buf_free(overflow_pke_list_entry);
+			EFA_DBG(FI_LOG_EP_CTRL,
+				"Moving pkt entry with msg_id %d from "
+				"overflow_pke_list to receive window.\n",
+				msg_id);
+		}
+	}
+	return;
+}
+
+/**
  * @brief process packet entries in reorder buffer
  * This function is called after processing the expected packet entry
  *
@@ -201,7 +293,7 @@ void efa_rdm_peer_proc_pending_items_in_robuf(struct efa_rdm_peer *peer, struct 
 {
 	struct efa_rdm_pke *pending_pkt;
 	int ret = 0;
-	uint32_t msg_id;
+	uint32_t msg_id, exp_msg_id;
 
 	while (1) {
 		pending_pkt = *ofi_recvwin_peek((&peer->robuf));
@@ -212,8 +304,13 @@ void efa_rdm_peer_proc_pending_items_in_robuf(struct efa_rdm_peer *peer, struct 
 		EFA_DBG(FI_LOG_EP_CTRL,
 		       "Processing msg_id %d from robuf\n", msg_id);
 		/* efa_rdm_pke_proc_rtm_rta will write error cq entry if needed */
-		ret = efa_rdm_pke_proc_rtm_rta(pending_pkt);
+		ret = efa_rdm_pke_proc_rtm_rta(pending_pkt, peer);
 		*ofi_recvwin_get_next_msg((&peer->robuf)) = NULL;
+
+		exp_msg_id = ofi_recvwin_next_exp_id((&peer->robuf));
+		if (exp_msg_id % efa_env.recvwin_size == 0)
+			efa_rdm_peer_move_overflow_pke_to_recvwin(peer);
+
 		if (OFI_UNLIKELY(ret)) {
 			EFA_WARN(FI_LOG_CQ,
 				"Error processing msg_id %d from robuf: %s\n",
@@ -235,18 +332,16 @@ void efa_rdm_peer_proc_pending_items_in_robuf(struct efa_rdm_peer *peer, struct 
 size_t efa_rdm_peer_get_runt_size(struct efa_rdm_peer *peer,
 				  struct efa_rdm_ep *ep, struct efa_rdm_ope *ope)
 {
-	struct efa_hmem_info *hmem_info;
 	size_t runt_size;
 	size_t memory_alignment;
 	int iface;
 
-	hmem_info = efa_rdm_ep_domain(ep)->hmem_info;
 	iface = ope->desc[0] ? ((struct efa_mr*) ope->desc[0])->peer.iface : FI_HMEM_SYSTEM;
 
-	if (hmem_info[iface].runt_size < peer->num_runt_bytes_in_flight)
+	if (g_efa_hmem_info[iface].runt_size < peer->num_runt_bytes_in_flight)
 		return 0;
 
-	runt_size = MIN(hmem_info[iface].runt_size - peer->num_runt_bytes_in_flight, ope->total_len);
+	runt_size = MIN(g_efa_hmem_info[iface].runt_size - peer->num_runt_bytes_in_flight, ope->total_len);
 	memory_alignment = efa_rdm_ep_get_memory_alignment(ep, iface);
 	/*
 	 * runt size must be aligned because:
@@ -272,7 +367,8 @@ int efa_rdm_peer_select_readbase_rtm(struct efa_rdm_peer *peer,
 	int op = ope->op;
 
 	assert(op == ofi_op_tagged || op == ofi_op_msg);
-	if (peer->num_read_msg_in_flight == 0 &&
+
+	if (efa_rdm_ep_domain(ep)->num_read_msg_in_flight == 0 &&
 	    efa_rdm_peer_get_runt_size(peer, ep, ope) > 0 &&
 	    !(ope->fi_flags & FI_DELIVERY_COMPLETE)) {
 		return (op == ofi_op_tagged) ? EFA_RDM_RUNTREAD_TAGRTM_PKT

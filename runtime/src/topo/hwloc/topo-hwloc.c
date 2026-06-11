@@ -33,6 +33,7 @@
 #include "chpltypes.h"
 #include "chpl-error.h"
 #include "chpl-mem-sys.h"
+#include "chpl-prginfo.h"
 #include "chplexit.h"
 
 #include <errno.h>
@@ -199,6 +200,10 @@ void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
   // the future.
   //
   do_set_area_membind = true;
+
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_GASNET_SEGMENT);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_COMM);
+
   if ((strcmp(CHPL_COMM, "gasnet") == 0
        && strcmp(CHPL_GASNET_SEGMENT, "everything") != 0)) {
       do_set_area_membind = false;

@@ -18,29 +18,31 @@
  * limitations under the License.
  */
 
-#ifndef _CHPL_INIT_H_
-#define _CHPL_INIT_H_
+#ifndef CHPL_RT_INIT_H
+#define CHPL_RT_INIT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include "chpl-prginfo.h"
+
 #include <stdint.h>
 
 #ifndef LAUNCHER
 
-void chpl_rt_preUserCodeHook(void);
-void chpl_rt_postUserCodeHook(void);
+void chpl_rt_pre_user_code_sync(chpl_rt_prginfo* prg);
+
 const char* allocate_string_literals_buf(int64_t s);
 void deallocate_string_literals_buf(void);
 
 #endif // ifndef LAUNCHER
 
-void chpl_rt_init(int argc, char* argv[]);
+void chpl_rt_init(chpl_rt_prginfo* root_prg, int argc, char** argv);
 
 void chpl_executable_init(void);
 
-void chpl_std_module_init(void);
+void chpl_rt_init_program_standard_modules(chpl_rt_prginfo* prg);
 
 // TODO: Just replace with procedure pointer call.
 void chpl_execute_module_deinit(c_fn_ptr deinitFun);

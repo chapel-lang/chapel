@@ -1341,6 +1341,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       makeIntent(Function::DEFAULT_RETURN_INTENT),
                       YYLTYPE::create(),
                       false,
+                      YYLTYPE::create(),
                       nullptr, nullptr, nullptr, nullptr,
                       nullptr,
                       YYLTYPE::create(),
@@ -1705,6 +1706,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   builder->noteDeclNameLocation(f.get(), identNameLoc);
   builder->noteDeclHeaderLocation(f.get(), convertLocation(fp.headerLoc));
   builder->noteCurlyBracesLocation(f.get(), convertLocation(fp.curlyLoc));
+  builder->noteThrowsKeywordLocation(f.get(), convertLocation(fp.throwsLoc));
 
   // If we are not a method then the receiver intent is discarded,
   // because there is no receiver formal to store it in.
@@ -2767,6 +2769,10 @@ CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
                     owned<AttributeGroup> attributeGroup,
                     CommentsAndStmt cs) {
+  if (cs.stmt->isErroneousExpression()) {
+    auto node = ErroneousExpression::build(builder, convertLocation(location));
+    return makeCommentsAndStmt(cs.comments, node.release());
+  }
   CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();
   CHPL_ASSERT(decl);

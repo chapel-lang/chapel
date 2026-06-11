@@ -198,7 +198,7 @@ usdf_dgram_recvmsg(struct fid_ep *fep, const struct fi_msg *msg, uint64_t flags)
 	rq->urq_context[index] = msg->context;
 	hdr_ptr = ((uint8_t *)ep->e.dg.ep_hdr_buf) +
 			(index * USDF_HDR_BUF_ENTRY);
-	rq_enet_desc_enc(desc, (dma_addr_t) hdr_ptr,
+	rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) hdr_ptr,
 			RQ_ENET_TYPE_ONLY_SOP, sizeof(struct usd_udp_hdr));
 	ep->e.dg.ep_hdr_ptr[index] = (struct usd_udp_hdr *) hdr_ptr;
 
@@ -208,7 +208,7 @@ usdf_dgram_recvmsg(struct fid_ep *fep, const struct fi_msg *msg, uint64_t flags)
 
 	for (i = 0; i < msg->iov_count; ++i) {
 		rq->urq_context[index] = msg->context;
-		rq_enet_desc_enc(desc, (dma_addr_t) iovp[i].iov_base,
+		rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) iovp[i].iov_base,
 			     RQ_ENET_TYPE_NOT_SOP, iovp[i].iov_len);
 		ep->e.dg.ep_hdr_ptr[index] = (struct usd_udp_hdr *) hdr_ptr;
 
@@ -552,7 +552,7 @@ usdf_dgram_prefix_recvmsg(struct fid_ep *fep, const struct fi_msg *msg, uint64_t
 	rq->urq_context[index] = msg->context;
 	hdr_ptr = ((uint8_t *)iovp[0].iov_base) +
 		(USDF_HDR_BUF_ENTRY - sizeof(struct usd_udp_hdr));
-	rq_enet_desc_enc(desc, (dma_addr_t) hdr_ptr,
+	rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) hdr_ptr,
 			 RQ_ENET_TYPE_ONLY_SOP,
 			 iovp[0].iov_len -
 			  (USDF_HDR_BUF_ENTRY - sizeof(struct usd_udp_hdr)));
@@ -564,7 +564,7 @@ usdf_dgram_prefix_recvmsg(struct fid_ep *fep, const struct fi_msg *msg, uint64_t
 
 	for (i = 1; i < msg->iov_count; ++i) {
 		rq->urq_context[index] = msg->context;
-		rq_enet_desc_enc(desc, (dma_addr_t) iovp[i].iov_base,
+		rq_enet_desc_enc(desc, (dma_addr_t)(uintptr_t) iovp[i].iov_base,
 			     RQ_ENET_TYPE_NOT_SOP, iovp[i].iov_len);
 		ep->e.dg.ep_hdr_ptr[index] = (struct usd_udp_hdr *) hdr_ptr;
 

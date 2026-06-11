@@ -86,7 +86,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
   assert(faMap.isValid());
 
   ResolutionContext rc(context);
-  auto msc = MostSpecificCandidate::fromTypedFnSignature(&rc, typed, std::move(faMap), nullptr, nullptr, std::move(promotedFormals));
+  auto msc = MostSpecificCandidate::fromTypedFnSignature(&rc, typed, ci, std::move(faMap), nullptr, nullptr, std::move(promotedFormals));
 
   return QUERY_END(msc);
 }

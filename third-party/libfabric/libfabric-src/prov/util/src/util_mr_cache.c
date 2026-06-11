@@ -125,14 +125,17 @@ static void util_mr_free_entry(struct ofi_mr_cache *cache,
 static void util_mr_uncache_entry_storage(struct ofi_mr_cache *cache,
 					  struct ofi_mr_entry *entry)
 {
-	/* Without subscription context, we might unsubscribe from
-	 * an address range in use by another region. As a result,
-	 * we remain subscribed. This may result in extra
-	 * notification events, but is harmless to correct operation.
-	 */
+	enum fi_hmem_iface iface = entry->info.iface;
+	struct ofi_mem_monitor *monitor = cache->monitors[iface];
 
 	ofi_rbmap_delete(&cache->tree, entry->node);
 	entry->node = NULL;
+
+	/* Some memory monitors have a subscription context per MR. These
+	 * memory monitors require ofi_monitor_unsubscribe() to be called.
+	 */
+	ofi_monitor_unsubscribe(monitor, entry->info.iov.iov_base,
+				entry->info.iov.iov_len, &entry->hmem_info);
 
 	cache->cached_cnt--;
 	cache->cached_size -= entry->info.iov.iov_len;
@@ -267,7 +270,7 @@ void ofi_mr_cache_delete(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry)
  * restart the entire operation.
  */
 static int
-util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
+util_mr_cache_create(struct ofi_mr_cache *cache, struct ofi_mr_info *info,
 		     struct ofi_mr_entry **entry)
 {
 	struct ofi_mr_entry *cur;
@@ -290,6 +293,12 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 	ret = cache->add_region(cache, *entry);
 	if (ret)
 		goto free;
+
+	/* Providers may have expanded the MR. Update MR info input
+	 * accordingly.
+	 */
+	assert(ofi_iov_within(&(*info).iov, &(*entry)->info.iov));
+	*info = (*entry)->info;
 
 	pthread_mutex_lock(&mm_lock);
 	cur = ofi_mr_rbt_find(&cache->tree, info);
@@ -329,7 +338,7 @@ free:
 	return ret;
 }
 
-int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
+int ofi_mr_cache_search(struct ofi_mr_cache *cache, struct ofi_mr_info *info,
 			struct ofi_mr_entry **entry)
 {
 	struct ofi_mem_monitor *monitor;

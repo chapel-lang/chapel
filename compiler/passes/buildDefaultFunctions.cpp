@@ -491,6 +491,12 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->unstableMsg = field->unstableMsg;
   }
 
+  if (field->hasFlag(FLAG_HAS_EDITION)) {
+    fn->addFlag(FLAG_HAS_EDITION);
+    fn->firstEdition = field->firstEdition;
+    fn->lastEdition = field->lastEdition;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
@@ -904,12 +910,14 @@ static void buildChplEntryPoints() {
                                                         gFalse)));
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
-  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_preUserCodeSync"));
+
+  // We always generate this function, but it may not always be called.
+  auto initCmdModsFn = buildInitProgramCommandLineModulesFn();
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
   if (!fClientServerLibrary) {
-    auto initCmdModsFn = buildInitProgramCommandLineModulesFn();
     chpl_gen_main->insertAtTail(new CallExpr(initCmdModsFn));
 
   } else {
@@ -979,7 +987,6 @@ static void buildChplEntryPoints() {
                                              new_IntSymbol(0, INT_SIZE_64)));
   }
 
-  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
   chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
   chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));

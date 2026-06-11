@@ -90,6 +90,12 @@ ChapelSyncvar
   from print-module-resolution.ChapelStandard.ChapelSyncvar
 ChapelTaskDataHelp
   from print-module-resolution.ChapelStandard.ChapelTaskDataHelp
+ChapelSetProgramInfoDataEntries
+  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface.ChapelProgramRegistration.ChapelSetProgramInfoDataEntries
+ChapelProgramRegistration
+  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface.ChapelProgramRegistration
+ChapelRuntimeInterface
+  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface
 ChapelIOSerialize
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelIOSerialize
 ChapelNumLocales
@@ -242,8 +248,6 @@ ChapelDynamicLoading
   from print-module-resolution.ChapelStandard.ChapelDynamicLoading
 ChapelProgramEntrypoints
   from print-module-resolution.ChapelStandard.ChapelProgramEntrypoints
-ChapelProgramRegistration
-  from print-module-resolution.ChapelStandard.ChapelProgramRegistration
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution

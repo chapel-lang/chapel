@@ -42,7 +42,6 @@ record manifestFile {
   // https://github.com/chapel-lang/chapel/issues/22261
   var dependencies: list(owned ChapelDependency?);
   var system: list(owned SystemDependency?);
-  var external: list(owned ExternalDependency?);
 
   // optional
   var source: string;
@@ -116,10 +115,6 @@ proc manifestFile.toToml(): string throws {
   if !system.isEmpty() {
     s += "\n\n[system]\n" +
       "\n".join(for dep in system do dep!.toToml());
-  }
-  if !external.isEmpty() {
-    s += "\n\n[external]\n" +
-      "\n".join(for dep in external do dep!.toToml());
   }
 
   return s;

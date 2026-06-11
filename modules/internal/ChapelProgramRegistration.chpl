@@ -38,8 +38,8 @@ module ChapelProgramRegistration {
 
     inline proc type nullId param: uint do return 0;
     inline proc type rootId param: uint do return 1;
-    inline proc nullId param do return this.type.nullId;
-    inline proc rootId param do return this.type.rootId;
+    inline proc nullId param: uint do return this.type.nullId;
+    inline proc rootId param: uint do return this.type.rootId;
 
     inline proc ref asPtr() do return c_ptrTo(_info);
 
@@ -109,7 +109,8 @@ module ChapelProgramRegistration {
 
     inline proc ref prepare(): void {
       if !_isPrepared {
-        setProgramInfoDataFieldsHere(this);
+        use ChapelSetProgramInfoDataEntries;
+        chpl_setProgramInfoDataEntriesHere(this);
         _isPrepared = true;
       }
     }
@@ -124,28 +125,17 @@ module ChapelProgramRegistration {
 
       return ret;
     }
+
+    proc dump(showAddresses: bool=true) {
+      extern 'chpl_rt_prginfo_dump_data_entries'
+      proc fn(const ref prg: chpl_rt_prginfo, show_addresses: c_int): void;
+      fn(prg=_info, show_addresses=showAddresses);
+    }
   }
 
   pragma "no init"          /** Initialized manually at program startup.  */
   pragma "locale private"   /** One per locale, per program.              */
   var chpl_programInfoHere: chpl_programInfo;
-
-  // TODO: This function will bind symbols to fields in the struct. Currently
-  //       it is almost empty, but it will be populated later. Set some fields
-  //       just to leave an example of what it looks like.
-  //
-  // TODO: In the future we can generate a module containing this function by
-  //       using a script, similiar to what we do for 'SysCTypes.chpl'.
-  proc setProgramInfoDataFieldsHere(ref info: chpl_programInfo) {
-    extern type chpl_rt_mainHasArgs_type;
-    extern const mainHasArgs: chpl_rt_mainHasArgs_type;
-    info.setConstant('mainHasArgs', mainHasArgs);
-    extern type chpl_rt_mainPreserveDelimiter_type;
-    extern const mainPreserveDelimiter: chpl_rt_mainPreserveDelimiter_type;
-    info.setConstant('mainPreserveDelimiter', mainPreserveDelimiter);
-    info.setCallback('chpl_program_about');
-    // More calls to follow...one for every entry in the X-macro.
-  }
 
   export proc chpl_prepareProgramInfoHere(): c_ptr(chpl_rt_prginfo) {
     ref prg = chpl_programInfoHere;

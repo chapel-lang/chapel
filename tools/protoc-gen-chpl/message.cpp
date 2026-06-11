@@ -30,10 +30,10 @@
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/wire_format_lite.h>
 
-#include <helpers.h>
-#include <message.h>
-#include <enum.h>
-#include <field_base.h>
+#include "helpers.h"
+#include "message.h"
+#include "enum.h"
+#include "field_base.h"
 
 namespace chapel {
 
@@ -48,12 +48,12 @@ namespace chapel {
   MessageGenerator::~MessageGenerator() {
   }
 
-  string MessageGenerator::record_name() {
+  std::string MessageGenerator::record_name() {
     return GetMessageName(descriptor_);
   }
 
   void MessageGenerator::Generate(Printer* printer) {
-    map<int, map<string, string>> vars;
+    std::map<int, std::map<std::string, std::string>> vars;
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
       const FieldDescriptor* fieldDescriptor = descriptor_->field(i);
@@ -101,7 +101,7 @@ namespace chapel {
       printer->Print(
         "// Field \"$field_name$\" \n",
         "field_name", fieldDescriptor->name());
-      unique_ptr<FieldGeneratorBase> generator(
+      std::unique_ptr<FieldGeneratorBase> generator(
           CreateFieldGeneratorInternal(fieldDescriptor));
       generator->GenerateMembers(printer);
       printer->Print("\n");

@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+
+file=sys.argv[2]
+
+with open(file, 'rb') as f:
+    contents = f.read()
+
+out_of_order = rb"""\*\*\* GASNET WARNING\(Node \d+\): Detected arrival of out-of-order [a-zA-Z]+!
+ It appears your system is delivering IP packets out-of-order between worker nodes,
+ most likely due to striping over multiple adapters or links\.
+ This might \(rarely\) lead to corruption of AMUDP traffic\.
+"""
+
+# For some reason, on exit, we occasionally see strange seg faults and
+# assertion failures. These come with an assertion description (optionally),
+# an exit code (6 or 11) and a GASNet notice. Filter them out as well.
+signal = rb"\*\*\* Caught a fatal signal \(proc \d\): (SIGSEGV\(11\)|SIGABRT\(6\))\n"
+assertion = rb"[^:\n]+:[^\n]+Assertion `qthread_library_initialized' failed\.\n"
+ioctl_broken = rb"\*\*\* GASNET WARNING\(Node 0\): ioctl\(\) is probably broken: bytesAvail=\d+  recvfrom returned=\d+\n"
+extra_prints = rb"""\*\*\* NOTICE \(proc \d+\): Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace\.
+\*\*\* NOTICE \(proc \d+\): We recommend linking the debug version of GASNet to assist you in resolving this application issue\.
+"""
+
+output = re.sub(out_of_order, b'', contents, flags=re.MULTILINE)
+output = re.sub(signal, b'', output)
+output = re.sub(assertion, b'', output)
+output = re.sub(ioctl_broken, b'', output)
+output = re.sub(extra_prints, b'', output)
+
+
+with open(file, 'wb') as f:
+    f.write(output)
