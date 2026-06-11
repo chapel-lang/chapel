@@ -41,19 +41,10 @@ Highlights (see the sections that follow for details)
 * RHEL RPMs for HPE Cray EX systems
 * many other improvements in terms of features, error msgs, bug fixes, and docs
 
-Updates to Chapel Prerequisites
--------------------------------
-
-Configuration / Build Changes
------------------------------
-
 Updates to Chapel's Release Formats
 -----------------------------------
 * added RHEL versions of RPMs released for HPE Cray EX systems
 * added `c2chapel` to Chapel's binary release formats
-
-Syntactic / Naming Changes
---------------------------
 
 New Language Features
 ---------------------
@@ -78,12 +69,6 @@ Language Feature Improvements
   (see https://chapel-lang.org/docs/2.9/language/spec/expressions.html#exponentiation-operators)
 * re-implemented record comparisons as module code in the 'preview' edition  
   (see https://chapel-lang.org/docs/2.9/language/spec/records.html#default-comparison-operators)
-
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -114,15 +99,6 @@ Changes / Feature Improvements in Package Modules
   (see https://chapel-lang.org/docs/2.9/modules/packages/TOML/TomlParser.html#TomlParser.Toml.keys)
 * added `assertThrows()` to `UnitTest` to check that proper errors are thrown  
   (see https://chapel-lang.org/docs/2.9/modules/packages/UnitTest.html#UnitTest.Test.assertThrows)
-
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
 
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
@@ -189,9 +165,6 @@ Debugging Improvements
 ----------------------
 * improved the handling of Chapel breakpoints in LLDB 22+
 
-Syntax Highlighters
--------------------
-
 Other Tool Improvements
 -----------------------
 * updated `c2chapel` to support full C99 via pycparser 3.0/pycparserext 2026.1
@@ -202,9 +175,6 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * parallelized scans for array-like expressions  
   (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
-
-Memory Improvements
--------------------
 
 GPU Computing
 -------------
@@ -223,9 +193,6 @@ Compiler Improvements
 * updated the compiler to support LLVM 22 as the preferred back-end
 * changed the default representation of first-class procedures to use pointers
 
-Improvements to Compile Times
------------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * improved the quality of error messages for non-`param bool` where-clauses  
@@ -233,9 +200,6 @@ Error Messages / Semantic Checks
 * improved the error generated for improper `forwarding var` declarations
 * disallowed passing scalar arguments by `out`/`inout` intent in promoted calls
 * added a warning when relying on array arguments to `iter`s being `ref`
-
-Error Messages / Semantic Checks for Libraries
-----------------------------------------------
 
 Error Messages for Build Issues
 -------------------------------
@@ -252,12 +216,6 @@ Portability / Platform-specific Improvements
 Portability / Build Improvements for GPUs
 -----------------------------------------
 * fixed deprecation warnings for `ArgMin`/`ArgMax` in CUDA 12.9
-
-Generated Executable Flags
---------------------------
-
-Launchers
----------
 
 Documentation Improvements
 --------------------------
@@ -291,9 +249,6 @@ Documentation Improvements for Tools
 * added troubleshooting docs for working around `c2chapel` parsing errors  
   (see https://chapel-lang.org/docs/2.9/tools/c2chapel/c2chapel.html#troubleshooting)
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * updated docs for building `libfabric` to target a Slingshot-based system  
@@ -301,12 +256,6 @@ Platform-Specific Documentation Improvements
 * removed outdated mentions of the Cray XC module from usage instructions
 * documented support testing limitations for FreeBSD  
   (see https://chapel-lang.org/docs/2.9/usingchapel/prereqs.html#outdated-freebsd-testing)
-
-Technical Note Improvements
----------------------------
-
-Example Codes
--------------
 
 Runtime Library Improvements
 ----------------------------
@@ -351,9 +300,6 @@ Bug Fixes for Libraries
 * fixed `TomlError` to properly override the `Error` superclass
 * fixed `UnitTest.Test.dependsOn()` to work with `--filter` in `mason test`
 
-Bug Fixes for GPU Computing
----------------------------
-
 Bug Fixes for Mason
 -------------------
 * fixed git dependencies to properly update when a branch is updated
@@ -383,12 +329,6 @@ Bug Fixes for Other Tools
 * fixed `chplcheck`'s `IncorrectIndentation` rule on `enum`s with attributes
 * fixed `findUndocumentedSymbols` not setting `$CHPL_HOME` for prefix installs
 
-Bug Fixes for Release Formats
------------------------------
-
-Bug Fixes for Build Issues
---------------------------
-
 Bug Fixes for the Runtime
 -------------------------
 * fixed undefined behavior caused by adding an integer to a `NULL` pointer
@@ -403,15 +343,9 @@ Developer-oriented changes: Documentation
 * made all example codes in the `Classes` spec chapter testable
 * consolidated and updated file lists in `README.devel`
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * simplified non-`param` versions of `**` to reduce compiler involvement
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -419,9 +353,6 @@ Developer-oriented changes: Makefile / Build-time changes
 * added a `make chpl-completion` target to rebuild the `bash` completion script
 * fixed `gen_release` to properly clean up any temporary files it creates
 * made `chpl_home_utils.py` executable to match other `chplenv` scripts
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -437,12 +368,6 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
 * implemented scope-related analyses for variables over tuple elements
-
-Developer-oriented changes: GPU support
----------------------------------------
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
@@ -465,9 +390,6 @@ Developer-oriented changes: Tool Improvements
 * removed Mason's `versionInfo` record in favor of the standard library's
 * switched Mason source files to use explicit modules for better error handling
 * added enforcement of using only double quoted strings in Mason source files
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 Version 2.8
