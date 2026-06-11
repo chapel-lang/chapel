@@ -98,11 +98,24 @@ Debugging Improvements
 
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
+* extended the call hierarchy support to also show module `use`/`import` chains
+* added inlays for inferred return/yield types for `proc`s/`iter`s  
+  (see `--return-type-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+* added underlining for additional contextual information in error messages
+* added default instantiations for routines with generic array arguments  
+  (see `--default-rect-arrays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+* extended generic routine instantiations to include all of a project's files  
+* improved generic routines to display types common to all instantiations  
+  (see `--common-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+* suppressed redundant/obvious inlays for `type`/`param` declarations  
+  (see `--hide-redundant-type-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
 * improved the integration of CLS with Mason to avoid requiring `chpl-shim`
 * added `goto-type-def` support for classes and enums
 
 Linter / `chplcheck` Improvements
 ---------------------------------
+* added an alternate fix-it for misleading indentation that inserts braces
+* improved the integration of rules about misleading and incorrect indentation
 * added an option to ignore the `LineLength` rule inside docstrings  
   (see https://chapel-lang.org/docs/2.9/tools/chplcheck/chplcheck.html#linelength)
 * extended `IncorrectIndentation` to permit unindented module-scope code  
@@ -133,6 +146,8 @@ Package Manager / Mason Improvements
 
 `chapel-py` Improvements
 ------------------------
+* improved the quality of error message information via a new class hierarchy  
+  (see https://chapel-lang.org/docs/2.9/tools/chapel-py/chapel-py.html#details-on-the-error-hierarchy)
 * added `EnumType.decl` to get the AST node for an enum declaration  
   (see https://chapel-lang.org/docs/2.9/tools/chapel-py/chapel-py.html#chapel.EnumType.decl)
 * added `StringLikeLiteral.quote_style` to query the quote style of a string  
@@ -199,6 +214,7 @@ Error Messages / Semantic Checks
   (e.g., `where myNonParamBool` or `where myParamReal` generate better errors)
 * improved the errors generated due to incorrect uses of `throw`/`try`/`catch`
 * improved the error generated for improper `forwarding var` declarations
+* disallowed passing scalar arguments by `out`/`inout` intent in promoted calls
 * added a warning when relying on array arguments to `iter`s being `ref`
 
 Error Messages / Semantic Checks for Libraries
@@ -219,6 +235,8 @@ Language Specification Improvements
 -----------------------------------
 * clarified the rules for `param`-folding within the compiler  
   (see https://chapel-lang.org/docs/2.9/language/spec/variables.html#compile-time-constants)
+* improved the accuracy of the description of inferred types in declarations  
+  (see https://chapel-lang.org/docs/2.9/language/spec/variables.html#local-type-inference)
 * fixed an out-of-date example relating to `owned` and dead variables
 
 Documentation Improvements for Libraries
@@ -279,9 +297,14 @@ Bug Fixes
 ---------
 * removed the erroneous `param`-folding of `uint < 0` and `uint < -1`
 * fixed bugs related to passing arrays to iteraators by non-`ref` intents
+* fixed crashes when `out` formals were mapped to promoted arguments
+* fixed support for promoted module-qualified calls
+* fixed qualified calls in modules with mutual recursion
 * fixed passing `nil` to a `const ref` argument with the C backend
 * fixed resolution of certain generic, edition-guarded procedures
 * fixed resolving calls to edition-guarded routines using qualified access
+* fixed support for type methods that shadow fields
+* fixed copy elision in the presence of `defer` statements
 
 Bug Fixes for Libraries
 -----------------------
@@ -317,6 +340,7 @@ Bug Fixes for Mason
 
 Bug Fixes for Other Tools
 -------------------------
+* fixed `goto-type-def` on record/class member fields in CLS
 * fixed parsing of anonymous structs/unions in `c2chapel`
 * fixed parsing of constants like `static const foo = 10;` in `c2chapel`
 * protected more Chapel keywords from being used as identifiers in `c2chapel`
@@ -392,6 +416,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* sped up `start_test`'s cleaning behavior by avoiding subprocesses
 * improved error messages when error-on-compile tests lack `.good` files
 * fixed the CI python format check to check all python files
 
