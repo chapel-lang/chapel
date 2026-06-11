@@ -1,29 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* check placement of items into categories
-* sort items within categories
-* check man page and util/chpl-completion.bash for new compiler flags
-* check test/release/examples
-* fulfill TODOs
-* check for changes put too far down in file
-* check for ' vs `
-* '(http:' -> '(see http:'
-* check for docs/2.4/ links
-* remove `.../index.html` in favor of `.../`
-* check forced linebreaks
-* check initial '*'
-* check for initial 'A-Z'
-* check for 'see:'
-* add highlights
-* mason -> Mason when used as noun
-* spellcheck
-* check ordering of categories relative to one another
-* remove empty sections
-o check links
-
-
 version 2.9
 ===========
 
@@ -394,7 +371,7 @@ Developer-oriented changes: Tool Improvements
 * added enforcement of using only double quoted strings in Mason source files
 
 
-Version 2.8
+version 2.8
 ===========
 
 released March 12, 2026
