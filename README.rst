@@ -7,8 +7,8 @@ What is Chapel?
 ---------------
 Chapel is a modern programming language designed for productive
 parallel computing at scale.  Its design and implementation have been
-undertaken with portability in mind, permitting it to run on the CPUS
-and GPUS of laptops, desktops, commodity clusters, and the cloud, in
+undertaken with portability in mind, permitting it to run on the CPUs
+and GPUs of laptops, desktops, commodity clusters, and the cloud, in
 addition to the high-end supercomputers that Chapel was designed for.
 
 For more information about Chapel, see its website at
@@ -47,14 +47,11 @@ Chapel Community:      https://chapel-lang.org/community/
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
           :target: https://hpsf.io/
-          :height: 75px
          
      - .. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
           :target: https://hpsf.io/projects/chapel/
-          :height: 75px
           :align: center
 
      - .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.jpg
           :target: https://www.linuxfoundation.org/
-          :height: 75px
           :align: right
