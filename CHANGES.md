@@ -1,6 +1,29 @@
 Release Changes List
 ====================
 
+TODO:
+* check placement of items into categories
+* sort items within categories
+* check man page and util/chpl-completion.bash for new compiler flags
+* check test/release/examples
+* fulfill TODOs
+* check for changes put too far down in file
+* check for ' vs `
+* '(http:' -> '(see http:'
+* check for docs/2.4/ links
+* remove `.../index.html` in favor of `.../`
+* check forced linebreaks
+* check initial '*'
+* check for initial 'A-Z'
+* check for 'see:'
+* add highlights
+* mason -> Mason when used as noun
+o spellcheck
+o check ordering of categories relative to one another
+o remove empty sections
+o check links
+
+
 version 2.9
 ===========
 
@@ -8,6 +31,15 @@ released June 18, 2026
 
 Highlights (see the sections that follow for details)
 -----------------------------------------------------
+* significant improvements in the support of `union` types
+* initial support for dynamically loading parallel/distributed Chapel libraries
+* parallel scans for array-like expressions
+* significant improvements to the Mason package manager
+* many display improvements when editing code with `chpl-language-server` (CLS)
+* improvements to the `chplcheck`, `chpldoc`, `chapel-py`, and `c2chapel` tools
+* LLVM/LLDB 22 support within the compiler and tools
+* RHEL RPMs for HPE Cray EX systems
+* many other improvements in terms of features, error msgs, bug fixes, and docs
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -25,25 +57,26 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
-* added `union` as a generic "matches any union" type class
+* added `union` as a generic type that matches against any union type  
+  (see https://chapel-lang.org/docs/2.9/language/spec/generics.html#built-in-generic-types)
 * added support for `==` and `!=` on `union` values to support comparisons  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#default-comparison-operators))
 * added `union.getActiveIndex()` to query the active field of a union value  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#ChapelUnion.union.getActiveIndex)
 * added `union.visit[One]()` to have a visitor process a union's active field  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#ChapelUnion.union.visit)
-* added `unionType.fieldName` to get the index of that field in a union type  
-  (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#union-fields)
 * added placeholder support for doing active-field pattern-matching on unions  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#union-pattern-matching)
-* added support for `**` on `param real` values to `int` and `real` exponents
-  (see https://chapel-lang.org/docs/2.9/language/spec/expressions.html#exponentiation-operators)
+* added `unionType.fieldName` to get the index of that field in a union type  
+  (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#union-fields)
 
 Language Feature Improvements
 -----------------------------
-* parallelized scan expressions over array-like expressions  
+* parallelized scans for array-like expressions  
   (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
-* re-implemented record comparisons as module code in the preview edition  
+* added support for `**` on `param real`s for `integral`/`real` exponents  
+  (see https://chapel-lang.org/docs/2.9/language/spec/expressions.html#exponentiation-operators)
+* re-implemented record comparisons as module code in the 'preview' edition  
   (see https://chapel-lang.org/docs/2.9/language/spec/records.html#default-comparison-operators)
 
 Semantic Changes / Changes to the Language Definition
@@ -57,7 +90,7 @@ New Standard Library Features
 * added `[string|bytes].contains()` to check for substring matches  
   (see https://chapel-lang.org/docs/2.9/language/spec/strings.html#String.string.contains  
    and https://chapel-lang.org/docs/2.9/language/spec/bytes.html#Bytes.bytes.contains)
-* added a least common multiple procedure in the `Math` library  
+* added a procedure for computing least common multiples, `lcm()`, to `Math`  
   (see https://chapel-lang.org/docs/2.9/modules/standard/Math.html#Math.lcm)
 * added predicate-based overloads for `list.[find|contains]()`  
   (see https://chapel-lang.org/docs/2.9/modules/standard/List.html#List.list.find  
@@ -65,7 +98,7 @@ New Standard Library Features
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
-* updated `writeBits()` to ignore bit values outside of those being written  
+* updated `writeBits()` to ignore bit values that are not being written out  
   (see https://chapel-lang.org/docs/2.9/modules/standard/IO.html#IO.fileWriter.writeBits)
 * updated `FileSystem.[listDir|walkDirs|findFiles]()` to throw errors  
   (see https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.listDir)
@@ -73,7 +106,7 @@ Changes / Feature Improvements in Standard Libraries
 New Package Module Features
 ---------------------------
 * extended `DynamicLoading` to support parallel/distributed Chapel libraries  
-  (see TODO)
+  (see https://chapel-lang.org/docs/2.9/modules/packages/DynamicLoading.html))
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -81,7 +114,6 @@ Changes / Feature Improvements in Package Modules
   (see https://chapel-lang.org/docs/2.9/modules/packages/TOML/TomlParser.html#TomlParser.Toml.keys)
 * added `assertThrows()` to `UnitTest` to check that proper errors are thrown  
   (see https://chapel-lang.org/docs/2.9/modules/packages/UnitTest.html#UnitTest.Test.assertThrows)
-
 
 New Standard Layout and Distribution Features
 ---------------------------------------------
@@ -98,19 +130,20 @@ Debugging Improvements
 
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
-* extended the call hierarchy support to also show module `use`/`import` chains
-* added inlays for inferred return/yield types for `proc`s/`iter`s  
+* added support for viewing module `use`/`import` chains
+* added `goto-type-def` support for classes and enums
+* added inlays for inferred return/yield types of `proc`s/`iter`s  
   (see `--return-type-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
-* added underlining for additional contextual information in error messages
+* extended generic routine instantiations to include all of a project's files  
 * added default instantiations for routines with generic array arguments  
   (see `--default-rect-arrays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
-* extended generic routine instantiations to include all of a project's files  
 * improved generic routines to display types common to all instantiations  
   (see `--common-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
 * suppressed redundant/obvious inlays for `type`/`param` declarations  
   (see `--hide-redundant-type-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+* improved error message quality in general, due to improvements in `chapel-py`
+* added underlining for additional contextual information in error messages
 * improved the integration of CLS with Mason to avoid requiring `chpl-shim`
-* added `goto-type-def` support for classes and enums
 
 Linter / `chplcheck` Improvements
 ---------------------------------
@@ -121,18 +154,18 @@ Linter / `chplcheck` Improvements
 * extended `IncorrectIndentation` to permit unindented module-scope code  
   (see https://chapel-lang.org/docs/2.9/tools/chplcheck/chplcheck.html#incorrectindentation)
 * improved the `UnusedFormal` rule to properly support varargs
-* squashed the `UnusedFormal` rule on `deserializer.init()`
+* squashed the `UnusedFormal` rule on unused `deserializer.init()` arguments
 * squashed the `NestedCoforall` warning when the inner `coforall` is remote
 
 Package Manager / Mason Improvements
 ------------------------------------
-* added `mason modules --format=json` to generate JSON package meta-information
 * added `mason publish --username` to explicitly specify a Github account
+* added `mason modules --format=json` to generate JSON package meta-information
 * replaced Mason's `--no-color` flag with `--color=[always|never|auto]`
 * removed `mason external` in favor of using `mason system`
-* improved the startup performance of `mason run --example`
-* improved the detection of system packages to handle more edge cases
 * improved the error messages when a Mason prerequisite fails
+* improved the startup performance of `mason run --example`
+* improved the detection of system packages to handle additional edge cases
 * adjusted `mason run` to print output directly rather than capturing it first
 
 `chpldoc` Improvements
@@ -163,27 +196,30 @@ Other Tool Improvements
 -----------------------
 * updated `c2chapel` to support full C99 via pycparser 3.0/pycparserext 2026.1
 * fixed `protoc-gen-chpl` to work with the latest versions of `protobuf`
-* added `findUndocumentedSymbols --ignore-enum-elements` when checking for docs
+* added a new `--ignore-enum-elements` flag to `findUndocumentedSymbols`
 
 Compiler Flags
 --------------
-* made `--no-checks` disable active-field checking on unions
+* added a new `--[no-]union-checks` flag for disabling active field checks
+* extended `--no-checks` to imply `--no-union-checks`
 * added a warning when a non-existent module directory is specified with `-M`
 
 Compiler Improvements
 ---------------------
-* added support for LLVM 22 as the compiler back-end
+* updated the compiler to support LLVM 22 as the preferred back-end
 * changed the default representation of first-class procedures to use pointers
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* parallelized scans for array-like expressions  
+  (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
 
 Improvements to Compile Times
 -----------------------------
 
 Generated Code Improvements
 ---------------------------
-* improved the generated names for task functions to be more human-readable
+* improved the generated names of task functions to be more human-readable
 
 Memory Improvements
 -------------------
@@ -196,11 +232,11 @@ GPU Computing
 
 Portability / Platform-specific Improvements
 --------------------------------------------
-* resolved new GCC 16 compiler warnings in the runtime
+* updated the runtime to resolve warnings for GCC 16
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
-* fixed deprecation warnings for `ArgMin`/`ArgMax` interface with CUDA 12.9
+* fixed deprecation warnings for `ArgMin`/`ArgMax` in CUDA 12.9
 
 Generated Executable Flags
 --------------------------
@@ -211,7 +247,6 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * improved the quality of error messages for non-`param bool` where-clauses  
-  (e.g., `where myNonParamBool` or `where myParamReal` generate better errors)
 * improved the errors generated due to incorrect uses of `throw`/`try`/`catch`
 * improved the error generated for improper `forwarding var` declarations
 * disallowed passing scalar arguments by `out`/`inout` intent in promoted calls
@@ -222,14 +257,15 @@ Error Messages / Semantic Checks for Libraries
 
 Error Messages for Build Issues
 -------------------------------
-* improved the errors when failing to find a suitable installation of LLVM
+* improved error messages when failing to find a suitable installation of LLVM
 
 Documentation Improvements
 --------------------------
-* consolidated and updated file lists in README.files
-* improved the licensing documentation w.r.t. when third-party software is used
+* updated and improved the content in `README.rst`
+* consolidated and updated file lists in `README.files`
+* refreshed licensing information w.r.t. when third-party software is used  
+  (see https://github.com/chapel-lang/chapel/blob/release/2.9/LICENSE)
 * updated GASNet links in the documentation to point to its new GitHub location
-* updated URLs in `README.rst` to avoid the need for server-side redirects
 
 Language Specification Improvements
 -----------------------------------
@@ -241,21 +277,19 @@ Language Specification Improvements
 
 Documentation Improvements for Libraries
 ----------------------------------------
-* updated `DynamicLoading` docs to remove `-suseProcedurePointers` requirement
-* fixed the formatting of the `--fast` flag in the `List` documentation
+* removed `-suseProcedurePointers` requirement from `DynamicLoading` docs
 
 Documentation Improvements for Tools
 ------------------------------------
-* fixed the `chplcheck` docs to indicate which rules are enabled by default  
+* updated the `chplcheck` docs to indicate which rules are enabled by default  
   (e.g., see https://chapel-lang.org/docs/2.9/tools/chplcheck/chplcheck.html#camelorpascalcasevariables)
 * improved the `chapel-py` docs to show API inheritance relationships  
   (see https://chapel-lang.org/docs/2.9/tools/chapel-py/chapel-py.html#module-chapel)
-* refactored the Mason documention to be up-to-date
 * added a clarifying note to the Mason docs about creating a documentation CI  
   (see https://chapel-lang.org/docs/2.9/tools/mason/guide/ci.html#more-advanced-ci-setups)
+* generally updated the Mason documentation to clarify and reflect improvements
 * added troubleshooting docs for working around `c2chapel` parsing errors  
   (see https://chapel-lang.org/docs/2.9/tools/c2chapel/c2chapel.html#troubleshooting)
-* fixed link to wrong "Inline markup" section in `chpldoc` docs
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
@@ -290,13 +324,13 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
-* removed the `Crypto` package module in favor of the `Crypo` mason package  
+* removed the `Crypto` package module in favor of the `Crypo` Mason package  
   (see https://github.com/chapel-lang/Crypto)
 
 Bug Fixes
 ---------
 * removed the erroneous `param`-folding of `uint < 0` and `uint < -1`
-* fixed bugs related to passing arrays to iteraators by non-`ref` intents
+* fixed bugs related to passing arrays to iterators by non-`ref` intents
 * fixed crashes when `out` formals were mapped to promoted arguments
 * fixed support for promoted module-qualified calls
 * fixed qualified calls in modules with mutual recursion
@@ -332,11 +366,11 @@ Bug Fixes for Mason
 * fixed `mason publish` for local registries
 * fixed the PR link shown by `mason publish` for adding a registry entry
 * fixed the formatting of the commit message for `mason publish`
-* fixed the detection of github usernames for `mason publish`
+* fixed the detection of GitHub usernames for `mason publish`
 * fixed detection of the project home directory for Mason projects near `\`
 * fixed improper creation/deletion of directories in `$MASON_HOME`
 * fixed Mason prereqs to always ensure `$CHPL_HOME` is set
-* fixed prereqs that were not working for git dependencies
+* fixed Mason prereqs that were not working for git dependencies
 
 Bug Fixes for Other Tools
 -------------------------
@@ -357,16 +391,17 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
-* fixed undefined behavior caused by adding an integer to a null pointer
+* fixed undefined behavior caused by adding an integer to a `NULL` pointer
 
 Developer-oriented changes: Process
 -----------------------------------
 * enabled `shellcheck` linting on shell scripts, except in `test`/`third-party`
+* fixed the format check CI to check all Python files
 
 Developer-oriented changes: Documentation
 -----------------------------------------
 * made all example codes in the `Classes` spec chapter testable
-* consolidated and updated file lists in README.files
+* consolidated and updated file lists in `README.devel`
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -380,8 +415,8 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
-* updated `make chpl-venv` to avoid using outdated package versions
-* added a `make chpl-completion` target to rebuild the bash completion script
+* updated `make chpl-venv` to avoid re-using outdated package versions
+* added a `make chpl-completion` target to rebuild the `bash` completion script
 * fixed `gen_release` to properly clean up any temporary files it creates
 * made `chpl_home_utils.py` executable to match other `chplenv` scripts
 
@@ -391,18 +426,17 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * made a number of changes in support of full-featured procedure pointers:
-  - added support for '.retType' and '.argTypes' methods
+  - added support for `.retType` and `.argTypes` methods
   - added support for implicit coercions for passed arguments
   - added support for promoted expressions using procedure pointers
   - added support for casting of procedure pointers to strings
-  - updated UnitTest module to use procedure pointers
+  - updated the `UnitTest` module to use procedure pointers
   - fixed a bug preventing records from being returned by value
-  - improved reflection capabilities for procedure pointers
-
+  - improved `Reflection` capabilities for procedure pointers
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
-* implemented variable scope-related analyses over tuple elements
+* implemented scope-related analyses for variables over tuple elements
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -418,15 +452,8 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * sped up `start_test`'s cleaning behavior by avoiding subprocesses
 * improved error messages when error-on-compile tests lack `.good` files
-* fixed the CI python format check to check all python files
-
-* used more cores by default in many nightly build/test scripts
-* changed to keep test run containers around until next run
-* fixed a bug where EX RPM builds that start and end on different dates fail
-* refactored Docker build script to make ad hoc adjustments easier
-* made test config log filenames unique per-user to avoid conflicts
+* refactored the Docker build script to make ad hoc adjustments easier
 * added logging start time and number of cores in several build/test scripts
-
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
@@ -441,7 +468,6 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
-* removed long-unused `updateSVNLOG` script
 
 
 version 2.8
