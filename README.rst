@@ -46,8 +46,6 @@ Chapel Community:      https://chapel-lang.org/community/
 |
 
 .. list-table::
-   :class: borderless
-   :widths: 33 33 33
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
           :target: https://hpsf.io/
