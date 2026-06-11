@@ -36,8 +36,10 @@ class DebuggerBreakHereStopHook:
         isBreakOnDebuggerBreakHere = (
             breakFunc
             and breakFunc.IsValid()
-            and (breakFunc.GetName() == "debuggerBreakHere"
-                 or breakFunc.GetName().startswith("debuggerBreakHere("))
+            and (
+                breakFunc.GetName() == "debuggerBreakHere"
+                or breakFunc.GetName().startswith("debuggerBreakHere(")
+            )
         )
 
         if not (isNamedDebuggerBreakHere or isBreakOnDebuggerBreakHere):
@@ -47,8 +49,10 @@ class DebuggerBreakHereStopHook:
 
         curFrame = thread.GetSelectedFrame()
         fn = curFrame.GetFunction()
-        if fn and (fn.name == "debuggerBreakHere"
-                   or fn.name.startswith("debuggerBreakHere(")):
+        if fn and (
+            fn.name == "debuggerBreakHere"
+            or fn.name.startswith("debuggerBreakHere(")
+        ):
             thread.SetSelectedFrame(2)
         return True
 
