@@ -20,7 +20,7 @@ TODO:
 * mason -> Mason when used as noun
 * spellcheck
 * check ordering of categories relative to one another
-o remove empty sections
+* remove empty sections
 o check links
 
 
@@ -86,7 +86,9 @@ Changes / Feature Improvements in Standard Libraries
 * updated `writeBits()` to ignore bit values that are not being written out  
   (see https://chapel-lang.org/docs/2.9/modules/standard/IO.html#IO.fileWriter.writeBits)
 * updated `FileSystem.[listDir|walkDirs|findFiles]()` to throw errors  
-  (see https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.listDir)
+  (see https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.listDir,  
+   https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.walkDirs,  
+   and https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.findFiles))
 
 New Package Module Features
 ---------------------------
@@ -105,14 +107,14 @@ Changes / Feature Improvements in Package Modules
 * added support for viewing module `use`/`import` chains
 * added `goto-type-def` support for classes and enums
 * added inlays for inferred return/yield types of `proc`s/`iter`s  
-  (see `--return-type-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+  (see `--return-type-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * extended generic routine instantiations to include all of a project's files  
 * added default instantiations for routines with generic array arguments  
-  (see `--default-rect-arrays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+  (see `--default-rect-arrays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * improved generic routines to display types common to all instantiations  
-  (see `--common-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+  (see `--common-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * suppressed redundant/obvious inlays for `type`/`param` declarations  
-  (see `--hide-redundant-type-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html)
+  (see `--hide-redundant-type-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * improved error message quality in general, due to improvements in `chapel-py`
 * added underlining for additional contextual information in error messages
 * improved the integration of CLS with Mason to avoid requiring `chpl-shim`
