@@ -42,6 +42,7 @@ Chapel Community:      https://chapel-lang.org/community/
 =====================  ========================================================
 
 .. list-table::
+   :width: 50%
    :widths: 33 33 33
    :class: borderless
 
