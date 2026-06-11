@@ -89,9 +89,9 @@ Changes / Feature Improvements in Package Modules
 * added default instantiations for routines with generic array arguments  
   (see `--default-rect-arrays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * improved generic routines to display types common to all instantiations  
-  (see `--common-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
+  (see `--common-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * suppressed redundant/obvious inlays for `type`/`param` declarations  
-  (see `--hide-redundant-type-inlays` on https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
+  (see `--hide-redundant-type-inlays` in https://chapel-lang.org/docs/2.9/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * improved error message quality in general, due to improvements in `chapel-py`
 * added underlining for additional contextual information in error messages
 * improved the integration of CLS with Mason to avoid requiring `chpl-shim`
