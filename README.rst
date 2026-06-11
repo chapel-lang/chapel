@@ -6,18 +6,20 @@ The Chapel Language
 What is Chapel?
 ---------------
 Chapel is a modern programming language designed for productive
-parallel computing at scale. Chapel's design and implementation have
-been undertaken with portability in mind, permitting Chapel to run on
-multicore desktops and laptops, commodity clusters, and the cloud, in
-addition to the high-end supercomputers for which it was originally
-undertaken.
+parallel computing at scale.  Its design and implementation have been
+undertaken with portability in mind, permitting it to run on the CPUs
+and GPUs of laptops, desktops, commodity clusters, and the cloud, in
+addition to the high-end supercomputers that Chapel was designed for.
+
+For more information about Chapel, see its website at
+https://chapel-lang.org
 
 License
 -------
 Chapel is developed and released under the terms of the Apache 2.0
 license, though it also makes use of third-party packages under their
-own licensing terms.  See the `<LICENSE>`_ file in this directory for
-details.
+own licensing terms.  See https://chapel-lang.org/license/ or the
+`<LICENSE>`_ file in this directory for details.
 
 Resources
 ---------
@@ -27,18 +29,29 @@ For more information about Chapel, please refer to the following resources:
    If you are viewing this file locally, we recommend referring to
    doc/README.rst for local references to documentation and resources.
 
-=====================  ========================================================
-Project homepage:      https://chapel-lang.org
-Installing Chapel:     https://chapel-lang.org/download/
-Building from source:  https://chapel-lang.org/docs/usingchapel/QUICKSTART.html
+=====================  ======================================
+Project website:       https://chapel-lang.org
+Try Chapel online:     https://chapel-lang.org/tryit/
+Install Chapel:        https://chapel-lang.org/download/
 Sample computations:   https://chapel-lang.org/docs/examples/
-Learning Chapel:       https://chapel-lang.org/learn/
-Reporting bugs:        https://chapel-lang.org/bugs.html
 Chapel documentation:  https://chapel-lang.org/docs/
-GitHub:                https://github.com/chapel-lang/chapel
-Discussion forums:     https://chapel.discourse.group
-Gitter chat room:      https://gitter.im/chapel-lang/chapel
-Stack Overflow:        http://stackoverflow.com/questions/tagged/chapel
-X (Twitter):           https://x.com/ChapelLanguage
-Facebook:              https://www.facebook.com/ChapelLanguage
-=====================  ========================================================
+GitHub repository:     https://github.com/chapel-lang/chapel
+Discussion forums:     https://chapel-lang.org/forums/
+Social media:          https://chapel-lang.org/socials/
+Chapel Community:      https://chapel-lang.org/community/
+=====================  ======================================
+
+|
+
+|
+
+.. list-table::
+
+   * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
+          :target: https://hpsf.io/
+         
+     - .. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
+          :target: https://hpsf.io/projects/chapel/
+
+     - .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.jpg
+          :target: https://www.linuxfoundation.org/
