@@ -18,12 +18,14 @@
  * limitations under the License.
  */
 
-// TODO: Can we make tests out of the code blocks? We'd need to be able to
-// add a 'precomp' and 'compopts'.
-//
-
 /*
 Support for dynamic loading in Chapel.
+
+.. note::
+
+  As of the 2.9 release, prototypical support has been added for loading
+  and executing code from Chapel programs at runtime. See the section
+  :ref:`Loading_Chapel_Programs_at_Runtime` below.
 
 This module provides the ability to load a binary at runtime. Procedures
 contained in a dynamically loaded binary can be retrieved and called on
@@ -60,6 +62,52 @@ be ``extern`` and this is reflected in its type.
   Currently, only procedures can be retrieved from loaded binaries.
   Support for retrieving references to data stored in a binary could
   be added in the future.
+
+.. _Loading_Chapel_Programs_at_Runtime:
+
+Loading Chapel Programs at Runtime
+----------------------------------
+
+Chapel supports the ability to dynamically load other Chapel programs while
+having all loaded Chapel programs utilize a single shared copy of the runtime.
+
+.. warning::
+
+  This feature is highly unstable (even more than the rest of this module).
+  As of the 2.9 release, it is only supported when ``CHPL_COMM=gasnet`` and
+  ``CHPL_LIB_PIC=pic``. Safety checks have not been added yet, so dynamically
+  loaded code may break in unexpected ways if these constraints are not met.
+
+  Additionally, while it should be possible to execute parallel and
+  distributed code from a loaded Chapel library, it is possible that certain
+  (combinations of) features may be bugged and fail to work correctly.
+
+To utilize this feature, *both* the Chapel program that is doing the loading
+(the "executable") and the Chapel library that is loaded (the "library") must
+be compiled with the flag ``--no-builtin-runtime``.
+
+This flag causes a Chapel program to be linked against a shared library
+variant of the Chapel runtime rather than to statically link in a copy as has
+traditionally been done.
+
+In order to use ``--no-builtin-runtime``, you must make sure your Chapel
+configuration was built with ``CHPL_LIB_PIC=pic`` so that the runtime,
+executable, and library can be compiled with position-independent code.
+
+Additionally, the library must be compiled with ``--library --dynamic``.
+
+Once compiled, the library can be loaded by the executable using the same
+process that is described in the previous sections of this module.
+
+Do note that only ``export`` procedures may be called from the library. This
+restriction may be removed in the future.
+
+.. note::
+
+  You may get strange link-time errors when trying to run the executable.
+  If this happens, it is usually because of a bug that occurs when the
+  dynamic variant of the Chapel runtime library was built. A workaround
+  is to touch a source file in the Chapel runtime and then rebuild it.
 */
 @unstable('Dynamic loading support is experimental and unstable.')
 module DynamicLoading {
