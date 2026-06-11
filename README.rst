@@ -50,12 +50,9 @@ Chapel Community:      https://chapel-lang.org/community/
 
    * - .. image:: https://chapel-lang.org/img/logos/HPSF_horizontal-tagline-color.jpg
           :target: https://hpsf.io/
-          :align: middle
          
      - .. image:: https://chapel-lang.org/img/logos/HPSF_Project_Badge_Established.png
           :target: https://hpsf.io/projects/chapel/
-          :align: middle
 
      - .. image:: https://chapel-lang.org/img/logos/lf-stacked-color.jpg
           :target: https://www.linuxfoundation.org/
-          :align: middle
