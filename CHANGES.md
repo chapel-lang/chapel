@@ -18,8 +18,8 @@ TODO:
 * check for 'see:'
 * add highlights
 * mason -> Mason when used as noun
-o spellcheck
-o check ordering of categories relative to one another
+* spellcheck
+* check ordering of categories relative to one another
 o remove empty sections
 o check links
 
@@ -124,10 +124,6 @@ Name Changes for Standard Layouts and Distributions
 Name Changes in Libraries
 -------------------------
 
-Debugging Improvements
-----------------------
-* improved the handling of Chapel breakpoints in LLDB 22+
-
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
 * added support for viewing module `use`/`import` chains
@@ -189,6 +185,10 @@ Package Manager / Mason Improvements
   (see https://chapel-lang.org/docs/2.9/tools/chapel-py/chapel-py.html#chapel.ClassType.basic_class_type)
 * made `chapel-py`-based tools build the generated modules prior to `chapel-py`
 
+Debugging Improvements
+----------------------
+* improved the handling of Chapel breakpoints in LLDB 22+
+
 Syntax Highlighters
 -------------------
 
@@ -197,6 +197,20 @@ Other Tool Improvements
 * updated `c2chapel` to support full C99 via pycparser 3.0/pycparserext 2026.1
 * fixed `protoc-gen-chpl` to work with the latest versions of `protobuf`
 * added a new `--ignore-enum-elements` flag to `findUndocumentedSymbols`
+
+Performance Optimizations / Improvements
+----------------------------------------
+* parallelized scans for array-like expressions  
+  (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
+
+Memory Improvements
+-------------------
+
+GPU Computing
+-------------
+* added support for CUDA 13.x+
+* improved support for CUDA 12.9
+* dropped support for ROCm 6.0 - 6.2
 
 Compiler Flags
 --------------
@@ -209,40 +223,8 @@ Compiler Improvements
 * updated the compiler to support LLVM 22 as the preferred back-end
 * changed the default representation of first-class procedures to use pointers
 
-Performance Optimizations / Improvements
-----------------------------------------
-* parallelized scans for array-like expressions  
-  (e.g., `+ scan (A: int)` and `+ scan [i in 1..n] i` are now parallel)
-
 Improvements to Compile Times
 -----------------------------
-
-Generated Code Improvements
----------------------------
-* improved the generated names of task functions to be more human-readable
-
-Memory Improvements
--------------------
-
-GPU Computing
--------------
-* added support for CUDA 13.x+
-* improved support for CUDA 12.9
-* dropped support for ROCm 6.0 - 6.2
-
-Portability / Platform-specific Improvements
---------------------------------------------
-* updated the runtime to resolve warnings for GCC 16
-
-Portability / Build Improvements for GPUs
------------------------------------------
-* fixed deprecation warnings for `ArgMin`/`ArgMax` in CUDA 12.9
-
-Generated Executable Flags
---------------------------
-
-Launchers
----------
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -258,6 +240,24 @@ Error Messages / Semantic Checks for Libraries
 Error Messages for Build Issues
 -------------------------------
 * improved error messages when failing to find a suitable installation of LLVM
+
+Generated Code Improvements
+---------------------------
+* improved the generated names of task functions to be more human-readable
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+* updated the runtime to resolve warnings for GCC 16
+
+Portability / Build Improvements for GPUs
+-----------------------------------------
+* fixed deprecation warnings for `ArgMin`/`ArgMax` in CUDA 12.9
+
+Generated Executable Flags
+--------------------------
+
+Launchers
+---------
 
 Documentation Improvements
 --------------------------
@@ -324,7 +324,7 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
-* removed the `Crypto` package module in favor of the `Crypo` Mason package  
+* removed the `Crypto` package module in favor of the `Crypto` Mason package  
   (see https://github.com/chapel-lang/Crypto)
 
 Bug Fixes
@@ -470,7 +470,7 @@ Developer-oriented changes: Utilities
 -------------------------------------
 
 
-version 2.8
+Version 2.8
 ===========
 
 released March 12, 2026
