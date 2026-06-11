@@ -80,7 +80,7 @@ having all loaded Chapel programs utilize a single shared copy of the runtime.
 
   Additionally, while it should be possible to execute parallel and
   distributed code from a loaded Chapel library, it is possible that certain
-  (combinations of) features may be bugged and fail to work correctly.
+  (combinations of) features may have bugs and fail to work correctly.
 
 To utilize this feature, *both* the Chapel program that is doing the loading
 (the "executable") and the Chapel library that is loaded (the "library") must
@@ -106,8 +106,10 @@ restriction may be removed in the future.
 
   You may get strange link-time errors when trying to run the executable.
   If this happens, it is usually because of a bug that occurs when the
-  dynamic variant of the Chapel runtime library was built. A workaround
-  is to touch a source file in the Chapel runtime and then rebuild it.
+  dynamic variant of the Chapel runtime library was built.
+
+  If you've built Chapel from source, a workaround is to touch a source
+  file in the Chapel runtime and then rebuild it.
 */
 @unstable('Dynamic loading support is experimental and unstable.')
 module DynamicLoading {
