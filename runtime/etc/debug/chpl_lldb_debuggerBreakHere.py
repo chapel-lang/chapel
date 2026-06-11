@@ -36,7 +36,7 @@ class DebuggerBreakHereStopHook:
         isBreakOnDebuggerBreakHere = (
             breakFunc
             and breakFunc.IsValid()
-            and breakFunc.GetName().startswith("debuggerBreakHere")
+            and breakFunc.GetName() == "debuggerBreakHere"
         )
 
         if not (isNamedDebuggerBreakHere or isBreakOnDebuggerBreakHere):
