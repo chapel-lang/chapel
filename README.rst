@@ -29,9 +29,7 @@ For more information about Chapel, please refer to the following resources:
    If you are viewing this file locally, we recommend referring to
    doc/README.rst for local references to documentation and resources.
 
-.. class:: align-center
-   
-=====================  ========================================================
+=====================  ======================================
 Project website:       https://chapel-lang.org
 Try Chapel online:     https://chapel-lang.org/tryit/
 Install Chapel:        https://chapel-lang.org/download/
@@ -41,7 +39,7 @@ GitHub repository:     https://github.com/chapel-lang/chapel
 Discussion forums:     https://chapel-lang.org/forums/
 Social media:          https://chapel-lang.org/socials/
 Chapel Community:      https://chapel-lang.org/community/
-=====================  ========================================================
+=====================  ======================================
 
 .. list-table::
    :class: borderless
