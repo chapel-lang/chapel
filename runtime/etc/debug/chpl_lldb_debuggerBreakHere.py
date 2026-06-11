@@ -46,7 +46,7 @@ class DebuggerBreakHereStopHook:
 
         curFrame = thread.GetSelectedFrame()
         fn = curFrame.GetFunction()
-        if fn and fn.name.startswith("debuggerBreakHere("):
+        if fn and fn.name == "debuggerBreakHere":
             thread.SetSelectedFrame(2)
         return True
 
