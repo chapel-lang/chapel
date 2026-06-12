@@ -1,4 +1,4 @@
-# Chapel APT Packages
+# Chapel RPM Packages
 
 This directory contains the scripts necessary to build Chapel rpm packages.
 
@@ -9,4 +9,8 @@ the Chapel rpm packages for that OS. Each one should have a Dockerfile that can
 be used to build the package in a clean environment.
 
 The `common` directory contains the common scripts and configuration files used
-by all the packages. The docker builds use the `rpm` directory as the context and pulls in these files as needed.
+by all the packages. The docker builds use the `rpm` directory as the context
+and pulls in these files as needed.
+
+The fedorarawhide directory is used to build rpms for the development Fedora
+release using [packit](https://packit.dev).
