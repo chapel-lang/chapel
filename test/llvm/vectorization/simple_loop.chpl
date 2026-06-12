@@ -1,7 +1,7 @@
 //Check whether vectorization occurs at all
 //This loop is trivial case for loop vectorizer and if
 //vectorization shouldn't happen it definitely won't happen in this case
-proc loop (A, B, n) {
+proc loop (ref A, B, n) {
   foreach i in 0..n {
     // CHECK: <4 x i32>
     A[i] = 3*B[i];

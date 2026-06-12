@@ -1,5 +1,5 @@
 //This test checks whether vectorization occurs for more complicated loops
-proc loop (A, B, C) {
+proc loop (ref A, ref B, C) {
   // CHECK: <4 x i32>
   foreach j in 0..511 {
     var i = j : int(32);
