@@ -1,0 +1,2 @@
+issue-21289.chpl:10: warning: an implicit module named 'issue-21289' is being introduced to contain file-scope code
+issue-21289.chpl:10: error: 'bar' undeclared (first use this function)
