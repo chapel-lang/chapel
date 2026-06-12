@@ -956,7 +956,8 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                                  /* parentFn */ parentSignature,
                                  /* formalsInstantiated */ Bitmap(),
                                  formalsErroredBitmap,
-                                 std::move(visitor.outerVariables));
+                                 std::move(visitor.outerVariables),
+                                 /* usePlaceholders */ usePlaceholders);
 
   // also check the signature at this point if it is concrete
   if (result != nullptr && !result->needsInstantiation()) {

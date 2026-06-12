@@ -675,6 +675,17 @@ CLASS_BEGIN(Function)
                   return TypedSignatureObject::create(contextObject, {sig, poiScope});
                }
                return {})
+  PLAIN_GETTER(Function, template_signature, "Compute a template typed signature for this Function node, where each generic formal is assigned a unique PlaceholderType.",
+               std::optional<TypedSignatureObject*>,
+
+               // Dummy RCs are not correct for nested functions.
+               if (!chpl::parsing::idToParentFunctionId(context, node->id()).isEmpty()) return {};
+               auto rc = chpl::resolution::createDummyRC(context);
+               const chpl::resolution::PoiScope* poiScope = nullptr;
+               if (auto sig = chpl::resolution::typedSignatureTemplateForId(&rc, node->id())) {
+                  return TypedSignatureObject::create(contextObject, {sig, poiScope});
+               }
+               return {})
 CLASS_END(Function)
 
 CLASS_BEGIN(Interface)

@@ -1613,6 +1613,12 @@ class CLSConfig:
             self.parser, "return-type-inlays", "return_type_inlays", True
         )
         chplcheck().config.add_bool_flag(
+            self.parser,
+            "generic-return-type-inlays",
+            "generic_return_type_inlays",
+            True,
+        )
+        chplcheck().config.add_bool_flag(
             self.parser, "dead-code", "dead_code", True
         )
         chplcheck().config.add_bool_flag(

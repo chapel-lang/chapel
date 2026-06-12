@@ -119,6 +119,7 @@ def _render_fn_variant(
     parts: List[FnPart],
     variant: _FnVariant,
     record_name: str = "R",
+    preamble: List[str] = [],
 ) -> Tuple[str, list]:
     """
     Render a parts list into (source_string, inlay_list) for the given variant.
@@ -134,7 +135,7 @@ def _render_fn_variant(
     # Build a lookup from function name to its FnDecl for call rendering.
     decl_by_name = {d.name: d for d in decls}
     inlays: list = []
-    lines: List[str] = []
+    lines: List[str] = preamble.copy()
 
     def render():
         nonlocal inlays, decls, lines
@@ -167,13 +168,16 @@ async def check_fn_variants(
     client: LanguageClient,
     parts: List[FnPart],
     record_name: str = "R",
+    preamble=[],
 ) -> None:
     """
     Run check_type_inlay_hints for all 4 function variants:
     proc, iter, primary method (inside record), and secondary method.
     """
     for variant in _FnVariant:
-        source, inlays = _render_fn_variant(parts, variant, record_name)
+        source, inlays = _render_fn_variant(
+            parts, variant, record_name, preamble
+        )
         async with source_file(client, source) as doc:
             await check_type_inlay_hints(
                 client, doc, rng((0, 0), endpos(source)), inlays
@@ -187,6 +191,7 @@ async def check_fn_variants(
             CLS_PATH(),
             "--resolver",
             "--return-type-inlays",
+            "--generic-return-type-inlays",
             "--no-type-inlays",
             "--no-param-inlays",
             "--no-literal-arg-inlays",
@@ -244,6 +249,17 @@ async def test_fn_type_inlay_explicit_no_inlay(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_fn_type_inlay_generic_identity(client: LanguageClient):
+    """
+    Ensure that a generic identity function gets a ': x.type' inlay.
+    """
+    await check_fn_variants(
+        client,
+        [FnDecl("idk1", params="x", return_expr="x", expected_type="x.type")],
+    )
+
+
+@pytest.mark.asyncio
 async def test_fn_type_inlay_generic_const_return(client: LanguageClient):
     """
     Ensure that a generic function with a concrete return value gets the
@@ -258,6 +274,110 @@ async def test_fn_type_inlay_generic_const_return(client: LanguageClient):
             FnCall("idk2", "10"),
             FnCall("idk2", "10.0"),
         ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_generic_pair(client: LanguageClient):
+    """
+    Ensure that a generic function returning a tuple of formals gets the right inlay.
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "mkPair",
+                params="x, y",
+                return_expr="(x, y)",
+                expected_type="(x.type, y.type)",
+                do_body=True,
+            )
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_type_query_list(client: LanguageClient):
+    """
+    Ensure that a generic function with a type query in a formal annotation
+    gets the right inlay using the type query name.
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "foo",
+                params="x: list(?eltType)",
+                return_expr="x.first",
+                expected_type="eltType",
+                do_body=True,
+            )
+        ],
+        preamble=["use List;"],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_type_query_via_type_proc(client: LanguageClient):
+    """
+    Ensure that a generic function whose formal type uses a type proc with a
+    type query gets the right inlay (exercises usePlaceholders propagation).
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "weird",
+                params="x: id(?hmm)",
+                return_expr="x",
+                expected_type="hmm",
+                do_body=True,
+            )
+        ],
+        preamble=["proc id(type x) type : ? do return x;"],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_generic_twice(client: LanguageClient):
+    """
+    Check a case covered by our logic in which a formal has a placeholder
+    type but the placeholder type comes from somewhere else (previous formal)
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "snd",
+                params="x, y: x.type",
+                return_expr="y",
+                expected_type="x.type",
+                do_body=True,
+            )
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_type_query_in_complex_access(
+    client: LanguageClient,
+):
+    """
+    Check a case mentioned explicitly in our comments in which a type query's
+    placeholder type makes it as the return type via a field access.
+    """
+    await check_fn_variants(
+        client,
+        [
+            FnDecl(
+                "weird",
+                params="x: list(?tq).eltType",
+                return_expr="x",
+                expected_type="tq",
+                do_body=True,
+            )
+        ],
+        preamble=["use List;"],
     )
 
 
@@ -335,11 +455,11 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
     proc_lens = (pos((0, 5)), 3)
     iter_lens = (pos((0, 5)), 3)
 
-    proc_generic_inlays: EXPECTED_INLAYS = []
+    proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": x.type", None)]
     proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": int(64)", None)]
     proc_real_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": real(64)", None)]
 
-    iter_generic_inlays: EXPECTED_INLAYS = []
+    iter_generic_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": x.type", None)]
     iter_int_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": int(64)", None)]
     iter_real_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": real(64)", None)]
 

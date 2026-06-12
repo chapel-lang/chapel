@@ -183,6 +183,9 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.get("type_inlays")
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.return_type_inlays: bool = config.get("return_type_inlays")
+        self.generic_return_type_inlays: bool = config.get(
+            "generic_return_type_inlays"
+        )
         self.param_inlays: bool = config.get("param_inlays")
         self.enum_inlays: bool = config.get("enum_inlays")
         self.default_rect_arrays: bool = config.get("default_rect_arrays")
@@ -658,6 +661,115 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
+    def _fn_return_type_for_inlay(
+        self, fn: chapel.Function, sig: chapel.TypedSignature
+    ) -> Optional[chapel.QualifiedType]:
+        """
+        Return whatever type should be shown as an inlay, if possible.
+        May invoke resolution to infer the return type from the body.
+        For iterators, the "return type" is technically an iterator record, but
+        an explicit return type specifies the yield type, so return that.
+        """
+        return sig.yield_type() if fn.kind() == "iter" else sig.return_type()
+
+    def _try_generic_fn_return_type_str(
+        self,
+        fn: chapel.Function,
+        context: chapel.Context,
+    ) -> Optional[str]:
+        """
+        For generic functions (where _fn_return_type_str returns None), attempt
+        to compute a return type string in terms of their generic formals'
+        names. This works best for parametrically polymorphic functions.
+        Do this by using the 'template' mechanism Dyno uses to resolve
+        interfaces, creating placeholders in the signature, resolving a return
+        type in terms of these placeholders, and then replacing placeholders
+        with the names of the formals/type queries they correspond to.
+        """
+        if fn.return_type() is not None:
+            return None
+
+        template_sig = fn.template_signature()
+        if template_sig is None:
+            return None
+
+        if template_sig.needs_instantiation():
+            return None
+
+        with context.track_errors():
+            qt = self._fn_return_type_for_inlay(fn, template_sig)
+        if qt is None:
+            return None
+
+        _, type_, _ = qt
+        if not type_ or isinstance(type_, chapel.ErroneousType):
+            return None
+
+        ret_str = str(type_)
+
+        # Postorder traversal of each formal's subtree. For every node whose
+        # resolved type (under the template signature) is a PlaceholderType,
+        # record a substitution that describes how to refer to it.
+        #  * For formals: formal.type
+        #  * For type queries: just the query name (tq)
+        #  * Anything else: we don't know!
+        subs: dict = {}
+        for formal in fn.formals():
+            for node in chapel.postorder(formal):
+                rr = node.resolve_via(template_sig)
+                if rr is None:
+                    continue
+                if not (node_type := rr.type()):
+                    continue
+                qt, t, _ = node_type
+                if not isinstance(t, chapel.PlaceholderType):
+                    continue
+
+                if isinstance(node, chapel.Formal):
+                    if (
+                        node == t.originator()
+                        or node.type_expression() == t.originator()
+                    ):
+                        if qt == "type":
+                            subs[str(t)] = node.name()
+                        else:
+                            subs[str(t)] = node.name() + ".type"
+                        continue
+
+                elif isinstance(node, chapel.TypeQuery):
+                    subs[str(t)] = node.name()
+                    continue
+
+                # This node has a placeholder type, but didn't create it
+                # in a way we can refer to. This could be benign. Some
+                # examples:
+                #
+                #  proc foo(x, y: x.type), and we're looking at 'y'.
+                #  proc bar(x: list(?tq).eltType), and we're looking at the whole type expr.
+                #
+                # In both of these cases, another subexpression would have
+                # already inserted the substitution. Ensure it has; if not,
+                # give up on creating a generic signature.
+                if str(t) not in subs:
+                    return None
+
+        # No PlaceholderTypes found, the return type is already concrete;
+        # let common inlays handle it to avoid duplicates.
+        if not subs:
+            return None
+
+        orig_str = ret_str
+        for ph_str, replacement in subs.items():
+            ret_str = ret_str.replace(ph_str, replacement)
+
+        # If no substitution was actually applied (the final type does not
+        # depend on a placeholder), don't show a generic inlay, common inlays
+        # will get it.
+        if ret_str == orig_str:
+            return None
+
+        return ret_str
+
     def _fn_return_type_str(
         self,
         fn: chapel.Function,
@@ -674,7 +786,7 @@ class ChapelLanguageServer(LanguageServer):
         if sig.needs_instantiation():
             return None
 
-        qt = sig.yield_type() if fn.kind() == "iter" else sig.return_type()
+        qt = self._fn_return_type_for_inlay(fn, sig)
         if qt is None:
             return None
 
@@ -722,6 +834,7 @@ class ChapelLanguageServer(LanguageServer):
     def get_fn_inlays(
         self,
         decl: NodeAndRange,
+        fi: "FileInfo",
         via: Optional[chapel.TypedSignature] = None,
     ) -> List[InlayHint]:
         if not self.return_type_inlays or not self.use_resolver:
@@ -740,6 +853,10 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
+        if type_str is None and self.generic_return_type_inlays:
+            type_str = self._try_generic_fn_return_type_str(
+                fn, fi.context.context
+            )
         if type_str is None:
             return []
 
@@ -1498,7 +1615,7 @@ def run_lsp():
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
             inlays.extend(ls.get_decl_inlays(decl, instantiation))
-            inlays.extend(ls.get_fn_inlays(decl, instantiation))
+            inlays.extend(ls.get_fn_inlays(decl, fi, instantiation))
 
             if instantiation is not None:
                 continue

@@ -19,6 +19,7 @@
 
 #include "core-types-gen.h"
 #include "resolution.h"
+#include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 #include "chpl/parsing/parsing-queries.h"
