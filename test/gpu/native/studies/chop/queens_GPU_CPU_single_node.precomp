@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -ex
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+CHOP_BRANCH=main
+CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
+CHOP_BRANCH=${CHOP_BRANCH:-main}
+
+# Clone ChOp
+rm -rf ChOp
+git clone ${CHOP_URL} --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --branch=${CHOP_BRANCH} --depth=1
+
+# Apply patches, if any
+for p in $(find patches -name "*patch"); do
+  git -C ChOp apply ../$p;
+done
