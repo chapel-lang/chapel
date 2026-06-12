@@ -141,7 +141,7 @@ Package Manager / Mason Improvements
 
 Debugging Improvements
 ----------------------
-* improved the handling of Chapel breakpoints in LLDB 22+
+* added support for debugging with LLDB 22
 
 Other Tool Improvements
 -----------------------
@@ -359,6 +359,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* improved the handling of Chapel breakpoints in LLDB 22+
 * modernized the `c2chapel` testing infastructure
 * rewrote the Mason build system to allow for external dependencies
 * rewrote the Mason build system to work independently of Chapel's
