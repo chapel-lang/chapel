@@ -28,12 +28,12 @@ New Language Features
 * added `union` as a generic type that matches against any union type  
   (see https://chapel-lang.org/docs/2.9/language/spec/generics.html#built-in-generic-types)
 * added support for `==` and `!=` on `union` values to support comparisons  
-  (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#default-comparison-operators))
+  (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#default-comparison-operators)
 * added `union.getActiveIndex()` to query the active field of a union value  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#ChapelUnion.union.getActiveIndex)
 * added `union.visit[One]()` to have a visitor process a union's active field  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#ChapelUnion.union.visit)
-* added placeholder support for doing active-field pattern-matching on unions  
+* added draft support for doing active-field pattern-matching on unions  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#union-pattern-matching)
 * added `unionType.fieldName` to get the index of that field in a union type  
   (see https://chapel-lang.org/docs/2.9/language/spec/unions.html#union-fields)
@@ -61,16 +61,15 @@ New Standard Library Features
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * updated `writeBits()` to ignore bit values that are not being written out  
-  (see https://chapel-lang.org/docs/2.9/modules/standard/IO.html#IO.fileWriter.writeBits)
 * updated `FileSystem.[listDir|walkDirs|findFiles]()` to throw errors  
   (see https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.listDir,  
    https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.walkDirs,  
-   and https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.findFiles))
+   and https://chapel-lang.org/docs/2.9/modules/standard/FileSystem.html#FileSystem.findFiles)
 
 New Package Module Features
 ---------------------------
 * extended `DynamicLoading` to support parallel/distributed Chapel libraries  
-  (see https://chapel-lang.org/docs/2.9/modules/packages/DynamicLoading.html))
+  (see https://chapel-lang.org/docs/2.9/modules/packages/DynamicLoading.html)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -174,7 +173,7 @@ Compiler Improvements
 
 Error Messages / Semantic Checks
 --------------------------------
-* improved the quality of error messages for non-`param bool` where-clauses  
+* improved the quality of error messages for non-`param bool` `where`-clauses  
 * improved the errors generated due to incorrect uses of `throw`/`try`/`catch`
 * improved the error generated for improper `forwarding var` declarations
 * disallowed passing scalar arguments by `out`/`inout` intent in promoted calls
@@ -202,7 +201,8 @@ Documentation Improvements
 * consolidated and updated file lists in `README.files`
 * refreshed licensing information w.r.t. when third-party software is used  
   (see https://github.com/chapel-lang/chapel/blob/release/2.9/LICENSE)
-* updated GASNet links in the documentation to point to its new GitHub location
+* updated GASNet URLs in the documentation to point to its new home on GitHub  
+  (see https://github.com/BerkeleyLab/gasnet)
 
 Language Specification Improvements
 -----------------------------------
@@ -292,7 +292,7 @@ Bug Fixes for Mason
 * fixed the PR link shown by `mason publish` for adding a registry entry
 * fixed the formatting of the commit message for `mason publish`
 * fixed the detection of GitHub usernames for `mason publish`
-* fixed detection of the project home directory for Mason projects near `\`
+* fixed detection of the project home directory for Mason projects near `/`
 * fixed improper creation/deletion of directories in `$MASON_HOME`
 * fixed Mason prereqs to always ensure `$CHPL_HOME` is set
 * fixed Mason prereqs that were not working for git dependencies
@@ -356,8 +356,6 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * sped up `start_test`'s cleaning behavior by avoiding subprocesses
 * improved error messages when error-on-compile tests lack `.good` files
-* refactored the Docker build script to make ad hoc adjustments easier
-* added logging start time and number of cores in several build/test scripts
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
@@ -365,7 +363,8 @@ Developer-oriented changes: Tool Improvements
 * rewrote the Mason build system to allow for external dependencies
 * rewrote the Mason build system to work independently of Chapel's
 * rewrote `mason new` and `mason init` to be more robust
-* replaced the bespoke `MasonLogger` with the `Log` Mason module
+* replaced the bespoke `MasonLogger` with the `Log` Mason module  
+  (see https://github.com/jabraham17/Log)
 * removed Mason's `versionInfo` record in favor of the standard library's
 * switched Mason source files to use explicit modules for better error handling
 * added enforcement of using only double quoted strings in Mason source files
