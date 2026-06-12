@@ -664,6 +664,10 @@ all:
   05/20/26:
     - text: Upgrade system LLVM to 22
       config: 1-node-a100
+  05/21/26:
+    - text: Move CHPL_CACHE_REMOTE into CHPL_RT_PRGINFO (#28869)
+  06/09/26:
+    - text: Restore CHPL_CACHE_REMOTE global const (#28949)
 
 # End all
 
