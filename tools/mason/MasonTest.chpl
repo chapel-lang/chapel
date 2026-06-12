@@ -39,7 +39,10 @@ use TOML;
 import ThirdParty.Pathlib.path;
 
 import MasonLogger;
-import MasonPrereqs;
+import Package;
+import BuildInfo;
+import BuildInfo.MasonPackage;
+import Compilation;
 
 var subdir = false;
 var keepExec = false;
@@ -98,8 +101,9 @@ proc masonTest(args: [] string) throws {
   }
 
   if isMasonProject {
-    const projectType = getProjectType();
-    if projectType == "light" then
+    const package =
+      Package.getMasonPackage(skipUpdate, show=false, force=false);
+    if package.pkgType == Package.packageType.light then
       throw new MasonError("Mason light projects do not " +
                            "currently support 'mason test'");
   }
@@ -185,10 +189,12 @@ proc masonTest(args: [] string) throws {
         }
       }
     }
-
-    updateLock(skipUpdate);
     compopts.pushBack("--comm="+comm);
-    runTests(show, run, parallel, filter, skipUpdate, compopts);
+
+    var package = Package.getMasonPackage(skipUpdate, show=false, force=false);
+    var options = new BuildInfo.buildOptions();
+    options.commandLineCompopts = compopts;
+    runTests(package, options, show, run, parallel, filter, skipUpdate);
   } catch e: MasonError {
     log.debugf("Got error '%s', falling back to basic test runner",
                 e.message());
@@ -218,104 +224,24 @@ proc masonTest(args: [] string) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
-                      skipUpdate: bool, cmdLineCompopts: list(string)) throws {
+private proc runTests(
+  package: borrowed Package.MasonPackage, options: BuildInfo.buildOptions,
+  show: bool, run: bool, parallel: bool, filter: string,
+  skipUpdate: bool) throws {
 
   try! {
-
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd);
-
-    // parse lockfile
-    const toParse = open(projectHome + "/Mason.lock", ioMode.r);
-    const lockFile = parseToml(toParse);
-
-    // Get project source code and dependencies
-    const (sourceList, gitList) = genSourceList(lockFile);
-    const depPath = Path.joinPath(MASON_HOME, "src");
-    const gitDepPath = Path.joinPath(MASON_HOME, "git");
-
-    getSrcCode(sourceList, skipUpdate, show);
-    getGitCode(gitList, skipUpdate, show);
-
-    const project = lockFile["root.name"]!.s;
-    const projectPath = "".join(projectHome, "/src/", project, ".chpl");
-
-    // Get system compopts
-    var compopts = new list(string);
-    compopts.pushBack(getTomlCompopts(lockFile));
-    log.debug("compopts from Mason.toml: ", compopts);
-
-    log.debug("Adding prerequisite flags");
-
-    // add prerequisite compopts
-    for flag in MasonPrereqs.chplFlags() {
-      log.debug("+compflag ", flag);
-      compopts.pushBack(flag);
-    }
-
-    log.debug("Base compopts: ", compopts);
-
-    // can't use _ since it will leak
-    // see https://github.com/chapel-lang/chapel/issues/25926
-    @chplcheck.ignore("UnusedLoopIndex")
-    for (_x, name, version) in srcSource.iterList(sourceList) {
-      const nameVer = "%s-%s".format(name, version);
-      // version of -1 specifies a git dep
-      if version != "-1" {
-        const depDir = Path.joinPath(depPath, nameVer);
-        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
-                                       "chpl");
-
-        log.debugf("Adding source dependency %s's flags", name);
-        compopts.pushBack(depSrc);
-
-        for flag in MasonPrereqs.chplFlags(depDir:path) {
-          log.debug("+compflag ", flag);
-          compopts.pushBack(flag);
-        }
-      }
-    }
-
-    // can't use _ since it will leak
-    // see https://github.com/chapel-lang/chapel/issues/25926
-    @chplcheck.ignore("UnusedLoopIndex")
-    for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
-      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
-      compopts.pushBack(gitDepSrc);
-      for flag in MasonPrereqs.chplFlags(depDir:path) {
-        log.debug("+compflag ", flag);
-        compopts.pushBack(flag);
-      }
-    }
-
-    // get system deps
-    if const pkgDeps = lockFile.get["system"] {
-      for (_, depInfo) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
-        for (k,v) in allFields(depInfo!) {
-          var val = v!;
-          select k {
-            when "libs" do compopts.pushBack(parseCompilerOptions(val));
-             when "includes" do compopts.pushBack(parseCompilerOptions(val));
-            otherwise continue;
-          }
-        }
-      }
-    }
-
-    if isDir(joinPath(projectHome, "target/test/")) {
-      rmTree(joinPath(projectHome, "target/test/"));
-    }
+    const cwd = path.cwd();
+    const targetTest = package.projectHome / "target" / "test";
+    if targetTest.isDir() then targetTest.remove();
     // Make target files if they dont exist from a build
-    makeTargetFiles("debug", projectHome);
+    makeTargetFiles("debug":path, package.projectHome);
     var numTests: int;
     var testNames: list(string);
     // names of tests that compiled
     var testsCompiled: list(string, parSafe=true);
     // get the test names from lockfile or from test directory
     if files.size == 0 && dirs.size == 0 {
-      testNames = getTests(lockFile.borrow(), projectHome:path);
+      testNames = [f in package.tests] f.name:string;
       numTests = testNames.size;
     } else {
       try! {
@@ -344,32 +270,32 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
           testPath = test;
         } else {
           if customTest then
-            testPath = "".join(cwd,"/",test);
+            testPath = (cwd / test):string;
           else
-            testPath = "".join("test/", test);
+            testPath = (new path("test") / test):string;
         }
         log.info("Testing ", testPath);
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         // also names test as --main-module
-        const masonCompopts =
-          getMasonDependencies(sourceList, gitList, testName);
+        // const masonCompopts =
+        //   getMasonDependencies(sourceList, gitList, testName);
         var testTemp: string = test;
-        if cwd == projectHome && customTest {
+        if cwd == package.projectHome && customTest {
           testTemp = relPath(testTemp, "test/");
         }
         const outputLoc =
-          joinPath(projectHome, "target", "test", stripExt(testTemp, ".chpl"));
-        const outputDir = Path.dirname(outputLoc);
-        if !exists(outputDir) {
-          mkdir(outputDir, parents=true);
+          package.projectHome / "target" / "test" / stripExt(testTemp, ".chpl");
+        const outputDir = outputLoc.parent;
+        if !outputDir.exists() then outputDir.mkdir(parents=true);
+        const packageTestIdx = package.tests.find(testTemp);
+        if packageTestIdx == -1 {
+          throw new MasonError("Test '" + testTemp + "' not found in package");
         }
-        var compCommand = new list(string);
-        compCommand.pushBack(["chpl", testPath, projectPath, "-o", outputLoc]);
-        compCommand.pushBack(compopts);
-        compCommand.pushBack(masonCompopts);
-        compCommand.pushBack(cmdLineCompopts);
+        const packageTest = package.tests[packageTestIdx];
+        var compOpts = package.getBuildCmd(options, packageTest);
+        var compCommand = Compilation.getCompilationCmd(outputLoc, compOpts);
         log.debugf("\t%?", compCommand);
         const compilation = runWithStatus(compCommand.toArray(), !show);
         const success = compilation == 0;
@@ -384,9 +310,10 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
           testsCompiled.pushBack(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
         }
-        return (outputLoc, success);
+        return (outputLoc:string, success);
       }
 
+      package.preBuild();
 
       var timeElapsed = new stopwatch();
       timeElapsed.start();
@@ -409,17 +336,20 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
          const (outputLoc, success) = compile(testName, result, testsCompiled);
         }
         if run {
-          runTestBinaries(projectHome, testsCompiled, filter, result, show);
+          runTestBinaries(package.projectHome:string, testsCompiled,
+                          filter, result, show);
         }
       }
       timeElapsed.stop();
+
+      package.postBuild();
+
       if run {
         printTestResults(result, timeElapsed);
       }
     } else {
-      throw new owned MasonError("No tests were found in /test");
+      throw new MasonError("No tests were found in /test");
     }
-    toParse.close();
   } catch e: MasonError {
     stderr.writeln(e.message());
     exit(1);
