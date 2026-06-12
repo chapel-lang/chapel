@@ -56,3 +56,32 @@ if (1, 2) {}
 if (1, 2) then writeln("Hello");
 while (1, 2) {}
 while (1, 2) do writeln("Hello");
+
+// cannot remove parenthesis from non-boolean expressions
+// it would create non-valid syntax
+proc foo() throws do return 0;
+if (try foo()) then
+  writeln("Hello");
+while (try foo()) do
+  writeln("Hello");
+if (try foo() && b) then
+  writeln("Hello");
+while (try foo() || b) do
+  writeln("Hello");
+while ((try foo()) || b) do // can remove
+  writeln("Hello");
+while (b || (try foo())) do // can remove
+  writeln("Hello");
+
+// syntax error
+// if try! foo() || x { }
+// syntax error
+// if x || try! foo() || x { }
+// this is fine
+if (try! foo()) || x { }
+// this is fine
+if (try! foo() || x) { }
+// this is fine
+if x || (try! foo()) { }
+// this is NOT fine, syntax error
+// if (x || try! foo()) { }
