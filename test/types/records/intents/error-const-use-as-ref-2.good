@@ -1,0 +1,2 @@
+error-const-use-as-ref-2.chpl:4: error: this is const by default, but code attempted to modify it.
+note: If you intended to modify this, add an explicit 'ref' task intent for 'this'.

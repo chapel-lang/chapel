@@ -5,7 +5,7 @@ proc main() {
   writeln(A[1], " ", A[n]);
 }
 
-proc loop(A) {
+proc loop(ref A) {
   forall i in 1..n {
     A[i] = 17.5 * i;
   }

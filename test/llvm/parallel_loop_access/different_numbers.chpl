@@ -8,7 +8,7 @@ proc start_loop3() { return 5; }
 proc end_loop3() { return 6; }
 
 //Check whether we generate different metadata number for loops
-proc loop (A, B, n) {
+proc loop (ref A, B, n) {
   //CHECK-LABEL: void @loop
   foreach i in 1..n {
     //CHECK-LABEL: start_loop1

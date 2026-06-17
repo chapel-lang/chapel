@@ -1,5 +1,5 @@
 //Check whether vectorization occurs for nested loops
-proc loop (A, B) {
+proc loop (ref A, B) {
   foreach i in 0..511 {
     foreach j in 0..511 {
       // CHECK: <4 x i32>

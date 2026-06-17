@@ -1,0 +1,2 @@
+error-const-use-as-ref-1.chpl:4: error: foo is const by default, but code attempted to modify it.
+note: If you intended to modify foo, use an explicit 'ref' this-intent for the method 'foo'.

@@ -11,7 +11,7 @@ proc end_block() { return 5; }
 // - basic block at start of loop
 // - basic block at the end of the loop
 
-proc loop (A, B, n) {
+proc loop (ref A, B, n) {
   //CHECK-LABEL: void @loop
   foreach i in 1..n {
     // CHECK-LABEL: start_block
