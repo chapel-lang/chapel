@@ -238,7 +238,7 @@ jobs:
     - name: check blog
       run: |
         . ./util/setchplenv.sh
-        start_test chapel-blog
+        start_test chapel-blog/content chapel-blog/chpl-src
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
