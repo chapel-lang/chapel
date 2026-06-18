@@ -237,7 +237,7 @@ jobs:
         path: chapel-blog
     - name: check blog
       run: |
-        source util/setchplenv.bash
+        . ./util/setchplenv.sh
         start_test chapel-blog
 
   check_annotations_rt_calls:
