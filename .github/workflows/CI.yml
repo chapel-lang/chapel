@@ -226,7 +226,7 @@ jobs:
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
     - name: build chapel
       run: |
-        ./util/buildRelease/smokeTest chpl
+        ./util/buildRelease/smokeTest chpl mason
     - name: build test-venv
       run: |
         make test-venv
