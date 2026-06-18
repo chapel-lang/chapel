@@ -215,6 +215,31 @@ jobs:
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
 
+  check_blog:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: build chapel
+      run: |
+        ./util/buildRelease/smokeTest chpl
+    - name: build test-venv
+      run: |
+        make test-venv
+    - name: clone blog
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      with:
+        repository: chapel-lang/chapel-blog
+        path: chapel-blog
+    - name: check blog
+      run: |
+        source util/setchplenv.bash
+        start_test chapel-blog
+
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
