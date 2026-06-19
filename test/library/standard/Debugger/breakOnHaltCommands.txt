@@ -1,2 +1,3 @@
+settings set auto-confirm true
 r
 quit
