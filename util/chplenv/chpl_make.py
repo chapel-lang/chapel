@@ -10,16 +10,18 @@ from utils import which, memoize
 def get():
     make_val = overrides.get("CHPL_MAKE")
     if not make_val:
-        platform_val = chpl_platform.get()
-        if platform_val.startswith("cygwin") or platform_val == "darwin":
-            make_val = "make"
-        elif platform_val.startswith("linux"):
-            if which("gmake"):
-                make_val = "gmake"
-            else:
+        make_val = overrides.get("MAKE")
+        if not make_val:
+            platform_val = chpl_platform.get()
+            if platform_val.startswith("cygwin") or platform_val == "darwin":
                 make_val = "make"
-        else:
-            make_val = "gmake"
+            elif platform_val.startswith("linux"):
+                if which("gmake"):
+                    make_val = "gmake"
+                else:
+                    make_val = "make"
+            else:
+                make_val = "gmake"
     return make_val
 
 
