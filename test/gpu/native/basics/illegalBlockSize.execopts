@@ -1,0 +1,4 @@
+--mode=0  # illegalBlockSize-zero
+--mode=1  # illegalBlockSize-neg
+--mode=2  # illegalBlockSize-zero
+--mode=3  # illegalBlockSize-neg
