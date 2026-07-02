@@ -23,7 +23,6 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
-#include "chpl/uast/PrimOp.h"
 
 extern "C" {
   #include "complex-support.h"
@@ -46,14 +45,18 @@ extern unsigned int open_hash_multipliers[256];
 
 using ImmString = chpl::detail::PODUniqueString;
 
+//
+// NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
+// 'IF1_const_kind' enum below uses it to set values.
+//
+enum IF1_num_kind : uint8_t {
+  NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
+  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
+};
 
 enum IF1_const_kind : uint8_t {
-  NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
-  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID,
-  CONST_KIND_STRING, CONST_KIND_SYMBOL
+  CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
 };
-// maintain old name for backwards compatibility
-using IF1_num_kind = IF1_const_kind;
 
 enum IF1_string_kind : uint8_t {
   STRING_KIND_STRING,
@@ -103,19 +106,9 @@ namespace chpl {
 namespace types {
 
 class Immediate { public:
-  IF1_const_kind const_kind;
+  uint8_t const_kind;
   IF1_string_kind string_kind;
-  // NOTE: only num_index is ever used! boolIndex, intIndex, floatIndex, and
-  // complexIndex are only used to make the union more readable in the debugger
-  // (so the debugger can show the value of the correct type as a human
-  // readable enum)
-  union {
-    uint8_t          num_index;
-    IF1_bool_type    _boolIndex;
-    IF1_int_type     _intIndex;
-    IF1_float_type   _floatIndex;
-    IF1_complex_type _complexIndex;
-  };
+  uint8_t num_index;
   union {
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
@@ -394,7 +387,7 @@ int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
 void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-void fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
+void fold_constant(chpl::Context* context, int op,
                    Immediate *im1, Immediate *im2, Immediate *imm);
 ImmString istrFromUserBool(chpl::Context* context, bool b);
 ImmString istrFromUserUint(chpl::Context* context, uint64_t i);

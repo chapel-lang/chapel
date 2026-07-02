@@ -997,7 +997,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
     if (got == false || tmpCastToTy != NULL)
       return false;
 
-    auto p = chpl::uast::primtags::PrimitiveTag::PRIM_UNKNOWN;
+    int p = 0;
     switch (start->getKind()) {
       case tok::plus:   p = P_prim_plus;    break;
       case tok::minus:  p = P_prim_minus;   break;
@@ -1182,7 +1182,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
     return false;
 
   // Apply the binary operator to the immediate
-  auto p = chpl::uast::primtags::PrimitiveTag::PRIM_UNKNOWN;
+  int p = 0;
   switch (op->getKind()) {
     case tok::lessless:   p = P_prim_lsh;    break;
     default:

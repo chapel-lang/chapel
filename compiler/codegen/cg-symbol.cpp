@@ -471,7 +471,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
           INT_ASSERT("unsupported complex floating point width");
       }
       break;
-    case CONST_KIND_STRING: {
+    case CONST_KIND_STRING:
       // Note that string immediate values are stored
       // with C escapes - that is newline is 2 chars \ n
       // so we have to convert to a sequence of bytes
@@ -480,9 +480,6 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       ret = info->irBuilder->CreateGlobalString(newString);
       trackLLVMValue(ret);
       break;
-    }
-    default:
-      INT_ASSERT("Unsupported immediate type");
   }
 
   return ret;
