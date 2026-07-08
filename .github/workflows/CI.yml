@@ -748,7 +748,10 @@ jobs:
       - publish-docs
       - run-shellcheck
       - check-format
-      - test_chpl_language_server
+      - test_chpl_language_server_chplcheck
+      - gcc-version-tests
+      - python-version-tests
+      - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-networking-packages
     steps:
