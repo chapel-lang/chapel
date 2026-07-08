@@ -128,6 +128,13 @@ if !useProcedurePointers {
                 '\'true\' when compiling to activate it');
 }
 
+/* Return the expected dynamic library extension on the current platform. */
+proc dynamicLibraryFileExtension param: string {
+  use ChplConfig;
+  if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
+  return 'so';
+}
+
 /*
   A wrapper around a dynamically loaded binary.
 */

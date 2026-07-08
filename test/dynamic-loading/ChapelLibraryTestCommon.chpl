@@ -13,15 +13,9 @@ module ChapelLibraryTestCommon {
   // Toggle this to 'true' when confident it will work.
   var printUsingWriteln = false;
 
-  // TODO: We should provide this.
-  inline proc chapelLibraryExtension param {
-    use ChplConfig;
-    if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
-    return 'so';
-  }
-
   inline proc chapelLibraryPath param {
-    return './lib/libChapelLibrary.' + chapelLibraryExtension;
+    use DynamicLoading only dynamicLibraryFileExtension;
+    return './lib/libChapelLibrary.' + dynamicLibraryFileExtension;
   }
 
   inline proc debugf() {
