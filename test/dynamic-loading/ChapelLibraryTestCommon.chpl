@@ -14,8 +14,8 @@ module ChapelLibraryTestCommon {
   var printUsingWriteln = false;
 
   inline proc chapelLibraryPath param {
-    use DynamicLoading only dynamicLibraryFileExtension;
-    return './lib/libChapelLibrary.' + dynamicLibraryFileExtension;
+    use DynamicLoading;
+    return './lib/libChapelLibrary.' + binary.libSuffix;
   }
 
   inline proc debugf() {

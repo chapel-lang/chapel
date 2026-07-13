@@ -3,8 +3,22 @@
 
 chpl=$3
 chpl_home=$($chpl --print-chpl-home)
-compiler=$($chpl_home/util/printchplenv --value --only CHPL_HOST_CC)
-libname="TestCLibraryToLoad"
+c_compiler=$($chpl_home/util/printchplenv --value --only CHPL_HOST_CC)
+platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
+ext=$([ "$platform" == "darwin" ] && echo "dylib" || echo "so")
+source_file="TestCLibraryToLoad.c"
+old_lib_name="TestCLibraryToLoad.so"
+proper_lib_name="libTestCLibrary.$ext"
 
-echo Building shared library: $libname.so
-$compiler -shared -fPIC -o $libname.so $libname.c
+echo "Building shared library: $old_lib_name"
+$c_compiler -shared -fPIC -o $old_lib_name $source_file
+
+# We copy instead of symbolic link to appease the dynamic loader.
+echo "Copying $old_lib_name to $proper_lib_name"
+cp $old_lib_name $proper_lib_name
+
+mkdir lib
+
+# We copy instead of symbolic link to appease the dynamic loader.
+echo "Copying $old_lib_name to lib/$proper_lib_name"
+cp $old_lib_name lib/$proper_lib_name
