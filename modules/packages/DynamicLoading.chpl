@@ -128,13 +128,6 @@ if !useProcedurePointers {
                 '\'true\' when compiling to activate it');
 }
 
-/* Return the expected dynamic library extension on the current platform. */
-proc dynamicLibraryFileExtension param: string {
-  use ChplConfig;
-  if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
-  return 'so';
-}
-
 /*
   A wrapper around a dynamically loaded binary.
 */
@@ -199,6 +192,51 @@ record binary {
     assert(bin != nil);
 
     return new binary(bin!);
+  }
+
+  /*
+    Return the expected dynamic library file extension for the current
+    platform. The file extension does not include a prefix ``.``.
+  */
+  proc type libSuffix param {
+    use ChplConfig;
+    if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
+    return 'so';
+  }
+
+  /*
+    Given the basename of a dynamic library (e.g., "baz") and an optional
+    directory path (e.g., "foo/bar"), return a path suitable for loading
+    "baz" on the current platform. On Linux, the above example would return
+    the relative path "foo/bar/libbaz.so".
+
+    :arg basename: The name of the library without prefix or extension
+    :type basename: `string`
+
+    :arg directory: An optional directory path to be used as a prefix
+    :type basename: `string`
+  */
+  proc type libName(basename: string, directory: string="") {
+    import Path;
+
+    const fileName = 'lib' + basename + '.' + binary.libSuffix;
+    const ret = Path.normPath(Path.joinPath(directory, fileName));
+    return ret;
+  }
+
+  /*
+    Create a record representing a dynamically loaded binary using a string
+    that stores the path to a dynamic library file.
+
+    This procedure constructs a path using ``basename`` and ``directory``
+    that abides by the naming conventions used for dynamic libraries on the
+    current platform. The path constructed is equivalent to the one produced
+    by :proc:`libName`. In all other respects, this procedure behaves
+    identically to :proc:`binary.load`.
+  */
+  proc type loadLib(basename: string, directory: string="") throws {
+    const path = libName(basename, directory);
+    return load(path);
   }
 
   /*
