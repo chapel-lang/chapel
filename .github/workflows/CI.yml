@@ -435,9 +435,13 @@ jobs:
     - name: build chapel-py
       if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
       run: |
-        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-        make chapel-py-venv -j"$num_procs"
-        make test-venv -j"$num_procs"
+        make chapel-py-venv -j"$(./util/buildRelease/chpl-make-cpu_count)"
+    - name: build chpl and test-venv
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        # start_test requires both test-venv and a working chpl install
+        ./util/buildRelease/smokeTest quickstart chpl
+        make test-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
     - name: test chpl-language-server
       if: steps.changes.outputs.cls_sources == 'true'
       run: |
