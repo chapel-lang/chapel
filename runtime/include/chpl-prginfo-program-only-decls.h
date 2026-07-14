@@ -23,9 +23,9 @@
 
 #include "chpl-prginfo.h"
 
-//
-// DO NOT INCLUDE THIS HEADER WITHIN RUNTIME CODE!
-//
+#ifdef CHPL_RT_IS_BUILDING_RUNTIME
+  #error "This header should not be included within runtime code!"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

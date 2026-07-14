@@ -44,12 +44,15 @@ include $(RUNTIME_ROOT)/../make/Makefile.base
 
 RANLIB ?= ranlib
 
-LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
+LAUNCHER_CFLAGS = $(filter-out -DCHPL_RT_IS_BUILDING_RUNTIME $(RUNTIME_CFLAGS)) -DLAUNCHER
 LAUNCHER_INCLS = \
         -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include \
         -I$(THIRD_PARTY_DIR)/whereami/whereami-src
+
+RUNTIME_CFLAGS += -DCHPL_RT_IS_BUILDING_RUNTIME=1
+RUNTIME_CXXFLAGS += -DCHPL_RT_IS_BUILDING_RUNTIME=1
 
 ifeq ($(CHPL_MAKE_HWLOC),none)
   CHPL_MAKE_TOPO = none
