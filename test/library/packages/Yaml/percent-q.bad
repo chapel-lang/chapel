@@ -7,5 +7,12 @@ y: 42.0
 
 ====================
 uncaught SystemError: Invalid argument: reset not supported for marked channel
-  percent-q.chpl:21: thrown here
   percent-q.chpl:21: uncaught here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: called from here
+  percent-q.chpl:21: thrown here

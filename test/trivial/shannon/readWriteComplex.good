@@ -14,5 +14,4 @@ uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (
   readWriteComplex.chpl:8: called from here
   readWriteComplex.chpl:8: called from here
   readWriteComplex.chpl:8: called from here
-  readWriteComplex.chpl:8: called from here
   readWriteComplex.chpl:8: thrown here

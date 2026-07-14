@@ -1,5 +1,4 @@
 MyError: custom message
 uncaught MyError: custom message
   output-format.chpl:18: uncaught here
-  output-format.chpl:18: called from here
   output-format.chpl:14: thrown here

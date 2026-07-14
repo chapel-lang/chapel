@@ -1,5 +1,4 @@
 (x = 8)
 uncaught Error: value too large
-  tryBangExpressionRecord.chpl:22: uncaught here
-  tryBangExpressionRecord.chpl:14: called from here
+  tryBangExpressionRecord.chpl:14: uncaught here
   tryBangExpressionRecord.chpl:5: thrown here
