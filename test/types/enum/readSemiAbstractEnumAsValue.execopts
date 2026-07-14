@@ -1,6 +1,6 @@
---dontskip=0 # readSemiAbstractAsValue.1
---dontskip=1 # readSemiAbstractAsValue.1
---dontskip=2 # readSemiAbstractAsValue.1
---dontskip=3 # readSemiAbstractAsValue.2
---dontskip=4 # readSemiAbstractAsValue.2
---dontskip=5 # readSemiAbstractAsValue.1
+--dontskip=0 # readSemiAbstractEnumAsValue.1
+--dontskip=1 # readSemiAbstractEnumAsValue.1
+--dontskip=2 # readSemiAbstractEnumAsValue.1
+--dontskip=3 # readSemiAbstractEnumAsValue.2
+--dontskip=4 # readSemiAbstractEnumAsValue.2
+--dontskip=5 # readSemiAbstractEnumAsValue.1
