@@ -377,7 +377,7 @@ jobs:
         run: |
           set -exuo pipefail
           source util/cron/common-python.bash
-          set_and_check_python_version "${{ matrix.python_version }}"
+          check_python_version "${{ matrix.python_version }}"
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
