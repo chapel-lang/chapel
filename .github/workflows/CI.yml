@@ -236,6 +236,19 @@ jobs:
             fi
           fi
 
+  check-release-files:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run check-release-files
+      run: |
+        ./util/buildRelease/check-release-files.bash
+
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-latest
@@ -337,7 +350,7 @@ jobs:
             echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
             exit 2
           fi
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
@@ -542,6 +555,7 @@ jobs:
       - make_check_llvm_none
       - check_annotations_rt_calls
       - check_large_files
+      - check-release-files
       - publish-docs
       - run-shellcheck
       - check-format
