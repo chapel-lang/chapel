@@ -378,7 +378,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        llvm_version: [14, 15, 16, 17, 18, 19, 20, 21, 22]
+        llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
     runs-on: ubuntu-latest
     steps:
       - name: Install LLVM from unofficial action
