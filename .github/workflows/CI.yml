@@ -387,11 +387,11 @@ jobs:
         uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 #v2.0.9
         with:
           version: ${{ matrix.llvm_version }}
-      - name: set CHPL_LLVM_CONFIG from action
-        if: ${{ steps.install_unofficial_action.outcome == 'success' }}
-        run: |
-          set -exuo pipefail
-          echo "CHPL_LLVM_CONFIG=$LLVM_PATH/bin/llvm-config" >> "$GITHUB_ENV"
+      # - name: set CHPL_LLVM_CONFIG from action
+      #   if: ${{ steps.install_unofficial_action.outcome == 'success' }}
+      #   run: |
+      #     set -exuo pipefail
+      #     echo "CHPL_LLVM_CONFIG=$LLVM_PATH/bin/llvm-config" >> "$GITHUB_ENV"
       - name: Install LLVM from official convenience script
         if: ${{ fromJSON(matrix.llvm_version) >= 17 }}
         id: install_official_script
@@ -401,11 +401,11 @@ jobs:
           sudo ./llvm.sh "${{ matrix.llvm_version }}"
 
           echo "$(which llvm-config)"
-      - name: set CHPL_LLVM_CONFIG from official script
-        if: ${{ steps.install_official_script.outcome == 'success' }}
-        run: |
-          set -exuo pipefail
-          echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >> "$GITHUB_ENV"
+      # - name: set CHPL_LLVM_CONFIG from official script
+      #   if: ${{ steps.install_official_script.outcome == 'success' }}
+      #   run: |
+      #     set -exuo pipefail
+      #     echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >> "$GITHUB_ENV"
       - name: print env
         run: |
           env
@@ -415,8 +415,8 @@ jobs:
 
           env
 
-          # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
-          llvm_version=$($CHPL_LLVM_CONFIG --version)
+          # Check LLVM version via llvm-config
+          llvm_version=$(llvm-config --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
           if [ "$llvm_version_major" != "${{ matrix.llvm_version }}" ]; then
             echo "Wrong LLVM version"
