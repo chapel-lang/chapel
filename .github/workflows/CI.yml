@@ -378,6 +378,15 @@ jobs:
           set -exuo pipefail
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
+      - name: Install LLVM dependency
+        run: |
+          sudo apt install \
+            clang \
+            libclang-dev \
+            libclang-cpp-dev \
+            libedit-dev \
+            llvm \
+            llvm-dev
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
