@@ -386,6 +386,19 @@ jobs:
             ./util/cron/test-homebrew-linux.bash
           fi
 
+  test-gasnet-smp:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run test-gasnet-smp
+      run: |
+        ./util/cron/test-gasnet-smp.bash
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -413,6 +426,7 @@ jobs:
       - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-homebrew
+      - test-gasnet-smp
     steps:
       - name: Fail
         run: |
