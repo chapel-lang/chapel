@@ -399,6 +399,11 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh "${{ matrix.llvm_version }}"
+      - name: set CHPL_LLVM_CONFIG from official script
+        if: ${{ steps.install_official_script.outcome == 'success' }}
+        run: |
+          set -exuo pipefail
+          echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >> "$GITHUB_ENV"
       - name: print env
         run: |
           env
