@@ -406,6 +406,8 @@ jobs:
         run: |
           set -exuo pipefail
 
+          env
+
           # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
           llvm_version=$($CHPL_LLVM_CONFIG --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
@@ -417,7 +419,11 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Compile Chapel and run example tests
         run: |
+          set -ex
+
+          env
           source util/setchplenv.bash
+          env
 
           export CHPL_LAUNCHER=none
 
