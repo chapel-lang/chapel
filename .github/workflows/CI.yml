@@ -369,7 +369,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install LLVM
-        uses: actions/install-llvm-and-clang@ebc0426251bc40c7cd31162802432c68818ab8f0 #v2.0.9
+        uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 #v2.0.9
         with:
           version: ${{ matrix.llvm_version }}
       - name: Check desired LLVM version is default
