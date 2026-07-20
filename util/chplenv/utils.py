@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import unittest
+import tomllib
 
 try:
     # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
