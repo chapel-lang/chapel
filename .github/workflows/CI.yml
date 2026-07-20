@@ -372,6 +372,9 @@ jobs:
         uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 #v2.0.9
         with:
           version: ${{ matrix.llvm_version }}
+      - name: print env
+        run: |
+          env
       - name: Check desired LLVM version is default
         run: |
           set -exuo pipefail
