@@ -22,19 +22,20 @@ runtime_build_path = (
     .rstrip("\n")
 )
 
-header_path = chpl_home + "/build/runtime/" + runtime_build_path + \
-              "/include/chpl-env-gen.h"
+header_path = (
+    chpl_home + "/build/runtime/" + runtime_build_path + "/include/chpl-env-gen.h"
+)
 
 with open(header_path, "r") as fp:
-  header = fp.read()
+    header = fp.read()
 
 with open(legacy_header_path, "r") as fp:
-  legacy_header = fp.read()
+    legacy_header = fp.read()
 
 pattern = re.compile(r"^\s*#\s*define\s+[A-Za-z_]\w*\s*$", re.MULTILINE)
 matches = pattern.findall(legacy_header)
 
 with open(output_file, "w+") as fp:
-  for match in matches:
-    if not match in header:
-      fp.write(f"Failed to find: {match}\n")
+    for match in matches:
+        if not match in header:
+            fp.write(f"Failed to find: {match}\n")
