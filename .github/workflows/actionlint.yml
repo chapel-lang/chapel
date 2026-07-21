@@ -22,7 +22,9 @@ jobs:
         bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
       shell: bash
     - name: Check workflow files
-      run: ${{ steps.get_actionlint.outputs.executable }} -color
+      run: |
+        # ignore is to work around https://github.com/rhysd/actionlint/issues/657
+        ${{ steps.get_actionlint.outputs.executable }} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section'
       shell: bash
 
   # Canary for any linter failures
