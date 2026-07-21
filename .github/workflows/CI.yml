@@ -345,7 +345,7 @@ jobs:
 
           gcc_version=$(gcc -dumpversion)
           gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
-          if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
+          if [ "$gcc_major_version" != ${{ matrix.gcc_version }} ]; then
             echo "Wrong gcc version"
             echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
             exit 2
@@ -407,12 +407,12 @@ jobs:
     steps:
       - name: print config info
         run: |
-          echo "${{ matrix.os }}"
-          echo "${{ matrix.config }}"
+          echo ${{ matrix.os }}
+          echo ${{ matrix.config }}
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: install deps
         run: |
-          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+          if [[ ${{ matrix.os }} == "macos"* ]] ; then
             brew install llvm
           else
             sudo apt install \
@@ -429,11 +429,11 @@ jobs:
 
           source ./util/cron/common.bash
 
-          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+          if [[ ${{ matrix.os }} == "macos"* ]] ; then
             source ./util/cron/common-darwin.bash
           fi
 
-          if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+          if [[ ${{ matrix.config }} == "gasnet" ]] ; then
             source ./util/cron/common-gasnet.bash
             # Silence warnings about not using ibv despite ibv hardware presence
             export GASNET_QUIET=yes
@@ -453,12 +453,12 @@ jobs:
     steps:
       - name: print config info
         run: |
-          echo "${{ matrix.os }}"
-          echo "${{ matrix.config }}"
+          echo ${{ matrix.os }}
+          echo ${{ matrix.config }}
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: run homebrew testing
         run: |
-          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+          if [[ ${{ matrix.os }} == "macos"* ]] ; then
             ./util/cron/test-homebrew.bash
           else
             ./util/cron/test-homebrew-linux.bash
