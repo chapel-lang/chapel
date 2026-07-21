@@ -155,7 +155,9 @@ for infile in myfiles:
     try:
         fh = open(realinfile, "r")
     except IOError:
-        sys.stdout.write("Warning: Could not open file %s.  Skipping..\n" % (infile))
+        sys.stdout.write(
+            "Warning: Could not open file %s.  Skipping..\n" % (infile)
+        )
         num_ignored += 1
         continue
     myLines = fh.readlines()
@@ -183,7 +185,9 @@ for infile in myfiles:
         fh.write(line)
     fh.close()
     if found_date == False:
-        sys.stdout.write("Warning: %s not found in %s\n" % (comment_date, infile))
+        sys.stdout.write(
+            "Warning: %s not found in %s\n" % (comment_date, infile)
+        )
         num_ignored += 1
 
     del myLines

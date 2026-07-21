@@ -41,9 +41,14 @@ def main():
     runtime_dir = os.path.join(chpl_home, "runtime")
 
     # Check runtime (except chpl-mem-sys.h) for alloc calls
-    alloc_exclude_paths = ["chpl-mem-sys.h", "etc/src/mli/chpl-mli-libc-wrappers.h"]
+    alloc_exclude_paths = [
+        "chpl-mem-sys.h",
+        "etc/src/mli/chpl-mli-libc-wrappers.h",
+    ]
     alloc_funcs = look_for_calls.get_alloc_funcs()
-    ret = look_for_calls.check_for_calls(alloc_funcs, runtime_dir, alloc_exclude_paths)
+    ret = look_for_calls.check_for_calls(
+        alloc_funcs, runtime_dir, alloc_exclude_paths
+    )
 
     # Check runtime (except cstdlib chpl-atomics.h) for atomic_*_fence calls
     cstdlib_header = os.path.join("atomics", "cstdlib", "chpl-atomics.h")

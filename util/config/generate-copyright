@@ -6,7 +6,9 @@ import argparse
 parser = argparse.ArgumentParser(
     description="Write the COPYRIGHT file suitable for importing"
 )
-parser.add_argument("source", help="The source directory where COPYRIGHT is found")
+parser.add_argument(
+    "source", help="The source directory where COPYRIGHT is found"
+)
 parser.add_argument(
     "destination", help="The location to write the updated COPYRIGHT file"
 )

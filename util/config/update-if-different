@@ -123,13 +123,17 @@ def copy(src, dst):
                     if os.path.isdir(rm):
                         if not quiet:
                             sys.stdout.write(
-                                "Removing dir {0} not present in {1}\n".format(rm, src)
+                                "Removing dir {0} not present in {1}\n".format(
+                                    rm, src
+                                )
                             )
                         shutil.rmtree(rm)
                     else:
                         if not quiet:
                             sys.stdout.write(
-                                "Removing {0} not present in {1}\n".format(rm, src)
+                                "Removing {0} not present in {1}\n".format(
+                                    rm, src
+                                )
                             )
                         os.remove(rm)
             # recursively copy anything from src

@@ -3,7 +3,9 @@
 import os
 import argparse
 
-parser = argparse.ArgumentParser(description="Write the reservedSymbolNames.h file")
+parser = argparse.ArgumentParser(
+    description="Write the reservedSymbolNames.h file"
+)
 parser.add_argument(
     "location",
     help="The location to read the reservedSymbolNames and write the reservedSymbolNames.h file",

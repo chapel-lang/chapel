@@ -5,7 +5,8 @@ from datetime import date, datetime
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Splice two .dat files. " "Provide dates in the form of 'mm/dd/yy'"
+        description="Splice two .dat files. "
+        "Provide dates in the form of 'mm/dd/yy'"
     )
     parser.add_argument("file_a", type=argparse.FileType("r"))
     parser.add_argument("file_b", type=argparse.FileType("r"))
@@ -17,7 +18,11 @@ def main():
         help="date to start from in file_a",
     )
     parser.add_argument(
-        "-to_a", "-ta", metavar="DATE", type=parse_date, help="date to end at in file_a"
+        "-to_a",
+        "-ta",
+        metavar="DATE",
+        type=parse_date,
+        help="date to end at in file_a",
     )
     parser.add_argument(
         "-from_b",
@@ -27,7 +32,11 @@ def main():
         help="date to start from in file_b",
     )
     parser.add_argument(
-        "-to_b", "-tb", metavar="DATE", type=parse_date, help="date to end at in file_b"
+        "-to_b",
+        "-tb",
+        metavar="DATE",
+        type=parse_date,
+        help="date to end at in file_b",
     )
 
     args = parser.parse_args()
@@ -40,7 +49,9 @@ def main():
     if a_line[0].startswith("#"):
         print_line(a_line)
     else:
-        system.stdout.write("Error: {0} missing column header".format(args.file_a.name))
+        system.stdout.write(
+            "Error: {0} missing column header".format(args.file_a.name)
+        )
         sys.exit(1)
 
     while True:

@@ -10,7 +10,10 @@ with open(file, "rb") as f:
 lines = contents.split(b"\n")
 output = []
 for line in lines:
-    if b"skipping debug map object with duplicate name and timestamp" not in line:
+    if (
+        b"skipping debug map object with duplicate name and timestamp"
+        not in line
+    ):
         output.append(line)
 
 output = b"\n".join(output)

@@ -38,8 +38,12 @@ if options.ignore != None:
 
 cmd = "find " + dirs + " -name .svn -prune " + ignore + " -o \( -print \)"
 p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
-p2 = subprocess.Popen(["xargs", "file"], stdin=p1.stdout, stdout=subprocess.PIPE)
-p3 = subprocess.Popen(["grep", "script"], stdin=p2.stdout, stdout=subprocess.PIPE)
+p2 = subprocess.Popen(
+    ["xargs", "file"], stdin=p1.stdout, stdout=subprocess.PIPE
+)
+p3 = subprocess.Popen(
+    ["grep", "script"], stdin=p2.stdout, stdout=subprocess.PIPE
+)
 output = p3.communicate()[0]
 
 scripts = output.split("\n")

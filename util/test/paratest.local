@@ -64,7 +64,11 @@ def get_good_nodepara():
                 )
 
     elif nodepara > 2:
-        print("Warning: not checking total memory. using nodepara {0}".format(nodepara))
+        print(
+            "Warning: not checking total memory. using nodepara {0}".format(
+                nodepara
+            )
+        )
 
     return nodepara
 

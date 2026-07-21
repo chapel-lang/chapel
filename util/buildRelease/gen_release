@@ -47,7 +47,9 @@ pjoin = os.path.join
 
 def set_make_threads():
     global make_threads
-    cpu_count = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
+    cpu_count = run(
+        "util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE
+    )
     make_threads = int(cpu_count.stdout.decode().strip())
     return make_threads
 
@@ -145,7 +147,10 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     # Just use whatever is found in $CHPL_HOME
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
         # copy the current CHPL_HOME into the directory where chapel will be built
-        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace in", archive_dir)
+        log(
+            "CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace in",
+            archive_dir,
+        )
         shutil.copytree(
             chplhome,
             archive_dir,
@@ -203,7 +208,9 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
             # use git archive to copy all the files under source control into the archive directory.
             log("Creating build workspace with git archive...")
 
-            p = run("git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE)
+            p = run(
+                "git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE
+            )
             with cd(archive_dir):
                 run(tar_executable, "-xf", "-", input=p.stdout)
 
@@ -271,7 +278,9 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
 
         log("Creating the examples directory...")
         os.unlink("examples")  # remove examples symbolic link
-        shutil.copytree("test/release/examples", "examples", copy_function=shutil.copy2)
+        shutil.copytree(
+            "test/release/examples", "examples", copy_function=shutil.copy2
+        )
         with cd("util"):
             shutil.copy2("start_test", "../examples/start_test")
 
@@ -288,10 +297,14 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         with cd(pjoin("runtime", "src", "launch")):
             rm_rf("dummy", "mpirun")
 
-        log("Removing frontend test directory which is not intended for release...")
+        log(
+            "Removing frontend test directory which is not intended for release..."
+        )
         rm_rf(pjoin("frontend", "test"))
 
-        log("Removing third-party directories that are not intended for release...")
+        log(
+            "Removing third-party directories that are not intended for release..."
+        )
         with cd("third-party"):
             rm_rf("*.devel*")
             with cd("chpl-venv"):
@@ -365,7 +378,9 @@ def main():
     # pointers to temporary directory where chapel will be built
     basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
     user = getpass.getuser()
-    with mktempdir(prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir) as tmpdir:
+    with mktempdir(
+        prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir
+    ) as tmpdir:
         make_tarball(chplhome, basetmpdir, tmpdir, reldir)
 
 

@@ -6,7 +6,9 @@ import argparse
 import subprocess
 import tempfile
 
-parser = argparse.ArgumentParser(description="Write the git SHA to git-version.cpp")
+parser = argparse.ArgumentParser(
+    description="Write the git SHA to git-version.cpp"
+)
 parser.add_argument("location", help="The location to write git-version.cpp")
 parser.add_argument(
     "--build-version",
@@ -66,6 +68,8 @@ if os.path.isfile(tmp_file):
 
 if args.build_version:
     if not os.path.isdir(args.chpl_home):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), args.chpl_home)
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), args.chpl_home
+        )
     with open(build_version_file, "w") as f:
         f.write('"{}"\n'.format(git_sha))

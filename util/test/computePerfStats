@@ -87,7 +87,9 @@ def log_timeouts(keys, time_out, date):  # if we timed out
 def validate_output(verify_keys, output_file):
     # read output from file
     global test_output, test_output_raw
-    with open(output_file, "r", encoding="utf-8", errors="surrogateescape") as file:
+    with open(
+        output_file, "r", encoding="utf-8", errors="surrogateescape"
+    ) as file:
         test_output_raw = file.read()
         test_output = test_output_raw.split("\n")
 
@@ -219,7 +221,11 @@ def verify_data_file(keys_exp, keys_file):
 
     # the two aren't equal
     if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):
-        print("[Error: key mismatch between {0} and {1}]".format(keys_file, data_file))
+        print(
+            "[Error: key mismatch between {0} and {1}]".format(
+                keys_file, data_file
+            )
+        )
         print("Changes since creation of .dat file:")
         for d in diff:
             type = d[0]
@@ -292,7 +298,9 @@ def cleanup():
 
 
 def parser_setup():
-    parser = argparse.ArgumentParser(description="Compute performance" "statistics")
+    parser = argparse.ArgumentParser(
+        description="Compute performance" "statistics"
+    )
     parser.add_argument("test_name")
     parser.add_argument("output_dir")
     parser.add_argument("keys_file", nargs="?", default=False)

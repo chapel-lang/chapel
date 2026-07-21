@@ -34,7 +34,9 @@ parser.add_option(
     help="The number of seconds that all of testing took",
     default=1.0,
 )
-parser.add_option("-d", "--debug", dest="debug", action="store_true", default=False)
+parser.add_option(
+    "-d", "--debug", dest="debug", action="store_true", default=False
+)
 
 
 def main():
@@ -97,7 +99,9 @@ def main():
         lines = firstFile.readlines()
         # get the perfkeys out of the first line, first line starts with a '#'
         perfKeysString = lines[0]
-        perfKeys = [l.strip() for l in perfKeysString.replace("#", "").split("\t")[1:]]
+        perfKeys = [
+            l.strip() for l in perfKeysString.replace("#", "").split("\t")[1:]
+        ]
         # There are as many passes are there are time keys
         numPasses = len([k for k in perfKeys if "time" in k])
         # grab the date
@@ -110,7 +114,8 @@ def main():
 
     except IOError:
         sys.stderr.write(
-            "[ERROR: Could not open first dat file: %s]\n" % (tempDatDir + datFiles[0])
+            "[ERROR: Could not open first dat file: %s]\n"
+            % (tempDatDir + datFiles[0])
         )
         return -1
 
@@ -144,7 +149,9 @@ def main():
             f.close()
 
         except IOError:
-            sys.stderr.write("[ERROR: Could not open dat file: %s]\n" % (datFile))
+            sys.stderr.write(
+                "[ERROR: Could not open dat file: %s]\n" % (datFile)
+            )
             return -1
 
     # get the total time compiling, which is the last "pass"
@@ -157,7 +164,8 @@ def main():
     # compute the average for each value and truncate to two decimal places
     allCombinedValues = ["%1.2f" % (i / numCompiles) for i in allCombinedValues]
     releaseExampleCombinedValues = [
-        "%1.2f" % (i / numReleaseExampleCompiles) for i in releaseExampleCombinedValues
+        "%1.2f" % (i / numReleaseExampleCompiles)
+        for i in releaseExampleCombinedValues
     ]
 
     # calculate percent of time compiling
@@ -206,10 +214,12 @@ def main():
         sys.stdout.write("The date is %s\n" % (date))
         sys.stdout.write("There are %s successful compiles\n" % (numCompiles))
         sys.stdout.write(
-            "The total time spent compiling was %1.1f seconds \n" % (totalTimeCompiling)
+            "The total time spent compiling was %1.1f seconds \n"
+            % (totalTimeCompiling)
         )
         sys.stdout.write(
-            "The total time spent testing was %1.1f seconds \n" % (elapsedTestTime)
+            "The total time spent testing was %1.1f seconds \n"
+            % (elapsedTestTime)
         )
         sys.stdout.write(
             "Spent %.1f percent of the total time testing in compiling\n"

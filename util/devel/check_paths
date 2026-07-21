@@ -129,7 +129,10 @@ def check_token(t):
 
 def special_exception(filename, token):
     """Exception is a synonym of hack"""
-    if filename == "doc/rst/developer/implementation/adding-a-tasking-model.rst":
+    if (
+        filename
+        == "doc/rst/developer/implementation/adding-a-tasking-model.rst"
+    ):
         # Allow this file's wonderful paths
         if "wonderful" in token:
             return True
@@ -180,13 +183,17 @@ def check_line(filename, lineno, l):
             continue
         try:
             if not check_token(t):
-                print("{fn}:{l}: {t} not found".format(fn=filename, l=lineno, t=t))
+                print(
+                    "{fn}:{l}: {t} not found".format(fn=filename, l=lineno, t=t)
+                )
         except:
             # If we pulled a "string" out of an object file, it's the
             # wrong kind of string to call os.path.isfile() on, and it
             # raises an exception.  Report what the string was, and
             # where it came from.
-            print("{fn}:{l}: {t}: Can't check!".format(fn=filename, l=lineno, t=t))
+            print(
+                "{fn}:{l}: {t}: Can't check!".format(fn=filename, l=lineno, t=t)
+            )
             raise
 
 
