@@ -410,7 +410,7 @@ jobs:
           make -j$num_procs
           make test-venv
 
-          start_test test/release/examples
+          start_test test/release/examples test/library/packages/Python test/interop/python
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
