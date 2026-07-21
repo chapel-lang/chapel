@@ -117,17 +117,17 @@ jobs:
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
         make modules
-        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j$(util/buildRelease/chpl-make-cpu_count)
+        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j"$(util/buildRelease/chpl-make-cpu_count)"
     - name: check undocumented symbols
       run: |
-        make DYNO_ENABLE_ASSERTIONS=1 chapel-py-venv -j$(util/buildRelease/chpl-make-cpu_count)
+        make DYNO_ENABLE_ASSERTIONS=1 chapel-py-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
         ./tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable ./modules/standard
     - name: lint standard modules
       run: |
-        make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j$(util/buildRelease/chpl-make-cpu_count)
+        make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j"$(util/buildRelease/chpl-make-cpu_count)"
     - name: lint mason
       run: |
-        make DYNO_ENABLE_ASSERTIONS=1 lint-mason -j$(util/buildRelease/chpl-make-cpu_count)
+        make DYNO_ENABLE_ASSERTIONS=1 lint-mason -j"$(util/buildRelease/chpl-make-cpu_count)"
 
   make_check_llvm_none:
     runs-on: ubuntu-latest
@@ -197,13 +197,13 @@ jobs:
           # latest.
           commitIdx=0
           errorCount=0
-          for commit in $(git rev-list $baseSHA..$headSHA)
+          for commit in $(git rev-list "$baseSHA".."$headSHA")
           do
             echo "Checking commit: $commit"
-            git checkout -q $commit
+            git checkout -q "$commit"
 
             # Get list of added, copied, or modified files from this commit.
-            newFiles=$(git diff --name-only --diff-filter=ACM $commit^ $commit)
+            newFiles=$(git diff --name-only --diff-filter=ACM "$commit"^ "$commit")
             while read -r file; do
               if [ "$file" = "" ]; then
                   continue
