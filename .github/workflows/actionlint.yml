@@ -1,0 +1,30 @@
+name: actionlint
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: actionlint
+      id: actionlint
+      uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+    - name: actionlint Summary
+      if: ${{ steps.actionlint.outputs.exit-code != 0 }}  # example usage, do echo only when actionlint action failed
+      run: |
+        echo "Used actionlint version ${{ steps.actionlint.outputs.version-semver }}"
+        echo "Used actionlint release ${{ steps.actionlint.outputs.version-tag }}"
+        echo "actionlint ended with ${{ steps.actionlint.outputs.exit-code }} exit code"
+        echo "actionlint ended because '${{ steps.actionlint.outputs.exit-message }}'"
+        echo "actionlint found ${{ steps.actionlint.outputs.total-errors }} errors"
+        echo "actionlint checked ${{ steps.actionlint.outputs.total-files }} files"
+        echo "actionlint cache used: ${{ steps.actionlint.outputs.cache-hit }}"
+        exit ${{ steps.actionlint.outputs.exit-code }}
