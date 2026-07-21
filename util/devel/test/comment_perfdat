@@ -77,7 +77,7 @@ parser.add_option(
     help="Suppress status messages on stdout",
 )
 
-(options, args) = parser.parse_args()
+options, args = parser.parse_args()
 
 verbose = options.verbose
 comment_date = options.comment_date
