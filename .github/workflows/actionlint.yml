@@ -17,7 +17,8 @@ jobs:
     - name: Download actionlint
       id: get_actionlint
       run: |
-        echo "::add-matcher::.github/actionlint-matcher.json"
+        wget https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json
+        echo "::add-matcher::./actionlint-matcher.json"
         bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
       shell: bash
     - name: Check workflow files
