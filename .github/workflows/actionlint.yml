@@ -1,4 +1,4 @@
-name: actionlint
+name: lint workflows
 
 on:
   push:
