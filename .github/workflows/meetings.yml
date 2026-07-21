@@ -25,16 +25,18 @@ jobs:
       id: date
       run: |
         date=$(date -d '+7 days' '+%Y-%m-%d')
-        echo "next_meeting_date=$date" >> $GITHUB_ENV
+        echo "next_meeting_date=$date" >> "$GITHUB_ENV"
       shell: bash
 
     - name: create discussion
       run: |
+        # shellcheck disable=SC2016
         repositoryId=$(gh api graphql \
           -f query='{ repository(owner: "${{ env.owner }}",
                       name: "${{ env.repo_name }}") { id } }' \
           | jq -r '.data.repository.id')
 
+        # shellcheck disable=SC2016
         categoryId=$(gh api graphql \
           -f query='{ repository(owner: "${{ env.owner }}",
                       name: "${{ env.repo_name }}")
@@ -44,6 +46,7 @@ jobs:
         body="${{ env.agenda_body }}"
         title="Chapel project meeting: ${{ env.next_meeting_date }} (agenda items, meeting link, notes)"
 
+        # shellcheck disable=SC2016
         QUERY='mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
           createDiscussion(input: {
             repositoryId: $repositoryId,
