@@ -2,18 +2,18 @@
 
 import sys
 
-file=sys.argv[2]
+file = sys.argv[2]
 
-with open(file, 'rb') as f:
+with open(file, "rb") as f:
     contents = f.read()
 
-lines = contents.split(b'\n')
+lines = contents.split(b"\n")
 output = []
 for line in lines:
-    if b'skipping debug map object with duplicate name and timestamp' not in line:
+    if b"skipping debug map object with duplicate name and timestamp" not in line:
         output.append(line)
 
-output = b'\n'.join(output)
+output = b"\n".join(output)
 
-with open(file, 'wb') as f:
+with open(file, "wb") as f:
     f.write(output)

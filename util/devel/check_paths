@@ -37,18 +37,24 @@ import os.path
 import sys
 import argparse
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), "..", "chplenv")
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from utils import memoize
+
 
 def check_path(p):
     """returns True if p exists, False if it doesn't"""
 
     # These are common written-out alternatives, not paths
-    if (p == "compiler/runtime" or p == "compiler/module" or
-        p == "runtime/library" or p == "runtime/lib" or
-        p == "modules/files" or p == "test/directory" ):
+    if (
+        p == "compiler/runtime"
+        or p == "compiler/module"
+        or p == "runtime/library"
+        or p == "runtime/lib"
+        or p == "modules/files"
+        or p == "test/directory"
+    ):
         return True
 
     # These show up in generated html files relative to a "modules"
@@ -66,11 +72,13 @@ def check_path(p):
 
     return os.path.isfile(p) or os.path.isdir(p)
 
+
 # As of python 3.9, use string.removeprefix()
 def remove_prefix(s, prefix):
     if s.startswith(prefix):
-        return s[len(prefix):]
+        return s[len(prefix) :]
     return s
+
 
 @memoize
 def check_token(t):
@@ -78,16 +86,18 @@ def check_token(t):
     Otherwise, return True."""
 
     # Skip everything that doesn't look like something
-    if  not (t.startswith("doc/") or
-             t.startswith("test/") or
-             t.startswith("compiler/") or
-             t.startswith("runtime/") or
-             t.startswith("modules/") or
-             t.startswith("util/") or
-             t.startswith("tools/") or
-             t.startswith("third-party/") or
-             t.startswith("CHPL_HOME/") or
-             t.startswith("//github.com/chapel-lang/chapel/blob/main/")):
+    if not (
+        t.startswith("doc/")
+        or t.startswith("test/")
+        or t.startswith("compiler/")
+        or t.startswith("runtime/")
+        or t.startswith("modules/")
+        or t.startswith("util/")
+        or t.startswith("tools/")
+        or t.startswith("third-party/")
+        or t.startswith("CHPL_HOME/")
+        or t.startswith("//github.com/chapel-lang/chapel/blob/main/")
+    ):
         return True
 
     # Strip off these two prefixes to get a path relative to $CHPL_HOME
@@ -116,6 +126,7 @@ def check_token(t):
 
     return firstcheck
 
+
 def special_exception(filename, token):
     """Exception is a synonym of hack"""
     if filename == "doc/rst/developer/implementation/adding-a-tasking-model.rst":
@@ -136,12 +147,30 @@ def special_exception(filename, token):
 
     return False
 
+
 def check_line(filename, lineno, l):
     """Split l into tokens.  Report any for which check_token() is false."""
 
     # Replace punctuation with spaces for the l.split() call below
-    splitters = [ ",", ":", "\"", "\'", "`", "(", ")", "[", "]", "{", "}",
-                  "#", ";", "$", "<", ">", "**" ]
+    splitters = [
+        ",",
+        ":",
+        '"',
+        "'",
+        "`",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "#",
+        ";",
+        "$",
+        "<",
+        ">",
+        "**",
+    ]
     for s in splitters:
         l = l.replace(s, " ")
 
@@ -151,16 +180,15 @@ def check_line(filename, lineno, l):
             continue
         try:
             if not check_token(t):
-                print("{fn}:{l}: {t} not found".format(
-                    fn=filename, l=lineno, t=t))
+                print("{fn}:{l}: {t} not found".format(fn=filename, l=lineno, t=t))
         except:
             # If we pulled a "string" out of an object file, it's the
             # wrong kind of string to call os.path.isfile() on, and it
             # raises an exception.  Report what the string was, and
             # where it came from.
-            print("{fn}:{l}: {t}: Can't check!".format(
-                fn=filename, l=lineno, t=t))
+            print("{fn}:{l}: {t}: Can't check!".format(fn=filename, l=lineno, t=t))
             raise
+
 
 def check_file(fn):
     """Check every line in file"""
@@ -174,13 +202,14 @@ def check_file(fn):
     except:
         print("Can't open: {fn}".format(fn=fn))
 
+
 def main():
     """The main routine"""
     epilog = """For example, to check all files in the doc/ directory,
     run this shell command:
        for i in `find doc -type f`; do check_paths -f $i; done"""
     parser = argparse.ArgumentParser(description=__doc__, epilog=epilog)
-    parser.add_argument("-l", "--line") # For testing of this script
+    parser.add_argument("-l", "--line")  # For testing of this script
     parser.add_argument("-f", "--file", required=True)
     args = parser.parse_args()
 

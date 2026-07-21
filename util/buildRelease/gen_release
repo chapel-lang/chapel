@@ -20,15 +20,15 @@ def cd(path):
     finally:
         os.chdir(cwd)
 
+
 @contextmanager
 def mktempdir(prefix=None, dir=None):
-    tmpdir = tempfile.mkdtemp(
-        prefix=prefix, dir=dir
-    )
+    tmpdir = tempfile.mkdtemp(prefix=prefix, dir=dir)
     try:
         yield tmpdir
     finally:
         rm_rf(tmpdir)
+
 
 def run(*args, **kwargs):
     print(f"+ {' '.join(args)}")
@@ -44,6 +44,7 @@ make_threads = 1
 
 pjoin = os.path.join
 
+
 def set_make_threads():
     global make_threads
     cpu_count = run("util/buildRelease/chpl-make-cpu_count", stdout=subprocess.PIPE)
@@ -56,7 +57,7 @@ def make(*args, **kwargs):
 
 
 def log(*args, **kwargs):
-    _kwargs = {'flush': True}
+    _kwargs = {"flush": True}
     _kwargs.update(kwargs)
     print("[gen_release]", *args, **_kwargs)
 
@@ -130,6 +131,7 @@ complete_dirs = [
     "tools/chpl-parallel-dbg",
 ]
 
+
 def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     archive_dir = pjoin(tmpdir, reldir)
     rootdir = pjoin(tmpdir, "chpl_home")
@@ -144,11 +146,15 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
         # copy the current CHPL_HOME into the directory where chapel will be built
         log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace in", archive_dir)
-        shutil.copytree(chplhome, archive_dir,
-                        dirs_exist_ok=True,
-                        ignore_dangling_symlinks=True, symlinks=True,
-                        ignore=shutil.ignore_patterns(f"*{os.path.basename(tmpdir)}*"),
-                        copy_function=shutil.copy2)
+        shutil.copytree(
+            chplhome,
+            archive_dir,
+            dirs_exist_ok=True,
+            ignore_dangling_symlinks=True,
+            symlinks=True,
+            ignore=shutil.ignore_patterns(f"*{os.path.basename(tmpdir)}*"),
+            copy_function=shutil.copy2,
+        )
 
         resultdir = pjoin(chplhome, "tar")
     else:
@@ -178,7 +184,6 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         )
         run(*cmd)
 
-
         with cd(rootdir):
             if git_commit is not None:
                 log(f"Checking out revision {git_commit}...")
@@ -189,13 +194,16 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
             run("git", "--no-pager", "log", "-1")
 
             # write the git-sha while we have the .git directory
-            run("util/config/write-git-sha", "frontend/lib/util", "--build-version", f"--chpl-home={rootdir}")
+            run(
+                "util/config/write-git-sha",
+                "frontend/lib/util",
+                "--build-version",
+                f"--chpl-home={rootdir}",
+            )
             # use git archive to copy all the files under source control into the archive directory.
             log("Creating build workspace with git archive...")
 
-            p = run(
-                "git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE
-            )
+            p = run("git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE)
             with cd(archive_dir):
                 run(tar_executable, "-xf", "-", input=p.stdout)
 
@@ -309,7 +317,9 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
                 sys.exit(9)
             tarfiles.append(pjoin(reldir, file))
 
-        include_regex = re.compile(r"(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt")
+        include_regex = re.compile(
+            r"(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt"
+        )
         for d in code_dirs:
             for fullpath in glob.glob(pjoin(d, "**"), recursive=True):
                 name = os.path.basename(fullpath)
@@ -339,6 +349,7 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
 
     log(f"Left result in {tarball_name}")
 
+
 def main():
     version = ""
     if len(sys.argv) > 1:
@@ -356,6 +367,7 @@ def main():
     user = getpass.getuser()
     with mktempdir(prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir) as tmpdir:
         make_tarball(chplhome, basetmpdir, tmpdir, reldir)
+
 
 if __name__ == "__main__":
     main()

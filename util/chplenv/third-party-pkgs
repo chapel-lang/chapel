@@ -31,69 +31,86 @@ import sys
 import utils
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
 
+
 def get_all_pkgs():
-    """ Return the list of all third-party packages """
+    """Return the list of all third-party packages"""
     all_pkgs = os.listdir(get_chpl_third_party())
     return all_pkgs
 
+
 def generate_subdir_map():
-    """ Find any aliases for third-party packages """
+    """Find any aliases for third-party packages"""
     pkg_aliases = dict()
 
-    pkg_aliases['CHPL_LLVM-llvm'] = 'llvm'
-    pkg_aliases['CHPL_TASKS-qthreads'] = 'qthread'
-    pkg_aliases['CHPL_GMP-bundled'] = 'gmp'
-    pkg_aliases['CHPL_HWLOC-bundled'] = 'hwloc'
-    pkg_aliases['CHPL_JEMALLOC-bundled'] = 'jemalloc'
-    pkg_aliases['CHPL_TARGET_JEMALLOC-bundled'] = 'jemalloc'
-    pkg_aliases['CHPL_HOST_JEMALLOC-bundled'] = 'jemalloc'
-    pkg_aliases['CHPL_TARGET_MIMALLOC-bundled'] = 'mimalloc'
-    pkg_aliases['CHPL_HOST_MIMALLOC-bundled'] = 'mimalloc'
-    pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
-    pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
-    pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
-    pkg_aliases['CHPL_RE2-bundled'] = 're2'
+    pkg_aliases["CHPL_LLVM-llvm"] = "llvm"
+    pkg_aliases["CHPL_TASKS-qthreads"] = "qthread"
+    pkg_aliases["CHPL_GMP-bundled"] = "gmp"
+    pkg_aliases["CHPL_HWLOC-bundled"] = "hwloc"
+    pkg_aliases["CHPL_JEMALLOC-bundled"] = "jemalloc"
+    pkg_aliases["CHPL_TARGET_JEMALLOC-bundled"] = "jemalloc"
+    pkg_aliases["CHPL_HOST_JEMALLOC-bundled"] = "jemalloc"
+    pkg_aliases["CHPL_TARGET_MIMALLOC-bundled"] = "mimalloc"
+    pkg_aliases["CHPL_HOST_MIMALLOC-bundled"] = "mimalloc"
+    pkg_aliases["CHPL_LIBFABRIC-bundled"] = "libfabric"
+    pkg_aliases["CHPL_LLVM-bundled"] = "llvm"
+    pkg_aliases["CHPL_UNWIND-bundled"] = "libunwind"
+    pkg_aliases["CHPL_RE2-bundled"] = "re2"
 
     return pkg_aliases
 
+
 def gather_chplenv():
-    """ Run printchplenv and return the output """
-    printchplenv = os.path.join(get_chpl_home(), 'util', 'printchplenv')
-    args = ['--simple', '--internal', '--runtime', '--compiler', '--anonymize', '--no-tidy']
+    """Run printchplenv and return the output"""
+    printchplenv = os.path.join(get_chpl_home(), "util", "printchplenv")
+    args = [
+        "--simple",
+        "--internal",
+        "--runtime",
+        "--compiler",
+        "--anonymize",
+        "--no-tidy",
+    ]
     return utils.run_command([printchplenv] + args)
 
+
 def compute_required_pkgs():
-    """ Determine required third-party packages based on the chplenv """
+    """Determine required third-party packages based on the chplenv"""
     chplenv = gather_chplenv()
     pkg_aliases = generate_subdir_map()
 
     req_pkgs = set()
-    for line in chplenv.split('\n'):
+    for line in chplenv.split("\n"):
         # Consider only lines to that start with 'CHPL_'.
-        if line.startswith('CHPL_'):
-            (var, val) = line.split('=', 1)
+        if line.startswith("CHPL_"):
+            (var, val) = line.split("=", 1)
             (var, val) = var.strip(), val.strip()
             # Ignore platform variables
             # Ignore CHPL_MEM (use CHPL_JEMALLOC)
             # Ignore CHPL_HOST_MEM (use CHPL_JEMALLOC)
             # Ignore CHPL_TARGET_MEM (use CHPL_JEMALLOC)
-            ignore_vars = ['CHPL_MEM', 'CHPL_HOST_MEM', 'CHPL_TARGET_MEM']
-            if not (var.endswith('_PLATFORM') or var in ignore_vars):
+            ignore_vars = ["CHPL_MEM", "CHPL_HOST_MEM", "CHPL_TARGET_MEM"]
+            if not (var.endswith("_PLATFORM") or var in ignore_vars):
                 if val in get_all_pkgs():
                     req_pkgs.add(val)
-                elif var + '-' + val in pkg_aliases:
-                    req_pkgs.add(pkg_aliases[var + '-' + val])
+                elif var + "-" + val in pkg_aliases:
+                    req_pkgs.add(pkg_aliases[var + "-" + val])
     return req_pkgs
 
+
 def comp_only_pkg(pkg):
-    """ Determine if a third-party package is only needed for the compiler """
-    componly = os.path.join(get_chpl_third_party(), pkg, 'COMPILERONLY')
+    """Determine if a third-party package is only needed for the compiler"""
+    componly = os.path.join(get_chpl_third_party(), pkg, "COMPILERONLY")
     return os.path.isfile(componly)
+
 
 def _main():
     parser = optparse.OptionParser()
-    parser.add_option('--compiler', dest='compiler', action='store_true',
-                      help='compute compiler packages')
+    parser.add_option(
+        "--compiler",
+        dest="compiler",
+        action="store_true",
+        help="compute compiler packages",
+    )
     (options, _) = parser.parse_args()
 
     pkgs = compute_required_pkgs()
@@ -103,7 +120,8 @@ def _main():
     else:
         pkgs = [pkg for pkg in pkgs if not comp_only_pkg(pkg)]
 
-    sys.stdout.write("{0}\n".format(' '.join(pkgs)))
+    sys.stdout.write("{0}\n".format(" ".join(pkgs)))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     _main()

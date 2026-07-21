@@ -8,26 +8,43 @@ import sys
 
 quiet = False
 
+
 def main():
     global quiet
 
     parser = optparse.OptionParser(
-        usage = 'usage: %prog dst src',
-        description = 'Updates dst with src. If they differ, copies dst to src. '
-                      'Deletes src either way.')
-    parser.add_option("--update", action="store_true", dest="update",
-                      help=("given dst src - update dst with src. "
-                            "If they differ, copy dst to src. "
-                            "Removes src either way"))
-    parser.add_option("--copy", action="store_true", dest="copy",
-                      help=("given src dst - copy src to dst. "
-                            "Only updates files that differ."
-                            "Multiple src args are OK if dst is a directory."))
-    parser.add_option("--quiet", action="store_true", dest="quiet",
-                      help=("Do not print out when copying a file."))
+        usage="usage: %prog dst src",
+        description="Updates dst with src. If they differ, copies dst to src. "
+        "Deletes src either way.",
+    )
+    parser.add_option(
+        "--update",
+        action="store_true",
+        dest="update",
+        help=(
+            "given dst src - update dst with src. "
+            "If they differ, copy dst to src. "
+            "Removes src either way"
+        ),
+    )
+    parser.add_option(
+        "--copy",
+        action="store_true",
+        dest="copy",
+        help=(
+            "given src dst - copy src to dst. "
+            "Only updates files that differ."
+            "Multiple src args are OK if dst is a directory."
+        ),
+    )
+    parser.add_option(
+        "--quiet",
+        action="store_true",
+        dest="quiet",
+        help=("Do not print out when copying a file."),
+    )
 
     (options, args) = parser.parse_args()
-
 
     if options.quiet:
         quiet = True
@@ -53,6 +70,7 @@ def main():
                 for src in srcs:
                     copy(src, dst)
 
+
 def update(dst, src):
     if not os.path.exists(dst) or not filecmp.cmp(src, dst):
         if not quiet:
@@ -61,16 +79,17 @@ def update(dst, src):
 
     os.remove(src)
 
+
 def copy(src, dst):
-    """ copy src into dst.
-        The copy handles these two cases in a special way:
-          * If dst is a directory containing a file not in a src directory,
-            that file will be removed.
-          * If dst contains a file that is the same as the file in src,
-            the file will not be copied (so that it is not "updated"
-            for follow-on build steps).
-        Additionally, this function handles the case where src is a file
-        and dst is a directory similarly to the 'cp' command.
+    """copy src into dst.
+    The copy handles these two cases in a special way:
+      * If dst is a directory containing a file not in a src directory,
+        that file will be removed.
+      * If dst contains a file that is the same as the file in src,
+        the file will not be copied (so that it is not "updated"
+        for follow-on build steps).
+    Additionally, this function handles the case where src is a file
+    and dst is a directory similarly to the 'cp' command.
     """
 
     if not os.path.isdir(src):
@@ -103,15 +122,20 @@ def copy(src, dst):
                     rm = os.path.join(dst, sub)
                     if os.path.isdir(rm):
                         if not quiet:
-                            sys.stdout.write("Removing dir {0} not present in {1}\n".format(rm, src))
+                            sys.stdout.write(
+                                "Removing dir {0} not present in {1}\n".format(rm, src)
+                            )
                         shutil.rmtree(rm)
                     else:
                         if not quiet:
-                            sys.stdout.write("Removing {0} not present in {1}\n".format(rm, src))
+                            sys.stdout.write(
+                                "Removing {0} not present in {1}\n".format(rm, src)
+                            )
                         os.remove(rm)
             # recursively copy anything from src
             for sub in srclist:
                 copy(os.path.join(src, sub), os.path.join(dst, sub))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
