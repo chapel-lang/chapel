@@ -335,6 +335,9 @@ jobs:
         gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
     runs-on: ubuntu-latest
     steps:
+      - name: save matrix properties to env
+        run: |
+          echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
       - name: Install GCC
         uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
         with:
@@ -343,11 +346,11 @@ jobs:
         run: |
           set -exuo pipefail
 
-          gcc_version=$(gcc -dumpversion)
-          gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
-          if [ "$gcc_major_version" != ${{ matrix.gcc_version }} ]; then
+          actual_gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
+          if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
             echo "Wrong gcc version"
-            echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
+            echo "Expected Version: $GCC_VERSION Actual Version: $gcc_major_version"
             exit 2
           fi
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -405,10 +408,14 @@ jobs:
             config: gasnet
     runs-on: ${{ matrix.os }}
     steps:
+      - name: save matrix properties to env
+        run: |
+          echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
+          echo "CONFIG=${{ matrix.config }}" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: install deps
         run: |
-          if [[ ${{ matrix.os }} == "macos"* ]] ; then
+          if [[ "$OS" == "macos"* ]] ; then
             brew install llvm
           else
             sudo apt install \
@@ -425,11 +432,11 @@ jobs:
 
           source ./util/cron/common.bash
 
-          if [[ ${{ matrix.os }} == "macos"* ]] ; then
+          if [[ "$OS" == "macos"* ]] ; then
             source ./util/cron/common-darwin.bash
           fi
 
-          if [[ ${{ matrix.config }} == "gasnet" ]] ; then
+          if [[ "$CONFIG" == "gasnet" ]] ; then
             source ./util/cron/common-gasnet.bash
             # Silence warnings about not using ibv despite ibv hardware presence
             export GASNET_QUIET=yes
@@ -447,10 +454,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: save matrix properties to env
+        run: |
+          echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: run homebrew testing
         run: |
-          if [[ ${{ matrix.os }} == "macos"* ]] ; then
+          if [[ "$OS" == "macos"* ]] ; then
             ./util/cron/test-homebrew.bash
           else
             ./util/cron/test-homebrew-linux.bash
