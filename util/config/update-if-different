@@ -44,7 +44,7 @@ def main():
         help=("Do not print out when copying a file."),
     )
 
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     if options.quiet:
         quiet = True
@@ -52,14 +52,14 @@ def main():
     if options.update:
         if len(args) != 2:
             parser.error("--update requires exactly 2 arguments")
-        (dst, src) = args
+        dst, src = args
         update(dst, src)
 
     elif options.copy:
         if len(args) < 2:
             parser.error("--copy requires at least 2 arguments")
         if len(args) == 2:
-            (src, dst) = args
+            src, dst = args
             copy(src, dst)
         else:
             srcs = args

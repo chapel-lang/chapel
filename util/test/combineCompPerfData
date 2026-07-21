@@ -41,7 +41,7 @@ parser.add_option(
 
 def main():
     # setup options and input/output directories
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     chpl_home = os.environ.get("CHPL_HOME", "")
     configName = os.environ.get(

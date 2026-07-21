@@ -24,7 +24,7 @@ parser.add_option(
     help="directories to ignore",
 )
 
-(options, args) = parser.parse_args()
+options, args = parser.parse_args()
 
 if len(args) < 1:
     dirs = "."
@@ -50,7 +50,7 @@ scripts = output.split("\n")
 for s in scripts:
     if not s.strip():
         continue
-    (file, type) = s.split(":")
+    file, _ = s.split(":")
     cmd = "head -1 " + file
     p1 = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
     l1 = p1.communicate()[0]

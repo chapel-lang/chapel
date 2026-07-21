@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     setup(args)
-    (keys, verify_keys) = read_key_file(args.keys_file, args.output_dir)
+    keys, verify_keys = read_key_file(args.keys_file, args.output_dir)
 
     if not args.verify_keys:
         valid_output = validate_output(verify_keys, args.test_output_file)

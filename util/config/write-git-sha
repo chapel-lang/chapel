@@ -30,7 +30,7 @@ args = parser.parse_args()
 # script to update the contents of git-version.cpp if they differ
 # The update-if-different script takes care of deleting the temp file
 out_file = os.path.join(args.location, "git-version.cpp")
-(_, tmp_file) = tempfile.mkstemp(
+_, tmp_file = tempfile.mkstemp(
     prefix="chpl-git-version-deleteme", suffix=".in", text=True
 )
 update_if_diff = os.path.join(args.chpl_home, "util/config/update-if-different")

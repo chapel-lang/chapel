@@ -6,7 +6,6 @@ import subprocess
 import sys
 from shutil import which
 
-
 # ctags regexes
 c_module = r"/^[ \t]*module[ \t]+([_a-zA-Z0-9$]+)/\1/"
 c_enum = r"/^[ \t]*enum[ \t]+([_a-zA-Z0-9$]+)/\1/"
@@ -104,7 +103,7 @@ def _main():
         default=False,
         help="Recurse into directories provided to find .chpl files.",
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     if options.vi and options.emacs:
         sys.stderr.write("chpltags: Can't specify both -e and -v\n")

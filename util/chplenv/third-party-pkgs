@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 
 """
- Print the names of any third-party packages needed for the current
- Chapel environment settings
+Print the names of any third-party packages needed for the current
+Chapel environment settings
 
- ASSUMPTIONS:
- - This script is located in .../chapel/util/chplenv/third-party-pkgs
- - The format of the output from 'printchplenv' follows the current
-   conventions. Specifically,
-   - Chapel-specific environment variables are prefixed with 'CHPL_' (***)
-   - Any Chapel environment variable ending in '_PLATFORM' describes
-     the hardware/OS combo and will not considered in this script
-   - "Top-level" Chapel environment variables are printed starting
-     in the first column.  Any Chapel environment variables that
-     indented are assumed to be modifiers of the corresponding top-level
-     variable and will not be considered in this script (*** and also
-     do not necessarily have to be prefixed with 'CHPL_')
- - Any aliases for the package name are defined in generate_subdir_map().
-   The keys take the form of <env_var_name>-<alias_name>. The vals
-   are the directory name.
- - If the file COMPILERONLY exists in the third party directory,
-   that package is emitted if --compiler is passed,
-   and not by default (which gives dependencies for runtime).
+ASSUMPTIONS:
+- This script is located in .../chapel/util/chplenv/third-party-pkgs
+- The format of the output from 'printchplenv' follows the current
+  conventions. Specifically,
+  - Chapel-specific environment variables are prefixed with 'CHPL_' (***)
+  - Any Chapel environment variable ending in '_PLATFORM' describes
+    the hardware/OS combo and will not considered in this script
+  - "Top-level" Chapel environment variables are printed starting
+    in the first column.  Any Chapel environment variables that
+    indented are assumed to be modifiers of the corresponding top-level
+    variable and will not be considered in this script (*** and also
+    do not necessarily have to be prefixed with 'CHPL_')
+- Any aliases for the package name are defined in generate_subdir_map().
+  The keys take the form of <env_var_name>-<alias_name>. The vals
+  are the directory name.
+- If the file COMPILERONLY exists in the third party directory,
+  that package is emitted if --compiler is passed,
+  and not by default (which gives dependencies for runtime).
 """
 
 import optparse
@@ -82,8 +82,8 @@ def compute_required_pkgs():
     for line in chplenv.split("\n"):
         # Consider only lines to that start with 'CHPL_'.
         if line.startswith("CHPL_"):
-            (var, val) = line.split("=", 1)
-            (var, val) = var.strip(), val.strip()
+            var, val = line.split("=", 1)
+            var, val = var.strip(), val.strip()
             # Ignore platform variables
             # Ignore CHPL_MEM (use CHPL_JEMALLOC)
             # Ignore CHPL_HOST_MEM (use CHPL_JEMALLOC)
@@ -111,7 +111,7 @@ def _main():
         action="store_true",
         help="compute compiler packages",
     )
-    (options, _) = parser.parse_args()
+    options, _ = parser.parse_args()
 
     pkgs = compute_required_pkgs()
 
