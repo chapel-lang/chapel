@@ -100,9 +100,12 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
     - name: run dyno linters
       run: |
-        CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
+        CHPL_HOST_COMPILER=clang make run-dyno-linters
 
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
@@ -113,6 +116,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
