@@ -326,7 +326,7 @@ jobs:
     - name: test chpl-language-server
       if: steps.changes.outputs.cls_sources == 'true'
       run: |
-        make test-chpl-language-server -j$(util/buildRelease/chpl-make-cpu_count)
+        make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
 
   gcc-version-tests:
     strategy:
@@ -368,8 +368,7 @@ jobs:
 
           export CHPL_LAUNCHER=none
 
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j$num_procs
+          make -j"$(./util/buildRelease/chpl-make-cpu_count)"
           make test-venv
 
           start_test test/release/examples
