@@ -140,16 +140,26 @@ def check_configs(ann_data):
 def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
     pr_to_date_dict = {}
-    git_cmd = 'git log --grep "^Merge pull request #" --date=short-local --pretty=format:"%ad ::: %s"'
-    p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
-    git_log = p.communicate()[0]
-    if sys.version_info[0] >= 3 and not isinstance(git_log, str):
-        git_log = str(git_log, "utf-8")
-    for line in git_log.splitlines():
-        split_line = line.split(" ::: ")
-        date = split_line[0]
-        pr_num = re.match(r"Merge pull request #(\d+)", split_line[1]).group(1)
-        pr_to_date_dict[pr_num] = parse_date(date)
+
+    def get_prs_info(git_log_pattern, pr_num_pattern):
+        pr_to_date_dict = {}
+        git_cmd = f'git log --grep "{git_log_pattern}" --date=short-local --pretty=format:"%ad ::: %s"'
+        p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
+        git_log = p.communicate()[0]
+        if sys.version_info[0] >= 3 and not isinstance(git_log, str):
+            git_log = str(git_log, "utf-8")
+        for line in git_log.splitlines():
+            split_line = line.split(" ::: ")
+            date = split_line[0]
+            print(split_line[1])
+            pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
+            pr_to_date_dict[pr_num] = parse_date(date)
+        return pr_to_date_dict
+
+    pr_to_date_dict |= get_prs_info("^Merge pull request #", r"Merge pull request #(\d+)")
+    pr_to_date_dict |= get_prs_info(r" (#\d\d*)$", r".* \(#(\d+)\)$")
+
+    print(f"size of dict: {len(pr_to_date_dict)}")
 
     num_prs = len(pr_to_date_dict)
     print(f"Found {num_prs} PR merges")
