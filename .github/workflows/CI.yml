@@ -396,6 +396,12 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: set vars to make tarball from correct branch
+      run: |
+        {
+          echo "CHPL_HOME_REPOSITORY=$PWD"
+          echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
+        } >> "$GITHUB_ENV"
     - name: create release tarball
       run: |
         export CHPL_TEST_RELEASE_NORECURSE=1
