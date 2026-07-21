@@ -210,7 +210,7 @@ jobs:
               fi
               echo "Checking file: $file"
 
-              file_size=$(ls -l "$file" | awk '{print $5}')
+              file_size=$(wc -c "$file" | awk '{print $1}')
               file_size_kb=$((file_size / 1024))
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
