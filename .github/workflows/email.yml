@@ -24,11 +24,12 @@ jobs:
         env:
            PR_LINK: ${{github.event.pull_request._links.html.href}}
         run: |
-              echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV
-              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
-              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}' )" >> $GITHUB_ENV
-              echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV
-
+          {
+            echo "LINK=$PR_LINK"
+            echo "AUTHOR=${{github.event.pull_request.head.user.login}}"
+            echo "COMPARE_URL=${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}"
+            echo "FILES_CHANGED=$PR_LINK/files"
+          } >> "$GITHUB_ENV"
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -42,11 +43,13 @@ jobs:
         env:
            MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
         run: |
-              merge_log=$(git show -s --format=%B $MERGE_SHA )
+              merge_log=$(git show -s --format=%B "$MERGE_SHA")
               echo "$merge_log"
-              echo 'MERGE<<EOF' >> $GITHUB_ENV
-              echo "$merge_log" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV
+              {
+                echo 'MERGE<<EOF'
+                echo "$merge_log"
+                echo 'EOF'
+              } >> "$GITHUB_ENV"
 
               diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
               # Cut off long diff output after some number of lines
@@ -54,10 +57,11 @@ jobs:
               diff=$(echo "$diff" | awk "NR <= $diff_max_lines; NR > $diff_max_lines { print \"(diff output truncated at $diff_max_lines lines)\"; exit }")
 
               echo "$diff"
-              echo 'DIFF<<EOF' >> $GITHUB_ENV
-              echo "$diff" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV
-
+              {
+                echo 'DIFF<<EOF'
+                echo "$diff"
+                echo 'EOF'
+              } >> "$GITHUB_ENV"
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
