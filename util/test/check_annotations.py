@@ -152,10 +152,14 @@ def compute_pr_to_dates():
             date = split_line[0]
             pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
             if pr_num in pr_to_date_dict:
-                warnings.warn(f'Warning: apparent duplicate PR #{pr_num}')
+                warnings.warn(f"Warning: apparent duplicate PR #{pr_num}")
             pr_to_date_dict[pr_num] = parse_date(date)
 
-    get_prs_info(r"Merge pull request #\d\d* from .*", r"Merge pull request #(\d+)", pr_to_date_dict)
+    get_prs_info(
+        r"Merge pull request #\d\d* from .*",
+        r"Merge pull request #(\d+)",
+        pr_to_date_dict,
+    )
     get_prs_info(r".* (#\d\d*)", r".* \(#(\d+)\)$", pr_to_date_dict)
 
     num_prs = len(pr_to_date_dict)
