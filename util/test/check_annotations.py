@@ -151,6 +151,8 @@ def compute_pr_to_dates():
         pr_num = re.match(r"Merge pull request #(\d+)", split_line[1]).group(1)
         pr_to_date_dict[pr_num] = parse_date(date)
 
+    print(f"Found {len(pr_to_date_dict)} PR merges")
+
     return pr_to_date_dict
 
 
