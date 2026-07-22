@@ -141,8 +141,7 @@ def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
     pr_to_date_dict = {}
 
-    def get_prs_info(git_log_pattern, pr_num_pattern):
-        pr_to_date_dict = {}
+    def get_prs_info(git_log_pattern, pr_num_pattern, pr_to_date_dict):
         git_cmd = f'git log --date=short-local --pretty=format:"%ad ::: %s" | grep -x ".* ::: {git_log_pattern}"'
         p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
         git_log = p.communicate()[0]
@@ -152,11 +151,12 @@ def compute_pr_to_dates():
             split_line = line.split(" ::: ")
             date = split_line[0]
             pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
+            if pr_num in pr_to_date_dict:
+                warnings.warn(f'Warning: apparent duplicate PR #{pr_num}')
             pr_to_date_dict[pr_num] = parse_date(date)
-        return pr_to_date_dict
 
-    pr_to_date_dict |= get_prs_info(r"Merge pull request #\d\d* from .*", r"Merge pull request #(\d+)")
-    pr_to_date_dict |= get_prs_info(r".* (#\d\d*)", r".* \(#(\d+)\)$")
+    get_prs_info(r"Merge pull request #\d\d* from .*", r"Merge pull request #(\d+)", pr_to_date_dict)
+    get_prs_info(r".* (#\d\d*)", r".* \(#(\d+)\)$", pr_to_date_dict)
 
     num_prs = len(pr_to_date_dict)
     print(f"Found {num_prs} PR merges")
