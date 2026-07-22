@@ -451,7 +451,7 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh "${{ matrix.llvm_version }}"
 
-          echo "$(which llvm-config)"
+          which llvm-config
       # - name: set CHPL_LLVM_CONFIG from official script
       #   if: ${{ steps.install_official_script.outcome == 'success' }}
       #   run: |
@@ -486,7 +486,7 @@ jobs:
           export CHPL_LAUNCHER=none
 
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j$num_procs
+          make -j"$num_procs"
           make test-venv
 
           start_test test/release/examples
