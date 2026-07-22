@@ -156,20 +156,20 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         git_url = os.getenv(
             "CHPL_HOME_REPOSITORY", "https://github.com/chapel-lang/chapel"
         )
-        git_branch = os.getenv("CHPL_GEN_RELEASE_BRANCH", "main")
+        git_branch = os.getenv("CHPL_GEN_RELEASE_BRANCH", None)
         repo_cache_path = os.getenv("REPO_CACHE_PATH", "/missing")
         git_commit = os.getenv("CHPL_GEN_RELEASE_COMMIT", None)
 
-        log(f"Cloning the sources (repo: {git_url} branch: {git_branch})...")
+        branch_log_str = f", branch: {git_branch}" if git_branch else ""
+        log(f"Cloning the sources (repo: {git_url}{branch_log_str})...")
         cmd = (
             [
                 "git",
                 "clone",
                 "--reference-if-able",
                 f"{repo_cache_path}/chapel.git",
-                "--branch",
-                git_branch,
             ]
+            + (["--branch", git_branch] if git_branch else [])
             + (["--depth", "1"] if git_commit is None else [])
             + [
                 git_url,
