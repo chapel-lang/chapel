@@ -151,15 +151,12 @@ def compute_pr_to_dates():
         for line in git_log.splitlines():
             split_line = line.split(" ::: ")
             date = split_line[0]
-            print(split_line[1])
             pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
             pr_to_date_dict[pr_num] = parse_date(date)
         return pr_to_date_dict
 
     pr_to_date_dict |= get_prs_info(r"Merge pull request #\d\d* from .*", r"Merge pull request #(\d+)")
-    print(f"size of dict: {len(pr_to_date_dict)}")
     pr_to_date_dict |= get_prs_info(r".* (#\d\d*)", r".* \(#(\d+)\)$")
-    print(f"size of dict: {len(pr_to_date_dict)}")
 
     num_prs = len(pr_to_date_dict)
     print(f"Found {num_prs} PR merges")
