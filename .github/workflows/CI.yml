@@ -387,6 +387,44 @@ jobs:
 
           start_test test/release/examples
 
+  python-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python_version }}
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Check desired Python version is default
+        run: |
+          set -exuo pipefail
+          source util/cron/common-python.bash
+          check_python_version "${{ matrix.python_version }}"
+      - name: Install LLVM dependency
+        run: |
+          sudo apt install \
+            clang \
+            libclang-dev \
+            libclang-cpp-dev \
+            libedit-dev \
+            llvm \
+            llvm-dev
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j$num_procs
+          make test-venv
+
+          start_test test/release/examples test/library/packages/Python test/interop/python
+
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
     container:
@@ -521,6 +559,7 @@ jobs:
       - check-format
       - test_chpl_language_server
       - gcc-version-tests
+      - python-version-tests
       - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-homebrew
