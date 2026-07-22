@@ -142,7 +142,7 @@ def compute_pr_to_dates():
     pr_to_date_dict = {}
 
     def get_prs_info(git_log_pattern, pr_num_pattern, pr_to_date_dict):
-        git_cmd = f'git log --date=short-local --pretty=format:"%ad ::: %s" | grep -x ".* ::: {git_log_pattern}"'
+        git_cmd = f'git log --merges --date=short-local --pretty=format:"%ad ::: %s" | grep -x ".* ::: {git_log_pattern}"'
         p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
         git_log = p.communicate()[0]
         if sys.version_info[0] >= 3 and not isinstance(git_log, str):
