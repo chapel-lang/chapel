@@ -39,7 +39,7 @@ jobs:
           -f query="{ repository(owner: \"${owner}\",
                       name: \"${repo_name}\")
                       { discussionCategories(first: 10) { nodes { id, name} } } }" \
-          | jq -r '.data.repository.discussionCategories.nodes | .[] | select(.name=="${{ env.category_name }}") | .id')
+          | jq -r ".data.repository.discussionCategories.nodes | .[] | select(.name==\"${category_name}\") | .id")
 
         body="${agenda_body}"
         title="Chapel project meeting: ${next_meeting_date} (agenda items, meeting link, notes)"
