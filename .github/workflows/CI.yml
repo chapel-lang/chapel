@@ -566,6 +566,19 @@ jobs:
       run: |
         ./util/cron/test-c2chapel.bash
 
+  test-networking-packages:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run test-networking-packages.bash
+      run: |
+        ./util/cron/test-networking-packages.bash
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -599,6 +612,7 @@ jobs:
       - chapel-code-smoke-test
       - test-homebrew
       - test-c2chapel
+      - test-networking-packages
     steps:
       - name: Fail
         run: |
