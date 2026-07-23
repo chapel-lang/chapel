@@ -30,17 +30,15 @@ jobs:
 
     - name: create discussion
       run: |
-        # shellcheck disable=SC2016
         repositoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${owner}",
-                      name: "${repo_name}") { id } }' \
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\") { id } }" \
           | jq -r '.data.repository.id')
 
-        # shellcheck disable=SC2016
         categoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${owner}",
-                      name: "${repo_name}")
-                      { discussionCategories(first: 10) { nodes { id, name} } } }' \
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\")
+                      { discussionCategories(first: 10) { nodes { id, name} } } }" \
           | jq -r '.data.repository.discussionCategories.nodes | .[] | select(.name=="${{ env.category_name }}") | .id')
 
         body="${agenda_body}"
