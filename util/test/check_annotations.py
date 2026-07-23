@@ -153,7 +153,9 @@ def compute_pr_to_dates():
             date = split_line[0]
             pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
             if pr_num in pr_to_date_dict:
-                warnings.warn(f"Warning: apparent duplicate PR #{pr_num}")
+                print(
+                    f"apparent duplicate PR #{pr_num}, later occurrence is used"
+                )
             pr_to_date_dict[pr_num] = parse_date(date)
 
     get_prs_info(
