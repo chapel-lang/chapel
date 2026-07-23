@@ -9,8 +9,8 @@ on:
 
 
 env:
-  file_changed: ${{ false }}
-  branch_exists: ${{ false }}
+  file_changed: false
+  branch_exists: false
 
 jobs:
   check-and-update:
@@ -20,6 +20,8 @@ jobs:
     steps:
     - name: Checkout this repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
 
     - name: Fetch released version of Chapel formula
       run: |
@@ -42,7 +44,7 @@ jobs:
       id: check-branch
       if: ${{ env.file_changed == 'true' }}
       run: |
-        BRANCH_NAME=update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        BRANCH_NAME=update-chapel-homebrew-release-${HASH_SUBSTRING}
         if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
           echo "Branch $BRANCH_NAME already exists."
           echo "branch_exists=true" >> "$GITHUB_ENV"
@@ -62,11 +64,11 @@ jobs:
       run: |
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
-        git checkout -b update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        git checkout -b update-chapel-homebrew-release-${HASH_SUBSTRING}
         mv hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb
         git add util/packaging/homebrew/chapel-release.rb
         git commit -m "Update chapel-release.rb with changes from chapel.rb" --signoff
-        git push --set-upstream origin update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        git push --set-upstream origin update-chapel-homebrew-release-${HASH_SUBSTRING}
         echo "Homebrew has updated the formula!"
 
     - name: create pull request
@@ -74,8 +76,8 @@ jobs:
       run: >
         gh pr create
         -B main
-        -H update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        -H update-chapel-homebrew-release-${HASH_SUBSTRING}
         --title 'Update our copy of the released Homebrew formula'
-        --body 'Homebrew released formula file hash is ${{ env.FILE_HASH }}. Created by Github action'
+        --body 'Homebrew released formula file hash is ${FILE_HASH}. Created by Github action'
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

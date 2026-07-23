@@ -23,11 +23,13 @@ jobs:
         id: build-payload
         env:
            PR_LINK: ${{github.event.pull_request._links.html.href}}
+           GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN: ${{github.event.pull_request.head.user.login}}
+           GITHUB_EVENT_REPOSITORY_HTML_URL: ${{github.event.repository.html_url}}
         run: |
           {
             echo "LINK=$PR_LINK"
-            echo "AUTHOR=${{github.event.pull_request.head.user.login}}"
-            echo "COMPARE_URL=${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}"
+            echo "AUTHOR=${GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN}"
+            echo "COMPARE_URL=${GITHUB_EVENT_REPOSITORY_HTML_URL}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}"
             echo "FILES_CHANGED=$PR_LINK/files"
           } >> "$GITHUB_ENV"
       - name: checkout
@@ -36,6 +38,7 @@ jobs:
         with:
           fetch-depth: 0
           allow-unsafe-pr-checkout: true
+          persist-credentials: false
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body.
       # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
