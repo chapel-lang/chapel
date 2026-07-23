@@ -170,10 +170,8 @@ jobs:
         ./util/devel/lookForBadCompCalls
     - name: check annotations
       run: |
-        set -exuo pipefail
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
-      shell: bash
     - name: check perf graphs
       run: |
         python3 ./util/test/check_perf_graphs.py
