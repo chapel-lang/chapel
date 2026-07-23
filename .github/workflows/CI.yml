@@ -387,8 +387,6 @@ jobs:
           version: ${{ matrix.gcc_version }}
       - name: Check desired GCC version is default
         run: |
-          set -exuo pipefail
-
           actual_gcc_version=$(gcc -dumpversion)
           gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
           if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
@@ -435,7 +433,6 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Check desired Python version is default
         run: |
-          set -exuo pipefail
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
@@ -515,8 +512,6 @@ jobs:
           fi
       - name: setup env and run ./util/buildRelease/smokeTest
         run: |
-          set -ex
-
           source ./util/cron/common.bash
 
           if [[ "$OS" == "macos"* ]] ; then
