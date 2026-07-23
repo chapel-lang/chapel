@@ -81,7 +81,7 @@ export CHPL_TARGET_CPU=none
 #       working tree (under $CHPL_HOME), and b) less specific to our file
 #       system hierarchy. (thomasvandoren, 2014-01-24)
 
-explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
+explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX-}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
 css_prefix=/hpcdc/project/chapel
 log_info "About to set log prefix. explicit: ${explicit_prefix}"
