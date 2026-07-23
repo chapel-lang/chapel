@@ -142,7 +142,7 @@ def compute_pr_to_dates():
     pr_to_date_dict = {}
 
     def get_prs_info(git_log_pattern, pr_num_pattern, pr_to_date_dict):
-        git_cmd = f'git log --merges --date=short-local --pretty=format:"%ad ::: %s" | grep -P -x ".* ::: {git_log_pattern}"'
+        git_cmd = f'git log --merges --date=short-local --pretty=format:"%ad ::: %s" | grep -x ".* ::: {git_log_pattern}"'
         p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
         git_log = p.communicate()[0]
         if sys.version_info[0] >= 3 and not isinstance(git_log, str):
@@ -156,11 +156,11 @@ def compute_pr_to_dates():
             pr_to_date_dict[pr_num] = parse_date(date)
 
     get_prs_info(
-        r"Merge pull request #\d+ from .*",
-        r"Merge pull request #(\d+)",
+        r"Merge pull request #[0-9][0-9]* from .*",
+        r"Merge pull request #([0-9]+)",
         pr_to_date_dict,
     )
-    get_prs_info(r".* \(#\d+\)", r".* \(#(\d+)\)$", pr_to_date_dict)
+    get_prs_info(r".* (#[0-9][0-9]*)", r".* \(#([0-9]+)\)$", pr_to_date_dict)
 
     num_prs = len(pr_to_date_dict)
     print(f"Found {num_prs} PR merges")
