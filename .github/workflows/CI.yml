@@ -39,7 +39,6 @@ jobs:
         apt update && apt install -y \
           libzmq3-dev
     - name: run Arkouda smoke testing
-      shell: bash
       run: |
         source ./util/cron/common.bash
         source ./util/setchplenv.bash
