@@ -43,10 +43,10 @@ jobs:
         rules:
           unpinned-images:
             ignore:
-              - CI.yml
+              - .github/workflows/CI.yml
           dangerous-triggers:
             ignore:
-              - email.yml:2
+              - .github/workflows/email.yml:2
         EOF
     - name: Run zizmor
       uses: zizmorcore/zizmor-action@6599ee8b7a49aef6a770f63d261d214911a7ce02 # v0.6.0
