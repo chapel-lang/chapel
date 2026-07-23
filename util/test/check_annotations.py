@@ -21,6 +21,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 import warnings
 
 import annotate
@@ -140,16 +141,34 @@ def check_configs(ann_data):
 def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
     pr_to_date_dict = {}
-    git_cmd = 'git log --grep "^Merge pull request #" --date=short-local --pretty=format:"%ad ::: %s"'
-    p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
-    git_log = p.communicate()[0]
-    if sys.version_info[0] >= 3 and not isinstance(git_log, str):
-        git_log = str(git_log, "utf-8")
-    for line in git_log.splitlines():
-        split_line = line.split(" ::: ")
-        date = split_line[0]
-        pr_num = re.match(r"Merge pull request #(\d+)", split_line[1]).group(1)
-        pr_to_date_dict[pr_num] = parse_date(date)
+
+    def get_prs_info(git_log_pattern, pr_num_pattern, pr_to_date_dict):
+        git_cmd = f'git log --merges --date=short-local --pretty=format:"%ad ::: %s" | grep -x ".* ::: {git_log_pattern}"'
+        p = subprocess.Popen(git_cmd, stdout=subprocess.PIPE, shell=True)
+        git_log = p.communicate()[0]
+        if sys.version_info[0] >= 3 and not isinstance(git_log, str):
+            git_log = str(git_log, "utf-8")
+        for line in git_log.splitlines():
+            split_line = line.split(" ::: ")
+            date = split_line[0]
+            pr_num = re.match(pr_num_pattern, split_line[1]).group(1)
+            if pr_num in pr_to_date_dict:
+                print(
+                    f"apparent duplicate PR #{pr_num}, later occurrence is used"
+                )
+            pr_to_date_dict[pr_num] = parse_date(date)
+
+    get_prs_info(
+        r"Merge pull request #[0-9][0-9]* from .*",
+        r"Merge pull request #([0-9]+)",
+        pr_to_date_dict,
+    )
+    get_prs_info(r".* (#[0-9][0-9]*)", r".* \(#([0-9]+)\)$", pr_to_date_dict)
+
+    num_prs = len(pr_to_date_dict)
+    print(f"Found {num_prs} PR merges")
+    if num_prs == 0:
+        raise Exception("Did not find any PR merge commits, something is wrong")
 
     return pr_to_date_dict
 
@@ -172,10 +191,21 @@ def check_pr_number_dates(ann_data):
                     if pr_num in pr_to_date_dict:
                         pr_date = pr_to_date_dict[pr_num]
                         if pr_date >= date:
+
+                            def date_from_time_struct(time_struct):
+                                return datetime.fromtimestamp(
+                                    time.mktime(time_struct)
+                                ).date()
+
                             warnings.warn(
                                 'Warning: annotation date for "{0}: '
-                                '{1}" is earlier than or the same as '
-                                "the commit date".format(graph, text)
+                                '{1}" ({2}) is earlier than or the same as '
+                                "the commit date ({3})".format(
+                                    graph,
+                                    text,
+                                    date_from_time_struct(date),
+                                    date_from_time_struct(pr_date),
+                                )
                             )
 
 
