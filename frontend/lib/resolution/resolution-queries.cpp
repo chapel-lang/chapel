@@ -7164,6 +7164,7 @@ bool addExistingSubstitutionsAsActuals(Context* context,
     if (!ct->instantiatedFromCompositeType()) break;
 
     for (auto& [id, qt] : ct->substitutions()) {
+      if (id.isEmpty()) continue;
       auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
       if (fieldAst->storageKind() == QualifiedType::TYPE ||
           fieldAst->storageKind() == QualifiedType::PARAM) {

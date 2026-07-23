@@ -36,7 +36,9 @@ from chapel import (
     On,
     Record,
     SimpleBlockLike,
+    Select,
     Union,
+    When,
 )
 from typing import Optional, List, Tuple, Iterable, Dict
 from functools import cache
@@ -113,6 +115,10 @@ class IndentationCollector:
             return parent
         elif isinstance(parent, Conditional):
             return None if parent.is_expression_level() else parent
+        elif isinstance(parent, When):
+            select = parent.parent()
+            assert isinstance(select, Select)
+            return next(select.when_stmts())
         return node
 
     def _is_block_in_else_if_chain(

@@ -26,16 +26,16 @@ jobs:
         curl -o hb_master_chapel.rb https://raw.githubusercontent.com/homebrew/homebrew-core/master/Formula/c/chapel.rb
         FILE_HASH=$(sha256sum hb_master_chapel.rb | awk '{ print $1 }')
         HASH_SUBSTRING=${FILE_HASH:0:7}
-        echo "FILE_HASH=$FILE_HASH" >> $GITHUB_ENV
-        echo "HASH_SUBSTRING=$HASH_SUBSTRING" >> $GITHUB_ENV
+        echo "FILE_HASH=$FILE_HASH" >> "$GITHUB_ENV"
+        echo "HASH_SUBSTRING=$HASH_SUBSTRING" >> "$GITHUB_ENV"
 
     - name: Compare the released version with the chapel-release.rb
       id: compare
       run: |
         if ! cmp -s hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb; then
-          echo "file_changed=true" >> $GITHUB_ENV
+          echo "file_changed=true" >> "$GITHUB_ENV"
         else
-          echo "file_changed=false" >> $GITHUB_ENV
+          echo "file_changed=false" >> "$GITHUB_ENV"
         fi
 
     - name: Check if branch already exists
@@ -43,12 +43,12 @@ jobs:
       if: ${{ env.file_changed == 'true' }}
       run: |
         BRANCH_NAME=update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
-        if git ls-remote --heads origin $BRANCH_NAME | grep -q $BRANCH_NAME; then
+        if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
           echo "Branch $BRANCH_NAME already exists."
-          echo "branch_exists=true" >> $GITHUB_ENV
+          echo "branch_exists=true" >> "$GITHUB_ENV"
         else
           echo "Branch $BRANCH_NAME does not exist."
-          echo "branch_exists=false" >> $GITHUB_ENV
+          echo "branch_exists=false" >> "$GITHUB_ENV"
         fi
 
     - name: Exit if branch exists

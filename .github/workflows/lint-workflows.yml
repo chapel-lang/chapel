@@ -1,0 +1,40 @@
+name: lint workflows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: Download actionlint
+      id: get_actionlint
+      run: |
+        wget https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json
+        echo "::add-matcher::./actionlint-matcher.json"
+        bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+      shell: bash
+    - name: Check workflow files
+      run: |
+        # ignore is to work around https://github.com/rhysd/actionlint/issues/657
+        ${{ steps.get_actionlint.outputs.executable }} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section'
+      shell: bash
+
+  # Canary for any linter failures
+  linters-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    needs:
+      - actionlint
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1
