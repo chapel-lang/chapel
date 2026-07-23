@@ -21,6 +21,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 import warnings
 
 import annotate
@@ -188,10 +189,21 @@ def check_pr_number_dates(ann_data):
                     if pr_num in pr_to_date_dict:
                         pr_date = pr_to_date_dict[pr_num]
                         if pr_date >= date:
+
+                            def date_from_time_struct(time_struct):
+                                return datetime.fromtimestamp(
+                                    time.mktime(time_struct)
+                                ).date()
+
                             warnings.warn(
                                 'Warning: annotation date for "{0}: '
-                                '{1}" is earlier than or the same as '
-                                "the commit date".format(graph, text)
+                                '{1}" ({2}) is earlier than or the same as '
+                                "the commit date ({3})".format(
+                                    graph,
+                                    text,
+                                    date_from_time_struct(date),
+                                    date_from_time_struct(pr_date),
+                                )
                             )
 
 
