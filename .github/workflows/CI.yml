@@ -34,10 +34,11 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-    - name: install libzmq3-dev
+    - name: install some Arkouda deps
       run: |
         apt update && apt install -y \
-          libzmq3-dev
+          libzmq3-dev \
+          libcurl4-openssl-dev
     - name: run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
