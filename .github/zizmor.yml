@@ -1,0 +1,7 @@
+rules:
+  unpinned-images:
+    ignore:
+      - .github/workflows/CI.yml
+  dangerous-triggers:
+    ignore:
+      - .github/workflows/email.yml:2
