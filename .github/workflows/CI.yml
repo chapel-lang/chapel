@@ -14,7 +14,7 @@ env:
 
 defaults:
   run:
-    shell: bash
+    shell: bash -exuo pipefail {0}
 
 # NOTE: each job has to specify the container section in its entirety, which is
 # certainly repetetive, but the `defaults` section can't be applied and the `env`
