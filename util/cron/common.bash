@@ -114,12 +114,8 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
 export CHPL_TEST_PERF_CONFIG_NAME=${CHPL_TEST_PERF_CONFIG_NAME:-$(hostname -s)}
-if [ -z "$CHPL_TEST_PERF_DIR" ]; then
-    export CHPL_TEST_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
-fi
-if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
-    export CHPL_TEST_COMP_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
-fi
+export CHPL_TEST_PERF_DIR=${CHPL_TEST_PERF_DIR:-$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME}
+export CHPL_TEST_COMP_PERF_DIR=${CHPL_TEST_COMP_PERF_DIR:-$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME}
 
 # Work-around to remove git submodules
 #   See Cray/chapel-private#1050 for long term solution
