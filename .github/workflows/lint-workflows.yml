@@ -39,7 +39,7 @@ jobs:
         persist-credentials: false
     - name: write zizmor.yml
       run: |
-        cat << EOF > zizmor.yml
+        cat << EOF > .github/zizmor.yml
         rules:
           unpinned-images:
             ignore:
@@ -52,8 +52,8 @@ jobs:
       uses: zizmorcore/zizmor-action@6599ee8b7a49aef6a770f63d261d214911a7ce02 # v0.6.0
       with:
         advanced-security: false
-        config: |
-          zizmor.yml
+        # config: |
+        #   zizmor.yml
         inputs: |
           .github/workflows
 
