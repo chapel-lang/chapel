@@ -62,11 +62,7 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 
-#if HAVE_LLVM_VER >= 170
-#include "llvm/TargetParser/SubtargetFeature.h"
-#else
 #include "llvm/MC/SubtargetFeature.h"
-#endif
 
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
