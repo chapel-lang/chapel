@@ -483,7 +483,7 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh "${{ matrix.llvm_version }}"
+          sudo ./llvm.sh "${{ matrix.llvm_version }}" all
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
