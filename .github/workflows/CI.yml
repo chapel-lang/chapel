@@ -361,7 +361,6 @@ jobs:
       - uses: leleliu008/github-actions-vagrant@e0955990cccb0759786273e0c93f009724a222a0 # v2
         with:
           mem: ${{ steps.resources_available.outputs.use_mem }}
-          ncpu: ${{ steps.resources_available.outputs.use_cpus }}
           box: ${{ matrix.vagrant_box }}
           run: |
             set -exuo pipefail
