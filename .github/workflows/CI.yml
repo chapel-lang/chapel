@@ -348,10 +348,14 @@ jobs:
         vagrant_config: ["bento-freebsd-13.5", "bento-freebsd-14.3", "generic-x32-debian12", "bento-ubuntu24.04-homebrew"]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: print vagrant version
+      - name: install Vagrant and Virtualbox with Homebrew
+        run: |
+          brew install virtualbox
+          brew install --cask vagrant
+      - name: print Vagrant version
         run: |
           vagrant --version
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: test Vagrant config ${{ matrix.vagrant_config }}
         run: |
           export VM_NAME=${{ matrix.vagrant_config }}
