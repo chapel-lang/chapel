@@ -466,8 +466,7 @@ jobs:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
     runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
     steps:
-      - name: Install LLVM from official convenience script
-        id: install_official_script
+      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
