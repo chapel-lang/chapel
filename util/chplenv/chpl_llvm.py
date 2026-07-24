@@ -104,15 +104,12 @@ def llvm_versions_string():
 def get_llvm_config_version(llvm_config):
     got_version = None
 
-    print("llvm_config is none")
     if llvm_config != "none" and llvm_config != None:
         exists, returncode, got_out, got_err = try_run_command(
             [llvm_config, "--version"]
         )
         if exists and returncode == 0:
             got_version = got_out
-        print(f"llvm config version stdout: {got_out}")
-        print(f"llvm config version stderr: {got_err}")
 
         if got_version != None and chpl_gpu.get() == "amd":
             # strip the "git" suffix. This is a TODO. We want to be able to

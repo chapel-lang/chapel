@@ -1,7 +1,5 @@
 # bash/zsh shell script to set the Chapel environment variables
 
-set -x
-
 # Find out filepath depending on shell
 if [ -n "${BASH_VERSION}" ]; then
     filepath=${BASH_SOURCE[0]}
