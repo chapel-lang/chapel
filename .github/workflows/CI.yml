@@ -472,7 +472,6 @@ jobs:
         uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 #v2.0.9
         with:
           version: ${{ matrix.llvm_version }}
-          env: true
       # - name: set CHPL_LLVM_CONFIG from action
       #   if: ${{ steps.install_unofficial_action.outcome == 'success' }}
       #   run: |
@@ -488,7 +487,6 @@ jobs:
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
-        if: ${{ fromJSON(matrix.llvm_version) >= 17 }}
         run: |
           set -exuo pipefail
 
