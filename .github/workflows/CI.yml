@@ -326,6 +326,32 @@ jobs:
             rm ~/.ssh/id_rsa
             rm ~/.ssh/known_hosts
 
+  portability-tests-vagrant:
+    strategy:
+      fail-fast: false
+      matrix:
+        vagrant_box: ["bento/freebsd-13.5", "bento/freebsd-14.3", "generic-x32/debian12", "bento/ubuntu-24.04"]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: determine RAM and CPU count
+        id: resources_available
+        run: |
+          mem=$(($(sysctl hw.memsize | cut -d' ' -f2) / 1024**3))
+          use_mem=$((($mem - 1) * 1024**2))
+          echo "use_mem=$use_mem" >> "$GITHUB_OUTPUT"
+          cpus=sysctl -n hw.ncpu
+          use_cpus=$cpus
+          echo "use_cpus=$use_cpus" >> "$GITHUB_OUTPUT"
+      - uses: leleliu008/github-actions-vagrant@e0955990cccb0759786273e0c93f009724a222a0 # v2
+        with:
+          mem: ${{ steps.resources_available.outputs.use_mem }}
+          ncpu: ${{ steps.resources_available.outputs.use_cpus }}
+          box: ${{ matrix.vagrant_box }}
+          run: |
+            set -exuo pipefail
+            ./util/devel/test/portability/vagrant/chapelquickcheck.sh
+
   run-shellcheck:
     runs-on: ubuntu-latest
     steps:
