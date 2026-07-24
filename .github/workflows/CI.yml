@@ -485,23 +485,15 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh "${{ matrix.llvm_version }}"
 
-          which llvm-config
-      # - name: set CHPL_LLVM_CONFIG from official script
-      #   if: ${{ steps.install_official_script.outcome == 'success' }}
-      #   run: |
-      #     set -exuo pipefail
-      #     echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >> "$GITHUB_ENV"
-      - name: print env
-        run: |
-          env
+          echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
         run: |
           set -exuo pipefail
 
           env
 
-          # Check LLVM version via llvm-config
-          llvm_version=$(llvm-config --version)
+          # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
+          llvm_version=$($CHPL_LLVM_CONFIG --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
           if [ "$llvm_version_major" != "${{ matrix.llvm_version }}" ]; then
             echo "Wrong LLVM version"
