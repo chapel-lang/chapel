@@ -46,7 +46,7 @@ jobs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
       with:
         path: ${{ env.ZLIB_TARBALL }}
-        key: zlib-tarball-${{ hashFiles(env.ZLIB_TARBALL) }}
+        key: ${{ env.ZLIB_TARBALL }}
     - name: fetch zlib tarball
       if: steps.cache-zlib.outputs.cache-hit != 'true'
       run: |
