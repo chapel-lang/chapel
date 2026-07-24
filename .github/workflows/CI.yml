@@ -350,6 +350,7 @@ jobs:
           box: ${{ matrix.vagrant_box }}
           run: |
             set -exuo pipefail
+            ${{ matrix.vagrant_box == 'bento/ubuntu-24.04' && './util/devel/test/portability/vagrant/provision-scripts/apt-get-and-linuxbrew.sh' || '' }}
             ./util/devel/test/portability/vagrant/chapelquickcheck.sh
 
   run-shellcheck:
