@@ -12,6 +12,10 @@ permissions:
 env:
   NIGHTLY_TEST_SETTINGS: true
 
+defaults:
+  run:
+    shell: bash
+
 # NOTE: each job has to specify the container section in its entirety, which is
 # certainly repetetive, but the `defaults` section can't be applied and the `env`
 # context isn't available in the `jobs` section
@@ -21,6 +25,36 @@ env:
 #   [3] https://github.com/actions/starter-workflows/issues/162
 
 jobs:
+  arkouda-smoke-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: install some Arkouda deps
+      run: |
+        apt update && apt install -y \
+          libzmq3-dev \
+          libcurl4-openssl-dev
+    - name: run Arkouda smoke testing
+      run: |
+        source ./util/cron/common.bash
+        source ./util/setchplenv.bash
+        export CHPL_TEST_ARKOUDA_PERF=false
+        source ./util/cron/common-arkouda.bash
+
+        export NIGHTLY_TEST_SETTINGS=true
+        export CHPL_SMOKE_SKIP_DOC=true
+        export CHPL_SMOKE_SKIP_MAKE_MASON=true
+        export ARKOUDA_SMOKE_TEST=true
+        ./util/buildRelease/smokeTest
+        make test-venv
+
+        start_test test/studies/arkouda/
+
   make_check:
     runs-on: ubuntu-latest
     container:
@@ -599,6 +633,19 @@ jobs:
       run: |
         ./util/cron/test-c2chapel.bash
 
+  test-networking-packages:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run test-networking-packages.bash
+      run: |
+        ./util/cron/test-networking-packages.bash
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -611,6 +658,7 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     needs:
+      - arkouda-smoke-test
       - make_check
       - make_chplvis
       - make_doc
@@ -631,6 +679,7 @@ jobs:
       - chapel-code-smoke-test
       - test-homebrew
       - test-c2chapel
+      - test-networking-packages
     steps:
       - name: Fail
         run: |

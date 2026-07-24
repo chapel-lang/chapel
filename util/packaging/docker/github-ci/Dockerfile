@@ -35,6 +35,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-venv \
     time \
     tzdata \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 
