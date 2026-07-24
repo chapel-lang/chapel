@@ -503,7 +503,7 @@ jobs:
           make -j"$num_procs" test-venv
           make -j"$num_procs" spectests
 
-          start_test test/release/examples
+          start_test test/release/examples test/llvm
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
