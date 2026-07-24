@@ -346,7 +346,7 @@ jobs:
       fail-fast: false
       matrix:
         vagrant_config: ["bento-freebsd-13.5", "bento-freebsd-14.3", "generic-x32-debian12", "bento-ubuntu24.04-homebrew"]
-    runs-on: macos-latest
+    runs-on: macos-26-intel
     steps:
       - name: install Vagrant and Virtualbox with Homebrew
         run: |
