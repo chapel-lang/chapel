@@ -470,7 +470,11 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh "${{ matrix.llvm_version }}" all
+
+          # Work around https://github.com/llvm/llvm-project/issues/62152
+          set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
+
+          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
