@@ -338,9 +338,9 @@ jobs:
         id: resources_available
         run: |
           mem=$(($(sysctl hw.memsize | cut -d' ' -f2) / 1024**3))
-          use_mem=$((($mem - 1) * 1024**2))
+          use_mem=$(((mem - 1) * 1024**2))
           echo "use_mem=$use_mem" >> "$GITHUB_OUTPUT"
-          cpus=sysctl -n hw.ncpu
+          cpus=$(sysctl -n hw.ncpu)
           use_cpus=$cpus
           echo "use_cpus=$use_cpus" >> "$GITHUB_OUTPUT"
       - uses: leleliu008/github-actions-vagrant@e0955990cccb0759786273e0c93f009724a222a0 # v2
