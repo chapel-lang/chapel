@@ -27,7 +27,7 @@ defaults:
 
 jobs:
   # arkouda-smoke-test:
-  #   if: false
+  #   if: false && (github.event_name == 'merge_group' || github.event_name == 'push')
   #   runs-on: ubuntu-latest
   #   container:
   #     image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -404,6 +404,7 @@ jobs:
         make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
 
   gcc-version-tests:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -454,6 +455,7 @@ jobs:
           start_test test/release/examples
 
   python-version-tests:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -539,6 +541,7 @@ jobs:
           start_test test/release/examples test/llvm
 
   release-tarball-smoke-test:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -614,6 +617,7 @@ jobs:
           ./util/buildRelease/smokeTest
 
   test-homebrew:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -633,6 +637,7 @@ jobs:
           fi
 
   test-c2chapel:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -672,7 +677,6 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-slim
     needs:
-      # - arkouda-smoke-test
       - make_check
       - make_chplvis
       - make_doc
@@ -687,12 +691,7 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
-      - gcc-version-tests
-      - python-version-tests
-      - release-tarball-smoke-test
       - chapel-code-smoke-test
-      - test-homebrew
-      - test-c2chapel
       - test-networking-packages
     steps:
       - name: Fail
