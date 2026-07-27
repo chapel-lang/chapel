@@ -12,7 +12,7 @@ msg = """ WARNING: ucx-conduit is experimental and should not be used for
           performance measurements.
           Please see `ucx-conduit/README` for more details.
 """
-outText = re.sub(msg, "", outText, flags = re.MULTILINE)
+outText = re.sub(msg, "", outText, flags=re.MULTILINE)
 
 with open(outfname, "w") as f:
     f.write(outText)

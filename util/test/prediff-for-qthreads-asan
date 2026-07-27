@@ -3,9 +3,9 @@
 import sys
 import re
 
-file=sys.argv[2]
+file = sys.argv[2]
 
-with open(file, 'rb') as f:
+with open(file, "rb") as f:
     contents = f.read()
 
 
@@ -14,8 +14,8 @@ False positive error reports may follow
 For details see https:\\/\\/github.com\\/google\\/sanitizers\\/issues\\/189
 """
 
-output = re.sub(handle_no_return, b'', contents, flags=re.MULTILINE)
+output = re.sub(handle_no_return, b"", contents, flags=re.MULTILINE)
 
 
-with open(file, 'wb') as f:
+with open(file, "wb") as f:
     f.write(output)
