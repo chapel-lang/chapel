@@ -354,16 +354,31 @@ jobs:
 
   check-format:
     runs-on: ubuntu-latest
+    env:
+      EXTENSIONLESS_PYTHON_FILES: ""
+      BLACK_OPTIONS: "--check --verbose --line-length 80"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
-          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
       - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
-          options: "--check --verbose --line-length 80 --extend-exclude '(install|build)/'"
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
+      - name: Find extensionless Python files in util/
+        run: |
+          {
+            echo 'EXTENSIONLESS_PYTHON_FILES<<EOF'
+            find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+      - name: Check extensionless Python files
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "${{ env.BLACK_OPTIONS }}"
+          src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"
 
   test_chpl_language_server:
     runs-on: ubuntu-latest
