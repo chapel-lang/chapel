@@ -479,4 +479,32 @@ if 1 < 2 {
     bar,
     baz
   }
+
+  select 1 {
+    when 1 {
+      writeln("hi");
+    } when 2 {
+      writeln("hi");
+    } when 3 {
+      writeln("hi");
+        writeln("hi");
+    } otherwise {
+      writeln("hi");
+    }
+  }
+  select 1 {
+    when 1 {
+      writeln("hi");
+    }
+    when 2 {
+      writeln("hi");
+    }
+    when 3 {
+      writeln("hi");
+        writeln("hi");
+    }
+    otherwise {
+      writeln("hi");
+    }
+  }
 }
