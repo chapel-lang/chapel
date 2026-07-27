@@ -491,6 +491,53 @@ jobs:
 
           start_test test/release/examples test/library/packages/Python test/interop/python
 
+  llvm-version-tests:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
+    runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
+    steps:
+      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+
+          # Work around https://github.com/llvm/llvm-project/issues/62152
+          set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
+
+          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
+
+          echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
+      - name: Check desired LLVM version is default
+        run: |
+          set -exuo pipefail
+
+          # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
+          llvm_version=$($CHPL_LLVM_CONFIG --version)
+          llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
+          if [ "$llvm_version_major" != "${{ matrix.llvm_version }}" ]; then
+            echo "Wrong LLVM version"
+            echo "Expected Version: ${{ matrix.llvm_version }} Actual Version: $llvm_version"
+            exit 2
+          fi
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LLVM=system
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
+
+          start_test test/release/examples test/llvm
+
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
     container:
