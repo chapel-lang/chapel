@@ -37,7 +37,9 @@ class FileUpdater:
         if type == self.VersionType.CURRENT:
             return "{}.{}".format(self.major_version, self.minor_version)
         elif type == self.VersionType.PREVIOUS:
-            return "{}.{}".format(self.prev_major_version, self.prev_minor_version)
+            return "{}.{}".format(
+                self.prev_major_version, self.prev_minor_version
+            )
         else:
             raise ValueError("Unrecognized VersionType: {}".format(type))
 
@@ -95,7 +97,9 @@ class FileUpdater:
 class ConfPyUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
-        version_string = 'chplversion = "{}"\n'.format(self.short_maybe_long_version())
+        version_string = 'chplversion = "{}"\n'.format(
+            self.short_maybe_long_version()
+        )
         release_string = 'release = "{} {}'.format(
             self.long_version(), "" if self.release else "(pre-release)"
         ).strip()
@@ -107,7 +111,10 @@ class ConfPyUpdater(FileUpdater):
             ):
                 lines[i] = version_string
                 any_changed = True
-            elif line.startswith('release = "') and not line.strip() == release_string:
+            elif (
+                line.startswith('release = "')
+                and not line.strip() == release_string
+            ):
                 lines[i] = release_string + '"\n'
                 any_changed = True
         if any_changed:
@@ -119,11 +126,15 @@ class ManConfUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
         release_string = ":Version: {} {}".format(
-            self.short_maybe_long_version(), "" if self.release else "pre-release"
+            self.short_maybe_long_version(),
+            "" if self.release else "pre-release",
         ).strip()
         any_changed = False
         for i, line in enumerate(lines):
-            if line.startswith(":Version: ") and not line.strip() == release_string:
+            if (
+                line.startswith(":Version: ")
+                and not line.strip() == release_string
+            ):
                 lines[i] = release_string + "\n"
                 any_changed = True
         if any_changed:
@@ -268,18 +279,32 @@ def main():
     parser = argparse.ArgumentParser(
         description="Update the version and release/pre-release info in files"
     )
-    parser.add_argument("-f", "--files", nargs="+", help="The file(s) to update")
-    parser.add_argument("major_version", type=int, help="The major version of Chapel")
-    parser.add_argument("minor_version", type=int, help="The minor version of Chapel")
-    parser.add_argument("patch_version", type=int, help="The patch version of Chapel")
     parser.add_argument(
-        "prev_major_version", type=int, help="The previous major version of Chapel"
+        "-f", "--files", nargs="+", help="The file(s) to update"
     )
     parser.add_argument(
-        "prev_minor_version", type=int, help="The previous minor version of Chapel"
+        "major_version", type=int, help="The major version of Chapel"
     )
     parser.add_argument(
-        "prev_patch_version", type=int, help="The previous patch version of Chapel"
+        "minor_version", type=int, help="The minor version of Chapel"
+    )
+    parser.add_argument(
+        "patch_version", type=int, help="The patch version of Chapel"
+    )
+    parser.add_argument(
+        "prev_major_version",
+        type=int,
+        help="The previous major version of Chapel",
+    )
+    parser.add_argument(
+        "prev_minor_version",
+        type=int,
+        help="The previous minor version of Chapel",
+    )
+    parser.add_argument(
+        "prev_patch_version",
+        type=int,
+        help="The previous patch version of Chapel",
     )
     parser.add_argument(
         "--official-release",
