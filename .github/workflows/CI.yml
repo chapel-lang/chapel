@@ -491,6 +491,7 @@ jobs:
           start_test test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
+    if: github.event_name == 'merge_group'
     strategy:
       fail-fast: false
       matrix:
