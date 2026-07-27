@@ -232,7 +232,7 @@ jobs:
 
   check_large_files:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     env:
       IGNORE_LABEL: "large files ok"
     steps:
@@ -311,7 +311,7 @@ jobs:
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: make_doc
     steps:
       - name: download docs
@@ -344,7 +344,7 @@ jobs:
             rm ~/.ssh/known_hosts
 
   run-shellcheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -355,7 +355,7 @@ jobs:
           ignore_paths: ./test/* ./third-party/*
 
   check-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     env:
       EXTENSIONLESS_PYTHON_FILES: ""
       BLACK_OPTIONS: "--check --verbose --line-length 80"
@@ -623,7 +623,7 @@ jobs:
   #   not trigger failure of this job.
   checks-alert-failure:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs:
       # - arkouda-smoke-test
       - make_check
