@@ -428,9 +428,7 @@ def test_directory(test, test_type, num_workers):
                         ):
                             parallel_dirs.append((dir, root))
                         else:
-                            run_sub_tests(
-                                [(dir, root)], num_workers
-                            )
+                            run_sub_tests([(dir, root)], num_workers)
 
             # let user know no tests were found
             else:
@@ -639,7 +637,9 @@ def run_sub_tests(items, num_workers):
     )
     for_files = isinstance(items[0], str)
     item_type = "files" if for_files else "directories"
-    log_str = "[Running sub_test on {0} {1}{2}]".format(len(items), item_type, parallel_log_str)
+    log_str = "[Running sub_test on {0} {1}{2}]".format(
+        len(items), item_type, parallel_log_str
+    )
     logger.write()
     logger.write(log_str)
 
