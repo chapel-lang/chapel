@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -599,6 +600,8 @@ jobs:
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
   # failed; otherwise, it will be skipped, which GH considers acceptable for a
   # 'required' check.
+  # This is separate from merge queue requirements; this jobs will block even
+  # adding to the merge merge queue.
   # When adding a new job which we would like to block PR merging, add it to
   # the `needs` list below. Note that if a dependent job is _skipped_, it will
   # not trigger failure of this job.
