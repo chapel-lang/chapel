@@ -1540,8 +1540,9 @@ def main():
         "run_compileline",
         "dirlist",
     ]
+    mylocals = locals()
     common_test_args = SimpleNamespace(
-        **{k: locals()[k] for k in common_test_args_to_pack}
+        **{k: mylocals[k] for k in common_test_args_to_pack}
     )
     common_test_args.original_compiler = compiler
     common_test_args.compperfdir = compperfdir if compperftest else None
