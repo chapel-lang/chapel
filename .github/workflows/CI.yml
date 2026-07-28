@@ -449,7 +449,10 @@ jobs:
     - name: test chplcheck
       if: steps.changes.outputs.chplcheck_sources == 'true'
       run: |
-        ./util/start_test test/chplcheck
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        # chplcheck tests have a very flat directory structure,
+        # so its better to run parallel-sub_test
+        ./util/start_test --parallel-sub_test "$num_procs" --allow-unsafe-parallel test/chplcheck
 
   gcc-version-tests:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
