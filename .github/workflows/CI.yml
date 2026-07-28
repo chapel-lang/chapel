@@ -743,6 +743,7 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-slim
     needs:
+      # - arkouda-smoke-test
       - make_check
       - make_chplvis
       - make_doc
@@ -757,7 +758,13 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - gcc-version-tests
+      - python-version-tests
+      - llvm-version-tests
+      - release-tarball-smoke-test
       - chapel-code-smoke-test
+      - test-homebrew
+      - test-c2chapel
       - test-networking-packages
     steps:
       - name: Fail
