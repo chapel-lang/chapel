@@ -449,7 +449,8 @@ jobs:
 
           export CHPL_LAUNCHER=none
 
-          make -j"$(./util/buildRelease/chpl-make-cpu_count)"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
           make test-venv
 
           start_test test/release/examples
