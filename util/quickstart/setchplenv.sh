@@ -23,7 +23,7 @@ CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
 
 MYPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$PATH"`
 exitcode=$?
-MYMANPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
+MYMANPATH=`$CHPL_PYTHON $chpl_home/util/config/fixpath.py "${MANPATH-}"`
 
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
