@@ -81,7 +81,7 @@ export CHPL_TARGET_CPU=none
 #       working tree (under $CHPL_HOME), and b) less specific to our file
 #       system hierarchy. (thomasvandoren, 2014-01-24)
 
-explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
+explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX-}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
 css_prefix=/hpcdc/project/chapel
 log_info "About to set log prefix. explicit: ${explicit_prefix}"
@@ -114,12 +114,8 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
 export CHPL_TEST_PERF_CONFIG_NAME=${CHPL_TEST_PERF_CONFIG_NAME:-$(hostname -s)}
-if [ -z "$CHPL_TEST_PERF_DIR" ]; then
-    export CHPL_TEST_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
-fi
-if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
-    export CHPL_TEST_COMP_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
-fi
+export CHPL_TEST_PERF_DIR=${CHPL_TEST_PERF_DIR:-$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME}
+export CHPL_TEST_COMP_PERF_DIR=${CHPL_TEST_COMP_PERF_DIR:-$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME}
 
 # Work-around to remove git submodules
 #   See Cray/chapel-private#1050 for long term solution
