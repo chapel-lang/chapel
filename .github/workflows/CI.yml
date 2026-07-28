@@ -35,11 +35,11 @@ jobs:
     steps:
       - name: determine whether to run all checks
         run: |
-          echo "run-all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_ENV"
-      - name: set run-all output to ${{ env.run-all }}
+          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_ENV"
+      - name: set run-all output to ${{ env.run_all }}
         id: run-all
         run: |
-          echo "run-all=$run-all" >> "$GITHUB_OUTPUTS"
+          echo "run-all=$run_all" >> "$GITHUB_OUTPUTS"
 
   # arkouda-smoke-test:
   #   if: false && (github.event_name == 'merge_group' || github.event_name == 'push')
