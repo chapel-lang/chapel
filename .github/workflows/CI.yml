@@ -57,7 +57,6 @@ jobs:
         {
           echo "ARKOUDA_URL=$(pwd)"
           echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
-          echo "ARKOUDA_SKIP_CHECK_DEPS=true"
           echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
         } >> "$GITHUB_ENV"
     - name: cache Arkouda deps install
