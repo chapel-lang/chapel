@@ -451,7 +451,7 @@ jobs:
 
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
           make -j"$num_procs"
-          make test-venv
+          make -j"$num_procs" test-venv
 
           start_test test/release/examples
 
@@ -490,7 +490,7 @@ jobs:
 
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
           make -j"$num_procs"
-          make test-venv
+          make -j"$num_procs" test-venv
 
           start_test test/release/examples test/library/packages/Python test/interop/python
 
