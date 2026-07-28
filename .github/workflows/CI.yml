@@ -239,7 +239,7 @@ jobs:
       run: |
         . ./util/setchplenv.sh
         PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
-        start_test --parallel $PARALLEL --parallel-sub_test $PARALLEL --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
+        start_test --parallel "$PARALLEL" --parallel-sub_test "$PARALLEL" --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
