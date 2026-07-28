@@ -454,7 +454,7 @@ jobs:
           make -j"$num_procs" test-venv
           make -j"$num_procs" spectests
 
-          start_test test/release/examples
+          start_test -j"$num_procs" test/release/examples
 
   python-version-tests:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
@@ -494,7 +494,7 @@ jobs:
           make -j"$num_procs" test-venv
           make -j"$num_procs" spectests
 
-          start_test test/release/examples test/library/packages/Python test/interop/python
+          start_test -j"$num_procs" test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
@@ -541,7 +541,7 @@ jobs:
           make -j"$num_procs" test-venv
           make -j"$num_procs" spectests
 
-          start_test test/release/examples test/llvm
+          start_test -j"$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
