@@ -223,7 +223,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: build chapel
       run: |
         ./util/buildRelease/smokeTest chpl mason
@@ -231,8 +233,9 @@ jobs:
       run: |
         make test-venv
     - name: clone blog
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
+        persist-credentials: false
         repository: chapel-lang/chapel-blog
         path: chapel-blog
     - name: check blog
