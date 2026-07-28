@@ -307,6 +307,10 @@ jobs:
               if [ "$file" = "" ]; then
                   continue
               fi
+              if [ ! -f "$file" ]; then
+                  echo "Skipping $file (not a regular file)"
+                  continue
+              fi
               echo "Checking file: $file"
 
               file_size=$(wc -c "$file" | awk '{print $1}')
