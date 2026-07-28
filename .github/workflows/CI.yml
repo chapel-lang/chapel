@@ -72,6 +72,7 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         cd arkouda
         make -j"$num_procs" install-deps
+        test -d "$ARKOUDA_DEP_DIR"
     - name: build Chapel and run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
