@@ -233,7 +233,7 @@ jobs:
       run: |
         make test-venv
     - name: clone blog
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
         repository: chapel-lang/chapel-blog
