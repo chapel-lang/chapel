@@ -38,6 +38,8 @@ jobs:
   #     ZLIB_TARBALL: zlib-1.3.1.tar.gz
   #   steps:
   #   - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+  #     with:
+  #       persist-credentials: false
   #   - name: install some Arkouda deps
   #     run: |
   #       apt update && apt install -y \
@@ -81,6 +83,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -94,6 +98,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: install fluid and libfltk-dev
       run: |
         apt update && apt install -y \
@@ -112,6 +118,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -136,6 +144,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -151,6 +161,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: set CHPL_HOME
       run: |
         echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -167,6 +179,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: set CHPL_HOME
       run: |
         echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -195,6 +209,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -210,6 +226,7 @@ jobs:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0 # check_annotations.py uses git history
+        persist-credentials: false
     - name: set CHPL_HOME
       run: |
         echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -242,6 +259,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: ${{ env.PR_NUM_COMMITS }}
+          persist-credentials: false
       - name: check commits for large files
         run: |
           FILE_SIZE_LIMIT_KB=1024
@@ -305,6 +323,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: run check-release-files
       run: |
         ./util/buildRelease/check-release-files.bash
@@ -348,6 +368,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
@@ -361,6 +383,8 @@ jobs:
       BLACK_OPTIONS: "--check --verbose --line-length 80"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
@@ -391,6 +415,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
       id: changes
       with:
@@ -430,6 +456,8 @@ jobs:
             exit 2
           fi
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
@@ -467,6 +495,8 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Check desired Python version is default
         run: |
           set -exuo pipefail
@@ -550,6 +580,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: set vars to make tarball from correct branch
       run: |
         {
@@ -582,6 +614,8 @@ jobs:
           echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
           echo "CONFIG=${{ matrix.config }}" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: install deps
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -628,6 +662,8 @@ jobs:
         run: |
           echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -646,6 +682,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: run test-c2chapel.bash
       run: |
         ./util/cron/test-c2chapel.bash
@@ -659,6 +697,8 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
     - name: run test-networking-packages.bash
       run: |
         ./util/cron/test-networking-packages.bash
