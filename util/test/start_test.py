@@ -11,6 +11,7 @@ import contextlib
 import fnmatch
 import getpass
 import glob
+import io
 import logging
 import os
 import platform
@@ -579,14 +580,14 @@ def sub_test_environment(test=None):
     return env
 
 
-def invoke_sub_test(test_dir_path, test=None):
+def invoke_sub_test(output, test_dir_path, test=None):
     """
     NOTE: This function should involve no global state and may be invoked concurrently!
     """
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
     sub_test = sub_test_path(test_dir_path)
 
-    output = "[Starting {0} {1}]\n".format(sub_test, date_str)
+    output.write("[Starting {0} {1}]\n".format(sub_test, date_str))
     if args.progress and test:
         sys.stderr.write("Testing {0} ... \n".format(test))
 
@@ -599,25 +600,40 @@ def invoke_sub_test(test_dir_path, test=None):
             stderr=subprocess.STDOUT,
             encoding="utf-8",
         )
-        out, _ = p.communicate()
+        while True:
+            line = p.stdout.readline()
+            if not line:
+                break
+            output.write(line)
+        p.wait()
         status = p.returncode
     except Exception as e:
-        return (1, output + "[Error invoking sub_test: {0}]".format(e))
-    output += out
+        output.write("[Error invoking sub_test: {0}]\n".format(e))
+        status = 1
     return (status, output)
 
 
-def invoke_sub_tests(work, num_workers):
+def invoke_sub_tests(work, num_workers, for_files):
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        futures = [
-            (
-                item,
-                executor.submit(invoke_sub_test, test_dir_path, test),
+        futures = []
+        for item, test_dir_path, test in work:
+            output = BufferedLogger() if num_workers > 1 else logger
+            path_for_log = item[1] if not for_files else os.path.relpath(item)
+            output.write()
+            if for_files:
+                output.write("[Working on file {0}]".format(path_for_log))
+            elif num_workers > 1:
+                output.write("[Working on directory {0}]".format(path_for_log))
+            futures.append(
+                (
+                    item,
+                    executor.submit(
+                        invoke_sub_test, output, test_dir_path, test
+                    ),
+                )
             )
-            for item, test_dir_path, test in work
-        ]
         for item, future in futures:
             status, output = future.result()
             yield (item, status, output)
@@ -650,15 +666,13 @@ def run_sub_tests(items, num_workers):
     else:
         work = [(item, item[0], None) for item in items]
 
-    for item, status, output in invoke_sub_tests(work, num_workers):
-        path_for_log = item[1] if not for_files else os.path.relpath(item)
-        logger.write()
-        if for_files:
-            logger.write("[Working on file {0}]".format(path_for_log))
-        elif num_workers > 1:
-            logger.write("[Working on directory {0}]".format(path_for_log))
-        logger.write(output)
+    for item, status, output in invoke_sub_tests(work, num_workers, for_files):
+        if isinstance(output, BufferedLogger):
+            logger.write(output.buffer.getvalue())
+        else:
+            pass  # output was already written to logger
         if status != 0:
+            path_for_log = item[1] if not for_files else os.path.relpath(item)
             logger.write(
                 "[Error running sub_test (code {1}) for {0}]".format(
                     path_for_log, status
@@ -2144,6 +2158,16 @@ class Logger:
     def restart(self):
         self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
+
+class BufferedLogger:
+    def __init__(self):
+        self.buffer = io.StringIO()
+
+    def write(self, msg=" "):
+        self.buffer.write(msg.rstrip() + "\n")
+
+    def flush(self):
+        pass
 
 
 # Override the error handling in Python's built-in logging module, to

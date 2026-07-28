@@ -1581,8 +1581,12 @@ def run_tests(testsrc, common_test_args):
             buffer = io.StringIO()
             run_test(common_test_args, testname, out=buffer)
             return buffer.getvalue()
+        def _run_test_nocapture(testname):
+            run_test(common_test_args, testname, out=sys.stdout)
+            return ""
 
-        for output in executor.map(_run_test_capture, testsrc):
+        func = _run_test_capture if num_workers > 1 else _run_test_nocapture
+        for output in executor.map(func, testsrc):
             sys.stdout.write(output)
             sys.stdout.flush()
 
