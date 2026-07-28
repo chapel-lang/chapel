@@ -45,37 +45,31 @@ jobs:
         apt update && apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
-    - name: build Chapel
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        repository: Bears-R-Us/arkouda
+        path: arkouda
+        persist-credentials: false
+    - name: set Arkouda env vars
       run: |
-        source ./util/cron/common.bash
-        source ./util/setchplenv.bash
-        export CHPL_TEST_ARKOUDA_PERF=false
-        source ./util/cron/common-arkouda.bash
+        cd arkouda
 
-        export NIGHTLY_TEST_SETTINGS=true
-        export CHPL_SMOKE_SKIP_DOC=true
-        export CHPL_SMOKE_SKIP_MAKE_MASON=true
-        export ARKOUDA_SMOKE_TEST=true
-        ./util/buildRelease/smokeTest
-        make -j"$(util/buildRelease/chpl-make-cpu_count)" test-venv
-    - name: set path to Arrow install
-      run: |
-        echo "ARKOUDA_ARROW_PATH=$(pwd)/deps/arrow-$ARROW_VERSION" >> "$GITHUB_ENV"
-    - name: cache Arrow install
-      id: cache-arrow
+        {
+          echo "ARKOUDA_URL=$(pwd)"
+          echo "ARKOUDA_DEP_DIR=$(pwd)/deps"
+          echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
+        } >> "$GITHUB_ENV"
+    - name: cache Arkouda deps install
+      id: cache-arkouda-deps
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
       with:
-        path: ${{ env.ARKOUDA_ARROW_PATH }}
-        key: arrow-${{ env.ARROW_VERSION }}
-    - name: install Arrow from Parquet script
-      if: steps.cache-arrow.outputs.cache-hit != 'true'
+        path: ${{ env.ARKOUDA_DEP_DIR }}
+        key: arkouda-${{ env.ARKOUD_SHA }}
+    - name: install Arkouda deps
+      if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
       run: |
-        # install script wants chpl for chplenv
-        source util/setchplenv.bash
-
-        wget https://raw.githubusercontent.com/chapel-lang/Parquet/refs/heads/main/build_arrow.sh
-        chmod +x build_arrow.sh
-        NUM_CORES=$(util/buildRelease/chpl-make-cpu_count) ./build_arrow.sh
+        cd arkouda
+        make -j"$(util/buildRelease/chpl-make-cpu_count)" install-deps
     - name: run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
