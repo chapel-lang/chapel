@@ -40,16 +40,17 @@ jobs:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
+    - name: checkout Arkouda
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        repository: Bears-R-Us/arkouda
+        path: arkouda
+        persist-credentials: false
     - name: apt install some Arkouda deps
       run: |
         apt update && apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      with:
-        repository: Bears-R-Us/arkouda
-        path: arkouda
-        persist-credentials: false
     - name: set Arkouda env vars
       run: |
         cd arkouda
