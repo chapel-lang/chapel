@@ -54,7 +54,6 @@ jobs:
     - name: set Arkouda env vars
       run: |
         cd arkouda
-
         {
           echo "ARKOUDA_URL=$(pwd)"
           echo "ARKOUDA_DEP_DIR=$(pwd)/deps"
