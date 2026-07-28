@@ -42,7 +42,8 @@ jobs:
           echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
 
   # arkouda-smoke-test:
-  #   if: false && (github.event_name == 'merge_group' || github.event_name == 'push')
+  #   if: false && needs.should-run-extended-checks.outputs.run-all == 'true'
+  #   needs: should-run-extended-checks
   #   runs-on: ubuntu-latest
   #   container:
   #     image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -449,7 +450,8 @@ jobs:
         make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
 
   gcc-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -502,7 +504,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples
 
   python-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -543,7 +546,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -592,7 +596,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -670,7 +675,8 @@ jobs:
           ./util/buildRelease/smokeTest
 
   test-homebrew:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -692,7 +698,8 @@ jobs:
           fi
 
   test-c2chapel:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
