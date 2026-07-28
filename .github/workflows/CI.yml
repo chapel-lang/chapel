@@ -78,7 +78,7 @@ jobs:
     - name: check contents of Arkouda deps install
       run: |
         test -d "$ARKOUDA_DEP_DIR"
-        ls "$ARKOUDA_DEP_DIR"
+        ls -R "$ARKOUDA_DEP_DIR"
     - name: build Chapel and run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
