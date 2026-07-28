@@ -475,10 +475,12 @@ jobs:
 
           export CHPL_LAUNCHER=none
 
-          make -j"$(./util/buildRelease/chpl-make-cpu_count)"
-          make test-venv
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
 
-          start_test test/release/examples
+          start_test --parallel "$num_procs" test/release/examples
 
   python-version-tests:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
@@ -516,9 +518,10 @@ jobs:
 
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
           make -j"$num_procs"
-          make test-venv
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
 
-          start_test test/release/examples test/library/packages/Python test/interop/python
+          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
@@ -565,7 +568,7 @@ jobs:
           make -j"$num_procs" test-venv
           make -j"$num_procs" spectests
 
-          start_test test/release/examples test/llvm
+          start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
