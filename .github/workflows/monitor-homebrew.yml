@@ -8,7 +8,7 @@ on:
     - cron: '30 23 * * *' # Runs at 4:30 PM PDT (3:30 PM PST) (11:30 PM UTC)
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   file_changed: false
