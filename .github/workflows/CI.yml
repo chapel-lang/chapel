@@ -41,6 +41,15 @@ jobs:
         apt update && apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
+
+        # Arrow: https://arrow.apache.org/install/
+        apt update
+        apt install -y -V ca-certificates lsb-release wget
+        wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+        apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+        apt update
+        apt install -y -V libarrow-dev # For C++
+        apt install -y -V libarrow-glib-dev # For GLib (C)
     - name: run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
