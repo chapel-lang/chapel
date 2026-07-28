@@ -71,6 +71,9 @@ jobs:
       run: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         cd arkouda
+        # Download sources serially first before building, as it is flaky and
+        # that'll make it easier to diagnose failures.
+        make deps-download-source
         make -j"$num_procs" install-deps
     - name: check contents of Arkouda deps install
       run: |
