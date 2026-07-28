@@ -43,6 +43,19 @@ jobs:
         apt update && apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
+    - name: build Chapel
+      run: |
+        source ./util/cron/common.bash
+        source ./util/setchplenv.bash
+        export CHPL_TEST_ARKOUDA_PERF=false
+        source ./util/cron/common-arkouda.bash
+
+        export NIGHTLY_TEST_SETTINGS=true
+        export CHPL_SMOKE_SKIP_DOC=true
+        export CHPL_SMOKE_SKIP_MAKE_MASON=true
+        export ARKOUDA_SMOKE_TEST=true
+        ./util/buildRelease/smokeTest
+        make -j"$(util/buildRelease/chpl-make-cpu_count)" test-venv
     - name: set path to Arrow install
       run: |
         echo "ARKOUDA_ARROW_PATH=$(pwd)/deps/arrow-$ARROW_VERSION" >> "$GITHUB_ENV"
@@ -55,6 +68,9 @@ jobs:
     - name: install Arrow from Parquet script
       if: steps.cache-arrow.outputs.cache-hit != 'true'
       run: |
+        # install script wants chpl for chplenv
+        source util/setchplenv.bash
+
         wget https://raw.githubusercontent.com/chapel-lang/Parquet/refs/heads/main/build_arrow.sh
         chmod +x build_arrow.sh
         NUM_CORES=$(util/buildRelease/chpl-make-cpu_count) ./build_arrow.sh
