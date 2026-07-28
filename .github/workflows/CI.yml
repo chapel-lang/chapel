@@ -39,7 +39,7 @@ jobs:
       - name: set run-all output to ${{ env.run_all }}
         id: run-all
         run: |
-          echo "run-all=$run_all" >> "$GITHUB_OUTPUTS"
+          echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
 
   # arkouda-smoke-test:
   #   if: false && (github.event_name == 'merge_group' || github.event_name == 'push')
