@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
 jobs:
   DCO:
     runs-on: ubuntu-slim
