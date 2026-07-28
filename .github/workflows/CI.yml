@@ -750,6 +750,7 @@ jobs:
       - check_dyno_linters
       - check_compiler_dyno_tests
       - make_check_llvm_none
+      - check_blog
       - check_annotations_rt_calls
       - check_large_files
       - check-release-files
