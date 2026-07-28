@@ -69,8 +69,9 @@ jobs:
     - name: install Arkouda deps
       if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
       run: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
         cd arkouda
-        make -j"$(util/buildRelease/chpl-make-cpu_count)" install-deps
+        make -j"$num_procs" install-deps
     - name: run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
