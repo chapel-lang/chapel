@@ -30,21 +30,19 @@ jobs:
 
     - name: create discussion
       run: |
-        # shellcheck disable=SC2016
         repositoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${{ env.owner }}",
-                      name: "${{ env.repo_name }}") { id } }' \
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\") { id } }" \
           | jq -r '.data.repository.id')
 
-        # shellcheck disable=SC2016
         categoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${{ env.owner }}",
-                      name: "${{ env.repo_name }}")
-                      { discussionCategories(first: 10) { nodes { id, name} } } }' \
-          | jq -r '.data.repository.discussionCategories.nodes | .[] | select(.name=="${{ env.category_name }}") | .id')
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\")
+                      { discussionCategories(first: 10) { nodes { id, name} } } }" \
+          | jq -r ".data.repository.discussionCategories.nodes | .[] | select(.name==\"${category_name}\") | .id")
 
-        body="${{ env.agenda_body }}"
-        title="Chapel project meeting: ${{ env.next_meeting_date }} (agenda items, meeting link, notes)"
+        body="${agenda_body}"
+        title="Chapel project meeting: ${next_meeting_date} (agenda items, meeting link, notes)"
 
         # shellcheck disable=SC2016
         QUERY='mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
