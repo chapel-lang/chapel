@@ -216,6 +216,7 @@ jobs:
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
 
   check_blog:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
