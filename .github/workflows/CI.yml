@@ -34,22 +34,30 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
+    env:
+      ARROW_VERSION: "19.0.1"
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-    - name: install some Arkouda deps
+    - name: apt install some Arkouda deps
       run: |
         apt update && apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
-
-        # Arrow: https://arrow.apache.org/install/
-        apt update
-        apt install -y -V ca-certificates lsb-release wget
-        wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
-        apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
-        apt update
-        apt install -y -V libarrow-dev # For C++
-        apt install -y -V libarrow-glib-dev # For GLib (C)
+    - name: set path to Arrow install
+      run: |
+        echo "ARKOUDA_ARROW_PATH=$(pwd)/deps/arrow-$ARROW_VERSION" >> "$GITHUB_ENV"
+    - name: cache Arrow install
+      id: cache-arrow
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+      with:
+        path: ${{ env.ARKOUDA_ARROW_PATH }}
+        key: arrow-${{ env.ARROW_VERSION }}
+    - name: install Arrow from Parquet script
+      if: steps.cache-arrow.outputs.cache-hit != 'true'
+      run: |
+        wget https://raw.githubusercontent.com/chapel-lang/Parquet/refs/heads/main/build_arrow.sh
+        chmod +x build_arrow.sh
+        NUM_CORES=$(util/buildRelease/chpl-make-cpu_count) ./build_arrow.sh
     - name: run Arkouda smoke testing
       run: |
         source ./util/cron/common.bash
