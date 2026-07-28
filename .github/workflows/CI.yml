@@ -62,7 +62,7 @@ jobs:
         export CHPL_SMOKE_SKIP_MAKE_MASON=true
         export ARKOUDA_SMOKE_TEST=true
         ./util/buildRelease/smokeTest
-        make test-venv
+        make -j"$(util/buildRelease/chpl-make-cpu_count)" test-venv
 
         start_test test/studies/arkouda/
 
