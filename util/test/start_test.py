@@ -25,7 +25,7 @@ import time
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
 util_dir = os.path.join(os.path.dirname(__file__), "..", "..", "util")
-chplenv_dir = os.path.join(util_dir, 'chplenv')
+chplenv_dir = os.path.join(util_dir, "chplenv")
 config_dir = os.path.join(util_dir, "config")
 sys.path.insert(0, os.path.abspath(util_dir))
 sys.path.insert(0, os.path.abspath(chplenv_dir))
