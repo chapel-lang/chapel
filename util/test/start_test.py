@@ -667,7 +667,7 @@ def run_sub_tests(items, num_workers):
         work = [(item, item[0], None) for item in items]
 
     for item, status, output in invoke_sub_tests(work, num_workers, for_files):
-        if isinstance(output, BufferedLogger):
+        if output is not logger:
             logger.write(output.buffer.getvalue())
         else:
             pass  # output was already written to logger
