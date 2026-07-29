@@ -20,7 +20,7 @@ jobs:
   core-checks:
     runs-on: ubuntu-slim
     steps:
-    - uses: # other checks
+      - uses: # other checks
 
   extended-checks:
     runs-on: ubuntu-slim
@@ -28,7 +28,7 @@ jobs:
       EXTENDED_CHECKS_LABEL: "run extended CI checks"
     if: github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL))
     steps:
-    - uses: # other checks
+      - uses: # other checks
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
