@@ -22,6 +22,7 @@ jobs:
     steps:
       - name: run core CI checks
         uses: ./.github/workflows/core-ci-checks.yml
+        if: always()
 
   extended-checks:
     runs-on: ubuntu-slim
