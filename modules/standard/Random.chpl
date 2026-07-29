@@ -2164,7 +2164,7 @@ module Random {
             // because this version will calculate the same modulus, but the LHS
             // value is less than 2^32.
 
-        const negbound:uint(32) = ( -(bound:int(32)) ):uint(32);
+        const negbound:uint(32) = __primitive("u-", bound);
         const threshold:uint(32) = negbound % bound;
         var r:uint(32);
 
