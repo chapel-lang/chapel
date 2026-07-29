@@ -435,6 +435,8 @@ jobs:
             rm ~/.ssh/known_hosts
 
   portability-tests-vagrant:
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
