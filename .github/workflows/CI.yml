@@ -467,6 +467,12 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+      - name: set vars to work from correct branch
+        run: |
+          {
+            echo "CHPL_HOME_REPOSITORY=$PWD"
+            echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
+          } >> "$GITHUB_ENV"
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
           cd ./util/devel/test/portability/apptainer
