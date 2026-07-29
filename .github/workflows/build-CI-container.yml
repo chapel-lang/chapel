@@ -34,6 +34,9 @@ on:
   schedule:
     - cron: '0 0 * * 2'
 
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
 
 jobs:
   build-ci-container:

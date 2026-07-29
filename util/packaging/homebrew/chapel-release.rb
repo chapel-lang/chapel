@@ -11,12 +11,13 @@ class Chapel < Formula
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    sha256 arm64_tahoe:   "61b2d6a954c8b1c07540f271f131dd17ff8562dc981bedcba7b30cc7b3ade3e1"
-    sha256 arm64_sequoia: "02bc89e6380ea4c366f55986cb97c205eae046dbd54b40f0c9b443e9a9424896"
-    sha256 arm64_sonoma:  "79dee51debf63e84d821347f8b0febd96e27d28c9461a1a613a051aafad3b1d0"
-    sha256 sonoma:        "f311f7393814574e4ed8a9d0abb0b7e9fbcb0d6c9e894d69f134d5998c13f859"
-    sha256 arm64_linux:   "aca79e05ce356a5d5a636e363b1e360bdb6de685e94d2e8dcc992469b3659421"
-    sha256 x86_64_linux:  "c8a2e1a0d7c0613b2ccb6732474f7139b813b1328473e11cdd184226dcafff64"
+    rebuild 1
+    sha256 arm64_tahoe:   "3ded4e7d42c96a60a9615c5e9454669d2a46788f639654b0a9e9236e9297b9b3"
+    sha256 arm64_sequoia: "d75bb97cf1f91fc42f6f3a25b73fe78201076a383f47da26cd15d2d455d210d8"
+    sha256 arm64_sonoma:  "c13f33fca8b60cb09857f064c1a0ed17f12635ca868afa9973604a756d3469ab"
+    sha256 sonoma:        "428acfcd0cb99eb488423806b15364f16f89b8bdfb60855641897a52da5ace46"
+    sha256 arm64_linux:   "d0c0c978097429cfe2d690d5bdde8be352694e30cad91b868be18502de694561"
+    sha256 x86_64_linux:  "c73fc002ef030ef5ce18edf54b1ed1d737f74336fa7ebc9e1f7af903b914c97b"
   end
 
   depends_on "cmake"
@@ -47,6 +48,11 @@ class Chapel < Formula
     # It should be noted that this will expand to: 'for cmd in python3.14 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+
+    # We link jemalloc dynamically, so its `Libs.private` only adds a duplicate C++ runtime
+    inreplace "util/chplenv/chpl_jemalloc.py",
+              'pkgconfig_get_system_link_args("jemalloc")',
+              'pkgconfig_get_system_link_args("jemalloc", static=False)'
 
     # a lot of scripts have a python3 or python shebang, which does not point to python3.12 anymore
     Pathname.glob("**/*.py") do |pyfile|
@@ -195,6 +201,7 @@ class Chapel < Formula
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
     ENV["CHPL_IGNORE_GASNET_LD"] = "1"
     ENV["CHPL_RT_SILENCE_UNUSED_CORES"] = "1"
+    ENV["CHPL_START_TEST_ARGS"] = "--test-root #{testpath}"
 
     cd libexec do
       system "util/test/checkChplInstall"
