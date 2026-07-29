@@ -18,13 +18,7 @@ defaults:
 
 jobs:
   core-checks:
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: run core CI checks
-        uses: ./.github/workflows/core-ci-checks.yml
+    uses: ./.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
     runs-on: ubuntu-slim
@@ -44,13 +38,7 @@ jobs:
   extended-checks:
     needs: should-run-extended-checks
     if: needs.should-run-extended-checks.outputs.run-all == 'true'
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: run extended CI checks
-        uses: ./.github/workflows/extended-ci-checks.yml
+    uses: ./.github/workflows/extended-ci-checks.yml
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
