@@ -3703,41 +3703,27 @@ private proc isBCPindex(type t) param do
   // TODO: hilde
   // These functions should be migrated to a more global location.
 
+  private proc maxBitsType(type x, type y) param do return max(numBits(x), numBits(y));
+  private proc maxBits(x, y) param do return maxBitsType(x.type, y.type);
+  private proc unsignedMagnitude(x: integral) {
+    type u = uint(numBits(x.type));
+    if isIntType(x.type) && x < 0 then
+      return __primitive("u-", x:u);
+    else
+      return x:u;
+  }
   //
   // Return the number in the range 0 <= result < b that is congruent to a (mod b)
   //
-  proc chpl__mod(dividend:integral, modulus:integral)
-    where numBits(dividend.type) >= numBits(modulus.type)
-  {
-    type t = modulus.type;
-    var m = modulus;
-    // The extra check for `m != min(t)` is required to avoid an optimizer
-    // (especially LLVM) determining that `-min(t)` is undefined and inserting
-    // `poison`.
-    if isIntType(t) && m < 0 && m != min(t) then m = -m;
+  proc chpl__mod(dividend:integral, modulus:integral): uint(maxBits(dividend, modulus)) {
+    type u = uint(maxBits(dividend, modulus));
 
-    var tmp = dividend % (m: dividend.type);
-    if isInt(dividend) then
-      if tmp < 0 then tmp += (m: dividend.type);
-
-    return tmp;
-  }
-
-  proc chpl__mod(dividend:integral, modulus:integral)
-    where numBits(dividend.type) < numBits(modulus.type) && isInt(modulus)
-  {
-    type t = modulus.type;
-    var m = modulus;
-    // The extra check for `m != min(t)` is required to avoid an optimizer
-    // (especially LLVM) determining that `-min(t)` is undefined and inserting
-    // `poison`.
-    if isIntType(t) && m < 0 && m != min(t) then m = -m;
-
-    var tmp = (dividend: t) % m;
-    if isInt(dividend) then
-      if tmp < 0 then tmp += m;
-
-    return tmp: dividend.type;
+    const m = unsignedMagnitude(modulus):u;
+    const remainder = unsignedMagnitude(dividend):u % m;
+    if isIntType(dividend.type) && dividend < 0 && remainder != 0 then
+      return m - remainder;
+    else
+      return remainder;
   }
 
 
@@ -3757,14 +3743,12 @@ private proc isBCPindex(type t) param do
                      modulus : integral) : minuend.type
     where minuend.type == subtrahend.type
   {
-    const m = abs(modulus);
-
-    var minMod = chpl__mod(minuend, m);
-    var subMod = chpl__mod(subtrahend, m);
+    var minMod = chpl__mod(minuend, modulus);
+    var subMod = chpl__mod(subtrahend, modulus);
 
     return if minMod < subMod
-      then m: minuend.type  - (subMod - minMod)
-      else minMod - subMod;
+      then (unsignedMagnitude(modulus): minuend.type  - (subMod - minMod)): minuend.type
+      else (minMod - subMod): minuend.type;
   }
 
   proc chpl__diffMod(minuend : integral,
