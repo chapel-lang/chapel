@@ -5,7 +5,7 @@ proc foo(x : int) do
   return -1;
 
 var y : int = 2;
-for i in 1..6 do
+for i in 1..5 do
   y = y * y;
 
 writeln(foo(1));
