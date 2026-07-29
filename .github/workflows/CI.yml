@@ -463,8 +463,11 @@ jobs:
           popd
 
   portability-tests-apptainer:
+    needs:
+      - should-run-extended-checks
+      - define-portability-test-configs
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
-    needs: define-portability-test-configs
     strategy:
       fail-fast: false
       matrix:
