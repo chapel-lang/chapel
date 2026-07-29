@@ -6,10 +6,12 @@
 from __future__ import print_function
 
 import atexit
+import concurrent.futures
 import contextlib
 import fnmatch
 import getpass
 import glob
+import io
 import logging
 import os
 import platform
@@ -151,8 +153,32 @@ def run_tests(tests):
     else:
         os.environ["CHPL_TEST_NOTESTS"] = "1"
 
-    for test in files:
-        test_file(test)
+    # Individual test files are normally run serially. They may be run in
+    # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
+    # This is "unsafe" because individually-specified files may share a
+    # directory and thus shared state (e.g. writing to the same local file,
+    # custom CLEANFILES, or prediff/skipif/precomp/etc side effects), which can
+    # cause suprious failures.
+    #
+    # out of caution, we only run in parallel in the "normal" run state, e.g.,
+    # no parallel performance testing or graph generation
+    files_parallel = (
+        not args.clean_only
+        and not args.performance
+        and not args.gen_graphs
+        and args.parallel > 1
+        and args.allow_unsafe_parallel
+        and len(files) > 1
+    )
+
+    if args.parallel > 1 and not args.allow_unsafe_parallel and files:
+        print(
+            "[Error: --parallel only applies to directories - to test files in parallel also pass --allow-unsafe-parallel]"
+        )
+        sys.exit(1)
+
+    file_workers = args.parallel if files_parallel else 1
+    test_files(files, file_workers)
 
     os.environ["CHPL_TEST_FUTURES"] = str(args.futures_mode)
     os.environ["CHPL_TEST_NOTESTS"] = "0"
@@ -167,9 +193,18 @@ def run_tests(tests):
         else:
             testruns = ["run"]
 
+    if args.parallel_sub_test > 1 and not args.allow_unsafe_parallel and dirs:
+        print(
+            "[Error: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel]"
+        )
+        sys.exit(1)
+
     for tests in dirs:
         for t in testruns:
-            test_directory(tests, t)
+            dir_workers = (
+                args.parallel if not args.clean_only and t == "run" else 1
+            )
+            test_directory(tests, t, dir_workers)
 
     # test and graph compiler performance
     if args.comp_performance:
@@ -211,41 +246,33 @@ def finish():
 # MAIN ROUTINES AND TESTING
 
 
-def test_file(test):
-    path_to_test = os.path.relpath(test)
-    test_name = os.path.basename(test)
+def test_files(files, num_workers):
+    for test in files:
+        test_name = os.path.basename(test)
+        with cd(os.path.dirname(test)):
+            logger.write()
+            logger.write("[Cleaning file {0}]".format(test))
+            clean(test_name)
 
-    with cd(os.path.dirname(test)):  # cd into dir, and cd out later
-        # clean executables, etc
-        logger.write()
-        logger.write("[Cleaning file {0}]".format(test))
-        # clean and run test
-        clean(test_name)
+    if args.clean_only:
+        return
 
-        error = 0
-        if not args.clean_only:
-            if args.performance or not args.gen_graphs:
-                error = run_sub_test(test)
+    if args.performance or not args.gen_graphs:
+        run_sub_tests(files, num_workers)
 
-            # check for errors:
-            if error != 0:
-                logger.write(
-                    "[Error running sub_test (code {1}) for {0}]".format(
-                        path_to_test, error
-                    )
-                )
-
-            if args.progress:
-                sys.stderr.write("[done]\n")
-
-            del os.environ["CHPL_ONETEST"]
-
-            if args.gen_graphs:
+    if args.gen_graphs:
+        for test in files:
+            with cd(os.path.dirname(test)):
                 generate_graphs(test)
 
 
-def test_directory(test, test_type):
+def test_directory(test, test_type, num_workers):
     logger.write("[Working from directory {0}]".format(test))
+
+    # in parallel mode, defer sub_test to run them concurrently.
+    # only defer and run in parallel mode when running normal tests
+    parallel_mode = num_workers > 1
+    parallel_dirs = []
 
     # recurse through directory
     for root, dirs, files in os.walk(test):
@@ -305,7 +332,9 @@ def test_directory(test, test_type):
                 if os.path.isfile(skip_file_name):
                     try:
                         prune_if = process_skipif_output(
-                            run_command([test_env, skip_file_name]).strip()
+                            subprocess.check_output(
+                                [test_env, skip_file_name], encoding="utf-8"
+                            ).strip()
                         )
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
@@ -327,7 +356,9 @@ def test_directory(test, test_type):
                     try:
                         logger.write("[Checking SKIPIF]")
                         skip_test = process_skipif_output(
-                            run_command([test_env, "SKIPIF"]).strip()
+                            subprocess.check_output(
+                                [test_env, "SKIPIF"], encoding="utf-8"
+                            ).strip()
                         )
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
@@ -378,6 +409,7 @@ def test_directory(test, test_type):
                     os.path.join(dir, "sub_test"), os.X_OK
                 )
 
+            has_pretest = "PRETEST" in files
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
@@ -386,15 +418,18 @@ def test_directory(test, test_type):
                     clean()
 
                     if not args.clean_only:
-                        # run all tests in dir
-                        error = run_sub_test()
-                        # check for errors:
-                        if not error == 0:
-                            logger.write(
-                                "[Error running sub_test (code {1}) in {0}]".format(
-                                    root, error
-                                )
-                            )
+                        # in parallel mode: defer running directories so they
+                        # can run concurrently. directories with PRETEST or
+                        # custom sub_test should not be defered (they may
+                        # generate new tests).
+                        if (
+                            parallel_mode
+                            and not has_pretest
+                            and not run_local_sub_test
+                        ):
+                            parallel_dirs.append((dir, root))
+                        else:
+                            run_sub_tests([(dir, root)], num_workers)
 
             # let user know no tests were found
             else:
@@ -402,8 +437,12 @@ def test_directory(test, test_type):
         # generate graphs
         else:
             with cd(dir):
-                # generate graphs for all testsin dir
+                # generate graphs for all tests in dir
                 generate_graphs()
+
+    # run any deferred directories concurrently
+    if parallel_mode and parallel_dirs:
+        run_sub_tests(parallel_dirs, num_workers)
 
 
 def summarize():
@@ -517,27 +556,134 @@ def clean(test=False):
         logger.write("[Error: sub_clean error]")
 
 
-def run_sub_test(test=False):
-    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
-    os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
+def sub_test_path(test_dir_path):
+    local_sub_test = os.path.join(test_dir_path, "sub_test")
+    if os.access(local_sub_test, os.X_OK):
+        return os.path.abspath(local_sub_test)
+    return os.path.join(util_dir, "test", "sub_test")
 
-    # run test
-    logger.write()
-    if test:  # single test
-        logger.write("[Working on file {0}]".format(os.path.relpath(test)))
-        os.environ["CHPL_ONETEST"] = os.path.basename(test)
 
-    if os.access("sub_test", os.X_OK):
-        sub_test = os.path.abspath("sub_test")
+def sub_test_environment(test=None):
+    env = os.environ.copy()
+    env["CHPL_TEST_UTIL_DIR"] = util_dir
+
+    if test:
+        env["CHPL_ONETEST"] = os.path.basename(test)
     else:
-        sub_test = os.path.join(util_dir, "test", "sub_test")
+        env.pop("CHPL_ONETEST", None)
 
+    if args.parallel_sub_test > 1 and (test or args.allow_unsafe_parallel):
+        env["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
+    else:
+        env.pop("CHPL_PARALLEL_SUB_TEST", None)
+
+    return env
+
+
+def invoke_sub_test(output, test_dir_path, test=None):
+    """
+    NOTE: This function should involve no global state and may be invoked concurrently!
+    """
+    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
+    sub_test = sub_test_path(test_dir_path)
+
+    output.write("[Starting {0} {1}]\n".format(sub_test, date_str))
     if args.progress and test:
         sys.stderr.write("Testing {0} ... \n".format(test))
 
-    logger.write("[Starting {0} {1}]".format(sub_test, date_str))
-    status = run_and_log([sub_test, compiler])
-    return status
+    try:
+        p = subprocess.Popen(
+            [sub_test, compiler],
+            cwd=test_dir_path,
+            env=sub_test_environment(test),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding="utf-8",
+        )
+        while True:
+            line = p.stdout.readline()
+            if not line:
+                break
+            output.write(line)
+        p.wait()
+        status = p.returncode
+    except Exception as e:
+        output.write("[Error invoking sub_test: {0}]\n".format(e))
+        status = 1
+    return (status, output)
+
+
+def invoke_sub_tests(work, num_workers, for_files):
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=num_workers
+    ) as executor:
+        futures = []
+        for item, test_dir_path, test in work:
+            output = BufferedLogger() if num_workers > 1 else logger
+            path_for_log = item[1] if not for_files else os.path.relpath(item)
+            output.write()
+            if for_files:
+                output.write("[Working on file {0}]".format(path_for_log))
+            elif num_workers > 1:
+                output.write("[Working on directory {0}]".format(path_for_log))
+            futures.append(
+                (
+                    item,
+                    executor.submit(
+                        invoke_sub_test, output, test_dir_path, test
+                    ),
+                )
+            )
+        for item, future in futures:
+            status, output = future.result()
+            yield (item, status, output)
+
+
+def run_sub_tests(items, num_workers):
+    """
+    items is either a list of files or a list of tuples of (dir, root) for directories
+    """
+    if not items:
+        return
+
+    parallel_log_str = (
+        " using {0} parallel workers".format(num_workers)
+        if num_workers > 1
+        else ""
+    )
+    for_files = isinstance(items[0], str)
+    item_type = "files" if for_files else "directories"
+    log_str = "[Running sub_test on {0} {1}{2}]".format(
+        len(items), item_type, parallel_log_str
+    )
+    logger.write()
+    logger.write(log_str)
+
+    # each work item is a tuple of (item, test_dir_path, test)
+    # for directories, test is None
+    if for_files:
+        work = [(item, os.path.dirname(item), item) for item in items]
+    else:
+        work = [(item, item[0], None) for item in items]
+
+    for item, status, output in invoke_sub_tests(work, num_workers, for_files):
+        if output is not logger:
+            logger.write(output.buffer.getvalue())
+        else:
+            pass  # output was already written to logger
+        if status != 0:
+            path_for_log = item[1] if not for_files else os.path.relpath(item)
+            logger.write(
+                "[Error running sub_test (code {1}) for {0}]".format(
+                    path_for_log, status
+                )
+            )
+        logger.flush()
+
+        if args.progress and for_files:
+            sys.stderr.write(
+                "[done testing {0}]\n".format(os.path.dirname(item))
+            )
 
 
 def generate_graphs(test=False):
@@ -596,7 +742,7 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = run_command(
+        out = subprocess.check_output(
             [
                 combine_comp_perf,
                 "--tempDatDir",
@@ -605,7 +751,8 @@ def compiler_performance():
                 str(elapsed),
                 "--outDir",
                 comp_perf_dir,
-            ]
+            ],
+            encoding="utf-8",
         )
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
@@ -983,14 +1130,18 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try:
             # get first line of output
-            binary = run_command(["which", "valgrind"]).split("\n")[0]
+            binary = subprocess.check_output(
+                ["which", "valgrind"], encoding="utf-8"
+            ).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
 
         # get first line of output
         try:
-            version = run_command(["valgrind", "--version"]).split("\n")[0]
+            version = subprocess.check_output(
+                ["valgrind", "--version"], encoding="utf-8"
+            ).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -1204,14 +1355,15 @@ def set_up_performance_testing_B():
         )
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = run_command(
+            out = subprocess.check_output(
                 [
                     cmd,
                     sha_dat_file_name,
                     dat_dir,
                     sha_pef_keys_name,
                     sha_out_name,
-                ]
+                ],
+                encoding="utf-8",
             )
             logger.write(out)
         except:
@@ -1404,8 +1556,9 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = run_command(
-            [os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"]
+        out = subprocess.check_output(
+            [os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"],
+            encoding="utf-8",
         )
         logger.write(out)
     except:
@@ -1419,7 +1572,9 @@ def print_chapel_environment():
 # Execute 'cmd' and return its exit code.
 # Print its output to the console in real-time and log it too.
 def run_and_log(cmd):
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8"
+    )
     printout(p.stdout)
     p.wait()
     return p.returncode
@@ -1460,7 +1615,7 @@ def jUnit():
     ]
 
     try:
-        run_command(cmd + junit_args)
+        subprocess.check_output(cmd + junit_args)
     except:
         print("[ERROR generating jUnit XML report]")
 
@@ -1468,6 +1623,16 @@ def jUnit():
 
 
 # PARSER
+
+
+def positive_int(value):
+    """argparse type for an integer >= 1."""
+    ivalue = int(value)
+    if ivalue < 1:
+        raise argparse.ArgumentTypeError(
+            "value must be a positive integer, got {0}".format(ivalue)
+        )
+    return ivalue
 
 
 def help_all(help_msg):
@@ -1899,6 +2064,38 @@ def parser_setup():
         dest="respect_notests",
         help="respect '.notest' files even when testing individual files",
     )
+    # parallel directory-level sub_test invocations
+    parser.add_argument(
+        "-parallel",
+        "--parallel",
+        action="store",
+        type=positive_int,
+        default=1,
+        dest="parallel",
+        metavar="[N]",
+        help="run sub_test concurrently across N directories",
+    )
+    # allow --parallel to also parallelize individually-specified files
+    parser.add_argument(
+        "-allow-unsafe-parallel",
+        "--allow-unsafe-parallel",
+        action="store_true",
+        dest="allow_unsafe_parallel",
+        help="allow --parallel to also parallelize individually-specified "
+        "test files (unsafe if they share a directory)",
+    )
+    parser.add_argument(
+        "-parallel-sub_test",
+        "--parallel-sub_test",
+        action="store",
+        type=positive_int,
+        default=1,
+        dest="parallel_sub_test",
+        metavar="[N]",
+        help="allow sub_test to run N tests concurrently within a single "
+        "directory (requires --allow-unsafe-parallel due to shared directory "
+        "state)",
+    )
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
     parser.add_argument(
@@ -1963,6 +2160,17 @@ class Logger:
         self.logger.addHandler(self.file_out)
 
 
+class BufferedLogger:
+    def __init__(self):
+        self.buffer = io.StringIO()
+
+    def write(self, msg=" "):
+        self.buffer.write(msg.rstrip() + "\n")
+
+    def flush(self):
+        pass
+
+
 # Override the error handling in Python's built-in logging module, to
 # make sure remotely-executed builds fail if something goes wrong with
 # the infrastructure (network connections, for example).
@@ -2003,23 +2211,6 @@ class CommandError(Exception):
         )
 
 
-def run_command(cmd, stderr=None):
-    """
-    check_output like wrapper, but we're still committed to 2.6 so can't rely
-    on check_output
-    """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr)
-    output, _ = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        raise CommandError(retcode, cmd, output)
-
-    if sys.version_info[0] >= 3 and not isinstance(output, str):
-        output = str(output, "utf-8")
-
-    return output
-
-
 def process_skipif_output(output):
     lines = output.splitlines()
     if len(lines) == 0:
@@ -2032,8 +2223,8 @@ def process_skipif_output(output):
 
 def run_git_command(command):
     try:
-        output = run_command(
-            ["git"] + command, stderr=subprocess.STDOUT
+        output = subprocess.check_output(
+            ["git"] + command, stderr=subprocess.STDOUT, encoding="utf-8"
         ).strip()
     except:
         output = None
@@ -2045,8 +2236,6 @@ def printout(so):
         line = so.readline()
         if not line:
             break
-        if sys.version_info[0] >= 3 and not isinstance(line, str):
-            line = str(line, "utf-8")
         logger.write(line)  # strip default newline
         logger.flush()
 

@@ -1,0 +1,7 @@
+rules:
+  unpinned-images:
+    ignore:
+      - CI.yml
+  dangerous-triggers:
+    ignore:
+      - email.yml:2

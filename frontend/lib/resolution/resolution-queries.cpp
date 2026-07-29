@@ -1040,7 +1040,7 @@ static void helpSetFieldTypes(const CompositeType* ct,
   } else if (auto fwd = ast->toForwardingDecl()) {
     if (auto fwdTo = fwd->expr()) {
       if (fwdTo->isDecl()) {
-        helpSetFieldTypes(ct, fwd->expr(), r, initedInParent, fields, syntaxOnly);
+        helpSetFieldTypes(ct, fwdTo, r, initedInParent, fields, syntaxOnly);
       }
       // If it's a visibility clause, use the type of the symbol rather than
       // the whole clause.
@@ -1178,10 +1178,13 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
 
   } else {
     auto& r = resolveFieldResults(rc, ct, fieldId, defaultsPolicy, syntaxOnly);
-
-    // Invoke other query to eliminate duplicate error messages from the
-    // call to ``validateFieldGenericity``.
-    result = resolvedFieldsFromResults(rc, r);
+    // TODO: we have seen recursion errors result in an empty ResolvedFieldResults,
+    // don't try and use it in that case.
+    if (!r.fieldID().isEmpty()) {
+      // Invoke other query to eliminate duplicate error messages from the
+      // call to ``validateFieldGenericity``.
+      result = resolvedFieldsFromResults(rc, r);
+    }
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
