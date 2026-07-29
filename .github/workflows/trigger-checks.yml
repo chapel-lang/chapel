@@ -20,15 +20,21 @@ jobs:
   core-checks:
     runs-on: ubuntu-slim
     steps:
-      - uses: # other checks
+      - name: run core CI checks
+        uses: # core checks
 
   extended-checks:
     runs-on: ubuntu-slim
     env:
       EXTENDED_CHECKS_LABEL: "run extended CI checks"
-    if: github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL))
     steps:
-      - uses: # other checks
+      - name: determine whether to run extended CI checks
+        id: run_all
+        run: |
+          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_OUTPUT"
+      - name: run extended CI checks
+        uses: # extended checks
+        if: steps.run_all.outputs.run_all == 'true'
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
