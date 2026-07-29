@@ -453,21 +453,9 @@ jobs:
       fail-fast: false
       matrix:
         apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
-        with_llvm: ["llvm", "nollvm"]
     env:
       apptainer_config: ${{ matrix.apptainer_config }}
-      with_llvm: ${{ matrix.with_llvm }}
     steps:
-      - name: determine Apptainer config to run
-        run: |
-          nollvm=""
-          if [[ "$with_llvm" == "nollvm" ]]; then
-              nollvm="-nollvm"
-          fi
-          {
-            echo "nollvm=$nollvm"
-            echo "APPTAINER_IMAGE=$apptainer_config$nollvm"
-          } >> "$GITHUB_ENV"
       - name: install Apptainer
         run: |
           sudo apt update && sudo apt install -y \
@@ -482,9 +470,11 @@ jobs:
         run: |
           cd ./util/devel/test/portability/apptainer
 
+          export APPTAINER_IMAGE=$apptainer_config
+
           ./chapel-quickstart-fresh.sh
-          # Default config requires LLVM, so only run when nollvm is not set
-          if [ -z "$nollvm" ]; then
+          # Default config requires LLVM
+          if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
               ./chapel-default-fresh.sh
           fi
 
