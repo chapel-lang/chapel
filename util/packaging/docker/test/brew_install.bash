@@ -32,4 +32,4 @@ brew test-bot --only-formulae-dependents --junit --testing-formulae=chapel --ski
 
 # This is the bulk of the testing and the same command that Homebrew CI runs
 brew test-bot  --skip-online-checks --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae="" \
-  | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
+  tee "$(tty)" | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
