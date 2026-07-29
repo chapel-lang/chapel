@@ -476,7 +476,7 @@ jobs:
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
           export APPTAINER_IMAGE=$apptainer_config
-          MAKEJ=$(./util/buildRelease/chpl-make-cpu_count)
+          MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
           export MAKEJ
 
           cd ./util/devel/test/portability/apptainer
