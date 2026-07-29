@@ -20,6 +20,11 @@ jobs:
   core-checks:
     runs-on: ubuntu-slim
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+        if: always()
       - name: run core CI checks
         uses: ./.github/workflows/core-ci-checks.yml
         if: always()
@@ -33,6 +38,11 @@ jobs:
         id: run_all
         run: |
           echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+        if: steps.run_all.outputs.run_all == 'true'
       - name: run extended CI checks
         uses: ./.github/workflows/extended-ci-checks.yml
         if: steps.run_all.outputs.run_all == 'true'
