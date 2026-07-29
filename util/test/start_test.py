@@ -2159,6 +2159,7 @@ class Logger:
         self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
 
+
 class BufferedLogger:
     def __init__(self):
         self.buffer = io.StringIO()
