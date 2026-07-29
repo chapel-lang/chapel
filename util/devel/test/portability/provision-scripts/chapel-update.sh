@@ -8,9 +8,9 @@ do
     echo chapel directory already exists - updating
     cd chapel && git checkout main && git pull --ff-only && cd .. && echo UPDATED
   else
-    ref="${CHPL_GEN_RELEASE_COMMIT:-HEAD}"
+    ref="${GIT_COMMIT:-HEAD}"
     echo "cloning chapel and checking out ref $ref"
-    git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "${CHPL_HOME_REPOSITORY:-https://github.com/chapel-lang/chapel}" && git reset --hard "$ref" && echo CLONED
+    git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "${GIT_REPO_URL:-https://github.com/chapel-lang/chapel}" && git reset --hard "$ref" && echo CLONED
   fi
 
   if [ $? -eq 0 ]

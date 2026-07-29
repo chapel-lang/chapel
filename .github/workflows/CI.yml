@@ -470,8 +470,8 @@ jobs:
       - name: set vars to work from correct branch
         run: |
           {
-            echo "CHPL_HOME_REPOSITORY=$PWD"
-            echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
+            echo "GIT_REPO_URL=$PWD"
+            echo "GIT_COMMIT=${{ github.sha }}"
           } >> "$GITHUB_ENV"
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
