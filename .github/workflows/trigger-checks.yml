@@ -25,23 +25,32 @@ jobs:
           persist-credentials: false
       - name: run core CI checks
         uses: ./.github/workflows/core-ci-checks.yml
-        if: always()
 
-  extended-checks:
+  should-run-extended-checks:
     runs-on: ubuntu-slim
     env:
       EXTENDED_CHECKS_LABEL: "run extended CI checks"
+    outputs:
+      run-all: ${{ steps.run-all.outputs.run-all }}
     steps:
-      - name: determine whether to run extended CI checks
-        id: run_all
+      - name: determine whether to run all checks
         run: |
-          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_OUTPUT"
+          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_ENV"
+      - name: set run-all output to ${{ env.run_all }}
+        id: run-all
+        run: |
+          echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
+
+  extended-checks:
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
+    runs-on: ubuntu-slim
+    steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: run extended CI checks
         uses: ./.github/workflows/extended-ci-checks.yml
-        if: steps.run_all.outputs.run_all == 'true'
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
