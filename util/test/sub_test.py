@@ -1581,6 +1581,7 @@ def run_tests(testsrc, common_test_args):
             buffer = io.StringIO()
             run_test(common_test_args, testname, out=buffer)
             return buffer.getvalue()
+
         def _run_test_nocapture(testname):
             run_test(common_test_args, testname, out=sys.stdout)
             return ""
