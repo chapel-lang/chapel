@@ -478,7 +478,8 @@ jobs:
           cd ./util/devel/test/portability/apptainer
 
           export APPTAINER_IMAGE=$apptainer_config
-          export MAKEJ=$(./util/buildRelease/chpl-make-cpu_count)
+          MAKEJ=$(./util/buildRelease/chpl-make-cpu_count)
+          export MAKEJ
 
           ./chapel-quickstart-fresh.sh
           # Default config requires LLVM
