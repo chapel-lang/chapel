@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -exuo pipefail
+set -exu
 
 if [ -d chapel ]
 then
