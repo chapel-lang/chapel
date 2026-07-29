@@ -26,8 +26,24 @@ defaults:
 #   [3] https://github.com/actions/starter-workflows/issues/162
 
 jobs:
+  should-run-extended-checks:
+    runs-on: ubuntu-slim
+    env:
+      EXTENDED_CHECKS_LABEL: "run extended CI checks"
+    outputs:
+      run-all: ${{ steps.run-all.outputs.run-all }}
+    steps:
+      - name: determine whether to run all checks
+        run: |
+          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_ENV"
+      - name: set run-all output to ${{ env.run_all }}
+        id: run-all
+        run: |
+          echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
+
   arkouda-smoke-test:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -575,7 +591,8 @@ jobs:
         ./util/start_test --parallel-sub_test "$num_procs" --allow-unsafe-parallel test/chplcheck
 
   gcc-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -628,7 +645,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples
 
   python-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -669,7 +687,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -718,7 +737,8 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -796,7 +816,8 @@ jobs:
           ./util/buildRelease/smokeTest
 
   test-homebrew:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -818,7 +839,8 @@ jobs:
           fi
 
   test-c2chapel:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -862,6 +884,7 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-slim
     needs:
+      - arkouda-smoke-test
       - make_check
       - make_chplvis
       - make_doc
@@ -877,8 +900,14 @@ jobs:
       - portability-tests-apptainer
       - run-shellcheck
       - check-format
+      - gcc-version-tests
+      - python-version-tests
+      - llvm-version-tests
+      - release-tarball-smoke-test
       - test_chpl_language_server_chplcheck
       - chapel-code-smoke-test
+      - test-homebrew
+      - test-c2chapel
       - test-networking-packages
     steps:
       - name: Fail
