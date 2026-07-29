@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -exu
 
@@ -9,6 +9,12 @@ else
   GIT_BRANCH_ARG=${GIT_BRANCH:+"--branch $GIT_BRANCH"}
   GIT_REPO_URL=${GIT_REPO_URL:-https://github.com/chapel-lang/chapel}
   GIT_COMMIT=${GIT_COMMIT:-HEAD}
-  git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "$GIT_BRANCH_ARG" "$GIT_REPO_URL"
+
+  git_cmd=(git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "$GIT_REPO_URL")
+  if [ -n "$GIT_BRANCH" ]; then
+    git_cmd+=(--branch "$GIT_BRANCH")
+  fi
+  "${git_cmd[@]}"
+
   git reset --hard "$GIT_COMMIT"
 fi
