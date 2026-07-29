@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+EXPECTED_MSG='1 + 9223372036854775807 cannot be represented' $CHPL_HOME/util/test/prediff-for-ok-param-overflow "$@"
