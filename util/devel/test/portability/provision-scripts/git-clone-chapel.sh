@@ -11,7 +11,7 @@ else
   GIT_COMMIT=${GIT_COMMIT:-HEAD}
 
   git_cmd=(git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "$GIT_REPO_URL")
-  if [ -n "$GIT_BRANCH" ]; then
+  if [ -n "${GIT_BRANCH-}" ]; then
     git_cmd+=(--branch "$GIT_BRANCH")
   fi
   "${git_cmd[@]}"
