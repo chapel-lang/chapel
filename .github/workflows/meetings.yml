@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 16 * * 2' # Runs every week on Tuesday at 10 PT
 
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
 jobs:
   create-discussion:
     name: Create Weekly Discussion

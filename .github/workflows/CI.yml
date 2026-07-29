@@ -41,54 +41,75 @@ jobs:
         run: |
           echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
 
-  # arkouda-smoke-test:
-  #   if: false && needs.should-run-extended-checks.outputs.run-all == 'true'
-  #   needs: should-run-extended-checks
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.github_token }}
-  #   env:
-  #     ZLIB_TARBALL: zlib-1.3.1.tar.gz
-  #   steps:
-  #   - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-  #     with:
-  #       persist-credentials: false
-  #   - name: install some Arkouda deps
-  #     run: |
-  #       apt update && apt install -y \
-  #         libzmq3-dev \
-  #         libcurl4-openssl-dev
-  #   - name: cache zlib for arrow
-  #     id: cache-zlib
-  #     uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
-  #     with:
-  #       path: ${{ env.ZLIB_TARBALL }}
-  #       key: ${{ env.ZLIB_TARBALL }}
-  #   - name: fetch zlib tarball
-  #     if: steps.cache-zlib.outputs.cache-hit != 'true'
-  #     run: |
-  #       wget https://zlib.net/fossils/${{ env.ZLIB_TARBALL }}
-  #   - name: set downloaded zlib tarball path
-  #     run: |
-  #       echo "ARROW_ZLIB_URL=$(pwd)/${{ env.ZLIB_TARBALL }}" >> "$GITHUB_ENV"
-  #   - name: run Arkouda smoke testing
-  #     run: |
-  #       source ./util/cron/common.bash
-  #       source ./util/setchplenv.bash
-  #       export CHPL_TEST_ARKOUDA_PERF=false
-  #       source ./util/cron/common-arkouda.bash
+  arkouda-smoke-test:
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    env:
+      ARROW_VERSION: "19.0.1"
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: checkout Arkouda
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        repository: Bears-R-Us/arkouda
+        path: arkouda
+        persist-credentials: false
+    - name: apt install some Arkouda deps
+      run: |
+        apt update && apt install -y \
+          libzmq3-dev \
+          libcurl4-openssl-dev
+    - name: set Arkouda env vars
+      run: |
+        cd arkouda
+        {
+          echo "ARKOUDA_URL=$(pwd)"
+          echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
+          echo "ARKOUDA_SKIP_CHECK_DEPS=true"
+          echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
+        } >> "$GITHUB_ENV"
+    - name: cache Arkouda deps install
+      id: cache-arkouda-deps
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+      with:
+        path: ${{ env.ARKOUDA_DEP_DIR }}
+        key: arkouda-${{ env.ARKOUDA_SHA }}
+    - name: install Arkouda deps
+      if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
+      run: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        cd arkouda
+        # Download sources serially first before building, as it is flaky and
+        # that'll make it easier to diagnose failures.
+        make deps-download-source
+        make -j"$num_procs" install-deps
+    - name: check contents of Arkouda deps install
+      run: |
+        test -d "$ARKOUDA_DEP_DIR"
+        ls -R "$ARKOUDA_DEP_DIR"
+    - name: build Chapel and run Arkouda smoke testing
+      run: |
+        source ./util/cron/common.bash
+        source ./util/setchplenv.bash
+        export CHPL_TEST_ARKOUDA_PERF=false
+        source ./util/cron/common-arkouda.bash
 
-  #       export NIGHTLY_TEST_SETTINGS=true
-  #       export CHPL_SMOKE_SKIP_DOC=true
-  #       export CHPL_SMOKE_SKIP_MAKE_MASON=true
-  #       export ARKOUDA_SMOKE_TEST=true
-  #       ./util/buildRelease/smokeTest
-  #       make test-venv
+        export NIGHTLY_TEST_SETTINGS=true
+        export CHPL_SMOKE_SKIP_DOC=true
+        export CHPL_SMOKE_SKIP_MAKE_MASON=true
+        export ARKOUDA_SMOKE_TEST=true
+        ./util/buildRelease/smokeTest
+        make -j"$(util/buildRelease/chpl-make-cpu_count)" test-venv
 
-  #       start_test test/studies/arkouda/
+        start_test test/studies/arkouda/
 
   make_check:
     runs-on: ubuntu-latest
@@ -230,6 +251,36 @@ jobs:
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
+
+  check_blog:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: build chapel
+      run: |
+        ./util/buildRelease/smokeTest chpl mason
+    - name: build test-venv
+      run: |
+        make test-venv
+    - name: clone blog
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+        repository: chapel-lang/chapel-blog
+        path: chapel-blog
+    - name: check blog
+      run: |
+        . ./util/setchplenv.sh
+        PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
+        start_test --parallel "$PARALLEL" --parallel-sub_test "$PARALLEL" --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
@@ -426,7 +477,7 @@ jobs:
           options: "${{ env.BLACK_OPTIONS }}"
           src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"
 
-  test_chpl_language_server:
+  test_chpl_language_server_chplcheck:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -444,10 +495,31 @@ jobs:
           cls_sources:
             - 'tools/chapel-py/**'
             - 'tools/chpl-language-server/**'
+          chplcheck_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chplcheck/**'
+            - 'test/chplcheck/**'
+    - name: build chapel-py
+      if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        make chapel-py-venv -j"$(./util/buildRelease/chpl-make-cpu_count)"
+    - name: build chpl and test-venv
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        # start_test requires both test-venv and a working chpl install
+        ./util/buildRelease/smokeTest quickstart chpl
+        make test-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
     - name: test chpl-language-server
       if: steps.changes.outputs.cls_sources == 'true'
       run: |
         make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
+    - name: test chplcheck
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        # chplcheck tests have a very flat directory structure,
+        # so its better to run parallel-sub_test
+        ./util/start_test --parallel-sub_test "$num_procs" --allow-unsafe-parallel test/chplcheck
 
   gcc-version-tests:
     needs: should-run-extended-checks
@@ -743,7 +815,7 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-slim
     needs:
-      # - arkouda-smoke-test
+      - arkouda-smoke-test
       - make_check
       - make_chplvis
       - make_doc
@@ -751,17 +823,18 @@ jobs:
       - check_dyno_linters
       - check_compiler_dyno_tests
       - make_check_llvm_none
+      - check_blog
       - check_annotations_rt_calls
       - check_large_files
       - check-release-files
       - publish-docs
       - run-shellcheck
       - check-format
-      - test_chpl_language_server
       - gcc-version-tests
       - python-version-tests
       - llvm-version-tests
       - release-tarball-smoke-test
+      - test_chpl_language_server_chplcheck
       - chapel-code-smoke-test
       - test-homebrew
       - test-c2chapel

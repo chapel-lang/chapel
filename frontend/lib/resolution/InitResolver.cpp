@@ -241,10 +241,12 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
     for (auto i = currentFieldIndex_; i < curMax; i++) {
       auto& id = fieldIdsByOrdinal_[i];
       auto state = fieldStateFromId(id);
+      if (!state) continue;
       auto stateA = A->fieldStateFromId(id);
       auto stateB = B->fieldStateFromId(id);
+      if (!stateA || !stateB) continue;
 
-      assert(stateA->isInitialized && stateB->isInitialized);
+      CHPL_ASSERT(stateA->isInitialized && stateB->isInitialized);
       state->isInitialized = true;
 
       // Below, we issue an error if the resulting types do not compute to
@@ -582,6 +584,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   for (int i = 0; i < rfNoDefaults.numFields(); i++) {
     auto id = rfNoDefaults.fieldDeclId(i);
     auto state = fieldStateFromId(id);
+    if (!state) continue;
     auto qtInitial = rfNoDefaults.fieldType(i);
     bool isInitiallyConcrete = qtInitial.genericity() == Type::CONCRETE;
 
@@ -772,10 +775,14 @@ bool InitResolver::implicitlyResolveFieldType(ID id, const ID initBefore) {
                                  DefaultsPolicy::USE_DEFAULTS,
                                  /* syntaxOnly */ false,
                                  /* fieldTypesOnly */ false);
+  // TODO: we have seen recursion errors result in an empty ResolvedFieldResults,
+  // don't try and use it in that case.
+  if (rr.fieldID().isEmpty()) return false;
   auto& rf = resolvedFieldsFromResults(initResolver_.rc, rr);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
     auto state = fieldStateFromId(id);
+    if (!state) continue;
     CHPL_ASSERT(state);
     CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
 
@@ -1054,7 +1061,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   if (fieldId.isEmpty() || isSuperField) return false;
 
   auto state = fieldStateFromId(fieldId);
-  CHPL_ASSERT(state);
+  if (!state) return false;
 
   bool isAlreadyInitialized = !state->initPointId.isEmpty();
   bool isOutOfOrder = state->ordinalPos < currentFieldIndex_;

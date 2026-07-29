@@ -8,11 +8,16 @@ on:
     - cron: '30 23 * * *' # Runs at 4:30 PM PDT (3:30 PM PST) (11:30 PM UTC)
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 env:
   file_changed: false
   branch_exists: false
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
 
 jobs:
   check-and-update:
@@ -23,7 +28,7 @@ jobs:
     - name: Checkout this repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        persist-credentials: false
+        persist-credentials: true # Needed to push new branch
 
     - name: Fetch released version of Chapel formula
       run: |
