@@ -466,7 +466,7 @@ jobs:
           fi
           {
             echo "nollvm=$nollvm"
-            echo "APPTAINER_IMAGE=$distro_name$nollvm"
+            echo "APPTAINER_IMAGE=$apptainer_config$nollvm"
           } >> "$GITHUB_ENV"
       - name: install Apptainer
         run: |
