@@ -438,12 +438,12 @@ jobs:
 
           pushd apptainer/current
           apptainer_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
-          echo "apptainer_configs=$apptainer_configs" >> "$GITHUB_OUTPUT"
+          echo "apptainer_configs=[$apptainer_configs]" >> "$GITHUB_OUTPUT"
           popd
 
           pushd vagrant/current
           vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
-          echo "vagrant_configs=$vagrant_configs" >> "$GITHUB_OUTPUT"
+          echo "vagrant_configs=[$vagrant_configs]" >> "$GITHUB_OUTPUT"
           popd
 
   portability-tests-apptainer:
