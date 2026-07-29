@@ -418,6 +418,72 @@ jobs:
             rm ~/.ssh/id_rsa
             rm ~/.ssh/known_hosts
 
+  define-portability-test-configs:
+    runs-on: ubuntu-slim
+    outputs:
+      apptainer_configs: ${{ steps.configs.outputs.apptainer_configs }}
+      vagrant_configs: ${{ steps.configs.outputs.vagrant_configs }}
+    env:
+      PORTABILITY_TEST_DIR: "util/devel/test/portability"
+    steps:
+      - name: sparse check out ${{ env.PORTABILITY_TEST_DIR }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          sparse-checkout: ${{ env.PORTABILITY_TEST_DIR }}
+      - name: get list of current Apptainer and Vagrant configs
+        id: configs
+        run: |
+          cd ${{ env.PORTABILITY_TEST_DIR }}
+
+          pushd apptainer/current
+          apptainer_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          echo "apptainer_configs=$apptainer_configs" >> "$GITHUB_OUTPUT"
+          popd
+
+          pushd vagrant/current
+          vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          echo "vagrant_configs=$vagrant_configs" >> "$GITHUB_OUTPUT"
+          popd
+
+  portability-tests-apptainer:
+    runs-on: ubuntu-latest
+    needs: define-portability-test-configs
+    strategy:
+      fail-fast: false
+      matrix:
+        apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
+        with_llvm: ["llvm", "nollvm"]
+    steps:
+      - name: install Apptainer
+        run: |
+          sudo apt update && sudo apt install -y \
+            apptainer
+      - name: print Apptainer version
+        run: |
+          apptainer --version
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: test Apptainer config ${{ matrix.apptainer_config }}
+        run: |
+          distro_name=${{ matrix.apptainer_config }}
+          with_llvm=${{ matrix.with_llvm }}
+
+          nollvm=""
+          if [[ "$with_llvm" == "nollvm" ]]; then
+              nollvm="-nollvm"
+          fi
+          export APPTAINER_IMAGE="$distro_name$nollvm"
+
+          cd ./util/devel/test/portability/apptainer
+
+          ./chapel-quickstart-fresh.sh
+          # Default config requires LLVM, so only run when nollvm is not set
+          if [ -z "$nollvm" ]; then
+              ./chapel-default-fresh.sh
+          fi
+
   run-shellcheck:
     runs-on: ubuntu-slim
     steps:
@@ -805,6 +871,7 @@ jobs:
       - check_large_files
       - check-release-files
       - publish-docs
+      - portability-tests-apptainer
       - run-shellcheck
       - check-format
       - test_chpl_language_server_chplcheck
