@@ -14,7 +14,7 @@ docker image inspect homebrew_ci
 # Start the container and run a script to check homebrew install inside the running container
 CONTAINER_NAME=homebrew-ci-test
 docker container rm --force --volumes "$CONTAINER_NAME"
-docker run --platform linux/amd64 -i --name "$CONTAINER_NAME" homebrew_ci /bin/bash < ${CHPL_HOME}/util/packaging/docker/test/brew_install.bash
+docker run --platform linux/amd64 -it --name "$CONTAINER_NAME" homebrew_ci /bin/bash < ${CHPL_HOME}/util/packaging/docker/test/brew_install.bash
 CONTAINER_RUN=$?
 if [ $CONTAINER_RUN -ne 0 ]
 then
