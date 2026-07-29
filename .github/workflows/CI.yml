@@ -458,8 +458,9 @@ jobs:
     steps:
       - name: install Apptainer
         run: |
-          sudo apt update && sudo apt install -y \
-            apptainer
+          sudo add-apt-repository -y ppa:apptainer/ppa
+          sudo apt update
+          sudo apt install -y apptainer
       - name: print Apptainer version
         run: |
           apptainer --version
