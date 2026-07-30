@@ -6,7 +6,6 @@ if [ -d chapel ]
 then
   echo WARNING: chapel directory already exists, not cloning
 else
-  GIT_BRANCH_ARG=${GIT_BRANCH:+"--branch $GIT_BRANCH"}
   GIT_REPO_URL=${GIT_REPO_URL:-https://github.com/chapel-lang/chapel}
   GIT_COMMIT=${GIT_COMMIT:-HEAD}
 
