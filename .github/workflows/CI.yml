@@ -13,7 +13,7 @@ permissions:
 env:
   NIGHTLY_TEST_SETTINGS: true
 
-defaults:
+dfaults:
   run:
     shell: bash -exuo pipefail {0}
 
