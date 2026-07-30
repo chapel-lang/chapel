@@ -1174,7 +1174,7 @@ def set_up_parallelism():
     # This is "unsafe" because individually-specified files may share a
     # directory and thus shared state (e.g. writing to the same local file,
     # custom CLEANFILES, or prediff/skipif/precomp/etc side effects), which can
-    # cause suprious failures.
+    # cause spurious failures.
     #
     # out of caution, we only run in parallel in the "normal" run state, e.g.,
     # no parallel performance testing or graph generation
