@@ -455,21 +455,12 @@ jobs:
           persist-credentials: false
       - name: set vars to work from correct branch
         run: |
-          {
-            echo "GIT_REPO_URL=$PWD"
-            echo "GIT_COMMIT=${{ github.sha }}"
-          } >> "$GITHUB_ENV"
+          echo "GIT_REVISION=$GITHUB_REF" >> "$GITHUB_ENV"
       - name: test Vagrant config ${{ matrix.vagrant_config }}
         run: |
           export VM_NAME=${{ matrix.vagrant_config }}
 
           cd util/devel/test/portability/vagrant
-
-          # Manually trigger clone of Chapel before running VM, so we get a
-          # clone of the correct ref (via env vars set outside the VM).
-          pushd "current/$VM_NAME"
-          ../../provision-scripts/git-clone-chapel.sh
-          popd
 
           # ./chapelquickcheck.sh
           # ./chapeldefaultcheck.sh

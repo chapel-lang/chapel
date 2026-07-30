@@ -28,7 +28,12 @@ Vagrant.configure("2") do |config|
     path: "../../provision-scripts/apt-get-llvm.sh"
 
   config.vm.provision "shell", privileged: false, run: "always",
-    path: "../../provision-scripts/git-clone-chapel.sh"
+    path: "../../provision-scripts/git-clone-chapel.sh",
+    env: {
+      "GIT_BRANCH"   => ENV["GIT_BRANCH"],
+      "GIT_REPO_URL" => ENV["GIT_REPO_URL"],
+      "GIT_REVISION" => ENV["GIT_REVISION"]
+    }
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/make-chapel-quick.sh"
