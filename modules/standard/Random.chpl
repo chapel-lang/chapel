@@ -1981,21 +1981,21 @@ module Random {
     private inline
     proc pcg_output_rxs_m_xs_8_8(state:uint(8)):uint(8)
     {
-      const word:uint(8) = ((state >> ((state >> 6) + 2)) ^ state) * 217;
+      const word:uint(8) = (((state >> ((state >> 6) + 2)) ^ state):uint(32) * 217:uint(32)):uint(8);
       return (word >> 6) ^ word;
     }
 
     private inline
     proc pcg_output_rxs_m_xs_16_16(state:uint(16)):uint(16)
     {
-      const word:uint(16) = ((state >> ((state >> 13) + 3)) ^ state) * 62169;
+      const word:uint(16) = (((state >> ((state >> 13) + 3)) ^ state):uint(32) * 62169:uint(32)):uint(16);
       return (word >> 11) ^ word;
     }
 
     private inline
     proc pcg_output_rxs_m_xs_32_32(state:uint(32)):uint(32)
     {
-      const word:uint(32) = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+      const word:uint(32) = ((state >> ((state >> 28) + 4)) ^ state):uint(32) * 277803737:uint(32);
       return (word >> 22) ^ word;
     }
 
@@ -2086,7 +2086,7 @@ module Random {
             // because this version will calculate the same modulus, but the LHS
             // value is less than 2^32.
 
-        const negbound:uint(32) = ( -(bound:int(32)) ):uint(32);
+        const negbound:uint(32) = __primitive("u-", bound);
         const threshold:uint(32) = negbound % bound;
         var tmprng:pcg_setseq_64_xsh_rr_32_rng;
         var tmpinc:uint(64);
@@ -2164,7 +2164,7 @@ module Random {
             // because this version will calculate the same modulus, but the LHS
             // value is less than 2^32.
 
-        const negbound:uint(32) = ( -(bound:int(32)) ):uint(32);
+        const negbound:uint(32) = __primitive("u-", bound);
         const threshold:uint(32) = negbound % bound;
         var r:uint(32);
 
