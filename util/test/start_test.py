@@ -96,21 +96,23 @@ def run_tests(tests):
                 "[Error: {0} is not a valid file or directory]".format(i)
             )
             had_invalid_file = True
+    num_files = num_files
+    num_dirs = num_dirs
 
-    if had_invalid_file and len(files) == 0 and len(dirs) == 0:
+    if had_invalid_file and num_files == 0 and num_dirs == 0:
         sys.exit(2)
 
     # set up
     set_up_environment()
     set_up_general()
-    set_up_parallelism()
+    set_up_parallelism(num_files)
     set_up_performance_testing_A()  # A and B are separate in order to keep
     # output the same from old start_test
     set_up_executables()
     set_up_performance_testing_B()
 
     # autogenerate tests from spec if no tests were given
-    if len(files) == 0 and len(dirs) == 0:  # no tests specified
+    if num_files == 0 and num_dirs == 0:  # no tests specified
         auto_generate_tests()
         if os.getcwd() == home:
             dirs = [test_dir]
@@ -1168,7 +1170,7 @@ def set_up_general():
         compiler = args.compiler
 
 
-def set_up_parallelism():
+def set_up_parallelism(num_files):
     global file_workers
     # Individual test files are normally run serially. They may be run in
     # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
@@ -1185,7 +1187,7 @@ def set_up_parallelism():
         and not args.gen_graphs
         and args.parallel > 1
         and args.allow_unsafe_parallel
-        and len(files) > 1
+        and num_files > 1
     )
     if args.parallel > 1 and not args.allow_unsafe_parallel and files:
         print(
