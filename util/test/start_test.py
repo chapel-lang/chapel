@@ -103,7 +103,7 @@ def run_tests(tests):
     # set up
     set_up_environment()
     set_up_general()
-    set_up_parallelism(files)
+    set_up_parallelism(files, dirs)
     set_up_performance_testing_A()  # A and B are separate in order to keep
     # output the same from old start_test
     set_up_executables()
@@ -1168,7 +1168,7 @@ def set_up_general():
         compiler = args.compiler
 
 
-def set_up_parallelism(files):
+def set_up_parallelism(files, dirs):
     global file_workers
     # Individual test files are normally run serially. They may be run in
     # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
