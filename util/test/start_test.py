@@ -1167,6 +1167,7 @@ def set_up_general():
     else:
         compiler = args.compiler
 
+
 def set_up_parallelism():
     global file_workers
     # Individual test files are normally run serially. They may be run in
@@ -1202,6 +1203,7 @@ def set_up_parallelism():
     logger.write(f"[parallel dirs: {args.parallel}]")
     logger.write(f"[parallel files: {file_workers}]")
     logger.write(f"[parallel sub_test: {args.parallel_sub_test}]")
+
 
 def set_up_performance_testing_A():
     # performance
