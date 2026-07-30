@@ -15,5 +15,5 @@ else
   fi
   "${git_cmd[@]}"
 
-  git reset --hard "$GIT_COMMIT"
+  pushd chapel && git reset --hard "$GIT_COMMIT" && popd
 fi
