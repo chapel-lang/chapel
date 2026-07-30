@@ -144,9 +144,9 @@ module AutoMath {
 
   /*
     Returns the absolute value of the integer param argument `x`.
-    
+
     .. note::
-      
+
        The expression ``abs(min(int))`` will result in a compile-time error. The
        absolute value of the minimum representable integer is not representable
        as an integer of the same type.
