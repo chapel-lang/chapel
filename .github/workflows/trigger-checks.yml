@@ -6,6 +6,10 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    # Watch for label changes since labels can trigger extended checks.
+    # Types opened, synchronize, reopened are defaults if no types are
+    # specified, so make sure to keep them.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   merge_group:
 
 permissions:
@@ -18,6 +22,7 @@ defaults:
 
 jobs:
   core-checks:
+    if: ! (github.event_name == 'pull_request' && (github.event.action == 'labeled' || github.event.action == 'unlabeled'))
     uses: ./.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
