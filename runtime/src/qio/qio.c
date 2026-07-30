@@ -1527,7 +1527,7 @@ qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hi
   if( err ) return err;
 
   start += file->initial_pos;
-  end += file->initial_pos;
+  CHPL_SAT_SADD(end, end, file->initial_pos, int64_t, uint64_t, INT64_MAX);
 
   ch->bit_buffer = 0;
   ch->bit_buffer_bits = 0;
