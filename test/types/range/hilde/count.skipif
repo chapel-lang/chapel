@@ -1,0 +1,3 @@
+# the count operator explicitly relies on wraparound
+# see https://github.com/chapel-lang/chapel/pull/13673 for the rationale
+CHPL_SANITIZE_EXE==undefined
