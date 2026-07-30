@@ -2966,6 +2966,7 @@ int main(int argc, char* argv[]) {
         // backend results from makeBinary phase that need to be added in.
         if (!shouldSkipMakeBinary(/* warnIfSkipping */ false)) {
           const size_t numPassGroups = 3;
+          INT_ASSERT(
               groupData.size() == (numPassGroups + 1) &&
               "unexpected number of saved timing results from driver phases");
           // Combine the two halves of the backend total time into one value.
