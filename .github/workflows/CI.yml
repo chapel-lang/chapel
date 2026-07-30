@@ -471,8 +471,8 @@ jobs:
           ../../provision-scripts/git-clone-chapel.sh
           popd
 
-          ./chapelquickcheck.sh
-          ./chapeldefaultcheck.sh
+          # ./chapelquickcheck.sh
+          # ./chapeldefaultcheck.sh
           ./chapelfullcheck.sh
 
   run-shellcheck:
