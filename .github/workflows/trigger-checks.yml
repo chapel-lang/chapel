@@ -22,7 +22,6 @@ defaults:
 
 jobs:
   core-checks:
-    if: ! (github.event_name == 'pull_request' && (github.event.action == 'labeled' || github.event.action == 'unlabeled'))
     uses: ./.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
