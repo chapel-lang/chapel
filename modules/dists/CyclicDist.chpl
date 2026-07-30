@@ -375,7 +375,7 @@ class CyclicImpl: BaseDist, writeSerializable {
     var startIdxTemp: rank*idxType;
     for param i in 0..rank-1 {
       const startIdxI = if isTuple(startIdx) then startIdx(i) else startIdx;
-      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).sizeAs(int));
+      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).sizeAs(int)):idxType;
     }
     this.startIdx = startIdxTemp;
 
