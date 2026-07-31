@@ -1,0 +1,2 @@
+# uses random numbers which may overflow
+CHPL_SANITIZE_EXE==undefined
