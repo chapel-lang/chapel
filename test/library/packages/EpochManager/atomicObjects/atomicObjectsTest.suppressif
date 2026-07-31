@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# suppress failures from unaligned loads, which is UB. AtomicObjects on 128 bit
+# require 16 bit alignment, but there is no way in Chapel to ensure this
+if [ "$CHPL_TARGET_COMPILER" = "gnu" ] && [ "$CHPL_SANITIZE_EXE" = "undefined" ]; then
+  echo "True"
+else
+  echo "False"
+fi
