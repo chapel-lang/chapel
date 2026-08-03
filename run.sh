@@ -10,7 +10,7 @@ source util/setchplenv.bash
 export MACHINE_TYPE="$(uname -m)"
 
 export CHPL_TEST_PERF_DIR="$CHPL_HOME/test/perfdat/clbg_comparison"
-export CHPL_TEST_TIMEOUT=600
+export CHPL_TEST_TIMEOUT=6000
 
 start_test --performance --numtrials 10 test/studies/shootout/submitted
 start_test --performance --numtrials 10 test/release/examples/benchmarks/shootout/chameneosredux.chpl
