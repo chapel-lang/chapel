@@ -1593,15 +1593,13 @@ module Random {
     } else if resultType == real(32) {
       return randToReal32(rand32_1(states), min, max);
     } else if resultType == uint(64) || resultType == int(64) {
-      return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
-    } else if resultType == uint(32) || resultType == int(32) {
-      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-    } else if(resultType == uint(16) ||
-              resultType == int(16)) {
-      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-    } else if(resultType == uint(8) ||
-              resultType == int(8)) {
-      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+      const bound = max:uint(64)-min:uint(64);
+      return (boundedrand64_1(states, seed, count, bound) + min:uint(64)):resultType;
+    } else if resultType == uint(32) || resultType == int(32) ||
+              resultType == uint(16) || resultType == int(16) ||
+              resultType == uint(8)  || resultType == int(8) {
+      const bound = max:uint(32)-min:uint(32);
+      return (boundedrand32_1(states, seed, count, bound) + min:uint(32)):resultType;
     } else if isBoolType(resultType) {
       compilerError("bounded rand with boolean type");
       return false;
