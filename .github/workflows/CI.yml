@@ -115,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
