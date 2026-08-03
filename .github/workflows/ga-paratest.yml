@@ -61,11 +61,13 @@ jobs:
           CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
           if [[ -n "$CRON_SCRIPT" ]]; then
+            # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
 
           if [[ -n "$BUILD_STEPS" ]]; then
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
+            # shellcheck source=/dev/null
             source "$RUNNER_TEMP/build-steps.bash"
           else
             num_procs=$(util/buildRelease/chpl-make-cpu_count)
@@ -118,6 +120,7 @@ jobs:
           TEST_DIRS: ${{ inputs.test-dirs }}
         run: |
           if [[ -n "$CRON_SCRIPT" ]]; then
+            # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
           tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
@@ -137,17 +140,17 @@ jobs:
               if (index(dir, home) == 1) dir = substr(dir, length(home) + 1)
               if (dir ~ /^test\/[^/]+$/) print dir
             }
-          ' cleanlog.txt | sort -u > $RUNNER_TEMP/testdirs.txt
+          ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.txt"
 
       - name: create testing matrix
         id: test-directories
         run: |
-          if [[ ! -s $RUNNER_TEMP/testdirs.txt ]]; then
+          if [[ ! -s "$RUNNER_TEMP/testdirs.txt" ]]; then
             echo "No test directories found"
             exit 1
           fi
 
-          test_count=$(wc -l < $RUNNER_TEMP/testdirs.txt)
+          test_count=$(wc -l < "$RUNNER_TEMP/testdirs.txt")
           if (( test_count > 256 )); then
             echo "The generated matrix has $test_count jobs; GitHub Actions permits at most 256"
             exit 1
@@ -166,7 +169,7 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "test-count=$test_count" >> "$GITHUB_OUTPUT"
           echo "Created $test_count test jobs:"
-          cat $RUNNER_TEMP/testdirs.txt
+          cat "$RUNNER_TEMP/testdirs.txt"
 
   run-tests:
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
@@ -197,6 +200,7 @@ jobs:
           TEST_ID: ${{ matrix.id }}
         run: |
           if [[ -n "$CRON_SCRIPT" ]]; then
+            # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
           tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
@@ -207,7 +211,10 @@ jobs:
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
           set +e
-          start_test $TEST_DUR -logfile "$result_dir/results.log" --parallel "$num_procs" -junit-xml-file "$result_dir/results.xml"
+          "$CHPL_HOME/util/start_test" "$TEST_DIR" \
+            -logfile "$result_dir/results.log" \
+            --parallel "$num_procs" \
+            -junit-xml-file "$result_dir/results.xml"
           test_status=$?
 
           echo "$test_status" > "$result_dir/status.txt"
@@ -253,6 +260,7 @@ jobs:
       - name: aggregate and report results
         env:
           BUILD_RESULT: ${{ needs.build.result }}
+          CONFIGURATION: ${{ inputs.configuration }}
           CRON_SCRIPT: ${{ inputs.cron-script }}
           EXPECTED_TESTS: ${{ needs.determine-test-directories.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
@@ -271,7 +279,7 @@ jobs:
           failed_tests=0
 
           {
-            echo "# Chapel paratest: ${{ inputs.configuration }}"
+            echo "# Chapel paratest: $CONFIGURATION"
             echo
             echo "| Test directory | Result | Summary |"
             echo "| --- | --- | --- |"
