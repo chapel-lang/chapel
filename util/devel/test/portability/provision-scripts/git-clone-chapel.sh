@@ -12,8 +12,12 @@ else
   if [ -n "${GIT_BRANCH-}" ]; then
     git_cmd+=(--branch "$GIT_BRANCH")
   fi
-  if [ -n "${GIT_REVISION-}" ]; then
-    git_cmd+=(--revision "$GIT_REVISION")
-  fi
   "${git_cmd[@]}"
+  if [ -n "${GIT_REVISION-}" ]; then
+    # Not present on git clone for git<2.49.0, which some of our Vagrant configs
+    # use, so fetch it and reset manually after cloning.
+    # git_cmd+=(--revision "$GIT_REVISION")
+    git fetch origin "$GIT_REVISION:$GIT_REVISION"
+    git reset --hard "$GIT_REVISION"
+  fi
 fi
