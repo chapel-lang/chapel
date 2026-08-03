@@ -1,0 +1,461 @@
+name: Core CI Checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  NIGHTLY_TEST_SETTINGS: true
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  make_check:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: make check
+      run: |
+        ./util/buildRelease/smokeTest chpl
+
+  make_chplvis:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: install fluid and libfltk-dev
+      run: |
+        apt update && apt install -y \
+          fluid \
+          libfltk-dev
+    - name: make chplvis
+      run: |
+        bash -c 'source ./util/setchplenv.bash && make chplvis'
+
+  make_doc:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: make frontend-docs
+      run: |
+        make frontend-docs
+    - name: make check-chpldoc && make docs
+      # Uses a quickstart config to keep it from running too long
+      # also builds chapel-py so those docs are included
+      run: |
+        ./util/buildRelease/smokeTest quickstart chapel-py docs
+        tar -cvf docs.tar.gz -C doc/html .
+    - name: upload docs
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: documentation
+        path: docs.tar.gz
+
+  make_mason:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: make mason
+      # Use a quickstart config to keep it from running to long
+      # While there, run a make check in that config for more coverage
+      run: |
+        ./util/buildRelease/smokeTest quickstart mason chpl
+
+  check_dyno_linters:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
+    - name: run dyno linters
+      run: |
+        CHPL_HOST_COMPILER=clang make run-dyno-linters
+
+  check_compiler_dyno_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
+    - name: make test-dyno-with-asserts
+      # 'make modules' so the ChapelSysCTypes module is available
+      run: |
+        make modules
+        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j"$(util/buildRelease/chpl-make-cpu_count)"
+    - name: check undocumented symbols
+      run: |
+        make DYNO_ENABLE_ASSERTIONS=1 chapel-py-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
+        ./tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable ./modules/standard
+    - name: lint standard modules
+      run: |
+        make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j"$(util/buildRelease/chpl-make-cpu_count)"
+    - name: lint mason
+      run: |
+        make DYNO_ENABLE_ASSERTIONS=1 lint-mason -j"$(util/buildRelease/chpl-make-cpu_count)"
+
+  make_check_llvm_none:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: set llvm_none make check
+      run: |
+       CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
+
+  check_annotations_rt_calls:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        fetch-depth: 0 # check_annotations.py uses git history
+        persist-credentials: false
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
+    - name: find bad runtime calls
+      run: |
+        ./util/devel/lookForBadRTCalls
+    - name: find bad compiler calls
+      run: |
+        ./util/devel/lookForBadCompCalls
+    - name: check annotations
+      run: |
+        CHPL_LLVM=none make test-venv
+        CHPL_LLVM=none ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+    - name: check perf graphs
+      run: |
+        python3 ./util/test/check_perf_graphs.py
+    - name: smokeTest lint
+      run: |
+        ./util/buildRelease/smokeTest lint
+
+  check_large_files:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-slim
+    env:
+      IGNORE_LABEL: "large files ok"
+    steps:
+      - name: count PR commits
+        run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
+      - name: checkout commits on PR branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: ${{ env.PR_NUM_COMMITS }}
+          persist-credentials: false
+      - name: check commits for large files
+        run: |
+          FILE_SIZE_LIMIT_KB=1024
+
+          baseSHA=${{github.event.pull_request.base.sha}}
+          headSHA=${{github.event.pull_request.head.sha}}
+
+          echo "Base SHA: $baseSHA"
+          echo "Head SHA: $headSHA"
+          echo "${{github.event.pull_request.commits}} commits in PR"
+
+          # Loop backward through commits added in the PR, starting from the
+          # latest.
+          commitIdx=0
+          errorCount=0
+          for commit in $(git rev-list "$baseSHA".."$headSHA")
+          do
+            echo "Checking commit: $commit"
+            git checkout -q "$commit"
+
+            # Get list of added, copied, or modified files from this commit.
+            newFiles=$(git diff --name-only --diff-filter=ACM "$commit"^ "$commit")
+            while read -r file; do
+              if [ "$file" = "" ]; then
+                  continue
+              fi
+              if [ ! -f "$file" ]; then
+                  echo "Skipping $file (not a regular file)"
+                  continue
+              fi
+              echo "Checking file: $file"
+
+              file_size=$(wc -c "$file" | awk '{print $1}')
+              file_size_kb=$((file_size / 1024))
+
+              if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
+                echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
+                errorCount=$((errorCount+1))
+              fi
+            done <<< "$newFiles"
+
+            # Stop after going through the number of commits this PR has.
+            commitIdx=$((commitIdx+1))
+            if [ "$commitIdx" =  "${{github.event.pull_request.commits}}" ]; then
+              echo "Stopping after $commitIdx commits, on commit $commit"
+              break
+            fi
+          done
+
+          if [ "$errorCount" -gt 0 ]; then
+            if [ ${{ contains(github.event.*.labels.*.name, env.IGNORE_LABEL) }} = "true" ]; then
+              echo "Ignoring errors due to '${{ env.IGNORE_LABEL }}' label presence"
+            else
+              echo "If you want to ignore errors for this PR, add the label '${{ env.IGNORE_LABEL }}', then close and reopen the PR"
+              exit 1
+            fi
+          fi
+
+  check-release-files:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: run check-release-files
+      run: |
+        ./util/buildRelease/check-release-files.bash
+
+  publish-docs:
+    if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
+    runs-on: ubuntu-slim
+    needs: make_doc
+    steps:
+      - name: download docs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: documentation
+
+      - name: setup keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.WEBSITE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.WEBSITE_KNOWN_HOSTS}}" > ~/.ssh/known_hosts
+
+      - name: push docs (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 60
+          retry_wait_seconds: 30
+          command: |
+            echo "extract docs"
+            tar -xvf docs.tar.gz
+            echo "Publish module docs to web server"
+            # py-modindex.html is not needed
+            rm -f py-modindex.html
+            # Remove all hidden files except .htaccess
+            find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
+            rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+            rm ~/.ssh/id_rsa
+            rm ~/.ssh/known_hosts
+
+  run-shellcheck:
+    runs-on: ubuntu-slim
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
+        with:
+          severity: error
+          ignore_paths: ./test/* ./third-party/*
+
+  check-format:
+    runs-on: ubuntu-slim
+    env:
+      EXTENSIONLESS_PYTHON_FILES: ""
+      BLACK_OPTIONS: "--check --verbose --line-length 80"
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
+          src: "."
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
+          src: "third-party/chpl-venv"
+      - name: Find extensionless Python files in util/
+        run: |
+          {
+            echo 'EXTENSIONLESS_PYTHON_FILES<<EOF'
+            find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+      - name: Check extensionless Python files
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "${{ env.BLACK_OPTIONS }}"
+          src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"
+
+  test_chpl_language_server_chplcheck:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+      id: changes
+      with:
+        filters: |
+          cls_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chpl-language-server/**'
+          chplcheck_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chplcheck/**'
+            - 'test/chplcheck/**'
+    - name: build chapel-py
+      if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        make chapel-py-venv -j"$(./util/buildRelease/chpl-make-cpu_count)"
+    - name: build chpl and test-venv
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        # start_test requires both test-venv and a working chpl install
+        ./util/buildRelease/smokeTest quickstart chpl
+        make test-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
+    - name: test chpl-language-server
+      if: steps.changes.outputs.cls_sources == 'true'
+      run: |
+        make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
+    - name: test chplcheck
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        # chplcheck tests have a very flat directory structure,
+        # so its better to run parallel-sub_test
+        ./util/start_test --parallel-sub_test "$num_procs" --allow-unsafe-parallel test/chplcheck
+
+  chapel-code-smoke-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        config: [gasnet, none]
+        exclude:
+          - os: macos-latest
+            config: gasnet
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: save matrix properties to env
+        run: |
+          echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
+          echo "CONFIG=${{ matrix.config }}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: install deps
+        run: |
+          if [[ "$OS" == "macos"* ]] ; then
+            brew install llvm
+          else
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
+          fi
+      - name: setup env and run ./util/buildRelease/smokeTest
+        run: |
+          source ./util/cron/common.bash
+
+          if [[ "$OS" == "macos"* ]] ; then
+            source ./util/cron/common-darwin.bash
+          fi
+
+          if [[ "$CONFIG" == "gasnet" ]] ; then
+            source ./util/cron/common-gasnet.bash
+            # Silence warnings about not using ibv despite ibv hardware presence
+            export GASNET_QUIET=yes
+          fi
+
+          export NIGHTLY_TEST_SETTINGS=true
+          export CHPL_SMOKE_SKIP_MAKE_MASON=true
+
+          ./util/buildRelease/smokeTest
+
+  test-networking-packages:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+    - name: run test-networking-packages.bash
+      run: |
+        ./util/cron/test-networking-packages.bash
