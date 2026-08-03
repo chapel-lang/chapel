@@ -92,3 +92,6 @@ FROM chapel-base AS chapel
 COPY --from=chapel-build $CHPL_HOME $CHPL_HOME
 
 ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"
+
+# Explicitly invoking CMD in this image.
+CMD ["/bin/bash"]
