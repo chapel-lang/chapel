@@ -103,6 +103,7 @@ def run_tests(tests):
     # set up
     set_up_environment()
     set_up_general()
+    set_up_parallelism(files, dirs)
     set_up_performance_testing_A()  # A and B are separate in order to keep
     # output the same from old start_test
     set_up_executables()
@@ -153,31 +154,6 @@ def run_tests(tests):
     else:
         os.environ["CHPL_TEST_NOTESTS"] = "1"
 
-    # Individual test files are normally run serially. They may be run in
-    # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
-    # This is "unsafe" because individually-specified files may share a
-    # directory and thus shared state (e.g. writing to the same local file,
-    # custom CLEANFILES, or prediff/skipif/precomp/etc side effects), which can
-    # cause suprious failures.
-    #
-    # out of caution, we only run in parallel in the "normal" run state, e.g.,
-    # no parallel performance testing or graph generation
-    files_parallel = (
-        not args.clean_only
-        and not args.performance
-        and not args.gen_graphs
-        and args.parallel > 1
-        and args.allow_unsafe_parallel
-        and len(files) > 1
-    )
-
-    if args.parallel > 1 and not args.allow_unsafe_parallel and files:
-        print(
-            "[Error: --parallel only applies to directories - to test files in parallel also pass --allow-unsafe-parallel]"
-        )
-        sys.exit(1)
-
-    file_workers = args.parallel if files_parallel else 1
     test_files(files, file_workers)
 
     os.environ["CHPL_TEST_FUTURES"] = str(args.futures_mode)
@@ -192,12 +168,6 @@ def run_tests(tests):
             testruns = ["graph"]
         else:
             testruns = ["run"]
-
-    if args.parallel_sub_test > 1 and not args.allow_unsafe_parallel and dirs:
-        print(
-            "[Error: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel]"
-        )
-        sys.exit(1)
 
     for tests in dirs:
         for t in testruns:
@@ -1196,6 +1166,43 @@ def set_up_general():
         )
     else:
         compiler = args.compiler
+
+
+def set_up_parallelism(files, dirs):
+    global file_workers
+    # Individual test files are normally run serially. They may be run in
+    # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
+    # This is "unsafe" because individually-specified files may share a
+    # directory and thus shared state (e.g. writing to the same local file,
+    # custom CLEANFILES, or prediff/skipif/precomp/etc side effects), which can
+    # cause spurious failures.
+    #
+    # out of caution, we only run in parallel in the "normal" run state, e.g.,
+    # no parallel performance testing or graph generation
+    files_parallel = (
+        not args.clean_only
+        and not args.performance
+        and not args.gen_graphs
+        and args.parallel > 1
+        and args.allow_unsafe_parallel
+        and len(files) > 1
+    )
+    if args.parallel > 1 and not args.allow_unsafe_parallel and files:
+        print(
+            "[Error: --parallel only applies to directories - to test files in parallel also pass --allow-unsafe-parallel]"
+        )
+        sys.exit(1)
+    file_workers = args.parallel if files_parallel else 1
+
+    if args.parallel_sub_test > 1 and not args.allow_unsafe_parallel and dirs:
+        print(
+            "[Error: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel]"
+        )
+        sys.exit(1)
+
+    logger.write(f"[parallel dirs: {args.parallel}]")
+    logger.write(f"[parallel files: {file_workers}]")
+    logger.write(f"[parallel sub_test: {args.parallel_sub_test}]")
 
 
 def set_up_performance_testing_A():
