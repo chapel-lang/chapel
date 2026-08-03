@@ -1,0 +1,342 @@
+name: paratest
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        description: Unique name for this Chapel configuration
+        required: false
+        type: string
+        default: default
+      cron-script:
+        description: Cron script to source before building and running tests
+        required: false
+        type: string
+        default: ""
+      build-steps:
+        description: Build commands, defaults to building the compiler, test venv, chpldoc, and mason
+        required: false
+        type: string
+        default: ""
+      test-dirs:
+        description: Space-separated test directories (for example test/types), defaults to all test directories
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: paratest-${{ inputs.configuration }}-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # ensure we can source cron scripts with actually running the tests
+  CHPL_NIGHTLY_DO_NOTHING: 1
+  CHPL_HOME: ${{ github.workspace }}
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  build:
+    name: Build Chapel (${{ inputs.configuration }})
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: build Chapel
+        env:
+          BUILD_STEPS: ${{ inputs.build-steps }}
+          CRON_SCRIPT: ${{ inputs.cron-script }}
+        run: |
+          if [[ -n "$CRON_SCRIPT" ]]; then
+            source "$CRON_SCRIPT"
+          fi
+
+          if [[ -n "$BUILD_STEPS" ]]; then
+            echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
+            source "$RUNNER_TEMP/build-steps.bash"
+          else
+            num_procs=$(util/buildRelease/chpl-make-cpu_count)
+            make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+              all test-venv chpldoc mason
+          fi
+      - name: package Chapel build
+        run: |
+          # tar up generated files so they can be downloaded by subsequent jobs.
+          # these then get overlaid on the source tree later
+          git ls-files --others --ignored --exclude-standard -z > "$RUNNER_TEMP/chapel-build-files"
+          if [[ ! -s "$RUNNER_TEMP/chapel-build-files" ]]; then
+            echo "No generated build files were found"
+            exit 1
+          fi
+          tar --null --files-from="$RUNNER_TEMP/chapel-build-files" \
+            -czf "$RUNNER_TEMP/chapel-build.tar.gz"
+      - name: upload Chapel build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chapel-build-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build.tar.gz
+          compression-level: 0
+
+  determine-test-directories:
+    name: Determine test jobs (${{ inputs.configuration }})
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    outputs:
+      matrix: ${{ steps.test-directories.outputs.matrix }}
+      test-count: ${{ steps.test-directories.outputs.test-count }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: download Chapel build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: chapel-build-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build
+      - name: determine test directories
+        env:
+          CRON_SCRIPT: ${{ inputs.cron-script }}
+          TEST_DIRS: ${{ inputs.test-dirs }}
+        run: |
+          if [[ -n "$CRON_SCRIPT" ]]; then
+            source "$CRON_SCRIPT"
+          fi
+          tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
+
+          test_dirs=${TEST_DIRS:-$CHPL_HOME/test}
+          # shellcheck disable=SC2086
+          "$CHPL_HOME/util/start_test" $test_dirs \
+            --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
+
+          # clean-only walks the suite without running it. Its log is the
+          # authoritative list of directories recognized by start_test.
+          awk -v home="$CHPL_HOME/" '
+            /^\[Working on directory / {
+              dir = $0
+              sub(/^\[Working on directory /, "", dir)
+              sub(/\]$/, "", dir)
+              if (index(dir, home) == 1) dir = substr(dir, length(home) + 1)
+              if (dir ~ /^test\/[^/]+$/) print dir
+            }
+          ' cleanlog.txt | sort -u > $RUNNER_TEMP/testdirs.txt
+
+      - name: create testing matrix
+        id: test-directories
+        run: |
+          if [[ ! -s $RUNNER_TEMP/testdirs.txt ]]; then
+            echo "No test directories found"
+            exit 1
+          fi
+
+          test_count=$(wc -l < $RUNNER_TEMP/testdirs.txt)
+          if (( test_count > 256 )); then
+            echo "The generated matrix has $test_count jobs; GitHub Actions permits at most 256"
+            exit 1
+          fi
+
+          matrix=$(python3 -c "
+          import json
+          with open('$RUNNER_TEMP/testdirs.txt', encoding='utf-8') as testdirs:
+              include = [
+                  {'id': str(i), 'dir': line.strip()}
+                  for i, line in enumerate(testdirs)
+                  if line.strip()
+              ]
+          print(json.dumps({'include': include}, separators=(',', ':')))
+          ")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "test-count=$test_count" >> "$GITHUB_OUTPUT"
+          echo "Created $test_count test jobs:"
+          cat $RUNNER_TEMP/testdirs.txt
+
+  run-tests:
+    name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
+    needs: determine-test-directories
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.determine-test-directories.outputs.matrix) }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: download Chapel build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: chapel-build-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build
+      - name: run tests
+        env:
+          CRON_SCRIPT: ${{ inputs.cron-script }}
+          TEST_DIR: ${{ matrix.dir }}
+          TEST_ID: ${{ matrix.id }}
+        run: |
+          if [[ -n "$CRON_SCRIPT" ]]; then
+            source "$CRON_SCRIPT"
+          fi
+          tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
+
+          result_dir="$CHPL_HOME/paratest-results/$TEST_ID"
+          mkdir -p "$result_dir"
+          echo "$TEST_DIR" > "$result_dir/directory.txt"
+
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          set +e
+          start_test $TEST_DUR -logfile "$result_dir/results.log" --parallel "$num_procs" -junit-xml-file "$result_dir/results.xml"
+          test_status=$?
+
+          echo "$test_status" > "$result_dir/status.txt"
+          exit "$test_status"
+      - name: upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: paratest-${{ inputs.configuration }}-${{ matrix.id }}
+          path: paratest-results
+          if-no-files-found: error
+
+  aggregate-results:
+    name: Aggregate results (${{ inputs.configuration }})
+    if: ${{ !cancelled() }}
+    needs: [build, determine-test-directories, run-tests]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: download Chapel build
+        id: download-build
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: chapel-build-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build
+      - name: download test results
+        id: download-results
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: paratest-${{ inputs.configuration }}-*
+          merge-multiple: true
+          path: paratest-results
+      - name: aggregate and report results
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          CRON_SCRIPT: ${{ inputs.cron-script }}
+          EXPECTED_TESTS: ${{ needs.determine-test-directories.outputs.test-count }}
+          MATRIX_RESULT: ${{ needs.run-tests.result }}
+          SETUP_RESULT: ${{ needs.determine-test-directories.result }}
+        run: |
+          mkdir -p aggregated-results paratest-results
+          : > aggregated-results/results.log
+          find paratest-results -name results.log -print0 2>/dev/null \
+            | sort -z \
+            | xargs -0 -r cat >> aggregated-results/results.log
+
+          mapfile -t status_files < <(
+            find paratest-results -name status.txt -print 2>/dev/null | sort
+          )
+          actual_tests=${#status_files[@]}
+          failed_tests=0
+
+          {
+            echo "# Chapel paratest: ${{ inputs.configuration }}"
+            echo
+            echo "| Test directory | Result | Summary |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for status_file in "${status_files[@]}"; do
+            result_dir=$(dirname "$status_file")
+            test_dir=$(cat "$result_dir/directory.txt")
+            test_status=$(cat "$status_file")
+            summary=$(grep -a '^\[Summary: #Successes' "$result_dir/results.log" \
+              | tail -n 1 || true)
+            if [[ "$test_status" == "0" ]]; then
+              result=pass
+            else
+              result=fail
+              failed_tests=$((failed_tests + 1))
+            fi
+            echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          overall_status=0
+          if [[ "$BUILD_RESULT" != "success" || "$SETUP_RESULT" != "success" ||
+                "$MATRIX_RESULT" != "success" ]]; then
+            overall_status=1
+          fi
+          if [[ -z "$EXPECTED_TESTS" || "$actual_tests" != "$EXPECTED_TESTS" ||
+                "$failed_tests" != "0" ]]; then
+            overall_status=1
+          fi
+
+          {
+            echo
+            echo "Expected test jobs: ${EXPECTED_TESTS:-unknown}"
+            echo "Reported test jobs: $actual_tests"
+            echo "Failed test jobs: $failed_tests"
+            if [[ "$overall_status" == "0" ]]; then
+              echo "Overall result: PASS"
+            else
+              echo "Overall result: FAIL"
+            fi
+          } | tee aggregated-results/summary.txt | tee -a "$GITHUB_STEP_SUMMARY"
+
+          mapfile -t xml_files < <(
+            find paratest-results -name results.xml -print 2>/dev/null | sort
+          )
+          if (( ${#xml_files[@]} > 0 )) &&
+             [[ -f "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz" ]]; then
+            if [[ -n "$CRON_SCRIPT" ]]; then
+              # shellcheck source=/dev/null
+              source "$CRON_SCRIPT"
+            fi
+            tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
+            cp "${xml_files[0]}" aggregated-results/results.xml
+            if (( ${#xml_files[@]} > 1 )); then
+              "$CHPL_HOME/util/test/run-in-test-venv.bash" \
+                "$CHPL_HOME/util/test/merge_junit_xmls.py" \
+                aggregated-results/results.xml "${xml_files[@]:1}"
+            fi
+          fi
+
+          exit "$overall_status"
+      - name: upload aggregated results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: paratest-results-${{ inputs.configuration }}
+          path: aggregated-results
+          if-no-files-found: error

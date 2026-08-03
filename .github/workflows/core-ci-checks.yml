@@ -459,3 +459,10 @@ jobs:
     - name: run test-networking-packages.bash
       run: |
         ./util/cron/test-networking-packages.bash
+
+  paratest:
+    name: Chapel paratest
+    uses: ./.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64
+      cron-script: util/cron/test-linux64.bash
