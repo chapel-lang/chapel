@@ -1,7 +1,8 @@
 rules:
   unpinned-images:
     ignore:
-      - CI.yml
+      - core-ci-checks.yml
+      - extended-ci-checks.yml
   dangerous-triggers:
     ignore:
       - email.yml:2

@@ -1,0 +1,63 @@
+# This workflow is responsible for kicking off other workflows containing CI
+# checks, as appropriate.
+name: Trigger checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    # Watch for label changes since labels can trigger extended checks.
+    # Types opened, synchronize, reopened are defaults if no types are
+    # specified, so make sure to keep them.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  core-checks:
+    uses: ./.github/workflows/core-ci-checks.yml
+
+  should-run-extended-checks:
+    runs-on: ubuntu-slim
+    env:
+      EXTENDED_CHECKS_LABEL: "run extended CI checks"
+    outputs:
+      run-all: ${{ steps.run-all.outputs.run-all }}
+    steps:
+      - name: determine whether to run all checks
+        run: |
+          echo "run_all=${{ github.event_name == 'merge_group' || github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.*.labels.*.name, env.EXTENDED_CHECKS_LABEL ) ) }}" >> "$GITHUB_ENV"
+      - name: set run-all output to ${{ env.run_all }}
+        id: run-all
+        run: |
+          echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
+
+  extended-checks:
+    needs: should-run-extended-checks
+    if: needs.should-run-extended-checks.outputs.run-all == 'true'
+    uses: ./.github/workflows/extended-ci-checks.yml
+
+  # This job exists to have a single check for which failure means merging
+  # should be blocked, for GH required status checks purposes.
+  # - This is separate from merge queue requirements; these jobs will block even
+  #   adding to the merge merge queue.
+  # - Note that if a dependent job is _skipped_, it will
+  #   not trigger failure of this job.
+  checks-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-slim
+    needs:
+      - core-checks
+      - extended-checks
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1
