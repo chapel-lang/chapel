@@ -182,12 +182,13 @@ jobs:
           fi
 
   portability-tests-vagrant:
+    runs-on: macos-26-intel
+    needs: define-portability-test-configs
     strategy:
       fail-fast: false
       matrix:
-        vagrant_config: ["bento-freebsd-13.5", "bento-freebsd-14.3", "generic-x32-debian12", "bento-ubuntu24.04-homebrew"]
+        vagrant_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.vagrant_configs) }}
         check_type: ["quick", "default", "full"]
-    runs-on: macos-26-intel
     steps:
       - name: install Vagrant and Virtualbox with Homebrew
         run: |
