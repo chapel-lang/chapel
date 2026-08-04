@@ -29,7 +29,7 @@
       sudo pacman -S llvm clang
 
 
-  * CentOS Stream 10, 9::
+  * CentOS Stream 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
