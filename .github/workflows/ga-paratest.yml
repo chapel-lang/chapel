@@ -148,55 +148,61 @@ jobs:
           fi
           tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
 
-          if [[ -n "$TEST_DIRS" ]]; then
-            echo "$TEST_DIRS" | tr ' ' '\n' | sort -u > "$RUNNER_TEMP/testdirs.txt"
-          else
-            test_dirs=$TEST_DIRS
-            # shellcheck disable=SC2086
-            "$CHPL_HOME/util/start_test" $test_dirs \
-              --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
+          read -ra requested_tests <<< "${TEST_DIRS:-$CHPL_HOME/test}"
+          "$CHPL_HOME/util/start_test" "${requested_tests[@]}" \
+            --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
 
-            # clean-only walks the suite without running it. Its log is the
-            # authoritative list of directories recognized by start_test.
-            awk -v home="$CHPL_HOME/" '
-              /^\[Working on directory / {
-                dir = $0
-                sub(/^\[Working on directory /, "", dir)
-                sub(/\]$/, "", dir)
-                if (index(dir, home) == 1) dir = substr(dir, length(home) + 1)
-                if (dir ~ /^test\/[^/]+$/) print dir
+          # clean-only walks the suite without running it. Its log is the
+          # authoritative list of directories recognized by start_test. Store
+          # each matrix job as CSV: directory,start_test flags.
+          awk -v home="$CHPL_HOME/" '
+            /^\[Working on directory / {
+              dir = $0
+              sub(/^\[Working on directory /, "", dir)
+              sub(/\]$/, "", dir)
+              if (index(dir, home) == 1) dir = substr(dir, length(home) + 1)
+              # For directories well-known to be large, split them into multiple jobs.
+              # Still run the directory itself as it may have tests outside the subdirectories.
+              if (dir ~ /^test\/[^/]+$/) {
+                flags = (dir == "test/functions" ||
+                         dir == "test/classes" ||
+                         dir == "test/types") ? "--no-recurse" : ""
+                print dir "," flags
+              } else if (dir ~ /^test\/(functions|classes|types)\/[^/]+$/) {
+                print dir ","
               }
-            ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.txt"
-          fi
+            }
+          ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
 
       - name: create testing matrix
         id: test-directories
         run: |
-          if [[ ! -s "$RUNNER_TEMP/testdirs.txt" ]]; then
+          if [[ ! -s "$RUNNER_TEMP/testdirs.csv" ]]; then
             echo "No test directories found"
             exit 1
           fi
 
-          test_count=$(wc -l < "$RUNNER_TEMP/testdirs.txt")
+          test_count=$(wc -l < "$RUNNER_TEMP/testdirs.csv")
           if (( test_count > 256 )); then
             echo "The generated matrix has $test_count jobs; GitHub Actions permits at most 256"
             exit 1
           fi
 
-          matrix=$(python3 -c "
-          import json
-          with open('$RUNNER_TEMP/testdirs.txt', encoding='utf-8') as testdirs:
-              include = [
-                  {'id': str(i), 'dir': line.strip()}
-                  for i, line in enumerate(testdirs)
-                  if line.strip()
-              ]
-          print(json.dumps({'include': include}, separators=(',', ':')))
-          ")
+          matrix=$(python3 -c '
+          import csv, json, os
+          path = os.path.join(os.environ["RUNNER_TEMP"], "testdirs.csv")
+          rows = list(csv.reader(open(path, encoding="utf-8", newline="")))
+          include = [
+            {"id": str(i),
+             "dir": row[0],
+             "flags": row[1]} for i, row in enumerate(rows) if row
+          ]
+          print(json.dumps({"include": include}, separators=(",", ":")))
+          ')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "test-count=$test_count" >> "$GITHUB_OUTPUT"
           echo "Created $test_count test jobs:"
-          cat "$RUNNER_TEMP/testdirs.txt"
+          cat "$RUNNER_TEMP/testdirs.csv"
 
   run-tests:
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
@@ -227,6 +233,7 @@ jobs:
           CRON_SCRIPT: ${{ inputs.cron-script }}
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_DIR: ${{ matrix.dir }}
+          TEST_FLAGS: ${{ matrix.flags }}
           TEST_ID: ${{ matrix.id }}
         run: |
           if [[ -n "$CRON_SCRIPT" ]]; then
@@ -240,8 +247,11 @@ jobs:
           echo "$TEST_DIR" > "$result_dir/directory.txt"
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          read -ra test_flags <<< "$TEST_FLAGS"
+          read -ra start_test_args <<< "$START_TEST_ARGS"
           set +e
-          "$CHPL_HOME/util/start_test" "$START_TEST_ARGS" "$TEST_DIR" \
+          "$CHPL_HOME/util/start_test" "${start_test_args[@]}" \
+            "${test_flags[@]}" "$TEST_DIR" \
             -logfile "$result_dir/results.log" \
             --parallel "$num_procs"
           test_status=$?
