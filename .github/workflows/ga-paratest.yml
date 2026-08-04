@@ -292,7 +292,7 @@ jobs:
           SETUP_RESULT: ${{ needs.determine-test-directories.result }}
         run: |
           mkdir -p aggregated-results paratest-results
-          : > aggregated-results/results.log
+          rm -f aggregated-results/results.log
           find paratest-results -name results.log -print0 2>/dev/null \
             | sort -z \
             | xargs -0 -r cat >> aggregated-results/results.log
