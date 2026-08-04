@@ -29,7 +29,7 @@
       sudo pacman -S llvm clang
 
 
-  * CentOS Stream 9, 10::
+  * CentOS Stream 10, 9::
 
       sudo dnf upgrade
       sudo dnf install epel-release
@@ -38,7 +38,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
+  * Debian 11 "Bullseye" (but see note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
@@ -103,3 +103,28 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
+Compatibility Notes
+-------------------
+
+Outdated FreeBSD testing
+++++++++++++++++++++++++
+
+Our portability testing for FreeBSD relies on public Vagrant boxes. At time of
+writing (May 2026), we have been unable to find a box for FreeBSD releases
+newer than 14.3. Due to limited resources, and lacking information on how
+widely used Chapel is on FreeBSD, we have not taken on the work of making our
+own box or otherwise continuing to update this test coverage. It is still our
+intention to support FreeBSD as a best effort, so feel free to open bug reports
+for Chapel on FreeBSD versions newer than we test, and/or let us know if this
+lack of testing coverage causes you concern.
+
+Newer CMake required to build LLVM
+++++++++++++++++++++++++++++++++++
+
+On some systems, the cmake package is not new enough to build the bundled
+LLVM. That can be addressed either by installing CMake from source or by
+installing a system LLVM package using the commands shown above.
+
+Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
+and so installing a system LLVM on these platforms is still important in
+that case.
