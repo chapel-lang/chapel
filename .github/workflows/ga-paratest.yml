@@ -5,9 +5,8 @@ on:
     inputs:
       configuration:
         description: Unique name for this Chapel configuration
-        required: false
+        required: true
         type: string
-        default: default
       cron-script:
         description: Cron script to source before building and running tests
         required: false
@@ -17,7 +16,9 @@ on:
         description: Build commands, defaults to building the compiler, test venv, chpldoc, and mason
         required: false
         type: string
-        default: ""
+        default: |
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc mason
       start-test-args:
         description: Space-separated arguments to pass to start_test
         required: false
@@ -43,6 +44,11 @@ on:
         required: false
         type: number
         default: 7
+      runner:
+        description: The runner to use for the workflow
+        required: false
+        type: string
+        default: ubuntu-latest
 
 permissions:
   contents: read
@@ -64,7 +70,7 @@ defaults:
 jobs:
   build:
     name: Build Chapel (${{ inputs.configuration }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -86,15 +92,9 @@ jobs:
             source "$CRON_SCRIPT"
           fi
 
-          if [[ -n "$BUILD_STEPS" ]]; then
-            echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
-            # shellcheck source=/dev/null
-            source "$RUNNER_TEMP/build-steps.bash"
-          else
-            num_procs=$(util/buildRelease/chpl-make-cpu_count)
-            make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-              all test-venv chpldoc mason
-          fi
+          echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/build-steps.bash"
       - name: package Chapel build
         run: |
           # tar up generated files so they can be downloaded by subsequent jobs.
@@ -117,7 +117,7 @@ jobs:
   determine-test-directories:
     name: Determine test jobs (${{ inputs.configuration }})
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -207,7 +207,7 @@ jobs:
   run-tests:
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
     needs: determine-test-directories
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
