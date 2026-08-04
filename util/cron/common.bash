@@ -18,7 +18,7 @@ SCRIPT_NAME=$0
 start_time=$(date '+%s')
 log_info "Starting ${SCRIPT_NAME} on $(hostname -s)"
 
-nightly_args=""
+nightly_args=${nightly_args:-}
 
 function report_elapsed_time()
 {
