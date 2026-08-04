@@ -63,9 +63,10 @@ env:
   CHPL_NIGHTLY_DO_NOTHING: 1
   CHPL_HOME: ${{ github.workspace }}
 
+# note: no -x, its not actually that useful here and there is plenty of other output
 defaults:
   run:
-    shell: bash -exuo pipefail {0}
+    shell: bash -euo pipefail {0}
 
 jobs:
   build:
