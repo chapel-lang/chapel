@@ -460,8 +460,8 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
-  paratest:
-    name: Chapel paratest
+  paratest-linux64:
+    name: Chapel paratest on linux64
     uses: ./.github/workflows/ga-paratest.yml
     with:
       configuration: linux64
@@ -471,3 +471,15 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv chpldoc mason protoc-gen-chpl
+  paratest-darwin:
+    name: Chapel paratest
+    uses: ./.github/workflows/ga-paratest.yml
+    with:
+      configuration: darwin
+      runner: macos-latest
+      cron-script: util/cron/test-darwin.bash
+      start-test-args: --futures
+      build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv chpldoc mason
