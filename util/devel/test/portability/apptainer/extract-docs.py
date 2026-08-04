@@ -11,9 +11,33 @@
 
 import os
 import re
+import sys
 from contextlib import contextmanager
 
 directories = ["current", "../vagrant/current"]
+compatibility_notes = {
+    "FreeBSD": (
+        "Outdated FreeBSD testing",
+        """Our portability testing for FreeBSD relies on public Vagrant boxes. At time of
+writing (May 2026), we have been unable to find a box for FreeBSD releases
+newer than 14.3. Due to limited resources, and lacking information on how
+widely used Chapel is on FreeBSD, we have not taken on the work of making our
+own box or otherwise continuing to update this test coverage. It is still our
+intention to support FreeBSD as a best effort, so feel free to open bug reports
+for Chapel on FreeBSD versions newer than we test, and/or let us know if this
+lack of testing coverage causes you concern.""",
+    ),
+    'Debian 11 "Bullseye"': (
+        "Newer CMake required to build LLVM",
+        """On some systems, the cmake package is not new enough to build the bundled
+LLVM. That can be addressed either by installing CMake from source or by
+installing a system LLVM package using the commands shown above.
+
+Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
+and so installing a system LLVM on these platforms is still important in
+that case.""",
+    ),
+}
 
 
 def gather_provision_script_cmds(path):
@@ -207,9 +231,19 @@ def main():
 
     subdirs.sort(key=fixname)
 
+    tonotes = {}
+    unused_notes = set(compatibility_notes.keys())
     tocmds = {}
 
     for subpath in subdirs:
+        for note_key, note_info in compatibility_notes.items():
+            if note_key in fixname(subpath):
+                tonotes[subpath] = note_info
+                unused_notes.discard(note_key)
+                break
+        else:
+            tonotes[subpath] = None
+
         cmds = []
         if os.path.isdir(subpath):
             sdef = os.path.join(subpath, "image.def")
@@ -261,6 +295,12 @@ def main():
 
         tocmds[subpath] = result
 
+    if unused_notes:
+        print(
+            f"Error: could not find matching config for the following compatibility notes: {unused_notes}"
+        )
+        sys.exit(1)
+
     tab = {}
 
     i = 0
@@ -268,9 +308,14 @@ def main():
         subpath = subdirs[i]
         names = []
 
-        # find how many configs have the same commands
+        # find how many configs have the same commands and notes
         cmds = tocmds[subpath]
-        while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
+        notes = tonotes[subpath]
+        while (
+            i < len(subdirs)
+            and tocmds[subdirs[i]] == cmds
+            and tonotes[subdirs[i]] == notes
+        ):
             names.append(fixname(subdirs[i]))
             i += 1
 
@@ -303,16 +348,28 @@ def main():
                     j += 1
                 shortnames.append(shortname)
 
-        tab[",".join(shortnames)] = cmds
+        tab[",".join(shortnames)] = (cmds, notes)
 
     # finally, output the table
-    for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
-        print("  * " + names + "::")
+    for names, (cmds, notes) in sorted(tab.items(), key=lambda x: x[0]):
+        notes_str = f" (but see note `{notes[0]}`_)" if notes else ""
+        print("  * " + names + f"{notes_str}::")
         print()
         for cmd in cmds:
             print("      " + cmd)
         print()
         print()
+
+    # print compatibility notes section, if there are any notes
+    if compatibility_notes:
+        print("Compatibility Notes")
+        print("-------------------")
+        for note_name, note_text in compatibility_notes.values():
+            print()
+            print(note_name)
+            print("+" * len(note_name))
+            print()
+            print(note_text)
 
 
 if __name__ == "__main__":
