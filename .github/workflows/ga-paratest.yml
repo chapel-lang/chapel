@@ -156,20 +156,35 @@ jobs:
           # authoritative list of directories recognized by start_test. Store
           # each matrix job as CSV: directory,start_test flags.
           awk -v home="$CHPL_HOME/" '
+            function relative(path) {
+              if (index(path, home) == 1) return substr(path, length(home) + 1)
+              return path
+            }
             /^\[Working on directory / {
               dir = $0
               sub(/^\[Working on directory /, "", dir)
               sub(/\]$/, "", dir)
-              if (index(dir, home) == 1) dir = substr(dir, length(home) + 1)
+              dir = relative(dir)
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
               if (dir ~ /^test\/[^/]+$/) {
                 flags = (dir == "test/functions" ||
                          dir == "test/classes" ||
                          dir == "test/types") ? "--no-recurse" : ""
-                print dir "," flags
+                testdirs[dir] = flags
               } else if (dir ~ /^test\/(functions|classes|types)\/[^/]+$/) {
-                print dir ","
+                testdirs[dir] = ""
+              }
+            }
+            /^\[No tests in directory / {
+              dir = $0
+              sub(/^\[No tests in directory /, "", dir)
+              sub(/\]$/, "", dir)
+              no_tests[relative(dir)] = 1
+            }
+            END {
+              for (dir in testdirs) {
+                if (!(dir in no_tests)) print dir "," testdirs[dir]
               }
             }
           ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
