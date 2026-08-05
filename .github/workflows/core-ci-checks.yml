@@ -470,3 +470,9 @@ jobs:
     - name: run test-networking-packages.bash
       run: |
         ./util/cron/test-networking-packages.bash
+
+  print-env:
+    runs-on: ubuntu-latest
+    steps:
+      - run: env
+      - run: utenx/gh-dump-context@ea04a5e4a542af125014c35a98e9a69982d01667 # v1.0.0
