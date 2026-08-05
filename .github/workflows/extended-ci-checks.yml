@@ -412,4 +412,7 @@ jobs:
     with:
       configuration: darwin
       runner: macos-latest
+      use-container: false
       cron-script: util/cron/test-darwin.bash
+      pre-build-steps: |
+        brew install llvm

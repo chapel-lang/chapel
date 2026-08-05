@@ -7,6 +7,11 @@ on:
         description: Unique name for this Chapel configuration
         required: true
         type: string
+      pre-build-steps:
+        description: Pre-build commands, defaults to nothing
+        required: false
+        type: string
+        default: ""
       cron-script:
         description: Cron script to source before building and running tests
         required: false
@@ -49,6 +54,11 @@ on:
         required: false
         type: string
         default: ubuntu-latest
+      use-container:
+        description: Run build and test jobs in the Chapel CI container
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -74,7 +84,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
@@ -83,6 +93,14 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+      - name: run pre-build steps
+        if: ${{ inputs.pre-build-steps != '' }}
+        env:
+          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
+        run: |
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
@@ -121,7 +139,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
@@ -229,7 +247,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
