@@ -173,8 +173,6 @@ jobs:
           echo "Package Version = $PACKAGE_VERSION"
           echo "OS = $DISTRO"
           echo "PACKAGE = $PACKAGE_NAME"
-          echo "PACKAGE_TYPE = $PACKAGE_TYPE"
-          echo "CHPL_TARBALL_LOCATION = $CHPL_TARBALL_LOCATION"
           echo "PARALLEL = $PARALLEL"
 
           ./util/cron/create_release_aptrpm.bash
