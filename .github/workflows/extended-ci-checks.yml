@@ -164,6 +164,9 @@ jobs:
           PACKAGE_NAME=chapel
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
 
+          . util/build_configs/functions.bash
+          export CHPL_VERSION="$(get_src_major_version `pwd`).$(get_src_minor_version `pwd`).$(get_src_patch_version `pwd`)"
+
           echo "Building the Chapel Package for: "
           echo "Chapel Version = $CHPL_VERSION"
           echo "Package Version = $PACKAGE_VERSION"
