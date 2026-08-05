@@ -396,20 +396,20 @@ jobs:
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv chpldoc mason protoc-gen-chpl
       max-parallel: 50
-  # paratest-linux64-c-backend:
-  #   name: Chapel paratest on linux64 with C backend
-  #   uses: ./.github/workflows/ga-paratest.yml
-  #   with:
-  #     configuration: linux64-c-backend
-  #     cron-script: util/cron/test-c-backend.bash
-  #     build-steps: |
-  #       num_procs=$(util/buildRelease/chpl-make-cpu_count)
-  #       make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-  #         all test-venv mason
-  # paratest-darwin:
-  #   name: Chapel paratest
-  #   uses: ./.github/workflows/ga-paratest.yml
-  #   with:
-  #     configuration: darwin
-  #     runner: macos-latest
-  #     cron-script: util/cron/test-darwin.bash
+  paratest-linux64-c-backend:
+    name: Chapel paratest on linux64 with C backend
+    uses: ./.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-c-backend
+      cron-script: util/cron/test-c-backend.bash
+      build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv mason
+  paratest-darwin:
+    name: Chapel paratest
+    uses: ./.github/workflows/ga-paratest.yml
+    with:
+      configuration: darwin
+      runner: macos-latest
+      cron-script: util/cron/test-darwin.bash
