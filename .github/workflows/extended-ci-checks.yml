@@ -395,4 +395,7 @@ jobs:
         swap-size-gb: 8
     - name: run test-make-install-check.bash
       run: |
+        # Limit concurrent jobs to avoid OOM in building bundled LLVM.
+        export CHPL_MAKE_MAX_CPU_COUNT=2
+
         ./util/cron/test-make-install-check.bash
