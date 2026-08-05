@@ -153,9 +153,9 @@ jobs:
           "$CHPL_HOME/util/start_test" "${requested_tests[@]}" \
             --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
 
-          # clean-only walks the suite without running it. Its log is the
-          # authoritative list of directories recognized by start_test. Store
-          # each matrix job as CSV: directory,start_test flags.
+          # clean-only walks the suite without running it.
+          # This is more reliable than just using `ls` (it resolves skipifs, notests, etc).
+          # Store each matrix job as CSV: directory,start_test flags.
           awk -v home="$CHPL_HOME/" '
             function relative(path) {
               if (index(path, home) == 1) return substr(path, length(home) + 1)
