@@ -308,6 +308,7 @@ jobs:
           max_attempts: 3
           timeout_seconds: 60
           retry_wait_seconds: 30
+          shell: ${{ env.DEFAULTS_RUN_SHELL }}
           command: |
             echo "extract docs"
             tar -xvf docs.tar.gz
