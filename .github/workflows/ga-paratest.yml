@@ -305,13 +305,22 @@ jobs:
           echo "$TEST_DIR" > "$result_dir/directory.txt"
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          read -ra test_flags <<< "$TEST_FLAGS"
-          read -ra start_test_args <<< "$START_TEST_ARGS"
-          set +e
-          "$CHPL_HOME/util/start_test" "${start_test_args[@]}" \
-            "${test_flags[@]}" "$TEST_DIR" \
-            -logfile "$result_dir/results.log" \
+          start_test_cmd=("$CHPL_HOME/util/start_test")
+          if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
+            read -ra start_test_args <<< "$START_TEST_ARGS"
+            start_test_cmd+=("${start_test_args[@]}")
+          fi
+          if [[ "$TEST_FLAGS" =~ [^[:space:]] ]]; then
+            read -ra test_flags <<< "$TEST_FLAGS"
+            start_test_cmd+=("${test_flags[@]}")
+          fi
+          start_test_cmd+=(
+            "$TEST_DIR"
+            -logfile "$result_dir/results.log"
             --parallel "$num_procs"
+          )
+          set +e
+          "${start_test_cmd[@]}"
           test_status=$?
           set -e
 
