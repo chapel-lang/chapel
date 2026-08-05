@@ -197,12 +197,12 @@ jobs:
               dir = relative(dir)
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
-              if (dir ~ /^test\/[^/]+$/) {
+              if (dir ~ "^test/[^/]+$") {
                 flags = (dir == "test/functions" ||
                          dir == "test/classes" ||
                          dir == "test/types") ? "--no-recurse" : ""
                 testdirs[dir] = flags
-              } else if (dir ~ /^test\/(functions|classes|types)\/[^/]+$/) {
+              } else if (dir ~ "^test/(functions|classes|types)/[^/]+$") {
                 testdirs[dir] = ""
               }
             }
