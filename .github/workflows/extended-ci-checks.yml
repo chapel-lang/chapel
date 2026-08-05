@@ -132,6 +132,7 @@ jobs:
           path: ./tar/*.tar.gz
           archive: false
           name: packaging-tarball
+          if-no-files-found: error
 
   build-linux-packages:
     needs: [define-linux-package-configs, build-packaging-tarball]
@@ -183,6 +184,7 @@ jobs:
         with:
           path: util/packaging/**/*.{deb,rpm}
           archive: false
+          if-no-files-found: error
 
   check_blog:
     runs-on: ubuntu-latest
