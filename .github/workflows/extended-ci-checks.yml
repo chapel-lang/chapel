@@ -98,19 +98,17 @@ jobs:
       - name: get list of distros to build for
         id: configs
         run: |
-          cd $PACKAGING_DIR
-
-          distro_configs=""
+          cd "$PACKAGING_DIR"
 
           pushd apt
-          distro_configs="$(find . -type d -not ( -name test -o -name common ) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}') $distro_configs"
+          apt_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
           popd
 
           pushd rpm
-          distro_configs="$(find . -type d -not ( -name test -o -name common ) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}') $distro_configs"
+          rpm_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
           popd
 
-          echo "distro_configs=[$distro_configs]" >> "$GITHUB_OUTPUT"
+          echo "distro_configs=[$apt_distro_configs,$rpm_distro_configs]" >> "$GITHUB_OUTPUT"
 
   build-packaging-tarball:
     runs-on: ubuntu-latest
@@ -158,7 +156,6 @@ jobs:
           sparse-checkout: util/
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         run: |
-          OS=$DISTRO
           PACKAGE_NAME=chapel
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
 
@@ -169,6 +166,7 @@ jobs:
           echo "PACKAGE = $PACKAGE_NAME"
           echo "PACKAGE_TYPE = $PACKAGE_TYPE"
           echo "CHPL_TARBALL_LOCATION = $CHPL_TARBALL_LOCATION"
+          echo "PARALLEL = $PARALLEL"
 
           ./util/cron/create_release_aptrpm.bash
       - name: archive package as artifact
