@@ -47,3 +47,4 @@ awk -v replacement="$replacement" '
   exit 1
 }
 mv "$updated" "$formula"
+rm -f "$replacement"
