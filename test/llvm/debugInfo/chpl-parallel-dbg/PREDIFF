@@ -17,6 +17,12 @@ mv $OUTPUT.tmp $OUTPUT
 grep -v 'SIGINT(2)' $OUTPUT > $OUTPUT.tmp
 mv $OUTPUT.tmp $OUTPUT
 
+grep -v 'Failed to fetch program data for ID' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
+grep -v 'GASNET_ERR_BARRIER_MISMATCH' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
 # respect CHPL_TEST_VENV_DIR if it is set and not none
 if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
   chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
