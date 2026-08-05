@@ -30,7 +30,7 @@ endif
 
 CHPL_LLVM_LINK_JOBS_OPT :=
 ifdef CHPL_LLVM_LINK_JOBS
-  ifeq ($(CHPL_LLVM_CMAKE_GENERATOR), "Ninja")
+  ifneq (,findstring $(CHPL_LLVM_CMAKE_GENERATOR), "Ninja"))
     CHPL_LLVM_LINK_JOBS_OPT := "-DLLVM_PARALLEL_LINK_JOBS=$(CHPL_LLVM_LINK_JOBS)"
   else
     $(error CHPL_LLVM_LINK_JOBS does not work with CHPL_LLVM_CMAKE_GENERATOR other than "Ninja")
