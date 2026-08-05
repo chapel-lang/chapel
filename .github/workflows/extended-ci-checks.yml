@@ -162,6 +162,7 @@ jobs:
           export CHPL_TARBALL
 
           PACKAGE_NAME=chapel
+          PACKAGE_VERSION=1
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
 
           source util/build_configs/functions.bash
