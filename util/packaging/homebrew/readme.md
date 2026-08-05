@@ -37,7 +37,7 @@ https://github.com/Homebrew/homebrew-core/blob/main/CONTRIBUTING.md
 
 The container is executed using the following instructions:
 ```
-docker run --interactive --tty --rm --pull always ghcr.io/homebrew/brew:main /bin/bash
+docker run --interactive --tty --rm --pull always ghcr.io/homebrew/brew:latest /bin/bash
 ```
 
 Formulas can be copied to the container using the following command:
