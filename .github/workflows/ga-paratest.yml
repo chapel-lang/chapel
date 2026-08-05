@@ -156,6 +156,14 @@ jobs:
         with:
           name: chapel-build-${{ inputs.configuration }}
           path: ${{ runner.temp }}/chapel-build
+      - name: run pre-build steps
+        if: ${{ inputs.pre-build-steps != '' }}
+        env:
+          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
+        run: |
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: determine test directories
         env:
           CRON_SCRIPT: ${{ inputs.cron-script }}
@@ -265,6 +273,14 @@ jobs:
         with:
           name: chapel-build-${{ inputs.configuration }}
           path: ${{ runner.temp }}/chapel-build
+      - name: run pre-build steps
+        if: ${{ inputs.pre-build-steps != '' }}
+        env:
+          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
+        run: |
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: run tests
         env:
           CRON_SCRIPT: ${{ inputs.cron-script }}
