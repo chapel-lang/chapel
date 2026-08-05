@@ -11,7 +11,7 @@ echo "MASON_REGISTRY=$MASON_REGISTRY"
 cd myDep
 git init -b main
 git add .
-git commit --author 'Bot <bot@bot.com>' -m "initial commit"
+git commit -c user.name 'Bot' -c user.email 'bot@bot.com' -m "initial commit"
 echo_and_run mason publish $REG
 cd ..
 
