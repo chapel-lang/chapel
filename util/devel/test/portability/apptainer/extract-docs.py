@@ -198,6 +198,13 @@ def extract_vfile_commands(vfile):
                             cmds.extend(subcmds)
     return cmds
 
+def to_int_or_zero(convert_string):
+    res = 0
+    try:
+        res = int(convert_string)
+    except ValueError:
+        pass
+    return res
 
 @contextmanager
 def cd(newdir):
@@ -318,6 +325,10 @@ def main():
         ):
             names.append(fixname(subdirs[i]))
             i += 1
+
+        # sort by last "word" of fixed name as natural number if present, so
+        # version 10 is after 9
+        names.sort(key=lambda name: to_int_or_zero(name.split()[-1]))
 
         # summarize names string
         # remove words that occur repeatedly
