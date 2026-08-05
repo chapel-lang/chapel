@@ -140,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJSON(needs.define-linux-packages-configs.outputs.apptainer_configs) }}
+        distro: ${{ fromJSON(needs.define-linux-package-configs.outputs.distro_configs) }}
         runner: [ubuntu-latest, ubuntu-24.04-arm]
     env:
       DISTRO: ${{ matrix.distro }}
