@@ -480,6 +480,6 @@ jobs:
       run: |
         # Limit concurrent linking jobs to avoid OOM in building bundled LLVM.
         export CHPL_LLVM_CMAKE_GENERATOR="Ninja"
-        export CHPL_LLVM_LINK_JOBS=1
+        export CHPL_LLVM_LINK_JOBS=2
 
         ./util/cron/test-make-install-check.bash
