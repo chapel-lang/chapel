@@ -61,7 +61,6 @@ jobs:
         max_attempts: 3
         timeout_seconds: 900
         retry_wait_seconds: 30
-        shell: bash -exuo pipefail {0}
         on_retry_command: |
           cd arkouda
           git clean -dfx
