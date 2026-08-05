@@ -60,7 +60,7 @@ proc buildFakeRegistry(regDir : string) {
   here.chdir(regDir);
 
   runCommand("git add .", true);
-  runCommand("git commit -m \"nothing\"", true);
+  runCommand("git commit --author 'Bot <bot@bot.com>' -m \"nothing\"", true);
 
   here.chdir(oldCWD);
 }
