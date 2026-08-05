@@ -16,7 +16,7 @@ cp -r "$TESTDIR/git-prereq-lib/." "$LIB_REPO/"
 pushd "$LIB_REPO" > /dev/null
 git init -q
 git add -A
-git commit -q -c user.name 'Bot' -c user.email 'bot@bot.com' -m "initial commit"
+git -c user.name 'Bot' -c user.email 'bot@bot.com' commit -q -m "initial commit"
 popd > /dev/null
 
 # --- Set up the consumer app ---
