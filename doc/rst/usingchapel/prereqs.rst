@@ -86,24 +86,6 @@ We have used the following commands to install the above prerequisites:
 Compatibility Notes
 -------------------
 
-Amazon Linux 2 CHPL_LLVM==system incompatibility
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-Amazon Linux 2 uses GCC 7.3.1 and only provides LLVM 11, but Chapel requires a
-newer GCC and newer LLVM. To use Chapel on this platform, installing a newer
-GCC is required. The repositories provide a GCC 10 package, which can be used
-to configure Chapel.
-
-.. code-block:: bash
-
-    export CC=gcc10-gcc
-    export CXX=gcc10-g++
-    export CHPL_HOST_CC=gcc10-gcc
-    export CHPL_HOST_CXX=gcc10-g++
-
-Chapel can then be built with ``CHPL_LLVM=none`` (still requires the newer GCC)
-or ``CHPL_LLVM=bundled``.
-
 Newer CMake required to build LLVM
 ++++++++++++++++++++++++++++++++++
 
