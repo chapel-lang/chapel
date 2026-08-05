@@ -470,3 +470,35 @@ jobs:
     - name: run test-networking-packages.bash
       run: |
         ./util/cron/test-networking-packages.bash
+
+  build-test-docker-images:
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    env:
+      IMAGE: ${{ matrix.image }}
+      OS: ${{ matrix.os }}
+      REGISTRY: "ghcr.io"
+      NAMESPACE: "chapel"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: build image ${{ env.IMAGE }}
+        run: |
+          IMAGE_NAME="$REGISTRY/$NAMESPACE/$IMAGE:$GITHUB_SHA"
+          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
+
+          dockerfile_path="util/packaging/docker/$IMAGE"
+          if [[ "$IMAGE" == "chapel" ]]; then
+            dockerfile_path="."
+          fi
+
+          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$dockerfile_path" -t "$IMAGE_NAME"
+
+          # TODO: test
+
+          # TODO: push
