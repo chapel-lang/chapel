@@ -307,6 +307,7 @@ jobs:
           max_attempts: 3
           timeout_seconds: 60
           retry_wait_seconds: 30
+          shell: bash -exuo pipefail {0}
           command: |
             echo "extract docs"
             tar -xvf docs.tar.gz
