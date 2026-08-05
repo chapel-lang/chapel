@@ -390,6 +390,9 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c # 1.0
+      with:
+        swap-size-gb: 8
     - name: run test-make-install-check.bash
       run: |
         ./util/cron/test-make-install-check.bash
