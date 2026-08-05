@@ -1,1 +1,1 @@
---output-dir /docs  # failToCreateDir.no-perm.doc.good
+--output-dir /usr/docs  # failToCreateDir.no-perm.doc.good
