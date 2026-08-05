@@ -1,1 +1,1 @@
---output-dir failToCreateDir.chpl/docs  # failToCreateDir.no-perm.doc.good
+--output-dir failToCreateDir.doc.chpl/docs  # failToCreateDir.no-perm.doc.good
