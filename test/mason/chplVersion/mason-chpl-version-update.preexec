@@ -3,6 +3,6 @@
 cd dummyRegistry
 git init >/dev/null
 git add . >/dev/null
-git -c user.name 'Bot' -c user.email 'bot@bot.com' commit -sm'initial' >/dev/null
+git -c user.name='Bot' -c user.email='bot@bot.com' commit -m 'initial' >/dev/null
 cd ..
 

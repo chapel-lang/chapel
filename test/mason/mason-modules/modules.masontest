@@ -15,12 +15,12 @@ export MASON_REGISTRY="my-local-registry|$REG"
 mason new myNewGitDep --lib
 cd myNewGitDep
 git add .
-git -c user.name 'Bot' -c user.email 'bot@bot.com' commit -m "initial commit"
+git -c user.name='Bot' -c user.email='bot@bot.com' commit -m "initial commit"
 cd ..
 mason new myNewDep --lib
 cd myNewDep
 git add .
-git -c user.name 'Bot' -c user.email 'bot@bot.com' commit -m "initial commit"
+git -c user.name='Bot' -c user.email='bot@bot.com' commit -m "initial commit"
 mason publish $REG
 cd ..
 

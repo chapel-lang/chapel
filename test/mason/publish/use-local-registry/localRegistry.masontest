@@ -7,7 +7,7 @@ cd myDep
 # make a local repo so the dep can be published
 git init -b main
 git add .
-git -c user.name 'Bot' -c user.email 'bot@bot.com' commit -m "initial commit"
+git -c user.name='Bot' -c user.email='bot@bot.com' commit -m "initial commit"
 
 # create the local registry
 echo_and_run mason publish --create-registry $REG
