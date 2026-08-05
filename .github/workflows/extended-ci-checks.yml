@@ -156,6 +156,8 @@ jobs:
           sparse-checkout: util/
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         run: |
+          OS=$DISTRO
+
           CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
           CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
           echo "Latest tarball: $CHPL_TARBALL"
@@ -172,7 +174,7 @@ jobs:
           echo "Building the Chapel Package for: "
           echo "Chapel Version = $CHPL_VERSION"
           echo "Package Version = $PACKAGE_VERSION"
-          echo "OS = $DISTRO"
+          echo "OS = $OS"
           echo "PACKAGE = $PACKAGE_NAME"
           echo "PARALLEL = $PARALLEL"
 
