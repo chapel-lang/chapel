@@ -9,11 +9,13 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 env:
-  file_changed: false
+  upstream_changed: false
   branch_exists: false
+  merge_conflict: false
 
 defaults:
   run:
@@ -30,26 +32,48 @@ jobs:
       with:
         persist-credentials: true # Needed to push new branch
 
-    - name: Fetch released version of Chapel formula
+    - name: Fetch current and previously observed Chapel formulas
       run: |
-        curl -o hb_master_chapel.rb https://raw.githubusercontent.com/homebrew/homebrew-core/master/Formula/c/chapel.rb
-        FILE_HASH=$(sha256sum hb_master_chapel.rb | awk '{ print $1 }')
+        TRACKED_UPSTREAM_COMMIT=$(< util/packaging/homebrew/chapel-upstream-commit)
+        UPSTREAM_COMMIT=$(
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            'https://api.github.com/repos/homebrew/homebrew-core/commits?path=Formula/c/chapel.rb&per_page=1' |
+            jq -er '.[0].sha'
+        )
+        if [[ ! "$TRACKED_UPSTREAM_COMMIT" =~ ^[0-9a-f]{40,64}$ ||
+              ! "$UPSTREAM_COMMIT" =~ ^[0-9a-f]{40,64}$ ]]; then
+          echo "Invalid Homebrew commit SHA" >&2
+          exit 1
+        fi
+
+        curl --fail --silent --show-error --location \
+          --output hb_previous_chapel.rb \
+          "https://raw.githubusercontent.com/homebrew/homebrew-core/${TRACKED_UPSTREAM_COMMIT}/Formula/c/chapel.rb"
+        curl --fail --silent --show-error --location \
+          --output hb_trunk_chapel.rb \
+          "https://raw.githubusercontent.com/homebrew/homebrew-core/${UPSTREAM_COMMIT}/Formula/c/chapel.rb"
+        FILE_HASH=$(sha256sum hb_trunk_chapel.rb | awk '{ print $1 }')
         HASH_SUBSTRING=${FILE_HASH:0:7}
         echo "FILE_HASH=$FILE_HASH" >> "$GITHUB_ENV"
         echo "HASH_SUBSTRING=$HASH_SUBSTRING" >> "$GITHUB_ENV"
+        echo "UPSTREAM_COMMIT=$UPSTREAM_COMMIT" >> "$GITHUB_ENV"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Compare the released version with the chapel-release.rb
+    - name: Check for new upstream changes
       id: compare
       run: |
-        if ! cmp -s hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb; then
-          echo "file_changed=true" >> "$GITHUB_ENV"
+        if ! cmp -s hb_previous_chapel.rb hb_trunk_chapel.rb; then
+          echo "upstream_changed=true" >> "$GITHUB_ENV"
         else
-          echo "file_changed=false" >> "$GITHUB_ENV"
+          echo "upstream_changed=false" >> "$GITHUB_ENV"
         fi
 
     - name: Check if branch already exists
       id: check-branch
-      if: ${{ env.file_changed == 'true' }}
+      if: ${{ env.upstream_changed == 'true' }}
       run: |
         BRANCH_NAME=update-chapel-homebrew-release-${HASH_SUBSTRING}
         if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
@@ -61,30 +85,70 @@ jobs:
         fi
 
     - name: Exit if branch exists
-      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'true') }}
+      if: ${{ (env.upstream_changed == 'true') && (env.branch_exists == 'true') }}
       run: |
         echo "Branch already exists. Exiting."
         exit 0
 
-    - name: Create a new branch if file has changed
-      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'false') }}
+    - name: Create a branch for new upstream changes
+      if: ${{ (env.upstream_changed == 'true') && (env.branch_exists == 'false') }}
       run: |
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         git checkout -b "update-chapel-homebrew-release-${HASH_SUBSTRING}"
-        mv hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb
-        git add util/packaging/homebrew/chapel-release.rb
-        git commit -m "Update chapel-release.rb with changes from chapel.rb" --signoff
+
+        if git merge-file --stdout \
+          util/packaging/homebrew/chapel.rb \
+          hb_previous_chapel.rb \
+          hb_trunk_chapel.rb > merged_chapel.rb; then
+          mv merged_chapel.rb util/packaging/homebrew/chapel.rb
+        else
+          echo "merge_conflict=true" >> "$GITHUB_ENV"
+          echo "Upstream changes conflict with local changes in chapel.rb" >&2
+          exit 1
+        fi
+
+        printf '%s\n' "$UPSTREAM_COMMIT" > util/packaging/homebrew/chapel-upstream-commit
+        git add \
+          util/packaging/homebrew/chapel.rb \
+          util/packaging/homebrew/chapel-upstream-commit
+        git commit -m "Update chapel.rb with changes from upstream" --signoff
         git push --set-upstream origin "update-chapel-homebrew-release-${HASH_SUBSTRING}"
         echo "Homebrew has updated the formula!"
 
+    - name: Open issue for conflicting upstream changes
+      if: ${{ failure() && env.merge_conflict == 'true' }}
+      run: |
+        ISSUE_TITLE="Homebrew formula update conflicts with local changes (${HASH_SUBSTRING})"
+        if gh issue list --state open --limit 100 --json title --jq '.[].title' |
+            grep -Fqx "$ISSUE_TITLE"; then
+          echo "An open issue already tracks this conflict."
+          exit 0
+        fi
+
+        cat > issue-body.md <<EOF
+        Homebrew changed \`Formula/c/chapel.rb\`, but the monitoring workflow could not
+        merge the upstream changes with the local Chapel formula automatically.
+
+        - Upstream commit: https://github.com/Homebrew/homebrew-core/commit/${UPSTREAM_COMMIT}
+        - Formula SHA-256: \`${FILE_HASH}\`
+        - Failed workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+        A human needs to reconcile the upstream and local changes in
+        \`util/packaging/homebrew/chapel.rb\` and update
+        \`util/packaging/homebrew/chapel-upstream-commit\`.
+        EOF
+        gh issue create --title "$ISSUE_TITLE" --body-file issue-body.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: create pull request
-      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'false') }}
+      if: ${{ (env.upstream_changed == 'true') && (env.branch_exists == 'false') }}
       run: >
         gh pr create
         -B main
         -H "update-chapel-homebrew-release-${HASH_SUBSTRING}"
         --title "Update our copy of the released Homebrew formula"
-        --body "Homebrew released formula file hash is ${FILE_HASH}. Created by Github action"
+        --body "Homebrew formula commit is ${UPSTREAM_COMMIT} and file hash is ${FILE_HASH}. Created by GitHub Actions"
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

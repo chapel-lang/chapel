@@ -1,6 +1,11 @@
 
 This folder contains a copy of the shipping homebrew formula `chapel.rb`. This is kept up-to-date with the upstream homebrew formula and is also where the Chapel team can make upcoming changes without impacting the homebrew core project.
 
+`chapel-upstream-commit` records the Homebrew commit containing the last
+upstream formula incorporated into `chapel.rb`. The monitoring workflow compares
+that revision with the current upstream formula, then performs a three-way merge
+so local changes to `chapel.rb` do not trigger updates or get overwritten.
+
 ## Tracking changes
 The homebrew team will update formulas under some circumstances without notifying
 us. This can happen if a dependency of ours, like llvm, gets updated and the
