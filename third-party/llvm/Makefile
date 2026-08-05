@@ -28,6 +28,16 @@ else
   CHPL_LLVM_CMAKE_GENERATOR := -G "$(CHPL_LLVM_CMAKE_GENERATOR)"
 endif
 
+CHPL_LLVM_LINK_JOBS_OPT :=
+ifdef CHPL_LLVM_LINK_JOBS
+  ifeq ($(CHPL_LLVM_CMAKE_GENERATOR), "Ninja")
+    CHPL_LLVM_LINK_JOBS_OPT := "-DLLVM_PARALLEL_LINK_JOBS=$(CHPL_LLVM_LINK_JOBS)"
+  else
+    $(error CHPL_LLVM_LINK_JOBS does not work with CHPL_LLVM_CMAKE_GENERATOR other than "Ninja")
+    exit 1
+  endif
+endif
+
 # activate LLVM asserts if it's from `make ASSERTS=1`
 # or if CHPL_LLVM_DEVELOPER is set
 CHPL_LLVM_ASSERTS := 0
@@ -130,6 +140,7 @@ llvm-config: FORCE
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
 	    $(CHPL_LLVM_CMAKE_GENERATOR) \
+	    $(CHPL_LLVM_LINK_JOBS_OPT) \
 	    $(LLVM_SRC_DIR) ; \
 
 llvm-config-support-only: FORCE
