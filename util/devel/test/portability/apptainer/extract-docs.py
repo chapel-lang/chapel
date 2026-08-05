@@ -377,7 +377,7 @@ def main():
     if compatibility_notes:
         print("Compatibility Notes")
         print("-------------------")
-        for note_name, note_text in compatibility_notes.values():
+        for note_name, note_text in sorted(compatibility_notes.values()):
             print()
             print(note_name)
             print("+" * len(note_name))
