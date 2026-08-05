@@ -83,6 +83,100 @@ jobs:
 
         start_test test/studies/arkouda/
 
+  define-linux-package-configs:
+    runs-on: ubuntu-slim
+    outputs:
+      distro_configs: ${{ steps.configs.outputs.distro_configs }}
+    env:
+      PACKAGING_DIR: "util/packaging"
+    steps:
+      - name: sparse check out ${{ env.PACKAGING_DIR }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ${{ env.PACKAGING_DIR }}
+      - name: get list of distros to build for
+        id: configs
+        run: |
+          cd $PACKAGING_DIR
+
+          distro_configs=""
+
+          pushd apt
+          distro_configs="$(find . -type d -not ( -name test -o -name common ) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}') $distro_configs"
+          popd
+
+          pushd rpm
+          distro_configs="$(find . -type d -not ( -name test -o -name common ) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}') $distro_configs"
+          popd
+
+          echo "distro_configs=[$distro_configs]" >> "$GITHUB_OUTPUT"
+
+  build-packaging-tarball:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: build tarball
+        run: |
+            export CHPL_VERSION='release'
+            export CHPL_GEN_RELEASE_SKIP_DOCS=true
+            ./util/cron/create_tarball.bash
+      - name: upload tarball as artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ./tar/chapel.tar.gz
+          archive: false
+          name: packaging-tarball
+
+  build-linux-packages:
+    needs: [define-linux-package-configs, build-packaging-tarball]
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJSON(needs.define-linux-packages-configs.outputs.apptainer_configs) }}
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    env:
+      DISTRO: ${{ matrix.distro }}
+      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: download packaging tarball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: packaging-tarball
+      - name: sparse check out util/
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: util/
+      - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
+        run: |
+          OS=$DISTRO
+          PACKAGE_NAME=chapel
+          PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
+
+          echo "Building the Chapel Package for: "
+          echo "Chapel Version = $CHPL_VERSION"
+          echo "Package Version = $PACKAGE_VERSION"
+          echo "OS = $DISTRO"
+          echo "PACKAGE = $PACKAGE_NAME"
+          echo "PACKAGE_TYPE = $PACKAGE_TYPE"
+          echo "CHPL_TARBALL_LOCATION = $CHPL_TARBALL_LOCATION"
+
+          ./util/cron/create_release_aptrpm.bash
+      - name: archive package as artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: util/packaging/**/*.{deb,rpm}
+          archive: false
+
   check_blog:
     runs-on: ubuntu-latest
     container:
