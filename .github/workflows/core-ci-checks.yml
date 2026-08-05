@@ -9,10 +9,11 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
+  DEFAULTS_RUN_SHELL: "bash -exuo pipefail {0}"
 
 defaults:
   run:
-    shell: bash -exuo pipefail {0}
+    shell: ${{ env.DEFAULTS_RUN_SHELL }}
 
 jobs:
   make_check:
