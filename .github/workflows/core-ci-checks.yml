@@ -75,6 +75,7 @@ jobs:
       with:
         name: documentation
         path: docs.tar.gz
+        if-no-files-found: error
 
   make_mason:
     runs-on: ubuntu-latest
