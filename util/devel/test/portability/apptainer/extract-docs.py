@@ -199,15 +199,6 @@ def extract_vfile_commands(vfile):
     return cmds
 
 
-def to_int_or_zero(convert_string):
-    res = 0
-    try:
-        res = int(convert_string)
-    except ValueError:
-        pass
-    return res
-
-
 @contextmanager
 def cd(newdir):
     prevdir = os.getcwd()
@@ -328,9 +319,11 @@ def main():
             names.append(fixname(subdirs[i]))
             i += 1
 
-        # sort by last "word" of fixed name as natural number if present, so
-        # version 10 is after 9
-        names.sort(key=lambda name: to_int_or_zero(name.split()[-1]))
+        # Sort by last "word" of fixed name as natural number if present, so
+        # version 10 is after 9.
+        # Based off of: https://stackoverflow.com/a/4836734
+        int_or_str = lambda convert_str: int(convert_str) if convert_str.isdigit() else convert_str
+        names.sort(key=lambda name: [int_or_str(c) for c in re.split('([0-9]+)', name)])
 
         # summarize names string
         # remove words that occur repeatedly
