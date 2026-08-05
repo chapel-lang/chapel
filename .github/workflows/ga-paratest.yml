@@ -186,6 +186,14 @@ jobs:
           # This is more reliable than just using `ls` (it resolves skipifs, notests, etc).
           # Store each matrix job as CSV: directory,start_test flags.
           awk -v home="$CHPL_HOME/" '
+            BEGIN {
+              # these are well-known slow directories that should be split into multiple jobs
+              # however, this results in a massive amount of GA runners, so
+              # for now don't actually do that
+              # slow_directories["test/functions"] = 1
+              # slow_directories["test/classes"] = 1
+              # slow_directories["test/types"] = 1
+            }
             function relative(path) {
               if (index(path, home) == 1) return substr(path, length(home) + 1)
               return path
@@ -198,12 +206,12 @@ jobs:
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
               if (dir ~ "^test/[^/]+$") {
-                flags = (dir == "test/functions" ||
-                         dir == "test/classes" ||
-                         dir == "test/types") ? "--no-recurse" : ""
+                flags = (dir in slow_directories) ? "--no-recurse" : ""
                 testdirs[dir] = flags
-              } else if (dir ~ "^test/(functions|classes|types)/[^/]+$") {
-                testdirs[dir] = ""
+              } else {
+                parent = dir
+                sub(/\/[^/]+$/, "", parent)
+                if (parent in slow_directories) testdirs[dir] = ""
               }
             }
             /^\[No tests in directory / {
