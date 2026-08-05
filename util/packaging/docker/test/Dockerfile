@@ -34,3 +34,4 @@ RUN git add Formula/c/chapel.rb && git commit -m "update chapel.rb for nightly t
 WORKDIR /home/linuxbrew/
 
 COPY brew_get_bogus_bottles.bash brew_get_bogus_bottles.bash
+COPY brew_replace_bottles.bash brew_replace_bottles.bash

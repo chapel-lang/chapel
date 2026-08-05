@@ -1,8 +1,10 @@
 
-This folder contains a copy of the shipping homebrew formula `chapel-release.rb`,
-and the modified formula that would be used in the next chapel release as
-`chapel-main.rb`.  These are stored here to allow the Chapel team test upcoming changes without
-impacting the Homebrew core project formula: (https://github.com/Homebrew/homebrew-core/blob/main/Formula/chapel.rb).
+This folder contains a copy of the shipping homebrew formula `chapel.rb`. This is kept up-to-date with the upstream homebrew formula and is also where the Chapel team can make upcoming changes without impacting the homebrew core project.
+
+`chapel-upstream-commit` records the Homebrew commit containing the last
+upstream formula incorporated into `chapel.rb`. The monitoring workflow compares
+that revision with the current upstream formula, then performs a three-way merge
+so local changes to `chapel.rb` do not trigger updates or get overwritten.
 
 ## Tracking changes
 The homebrew team will update formulas under some circumstances without notifying
@@ -51,7 +53,6 @@ testing of the main trunk of the source tree. This approach will clone the Chape
 repository locally and build from source.  The instructions for this approach
 are listed below:
 
- - Rename `chapel-main.rb` to `chapel.rb`
  - Run the following command:
    - `brew  install --HEAD chapel.rb`
  - Validate the build by running:
@@ -65,7 +66,6 @@ for creating that artifact and building the homebrew package are listed below:
  - Build the tarball via `./util/cron/create_tarball.bash`
  - Run `shasum -a 256 "url for the tarball"`
  - Verify the permissions on the tarball - it should be set to `644` if you are attempting to use a web location.
- - Rename `chapel-main.rb` to `chapel.rb`
  - Modify the `chapel.rb` file to include the tarball URL (this can be a network location or a local file) and sha256 value
  - Then the following command can be run to build and install:
    - `brew install --build-from-source chapel.rb`
