@@ -53,8 +53,8 @@ extern "C" {
 static inline
 void chpl_cache_warn_if_disabled(void)
 {
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          CHPL_CACHE_REMOTE);
+  // TODO: Stop reading this in runtime code.
+  extern const int CHPL_CACHE_REMOTE;
 
   if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_RT_USING_ASAN) {
@@ -70,8 +70,15 @@ void chpl_cache_warn_if_disabled(void)
 static inline
 int chpl_cache_enabled(void)
 {
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          CHPL_CACHE_REMOTE);
+  // TODO: This used to be a 'prginfo' read, but it can't be because that
+  //       prevents LTO (link-time optimization), resulting in a 10%~ drop
+  //       in performance.
+  //
+  // Ultimately, the runtime cache code should not read 'CHPL_CACHE_REMOTE'
+  // at all, and checks about whether or not to use the cache should be
+  // moved into program code in some capacity. This makes LTO safe and also
+  // simplifies the runtime's responsibilities here.
+  extern const int CHPL_CACHE_REMOTE;
 
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to

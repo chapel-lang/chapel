@@ -452,6 +452,7 @@ jobs:
       with:
         path: ./tar/chapel-test.tar.gz
         archive: false
+        if-no-files-found: error
 
   test-homebrew:
     strategy:
