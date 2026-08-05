@@ -1,4 +1,4 @@
-  * Alma Linux 10, 8, 9::
+  * Alma Linux 8, 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
@@ -80,7 +80,7 @@
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 10, 8, 9::
+  * Rocky Linux 8, 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
