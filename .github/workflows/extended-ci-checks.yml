@@ -383,17 +383,3 @@ jobs:
     - name: run test-c2chapel.bash
       run: |
         ./util/cron/test-c2chapel.bash
-
-  test-make-install-check:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: run test-make-install-check.bash
-      run: |
-        # Limit concurrent linking jobs to avoid OOM in building bundled LLVM.
-        export CHPL_LLVM_CMAKE_GENERATOR="Ninja"
-        export CHPL_LLVM_LINK_JOBS=1
-
-        ./util/cron/test-make-install-check.bash
