@@ -149,7 +149,10 @@ jobs:
           fi
           tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
 
-          read -ra requested_tests <<< "${TEST_DIRS:-$CHPL_HOME/test}"
+          requested_tests=()
+          while read -ra line_tests; do
+            requested_tests+=("${line_tests[@]}")
+          done <<< "${TEST_DIRS:-$CHPL_HOME/test}"
           "$CHPL_HOME/util/start_test" "${requested_tests[@]}" \
             --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
 
