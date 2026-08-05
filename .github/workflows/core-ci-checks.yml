@@ -470,7 +470,7 @@ jobs:
           persist-credentials: false
       - name: generate a ${{ env.PREREQS_COMMANDS_FILENAME }}
         run: |
-          util/devel/test/portability/apptainer/extract-docs.py > $PREREQS_COMMANDS_FILENAME
+          util/devel/test/portability/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILENAME"
       - name: compare against checked-in file
         run: |
-          diff $PREREQS_COMMANDS_FILENAME doc/rst/usingchapel/prereqs-commands.rst
+          diff "$PREREQS_COMMANDS_FILENAME" doc/rst/usingchapel/prereqs-commands.rst
