@@ -141,6 +141,16 @@ jobs:
       run: |
         make DYNO_ENABLE_ASSERTIONS=1 lint-mason -j"$(util/buildRelease/chpl-make-cpu_count)"
 
+  create_tarball:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: run create_tarball.bash
+      run: |
+       ./util/cron/create_tarball.bash
+
   make_check_llvm_none:
     runs-on: ubuntu-latest
     container:
