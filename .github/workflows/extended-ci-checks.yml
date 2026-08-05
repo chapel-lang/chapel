@@ -156,6 +156,11 @@ jobs:
           sparse-checkout: util/
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         run: |
+          CHPL_RELEASE_TARBALL=$(ls -ct1 *.tar.gz | head -n1)
+          CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
+          echo "Latest tarball: $CHPL_TARBALL"
+          export CHPL_TARBALL
+
           PACKAGE_NAME=chapel
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
 
