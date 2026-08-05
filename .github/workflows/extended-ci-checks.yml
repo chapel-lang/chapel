@@ -156,26 +156,28 @@ jobs:
           sparse-checkout: util/
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         run: |
+          echo "Building the Chapel Package for: "
+
+          source util/build_configs/functions.bash
+          CHPL_VERSION="$(get_src_major_version "$(pwd)").$(get_src_minor_version "$(pwd)").$(get_src_patch_version "$(pwd)")"
+          export CHPL_VERSION
+          echo "Chapel Version = $CHPL_VERSION"
+
+          PACKAGE_NAME=chapel
+          echo "PACKAGE = $PACKAGE_NAME"
+
+          PACKAGE_VERSION=1
+          echo "Package Version = $PACKAGE_VERSION"
+
           OS=$DISTRO
+          echo "OS = $OS"
 
           CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
           CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
           echo "Latest tarball: $CHPL_TARBALL"
           export CHPL_TARBALL
 
-          PACKAGE_NAME=chapel
-          PACKAGE_VERSION=1
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
-
-          source util/build_configs/functions.bash
-          CHPL_VERSION="$(get_src_major_version "$(pwd)").$(get_src_minor_version "$(pwd)").$(get_src_patch_version "$(pwd)")"
-          export CHPL_VERSION
-
-          echo "Building the Chapel Package for: "
-          echo "Chapel Version = $CHPL_VERSION"
-          echo "Package Version = $PACKAGE_VERSION"
-          echo "OS = $OS"
-          echo "PACKAGE = $PACKAGE_NAME"
           echo "PARALLEL = $PARALLEL"
 
           ./util/cron/create_release_aptrpm.bash
