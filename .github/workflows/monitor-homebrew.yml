@@ -56,9 +56,11 @@ jobs:
           "https://raw.githubusercontent.com/homebrew/homebrew-core/${UPSTREAM_COMMIT}/Formula/c/chapel.rb"
         FILE_HASH=$(sha256sum hb_trunk_chapel.rb | awk '{ print $1 }')
         HASH_SUBSTRING=${FILE_HASH:0:7}
-        echo "FILE_HASH=$FILE_HASH" >> "$GITHUB_ENV"
-        echo "HASH_SUBSTRING=$HASH_SUBSTRING" >> "$GITHUB_ENV"
-        echo "UPSTREAM_COMMIT=$UPSTREAM_COMMIT" >> "$GITHUB_ENV"
+        {
+          echo "FILE_HASH=$FILE_HASH"
+          echo "HASH_SUBSTRING=$HASH_SUBSTRING"
+          echo "UPSTREAM_COMMIT=$UPSTREAM_COMMIT"
+        } >> "$GITHUB_ENV"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
