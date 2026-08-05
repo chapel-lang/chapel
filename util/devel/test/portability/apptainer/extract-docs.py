@@ -198,6 +198,7 @@ def extract_vfile_commands(vfile):
                             cmds.extend(subcmds)
     return cmds
 
+
 def to_int_or_zero(convert_string):
     res = 0
     try:
@@ -205,6 +206,7 @@ def to_int_or_zero(convert_string):
     except ValueError:
         pass
     return res
+
 
 @contextmanager
 def cd(newdir):
