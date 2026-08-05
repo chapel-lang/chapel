@@ -163,13 +163,13 @@ jobs:
           export CHPL_VERSION
           echo "Chapel Version = $CHPL_VERSION"
 
-          PACKAGE_NAME=chapel
+          export PACKAGE_NAME=chapel
           echo "PACKAGE = $PACKAGE_NAME"
 
-          PACKAGE_VERSION=1
+          export PACKAGE_VERSION=1
           echo "Package Version = $PACKAGE_VERSION"
 
-          OS=$DISTRO
+          export OS=$DISTRO
           echo "OS = $OS"
 
           CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
