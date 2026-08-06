@@ -189,6 +189,39 @@ jobs:
               ./chapel-default-fresh.sh
           fi
 
+  portability-tests-vagrant:
+    runs-on: macos-26-intel
+    needs: define-portability-test-configs
+    strategy:
+      fail-fast: false
+      matrix:
+        vagrant_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.vagrant_configs) }}
+        check_type: ["quick", "default", "full"]
+    env:
+      vagrant_config: ${{ matrix.vagrant_config }}
+    steps:
+      - name: install Vagrant and Virtualbox with Homebrew
+        run: |
+          brew install virtualbox
+          brew install --cask vagrant
+      - name: print Vagrant version
+        run: |
+          vagrant --version
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: util
+          persist-credentials: false
+      - name: set vars to work from correct branch
+        run: |
+          echo "GIT_REVISION=$GITHUB_REF" >> "$GITHUB_ENV"
+      - name: run ${{ matrix.check_type }} check on Vagrant config ${{ matrix.vagrant_config }}
+        run: |
+          export VM_NAME=$vagrant_config
+
+          cd util/devel/test/portability/vagrant
+
+          ./chapel${{ matrix.check_type }}check.sh
+
   gcc-version-tests:
     strategy:
       fail-fast: false
