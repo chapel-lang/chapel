@@ -36,7 +36,6 @@ cd $CHPL_HOME
 short_version=$(get_short_version)
 gen_release $short_version
 
-cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"

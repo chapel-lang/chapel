@@ -471,6 +471,21 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
+  prereqs-docs-compare:
+    runs-on: ubuntu-slim
+    env:
+      PREREQS_COMMANDS_FILE: "doc/rst/usingchapel/prereqs-commands.rst"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
+        run: |
+          util/devel/test/portability/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILE"
+      - name: compare against checked-in file
+        run: |
+          git diff --exit-code "$PREREQS_COMMANDS_FILE"
+
   build-test-docker-images:
     strategy:
       fail-fast: false
