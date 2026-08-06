@@ -33,6 +33,7 @@ use Regex;
 use Sort;
 use TOML;
 use Map;
+import Registry;
 
 //
 // TODO:
@@ -62,7 +63,7 @@ proc masonSearch(args: [] string): int throws {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  updateRegistry(skipUpdate);
+  Registry.updateRegistry(skipUpdate);
 
   const query = queryArg.value();
   const pattern = new regex(query, ignoreCase=true);
