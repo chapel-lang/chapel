@@ -1,3 +1,5 @@
+# Longest-running CI checks which should run less frequently, and need not be
+# pre-merge. These are required for our full test coverage of Chapel.
 name: Full CI checks
 
 on:

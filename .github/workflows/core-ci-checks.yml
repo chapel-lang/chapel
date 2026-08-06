@@ -1,3 +1,4 @@
+# Critical, fastest-running CI checks for a short feedback loop (per-commit).
 name: Core CI Checks
 
 on:
