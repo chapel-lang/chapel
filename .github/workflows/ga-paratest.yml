@@ -235,7 +235,7 @@ jobs:
             exit 1
           fi
 
-          test_count=$(wc -l < "$RUNNER_TEMP/testdirs.csv")
+          test_count=$(($(wc -l < "$RUNNER_TEMP/testdirs.csv")))
           if (( test_count > 256 )); then
             echo "The generated matrix has $test_count jobs; GitHub Actions permits at most 256"
             exit 1
