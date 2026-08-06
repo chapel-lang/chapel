@@ -1,0 +1,6 @@
+feature request: duplicate filenames unique module names
+
+This test shows that when multiple files sharing the same name define
+modules of different names, we claim an ambiguity.  My sense is that
+since the original a.chpl didn't define a module named 'a', we should
+discount it when trying to resolve 'use a;' and load the other a.chpl.
