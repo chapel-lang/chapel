@@ -210,7 +210,7 @@ jobs:
                 testdirs[dir] = flags
               } else {
                 parent = dir
-                sub(/\/[^/]+$/, "", parent)
+                sub("/[^/]+$", "", parent)
                 if (parent in slow_directories) testdirs[dir] = ""
               }
             }
