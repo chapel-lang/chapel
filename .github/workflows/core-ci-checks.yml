@@ -487,14 +487,19 @@ jobs:
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
 
   build-test-docker-images:
+    # Build each image sequentially, since later ones depend on the base image.
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
-        image: ["base", "gasnet", "gasnet-smp"]
+        config: ["base", "gasnet", "gasnet-smp"]
         os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write # To push images to ghcr
     env:
-      IMAGE: ${{ matrix.image }}
+      CONFIG: ${{ matrix.config }}
       OS: ${{ matrix.os }}
       REGISTRY: "ghcr.io"
       NAMESPACE: "chapel"
@@ -502,18 +507,44 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: build image ${{ env.IMAGE }}
+      - name: determine image name
         run: |
-          IMAGE_NAME="$REGISTRY/$NAMESPACE/$IMAGE:$GITHUB_SHA"
-          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
+          name_prefix="chapel"
 
-          dockerfile_path="util/packaging/docker/$IMAGE"
-          if [[ "$IMAGE" == "base" ]]; then
-            dockerfile_path="."
+          if [[ "$CONFIG" == "base" ]]; then
+            base_image="true"
+            image_name="$name_prefix"
+          else
+            base_image=""
+            image_name="$name_prefix-$CONFIG"
           fi
 
-          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$dockerfile_path" -t "$IMAGE_NAME"
+          {
+            echo "BASE_IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$name_prefix:$GITHUB_SHA"
+            echo "IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$image_name:$GITHUB_SHA"
+            echo "base_image=$base_image"
+          } >> "$GITHUB_ENV"
+      - name: build image ${{ env.IMAGE_FULL_NAME }}
+        run: |
+          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
 
-          # TODO: test
+          if [ -n "$base_image" ]; then
+            dockerfile_path="."
+            test_script="util/cron/docker-chapel.bash"
+          else
+            dockerfile_path="util/packaging/docker/$CONFIG"
+            test_script="util/cron/docker-gasnet.bash"
+            patch "$dockerfile_path/Dockerfile" << EOF
+          < FROM chapel/chapel:latest
+          ---
+          > FROM $BASE_IMAGE_FULL_NAME
+          EOF
+          fi
 
-          # TODO: push
+          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$dockerfile_path" -t "$IMAGE_FULL_NAME"
+
+          cp test/release/examples/hello.chpl .
+          docker run --rm -i "$IMAGE_FULL_NAME" < "$test_script"
+      - name: push image to ${{ env.REGISTRY }}
+        run: |
+          docker push "$IMAGE_FULL_NAME"
