@@ -490,7 +490,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
+        image: ["base", "gasnet", "gasnet-smp"]
         os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     env:
@@ -508,7 +508,7 @@ jobs:
           MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
 
           dockerfile_path="util/packaging/docker/$IMAGE"
-          if [[ "$IMAGE" == "chapel" ]]; then
+          if [[ "$IMAGE" == "base" ]]; then
             dockerfile_path="."
           fi
 
