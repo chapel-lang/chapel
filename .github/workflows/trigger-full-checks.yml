@@ -20,13 +20,18 @@ defaults:
 
 jobs:
   core-checks:
-    uses: ./.github/workflows/core-ci-checks.yml
+    runs-on: ubuntu-slim
+    steps:
+      - run: exit 1
 
-  extended-checks:
-    uses: ./.github/workflows/extended-ci-checks.yml
+  # core-checks:
+  #   uses: ./.github/workflows/core-ci-checks.yml
 
-  full-checks:
-    uses: ./.github/workflows/full-ci-checks.yml
+  # extended-checks:
+  #   uses: ./.github/workflows/extended-ci-checks.yml
+
+  # full-checks:
+  #   uses: ./.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
     if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
