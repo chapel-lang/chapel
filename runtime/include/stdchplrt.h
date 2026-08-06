@@ -25,6 +25,16 @@
    Chapel code -- in particular, things like chplcgfns.h are not
    needed for the generated runtime code, and cause problems. */
 
+#ifndef LAUNCHER
+  #ifndef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Expected 'CHPL_RT_IS_BUILDING_RUNTIME' macro to be set!"
+  #endif
+#else // LAUNCHER
+  #ifdef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Macro should not be set when building launcher!"
+  #endif
+#endif
+
 #include "chplrt.h"
 
 #include <errno.h>
