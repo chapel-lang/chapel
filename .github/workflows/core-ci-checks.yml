@@ -501,6 +501,7 @@ jobs:
     env:
       CONFIG: ${{ matrix.config }}
       OS: ${{ matrix.os }}
+      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
       REGISTRY: "ghcr.io"
       NAMESPACE: "chapel"
     steps:
@@ -519,9 +520,11 @@ jobs:
             image_name="$name_prefix-$CONFIG"
           fi
 
+          TAG="$GITHUB_SHA-$ARCH"
+
           {
-            echo "BASE_IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$name_prefix:$GITHUB_SHA"
-            echo "IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$image_name:$GITHUB_SHA"
+            echo "BASE_IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
+            echo "IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$image_name:$TAG"
             echo "base_image=$base_image"
           } >> "$GITHUB_ENV"
       - name: build image ${{ env.IMAGE_FULL_NAME }}
