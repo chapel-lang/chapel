@@ -35,7 +35,6 @@ cd $CHPL_HOME
 short_version=$(get_short_version)
 gen_release $short_version
 
-cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
@@ -53,12 +52,13 @@ sha=($(shasum -a 256 $location))
 sha256=${sha[0]}
 log_info $sha256
 
-# create sed command
+# write url and sha256 to chapel.rb for testing
 sed_command="sed -i.bak -e "
 $sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
 $sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
-${CHPL_HOME}/util/packaging/docker/test/brew_get_bogus_bottles.bash | sed -e '/<bottle-block-placeholder-injected-during-testing>/r /dev/stdin' -e '/<bottle-block-placeholder-injected-during-testing>/d' -i '' chapel.rb
+${CHPL_HOME}/util/packaging/docker/test/brew_get_bogus_bottles.bash |
+  ${CHPL_HOME}/util/packaging/docker/test/brew_replace_bottles.bash chapel.rb
 
 log_info "Chapel formula to be tested:"
 cat chapel.rb

@@ -1,4 +1,4 @@
-  * Alma Linux 10, 8, 9::
+  * Alma Linux 8, 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
@@ -11,25 +11,6 @@
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev coreutils
       sudo apk add llvm-dev clang-dev clang-static llvm-static
-
-
-  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM==system incompatibility`_)::
-
-      sudo yum install git gcc gcc-c++ m4 perl python tcsh bash perl python python-devel python-setuptools bash make gawk python3 which libunwind-devel
-      sudo yum install wget tar openssl-devel
-      wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
-      tar xvzf cmake-3.25.1.tar.gz
-      cd cmake-3.25.1
-      ./bootstrap
-      make
-      sudo make install
-      sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
-      sudo yum install gcc10 gcc10-c++
-      export CC=gcc10-gcc
-      export CXX=gcc10-g++
-      export CHPL_HOST_CC=gcc10-gcc
-      export CHPL_HOST_CXX=gcc10-g++
-      export CHPL_LLVM=bundled
 
 
   * Amazon Linux 2023::
@@ -57,7 +38,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
+  * Debian 11 "Bullseye" (but see note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
@@ -99,7 +80,7 @@
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 10, 8, 9::
+  * Rocky Linux 8, 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
@@ -122,3 +103,28 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
+Compatibility Notes
+-------------------
+
+Newer CMake required to build LLVM
+++++++++++++++++++++++++++++++++++
+
+On some systems, the cmake package is not new enough to build the bundled
+LLVM. That can be addressed either by installing CMake from source or by
+installing a system LLVM package using the commands shown above.
+
+Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
+and so installing a system LLVM on these platforms is still important in
+that case.
+
+Outdated FreeBSD testing
+++++++++++++++++++++++++
+
+Our portability testing for FreeBSD relies on public Vagrant boxes. At time of
+writing (May 2026), we have been unable to find a box for FreeBSD releases
+newer than 14.3. Due to limited resources, and lacking information on how
+widely used Chapel is on FreeBSD, we have not taken on the work of making our
+own box or otherwise continuing to update this test coverage. It is still our
+intention to support FreeBSD as a best effort, so feel free to open bug reports
+for Chapel on FreeBSD versions newer than we test, and/or let us know if this
+lack of testing coverage causes you concern.
