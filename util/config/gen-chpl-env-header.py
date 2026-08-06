@@ -65,7 +65,7 @@ def generate_env_header_str(template_str):
 # Argument (1) is the path to the template file.
 # Argument (2) is the output path.
 def main():
-    if len(sys.argv) > 3:
+    if len(sys.argv) != 3:
         print("Expected exactly two arguments!", f=stderr)
         return
     path_template = sys.argv[1]

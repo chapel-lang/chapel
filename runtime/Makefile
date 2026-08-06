@@ -57,6 +57,7 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv \
                     $(CHPL_MAKE_HOME)/util/chplenv/* \
                     $(CHPL_MAKE_HOME)/util/config/gen-chpl-env-header.py
 	@mkdir -p $(CHPL_ENV_HEADER_DIR)
+	@echo "Generating $(CHPL_ENV_HEADER)"
 	@$(CHPL_MAKE_HOME)/util/config/gen-chpl-env-header.py \
 		$(CHPL_ENV_HEADER_TEMPLATE) $(CHPL_ENV_HEADER)
 
