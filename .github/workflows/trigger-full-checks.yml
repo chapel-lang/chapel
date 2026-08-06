@@ -1,5 +1,5 @@
 # Kick off the full suite of checks post-merge and nightly.
-name: Trigger full check suite
+name: Run full checks
 
 on:
   push:

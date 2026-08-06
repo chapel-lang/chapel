@@ -1,5 +1,5 @@
 # Kick off PR pre-merge workflows (including merge queue)
-name: Trigger checks on PRs
+name: Run PR checks
 
 on:
   pull_request:
