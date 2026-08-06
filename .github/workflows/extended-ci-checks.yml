@@ -143,6 +143,7 @@ jobs:
     env:
       DISTRO: ${{ matrix.distro }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
+      out_dir: "./output"
     runs-on: ${{ matrix.runner }}
     steps:
       - name: sparse check out util/
@@ -181,10 +182,14 @@ jobs:
           echo "PARALLEL = $PARALLEL"
 
           ./util/cron/create_release_aptrpm.bash
+      - name: copy package to output dir
+        run: |
+          mkdir "$out_dir"
+          find util/packaging/ \( -name "*.deb" -o -name "*.rpm" \) -print -exec cp "{}" "$out_dir" \;
       - name: archive package as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          path: util/packaging/**/*.{deb,rpm}
+          path: ${{ env.out_dir }}/*
           archive: false
           if-no-files-found: error
 
