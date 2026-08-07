@@ -264,11 +264,11 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
   AggregateType* at = toAggregateType(mFn->_this->type);
-  if (at->isUnion()) {
-    INT_FATAL("initializeFieldsAtTail() unexpectedly called on a union type");
-  }
 
-  if (mCurrField != NULL && mCurrField != endField) {
+  // unions don't initialize fields automatically
+  if (at->isUnion()) {
+    return;
+  } else if (mCurrField != NULL && mCurrField != endField) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
     block->insertAtTail(noop);
@@ -1159,17 +1159,6 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                         new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                                                      at->symbol,
                                                      new_CStringSymbol(field->sym->name))));
-
-    // if the next statement isn't an `init this;`, implicitly insert
-    // one since initializing one union field is sufficient for the
-    // union to be initialized
-    //
-    CallExpr* ce = toCallExpr(initStmt->next);
-    if (!ce || !isInitDone(ce)) {
-      initStmt->insertAfter(new CallExpr(new CallExpr(".",
-                                                      mFn->_this,
-                                                      new_CStringSymbol("chpl__initThisType"))));
-    }
   }
 
   Expr* initExpr = initStmt->get(2)->remove();
