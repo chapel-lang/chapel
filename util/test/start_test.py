@@ -600,13 +600,20 @@ def invoke_sub_tests(work, num_workers, for_files):
                 if for_files:
                     output.write("[Working on file {0}]".format(path_for_log))
                 else:
-                    output.write("[Working on directory {0}]".format(path_for_log))
+                    output.write(
+                        "[Working on directory {0}]".format(path_for_log)
+                    )
                 path_for_log = None  # don't log again in invoke_sub_test
             futures.append(
                 (
                     item,
                     executor.submit(
-                        invoke_sub_test, output, test_dir_path, test, for_files, path_for_log
+                        invoke_sub_test,
+                        output,
+                        test_dir_path,
+                        test,
+                        for_files,
+                        path_for_log,
                     ),
                 )
             )
