@@ -5,5 +5,9 @@ BadFormatError: bad format (in readThrough(regex(string)) with path "maxSizeStri
 👉👉👉👉👉👉||||||👈👈👈👈👈👈
 
 uncaught BadFormatError: bad format (in readThrough(regex(string)) with path "maxSizeStringInput.txt" offset 0)
-  readThroughMaxSizeString.chpl:30: thrown here
   readThroughMaxSizeString.chpl:30: uncaught here
+  readThroughMaxSizeString.chpl:30: called from here
+  readThroughMaxSizeString.chpl:30: called from here
+  readThroughMaxSizeString.chpl:30: called from here
+  readThroughMaxSizeString.chpl:30: called from here
+  readThroughMaxSizeString.chpl:30: thrown here

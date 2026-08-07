@@ -1,0 +1,16 @@
+caught error: 1 errors: Error: oops
+stack trace:
+  (frame 1) throwFromCoforall.chpl:17
+  (frame 2) throwFromCoforall.chpl:11
+  (frame 3) throwFromCoforall.chpl:8
+  (frame 4) throwFromCoforall.chpl:2
+  (frame 5) throwFromCoforall.chpl:2
+caught error: oops
+stack trace:
+  (frame 1) throwFromCoforall.chpl:4
+uncaught TaskErrors: 1 errors: Error: oops
+  throwFromCoforall.chpl:34: uncaught here
+  throwFromCoforall.chpl:11: called from here
+  throwFromCoforall.chpl:8: called from here
+  throwFromCoforall.chpl:2: called from here
+  throwFromCoforall.chpl:2: thrown here
