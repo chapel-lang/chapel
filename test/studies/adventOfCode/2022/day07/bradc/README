@@ -1,0 +1,9 @@
+* day07.chpl: my solution to part 1, cleaned up
+
+* day07-min.chpl: an evolution of the above making it more minimal, but less
+  representiative of the file system (i.e., only stores what's needed)
+
+* day07-par.chpl: my failed attempt to parallelize day07.chpl (maps
+  weren't up for it)
+
+* day07a.chpl: my hardly cleaned up at all solution to part 2
