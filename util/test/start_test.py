@@ -550,10 +550,14 @@ def sub_test_environment(test=None):
     return env
 
 
-def invoke_sub_test(output, test_dir_path, test=None):
+def invoke_sub_test(output, test_dir_path, test, for_files, path_for_log):
     """
     NOTE: This function should involve no global state and may be invoked concurrently!
     """
+    if for_files and path_for_log:
+        output.write()
+        output.write("[Working on file {0}]".format(path_for_log))
+
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
     sub_test = sub_test_path(test_dir_path)
 
@@ -591,16 +595,18 @@ def invoke_sub_tests(work, num_workers, for_files):
         for item, test_dir_path, test in work:
             output = BufferedLogger() if num_workers > 1 else logger
             path_for_log = item[1] if not for_files else os.path.relpath(item)
-            output.write()
-            if for_files:
-                output.write("[Working on file {0}]".format(path_for_log))
-            elif num_workers > 1:
-                output.write("[Working on directory {0}]".format(path_for_log))
+            if num_workers > 1:
+                output.write()
+                if for_files:
+                    output.write("[Working on file {0}]".format(path_for_log))
+                else:
+                    output.write("[Working on directory {0}]".format(path_for_log))
+                path_for_log = None  # don't log again in invoke_sub_test
             futures.append(
                 (
                     item,
                     executor.submit(
-                        invoke_sub_test, output, test_dir_path, test
+                        invoke_sub_test, output, test_dir_path, test, for_files, path_for_log
                     ),
                 )
             )
