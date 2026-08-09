@@ -209,8 +209,9 @@ void buildDefaultFunctions() {
           buildRecordComparisonFunc(ct, ">");
           buildRecordComparisonFunc(ct, ">=");
         }
+      }
 
-
+      if (isRecord(ct) || isUnion(ct)) {
         checkNotPod(ct);
       }
 

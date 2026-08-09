@@ -644,6 +644,10 @@ static InitNormalize preNormalize(AggregateType* at,
                                                   cond->thenStmt,
                                                   InitNormalize(cond, state));
 
+        // This union special-case is necessary because of the way
+        // compiler-generated copy initializers are written.  We could
+        // probably write them to use `if then ... else if ... else
+        // init this; to address this (?)
         if (state.isPhase2() == false && !at->isUnion()) {
           if (stateThen.isPhase2() == true) {
             if (phaseThen == InitNormalize::cPhase0) {

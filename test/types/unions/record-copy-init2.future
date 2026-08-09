@@ -1,0 +1,6 @@
+bug: failure to call 'init=' copy initializer
+
+#29239
+
+Why does the declaration of 'u5' not call `init=`?!?
+

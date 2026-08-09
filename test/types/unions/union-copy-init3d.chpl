@@ -3,7 +3,7 @@ union U {
   var y: real;
 }
 proc U.init=(other: U) {
-  // How to write the compiler-generated default?
+  writeln("In my init=");
   select other {
     when U.x do
       this.x = other.x;
