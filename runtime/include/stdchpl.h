@@ -23,6 +23,10 @@
 
 #include "chplrt.h"
 
+#ifdef CHPL_RT_IS_BUILDING_RUNTIME
+  #error "This header should not be included within runtime code!"
+#endif
+
 #include <errno.h>
 #include <math.h>
 #include <float.h>

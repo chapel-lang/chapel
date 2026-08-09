@@ -1,0 +1,4 @@
+-stestCase=TestCases.Param64 # abs-param-errors.64.good
+-stestCase=TestCases.Param32 # abs-param-errors.32.good
+-stestCase=TestCases.Param16 # abs-param-errors.16.good
+-stestCase=TestCases.Param8 # abs-param-errors.8.good
