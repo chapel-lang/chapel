@@ -1174,7 +1174,14 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
   initializeField(initStmt, field, initExpr);
   initStmt->remove();
 
-  mCurrField = toDefExpr(mCurrField->next);
+  if (isUnion) {
+    // If this is a union, initializing any field is like initializing
+    // all of them since only one can be active at a time
+    mCurrField = NULL;
+  } else {
+    // Otherwise, advance to the next field
+    mCurrField = toDefExpr(mCurrField->next);
+  }
 
   return retval;
 }

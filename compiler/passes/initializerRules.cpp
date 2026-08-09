@@ -575,11 +575,6 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (state.isFieldInitialized(field) == false) {
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
-	  if (at->isUnion()) {
-	    // having initialized one field, consider all to be since this is
-	    // a union
-	    state.completePhase1(callExpr);
-	  }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
