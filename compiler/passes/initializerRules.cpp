@@ -575,6 +575,11 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (state.isFieldInitialized(field) == false) {
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
+	  if (at->isUnion()) {
+	    // having initialized one field, consider all to be since this is
+	    // a union
+	    state.completePhase1(callExpr);
+	  }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
@@ -688,11 +693,7 @@ static InitNormalize preNormalize(AggregateType* at,
         if (state.isPhase2() == false) {
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
-            if (at->isUnion()) {
-              USR_FATAL(cond,
-                        "All branches of a conditional in a union initializer "
-                        "must initialize a field if any do");
-            } else {
+            if (!at->isUnion()) {
               USR_FATAL(cond,
                         "Both arms of a conditional must use 'this.init()' "
                         "or 'init this' in phase 1");

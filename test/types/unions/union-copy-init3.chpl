@@ -19,6 +19,8 @@ writeln(u2);
 
 proc main() {
   var u3: U;
+  var u3a: U = u3;
+  writeln(u3a);
   u3.x = 3;
   var u4: U = u3;
   writeln(u3, " ", u4);

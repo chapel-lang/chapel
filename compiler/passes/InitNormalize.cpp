@@ -678,11 +678,18 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   const DefExpr* ptr    = mCurrField;
   bool           retval = true;
 
-  while (ptr != NULL && retval == true) {
-    if (ptr == field) {
-      retval = false;
-    } else {
-      ptr = toConstDefExpr(ptr->next);
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    // if we've set mCurrField to NULL then a field has been initialized,
+    // which means we consider all to be
+    retval = (ptr == NULL);
+  } else {
+    while (ptr != NULL && retval == true) {
+      if (ptr == field) {
+	retval = false;
+      } else {
+	ptr = toConstDefExpr(ptr->next);
+      }
     }
   }
 
