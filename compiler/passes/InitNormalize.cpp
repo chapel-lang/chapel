@@ -1013,6 +1013,10 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
           USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
         } else if (state->type()->isRecord()) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
+        } else if (state->type()->isUnion()) {
+          USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
+        } else {
+          INT_FATAL("Unexpected case in InitNormalize.cpp");
         }
       }
 
@@ -1104,6 +1108,9 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       return false;
     } else if (type->isRecord()) {
       USR_FATAL_CONT(node, "cannot call a method on a record before \"init this\"");
+      return false;
+    } else if (type->isUnion()) {
+      USR_FATAL_CONT(node, "cannot call a method on a union before \"init this\"");
       return false;
     } else {
       Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
