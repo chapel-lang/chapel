@@ -2296,6 +2296,14 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
     return;
   }
 
+  // // at this point, its a pretty good assumption that the return type is a
+  // // tuple that contains one or more generic arrays
+  // // to prevent side-effects, we need to insert call temps for the return
+  // // expression before we start
+  // // we do this for the entire call expression up front, and then insert checks
+  // // for each of the generic arrays in the tuple
+  // prepareRetExpr(retExpr, ret);
+
   // pair(typeExpr, retExpr)
   std::stack<std::pair<Expr*, Expr*>> calls;
   calls.push(std::make_pair(toCallExpr(typeExpr->body.tail), toCallExpr(retExpr)));
@@ -2324,17 +2332,14 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
       Expr* domExpr = typeCall->get(1);
       Expr* retEltExpr = nArgs == 2 ? typeCall->get(2) : nullptr;
       bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
-
+      if (!noDom || retEltExpr != nullptr) {
+        prepareRetExpr(myRetExpr, ret);
+      }
       if (!noDom) {
-        // TODO: prepareRetExpr
-        // prepareRetExpr(retExpr, ret);
         // Add checks against the declared domain
         insertDomainCheck(myRetExpr, ret, domExpr);
       }
-
       if (retEltExpr != nullptr) {
-        // TODO: prepareRetExpr
-        // prepareRetExpr(retExpr, ret);
         insertElementTypeCheck(retEltExpr, myRetExpr, ret);
       }
     }
@@ -2358,14 +2363,14 @@ static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
   Expr* retEltExpr = nArgs == 2 ? call->get(2) : NULL;
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
-  if (!noDom) {
+  if (!noDom || retEltExpr != nullptr) {
     prepareRetExpr(retExpr, ret);
+  }
+  if (!noDom) {
     // Add checks against the declared domain
     insertDomainCheck(retExpr, ret, domExpr);
   }
-
   if (retEltExpr != NULL) {
-    prepareRetExpr(retExpr, ret);
     insertElementTypeCheck(retEltExpr, retExpr, ret);
   }
 
