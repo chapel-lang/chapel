@@ -1,0 +1,1 @@
+returnNonArray.chpl:1: error: return type is a tuple, but return value is not
