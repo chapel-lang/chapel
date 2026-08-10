@@ -58,7 +58,7 @@ class DebuggerBreakHereStopHook:
 
 
 def __lldb_init_module(debugger, internal_dict):
-    debugger.HandleCommand("target stop-hook delete 1")
     debugger.HandleCommand(
         "target stop-hook add --script-class chpl_lldb_debuggerBreakHere.DebuggerBreakHereStopHook"
     )
+    debugger.HandleCommand("breakpoint set -n debuggerBreakHere -N debuggerBreakHere")
