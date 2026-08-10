@@ -71,6 +71,7 @@ static bool        isArrayFormal(ArgSymbol* arg);
 static Expr*       arrayTypeEltTypeExprOrNull(Expr* expr);
 
 static bool        returnsArray(FnSymbol* fn);
+static bool        returnsArrayOrTupleOfArrays(FnSymbol* fn);
 static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
@@ -2202,26 +2203,42 @@ static bool isVoidReturn(CallExpr* call) {
   return retval;
 }
 
-static bool hasGenericArrayReturn(FnSymbol* fn) {
-  if (returnsArray(fn)) {
-    BlockStmt* typeExpr = fn->retExprType;
+static bool isGenericArray(CallExpr* call) {
+  if (!call->isNamed("chpl__buildArrayRuntimeType")) return false;
 
-    // returnsArray ensured this was a call to "chpl__buildArrayRuntimeType"
-    CallExpr* call = toCallExpr(typeExpr->body.tail);
-    int nArgs = call->numActuals();
-    Expr* domExpr = call->get(1);
-    Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
-    bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+  int nArgs = call->numActuals();
+  Expr* domExpr = call->get(1);
+  Expr* eltExpr = nArgs == 2 ? call->get(2) : nullptr;
+  bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
-    if (noDom || eltExpr == NULL) {
-      // Either the domain is not provided explicitly as part of the return
-      // type, or the element type is not provided, or both
-
-      return true;
+  // Either the domain is not provided explicitly as part of the return
+  // type, or the element type is not provided, or both
+  return noDom || eltExpr == nullptr;
+}
+static bool containsGenericArray(CallExpr* call) {
+  if (call->isNamed("_build_tuple")) {
+    for_actuals(arg, call) {
+      if (CallExpr* argCall = toCallExpr(arg)) {
+        if (containsGenericArray(argCall))
+          return true;
+      }
     }
+    return false;
+  } else {
+    return isGenericArray(call);
   }
+}
 
-  return false;
+static bool hasGenericArrayReturn(FnSymbol* fn) {
+  if (!returnsArrayOrTupleOfArrays(fn)) return false;
+  BlockStmt* typeExpr = fn->retExprType;
+
+  // returnsArrayOrTupleOfArrays ensured this was a call to
+  // "chpl__buildArrayRuntimeType" or a call to "_build_tuple" with
+  // "chpl__buildArrayRuntimeType" as an argument
+  CallExpr* call = toCallExpr(typeExpr->body.tail);
+  return containsGenericArray(call);
+
 }
 
 //
@@ -2265,10 +2282,74 @@ static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
   retVar->insertBefore(checkEltType);
 }
 
+static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
+                                                    VarSymbol* retval,
+                                                    CallExpr* ret,
+                                                    Expr* retExpr);
 static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
                                               VarSymbol* retval,
                                               CallExpr* ret,
                                               Expr* retExpr) {
+  BlockStmt* typeExpr = fn->retExprType;
+  if (toCallExpr(typeExpr->body.tail)->isNamed("chpl__buildArrayRuntimeType")) {
+    modifyPartiallyGenericArrayReturnSimple(fn, retval, ret, retExpr);
+    return;
+  }
+
+  // pair(typeExpr, retExpr)
+  std::stack<std::pair<Expr*, Expr*>> calls;
+  calls.push(std::make_pair(toCallExpr(typeExpr->body.tail), toCallExpr(retExpr)));
+  while(calls.size() > 0) {
+    auto call = calls.top();
+    calls.pop();
+    auto typeCall = toCallExpr(call.first);
+    auto myRetExpr = call.second;
+    auto retCall = toCallExpr(myRetExpr);
+    if (typeCall && typeCall->isNamed("_build_tuple")) {
+      if (!(retCall && retCall->isNamed("_build_tuple"))) {
+        USR_FATAL(fn, "return type is a tuple, but return value is not");
+      }
+      int nTypeArgs = typeCall->numActuals();
+      int nRetArgs = retCall->numActuals();
+      if (nTypeArgs != nRetArgs) {
+        USR_FATAL(fn, "return type is a tuple of size %d, but return value is a tuple of size %d", nTypeArgs, nRetArgs);
+      }
+      for (int i = 1; i <= nTypeArgs; i++) {
+        Expr* typeArg = typeCall->get(i);
+        Expr* retArg = retCall->get(i);
+        calls.push(std::make_pair(typeArg, retArg));
+      }
+    } else if (typeCall && isGenericArray(typeCall)) {
+      int nArgs = typeCall->numActuals();
+      Expr* domExpr = typeCall->get(1);
+      Expr* retEltExpr = nArgs == 2 ? typeCall->get(2) : nullptr;
+      bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+      if (!noDom) {
+        // TODO: prepareRetExpr
+        // prepareRetExpr(retExpr, ret);
+        // Add checks against the declared domain
+        insertDomainCheck(myRetExpr, ret, domExpr);
+      }
+
+      if (retEltExpr != nullptr) {
+        // TODO: prepareRetExpr
+        // prepareRetExpr(retExpr, ret);
+        insertElementTypeCheck(retEltExpr, myRetExpr, ret);
+      }
+    }
+  }
+  // TODO: Do something about coercion
+  ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+}
+
+
+
+
+static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
+                                                    VarSymbol* retval,
+                                                    CallExpr* ret,
+                                                    Expr* retExpr) {
   BlockStmt* typeExpr = fn->retExprType;
 
   CallExpr* call = toCallExpr(typeExpr->body.tail);
@@ -3915,6 +3996,21 @@ static bool returnsArray(FnSymbol* fn) {
   // SIMPLIFYING ASSUMPTION:
   // If we don't have a declared return type, assume we don't return an array
   return false;
+}
+static bool isTupleOrArray(CallExpr* call) {
+  if (!call) return false;
+  if (call->isNamed("chpl__buildArrayRuntimeType"))
+    return true;
+  else if (call->isNamed("_build_tuple"))
+    for_actuals(actual, call) {
+      if (isTupleOrArray(toCallExpr(actual)))
+        return true;
+    }
+  return false;
+}
+static bool returnsArrayOrTupleOfArrays(FnSymbol* fn) {
+  return fn->retExprType != NULL &&
+         isTupleOrArray(toCallExpr(fn->retExprType->body.tail));
 }
 
 
