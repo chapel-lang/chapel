@@ -588,38 +588,41 @@ def invoke_sub_test(output, test_dir_path, test, for_files, path_for_log):
 
 
 def invoke_sub_tests(work, num_workers, for_files):
+    def invoke_sub_test_work(work):
+        item, output, other_args = work[0], work[1], work[2:]
+        status, output = invoke_sub_test(output, *other_args)
+        return (item, status, output)
+
+    invocations = []
+    for item, test_dir_path, test in work:
+        output = BufferedLogger() if num_workers > 1 else logger
+        path_for_log = item[1] if not for_files else os.path.relpath(item)
+        if num_workers > 1:
+            output.write()
+            if for_files:
+                output.write("[Working on file {0}]".format(path_for_log))
+            else:
+                output.write("[Working on directory {0}]".format(path_for_log))
+            path_for_log = None  # don't log again in invoke_sub_test
+        invocations.append(
+            (
+                item,
+                output,
+                test_dir_path,
+                test,
+                for_files,
+                path_for_log,
+            )
+        )
+
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        futures = []
-        for item, test_dir_path, test in work:
-            output = BufferedLogger() if num_workers > 1 else logger
-            path_for_log = item[1] if not for_files else os.path.relpath(item)
-            if num_workers > 1:
-                output.write()
-                if for_files:
-                    output.write("[Working on file {0}]".format(path_for_log))
-                else:
-                    output.write(
-                        "[Working on directory {0}]".format(path_for_log)
-                    )
-                path_for_log = None  # don't log again in invoke_sub_test
-            futures.append(
-                (
-                    item,
-                    executor.submit(
-                        invoke_sub_test,
-                        output,
-                        test_dir_path,
-                        test,
-                        for_files,
-                        path_for_log,
-                    ),
-                )
-            )
-        for item, future in futures:
-            status, output = future.result()
-            yield (item, status, output)
+        try:
+            yield from executor.map(invoke_sub_test_work, invocations)
+        except BaseException:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
 
 
 def run_sub_tests(items, num_workers):
