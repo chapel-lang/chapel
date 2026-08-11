@@ -3,7 +3,7 @@ union U {
   var y: real;
 }
 proc U.init=(other: U) {
-  // How to write the compiler-generated default?
+  writeln("In my init=");
   if other.getActiveIndex() == 0 then
     this.x = other.x;
   else

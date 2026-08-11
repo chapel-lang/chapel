@@ -118,20 +118,47 @@ module AutoMath {
   // (The entries below are alphabetized (case-insensitively) because chpldocs
   // presents them in declaration order.)
   //
-  /* Returns the absolute value of the integer argument.
+  /*
+    Returns the absolute value of the integer argument.
 
-     :rtype: The type of `x`.
+    .. note::
+
+       The expression ``abs(min(int))`` will result in a runtime error. The
+       absolute value of the minimum representable integer is not representable
+       as an integer of the same type.
+
+    :rtype: The type of `x`.
   */
-  inline proc abs(x : int(?w)) do return if x < 0 then -x else x;
+  inline proc abs(x : int(?w)) {
+    if boundsChecking && x == min(x.type) then
+      halt("abs(" + x:string + ") is not representable as a " + x.type:string);
+    return if x < 0 then -x else x;
+  }
 
-  /* Returns the absolute value of the unsigned integer argument.
+  /*
+    Returns the absolute value of the unsigned integer argument.
 
-     :rtype: The type of `x`.
+    :rtype: The type of `x`.
   */
   inline proc abs(x : uint(?w)) do return x;
 
-  /* Returns the absolute value of the integer param argument `x`. */
-  proc abs(param x : integral) param do return if x < 0 then -x else x;
+  /*
+    Returns the absolute value of the integer param argument `x`.
+
+    .. note::
+
+       The expression ``abs(min(int))`` will result in a compile-time error. The
+       absolute value of the minimum representable integer is not representable
+       as an integer of the same type.
+  */
+  proc abs(param x : integral) param {
+    if isIntType(x.type) {
+      if x == min(x.type) then
+        compilerError("abs(" + x:string + ") is not representable as a " + x.type:string);
+      return if x < 0 then -x else x;
+    } else
+      return x;
+  }
 
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(64)):real(64) do return __primitive("abs", x);
