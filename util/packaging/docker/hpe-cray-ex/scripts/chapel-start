@@ -1,0 +1,56 @@
+#!/bin/bash
+# Container ENV already sets all Chapel and libfabric paths for hpe-cray-ex.
+# This script handles the two things ENV cannot: switching to linux64 mode
+# (which requires unsetting OFI vars) and re-promoting /.e4s-cl/hostlibs when
+# running interactively under e4s-cl.
+
+set -euo pipefail
+
+# When running under e4s-cl, host-injected libs must take precedence over the
+# container's bundled /opt/cxi-dev copy. Re-promote hostlibs to front of path.
+if [[ -d "/.e4s-cl/hostlibs" ]]; then
+    export LD_LIBRARY_PATH="/.e4s-cl/hostlibs${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+
+show_usage() {
+    cat <<'EOF'
+Usage:
+  chapel-start [runtime] [command...]
+
+Available runtimes:
+  hpe-cray-ex  OFI/PMI2/CXI runtime (default; already configured by container ENV)
+  linux64      CHPL_COMM=none standalone runtime
+
+Examples:
+  chapel-start hpe-cray-ex chpl examples/hello6-taskpar-dist.chpl
+  chapel-start linux64 chpl examples/hello.chpl
+  chapel-start hpe-cray-ex bash
+  chapel-start bash
+EOF
+}
+
+switch_to_linux64() {
+    export CHPL_TARGET_PLATFORM=linux64
+    export CHPL_COMM=none
+    export CHPL_LIBFABRIC=none
+    export CHPL_LAUNCHER=none
+    unset CHPL_COMM_OFI_OOB CHPL_RT_COMM_OFI_PROVIDER CHPL_RT_COMM_OFI_OOB
+}
+
+if [[ $# -gt 0 ]] && [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_usage
+    exit 0
+fi
+
+if [[ $# -gt 0 ]] && [[ "$1" == "linux64" ]]; then
+    switch_to_linux64
+    shift
+elif [[ $# -gt 0 ]] && [[ "$1" == "hpe-cray-ex" ]]; then
+    shift  # already the default; nothing to change
+fi
+
+if [[ $# -gt 0 ]]; then
+    exec "$@"
+fi
+
+exec /bin/bash

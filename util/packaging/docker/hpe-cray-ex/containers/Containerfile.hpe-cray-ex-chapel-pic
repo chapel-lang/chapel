@@ -1,0 +1,342 @@
+# syntax=docker/dockerfile:1
+# A Debian bookworm base and dual-runtime Chapel build:
+# - HPE Cray EX target runtime using libfabric 2.3.1 with CXI support
+# - Standard linux64 target runtime using CHPL_COMM=none, supports mason
+#
+# Produces a Chapel image suitable for building single-locale and distributed
+# programs. Provides Mason and the Chapel Python bindings. 
+
+# Corporate/intercepting-proxy root CA support:
+# Some networks (e.g. behind a TLS-inspecting proxy) present a certificate
+# chain signed by an internal root CA that isn't in the public ca-certificates
+# bundle, which breaks `git clone`/`curl` over https during the build. Rather
+# than baking that root CA into the image, it can be supplied at build time as
+# a BuildKit/Buildah secret (id=corp_ca) and is only ever mounted into the
+# specific RUN step that needs it - it is never COPYed, never written to a
+# committed layer, and each RUN removes its own temporary combined CA bundle
+# before the layer is committed. Builds without the secret work unmodified
+# (required=false).
+
+FROM debian:bookworm-slim AS chapel-runtime-base
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl && \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key > /etc/apt/trusted.gpg.d/apt.llvm.org.asc && \
+    rm -f /tmp/build-ca-bundle.crt && \
+    echo 'deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-22 main' > /etc/apt/sources.list.d/llvm.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    automake \
+    bash \
+    bison \
+    build-essential \
+    clang-22 \
+    cmake \
+    file \
+    flex \
+    g++ \
+    gcc \
+    gfortran \
+    git \
+    libclang-22-dev \
+    libclang-cpp22-dev \
+    libconfig-dev \
+    libcurl4-openssl-dev \
+    libedit-dev \
+    libfuse-dev \
+    libgmp-dev \
+    libgmp10 \
+    libhwloc-dev \
+    libjson-c-dev \
+    libnl-3-dev \
+    libnuma-dev \
+    libpmi2-0-dev \
+    libsensors-dev \
+    libslurm-dev \
+    libtool \
+    libuv1-dev \
+    libyaml-dev \
+    locales \
+    m4 \
+    make \
+    mawk \
+    perl \
+    pkg-config \
+    protobuf-compiler \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    python3-venv \
+    ripgrep \
+    llvm-22 \
+    llvm-22-dev \
+    wget \
+    && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-22 220 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-22 220 \
+    && update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-22 220 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    echo 'LANG="en_US.UTF-8"' > /etc/default/locale && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+
+RUN git config --global user.email "noreply@example.com" && \
+    git config --global user.name "Chapel HPE Cray EX user"
+
+FROM chapel-runtime-base AS cxi-dev
+
+ARG CXI_VERSION=release/shs-13.1.0
+ARG CXI_DRIVER_COMMIT=3233be5
+ARG LIBCXI_COMMIT=ebd57a9
+ARG MAKE_THREADS=auto
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    cd /tmp && \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export GIT_SSL_CAINFO=/tmp/build-ca-bundle.crt CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    git clone --depth 1 --branch "${CXI_VERSION}" \
+        https://github.com/HewlettPackard/shs-cassini-headers.git && \
+    git clone https://github.com/HewlettPackard/shs-libcxi.git && \
+    git clone https://github.com/HewlettPackard/shs-cxi-driver.git && \
+    if [ -n "${LIBCXI_COMMIT}" ]; then \
+        git -C /tmp/shs-libcxi checkout "${LIBCXI_COMMIT}"; \
+    else \
+        git -C /tmp/shs-libcxi checkout "${CXI_VERSION}"; \
+    fi && \
+    if [ -n "${CXI_DRIVER_COMMIT}" ]; then \
+        git -C /tmp/shs-cxi-driver checkout "${CXI_DRIVER_COMMIT}"; \
+    else \
+        git -C /tmp/shs-cxi-driver checkout "${CXI_VERSION}"; \
+    fi && \
+    mkdir -p /opt/cxi-dev/include/libcxi /usr/share/cassini-headers && \
+    cp -a shs-cassini-headers/include/. /opt/cxi-dev/include/ && \
+    cp -a shs-cassini-headers/share/cassini-headers/. /usr/share/cassini-headers/ && \
+    cp shs-libcxi/include/libcxi.h /opt/cxi-dev/include/libcxi/ && \
+    cp -a shs-cxi-driver/include/. /opt/cxi-dev/include/ && \
+    rm -f /tmp/build-ca-bundle.crt
+
+RUN cd /tmp/shs-libcxi && \
+    ./autogen.sh && \
+    ./configure --prefix=/opt/cxi-dev CPPFLAGS="-I/opt/cxi-dev/include" && \
+    make_threads="${MAKE_THREADS}" && \
+    if [ -z "${make_threads}" ] || [ "${make_threads}" = "auto" ]; then \
+        make_threads="$(nproc)"; \
+    fi && \
+    make -j"${make_threads}" && \
+    make install && \
+    rm -rf /tmp/shs-cassini-headers /tmp/shs-libcxi /tmp/shs-cxi-driver
+
+RUN test -f /opt/cxi-dev/include/libcxi/libcxi.h && \
+    test -f /opt/cxi-dev/include/uapi/misc/cxi.h && \
+    test -f /opt/cxi-dev/lib/libcxi.so
+
+FROM cxi-dev AS libfabric-build
+
+ARG LIBFABRIC_VERSION=2.3.1
+ARG MAKE_THREADS=auto
+
+ENV LD_LIBRARY_PATH=/opt/cxi-dev/lib
+ENV LIBRARY_PATH=/opt/cxi-dev/lib
+ENV CPATH=/opt/cxi-dev/include
+ENV PKG_CONFIG_PATH=/opt/cxi-dev/lib/pkgconfig
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export GIT_SSL_CAINFO=/tmp/build-ca-bundle.crt CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    git clone --depth 1 --branch "v${LIBFABRIC_VERSION}" \
+    https://github.com/ofiwg/libfabric.git /tmp/libfabric && \
+    rm -f /tmp/build-ca-bundle.crt
+
+RUN cd /tmp/libfabric && \
+    sed -i '/^# Stand-alone srun tests for hardware testing environment$/,/^if HAVE_CRITERION$/{ /^if HAVE_CRITERION$/!d; }' prov/cxi/Makefile.include && \
+    ./autogen.sh && \
+    ./configure \
+        --prefix=/opt/libfabric \
+        --disable-static \
+        --enable-cxi=/opt/cxi-dev \
+        CPPFLAGS="-I/opt/cxi-dev/include" \
+        LDFLAGS="-L/opt/cxi-dev/lib -Wl,-rpath,/opt/cxi-dev/lib" \
+        PKG_CONFIG_PATH="/opt/cxi-dev/lib/pkgconfig" && \
+    make_threads="${MAKE_THREADS}" && \
+    if [ -z "${make_threads}" ] || [ "${make_threads}" = "auto" ]; then \
+        make_threads="$(nproc)"; \
+    fi && \
+    make -j"${make_threads}" install && \
+    rm -rf /tmp/libfabric
+
+RUN test -f /opt/libfabric/include/rdma/fi_cxi_ext.h && \
+    test -f /opt/libfabric/lib/libfabric.so && \
+    PKG_CONFIG_PATH=/opt/libfabric/lib/pkgconfig pkg-config --libs --static libfabric | grep -q -- '-lcxi'
+
+FROM chapel-runtime-base AS chapel-hpe-cray-ex-build
+
+ARG MAKE_THREADS=auto
+ARG CHAPEL_VERSION=2.9.0
+
+ENV CHPL_HOME=/opt/chapel
+WORKDIR ${CHPL_HOME}
+
+COPY --from=libfabric-build /opt/cxi-dev /opt/cxi-dev
+COPY --from=libfabric-build /usr/share/cassini-headers /usr/share/cassini-headers
+COPY --from=libfabric-build /opt/libfabric /opt/libfabric
+COPY scripts/chapel-test-compile /usr/local/bin/chapel-test-compile
+
+RUN chmod +x /usr/local/bin/chapel-test-compile
+
+ENV LANG=en_US.UTF-8
+# Chapel names its compiler bin dir bin/linux64-<arch> (e.g. linux64-x86_64,
+# linux64-aarch64) after the *build host's* arch, so it can't be hardcoded
+# here. bin/linux64-host is a symlink to the real dir, created below once the
+# Chapel build actually exists.
+ENV PATH=/opt/libfabric/bin:${CHPL_HOME}/bin/linux64-host:${CHPL_HOME}/util:${PATH}
+ENV LD_LIBRARY_PATH=/opt/libfabric/lib:/opt/cxi-dev/lib
+ENV LIBRARY_PATH=/opt/libfabric/lib:/opt/cxi-dev/lib
+ENV CPATH=/opt/libfabric/include:/opt/cxi-dev/include
+ENV PKG_CONFIG_PATH=/opt/libfabric/lib/pkgconfig:/opt/cxi-dev/lib/pkgconfig
+ENV LIBFABRIC_DIR=/opt/libfabric
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export GIT_SSL_CAINFO=/tmp/build-ca-bundle.crt CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    (git clone --depth 1 --branch "${CHAPEL_VERSION}" https://github.com/chapel-lang/chapel.git . || \
+    (git clone https://github.com/chapel-lang/chapel.git . && git checkout "${CHAPEL_VERSION}")) && \
+    rm -f /tmp/build-ca-bundle.crt
+
+ENV CHPL_HOST_PLATFORM=linux64 \
+    CHPL_LLVM=system \
+    CHPL_TARGET_COMPILER=llvm \
+    CHPL_TARGET_CPU=none \
+    CHPL_RE2=bundled \
+    CHPL_TASKS=qthreads \
+    CHPL_LIB_PIC=pic \
+    CHPL_UNWIND=none
+
+RUN CHPL_TARGET_PLATFORM=hpe-cray-ex \
+    CHPL_COMM=ofi \
+    CHPL_LIBFABRIC=system \
+    CHPL_COMM_OFI_OOB=pmi2 \
+    CHPL_LAUNCHER=slurm-srun \
+    CHPL_LOCALE_MODEL=flat \
+    bash -lc 'make_threads="${MAKE_THREADS}"; \
+    if [[ -z "${make_threads}" || "${make_threads}" == "auto" ]]; then \
+        make_threads="$(nproc)"; \
+    fi; \
+    make -j"${make_threads}"'
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export GIT_SSL_CAINFO=/tmp/build-ca-bundle.crt CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    CHPL_TARGET_PLATFORM=linux64 \
+    CHPL_COMM=none \
+    CHPL_LIBFABRIC=none \
+    CHPL_LAUNCHER=none \
+    bash -lc 'make_threads="${MAKE_THREADS}"; \
+    if [[ -z "${make_threads}" || "${make_threads}" == "auto" ]]; then \
+        make_threads="$(nproc)"; \
+    fi; \
+    python3 -m ensurepip --upgrade 2>/dev/null || true; \
+    make -j"${make_threads}" && \
+    make chapel-py-venv && \
+    make mason' && \
+    rm -f /tmp/build-ca-bundle.crt
+
+# Point the arch-agnostic bin/linux64-host symlink (referenced by PATH above)
+# at whichever bin/linux64-<arch> dir this build host actually produced.
+RUN chpl_bin_dir="$(find "${CHPL_HOME}/bin" -mindepth 1 -maxdepth 1 -type d -name 'linux64-*' -print -quit)" && \
+    test -n "${chpl_bin_dir}" && \
+    ln -s "$(basename "${chpl_bin_dir}")" "${CHPL_HOME}/bin/linux64-host"
+
+RUN /usr/local/bin/chapel-test-compile
+
+RUN rm -rf .git && \
+    find build -type f \( -name '*.o' -o -name '*.tmp' \) -delete 2>/dev/null || true
+
+FROM chapel-runtime-base AS chapel-multi-rt-base
+
+# Re-declare the component build args so their values can be captured in the
+# LABEL metadata below - each defaults to the same value used to build the
+# corresponding cxi-dev/libfabric-build/chapel-hpe-cray-ex-build stage.
+ARG CXI_VERSION=release/shs-13.1.0
+ARG CXI_DRIVER_COMMIT=3233be5
+ARG LIBCXI_COMMIT=ebd57a9
+ARG LIBFABRIC_VERSION=2.3.1
+ARG CHAPEL_VERSION=2.9.0
+
+ENV CHPL_HOME=/opt/chapel
+# bin/linux64-host is the arch-agnostic symlink created in the
+# chapel-hpe-cray-ex-build stage and copied below along with /opt/chapel.
+ENV PATH=/opt/libfabric/bin:/opt/chapel/bin/linux64-host:/opt/chapel/util:${PATH}
+ENV LD_LIBRARY_PATH=/opt/libfabric/lib:/opt/cxi-dev/lib
+ENV LIBRARY_PATH=/opt/libfabric/lib:/opt/cxi-dev/lib
+ENV CPATH=/opt/libfabric/include:/opt/cxi-dev/include
+ENV PKG_CONFIG_PATH=/opt/libfabric/lib/pkgconfig:/opt/cxi-dev/lib/pkgconfig
+ENV PYTHONPATH=/opt/chapel/third-party/chpl-venv/install/chpl-frontend-py-deps:/opt/chapel/third-party/chpl-venv/install/chpldeps
+ENV LIBFABRIC_DIR=/opt/libfabric
+ENV CHPL_HOST_PLATFORM=linux64
+ENV CHPL_LLVM=system
+ENV CHPL_TARGET_COMPILER=llvm
+ENV CHPL_TARGET_CPU=none
+ENV CHPL_RE2=bundled
+ENV CHPL_TASKS=qthreads
+ENV CHPL_LIB_PIC=pic
+ENV CHPL_UNWIND=none
+ENV CHPL_TARGET_PLATFORM=hpe-cray-ex
+ENV CHPL_COMM=ofi
+ENV CHPL_LIBFABRIC=system
+ENV CHPL_COMM_OFI_OOB=pmi2
+ENV CHPL_LAUNCHER=slurm-srun
+ENV CHPL_LOCALE_MODEL=flat
+ENV CHPL_RT_COMM_OFI_PROVIDER=cxi
+ENV CHPL_RT_COMM_OFI_OOB=pmi2
+ENV CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
+ENV FI_PROVIDER=cxi
+ENV FI_LOG_LEVEL=warn
+
+COPY --from=libfabric-build /opt/cxi-dev /opt/cxi-dev
+COPY --from=libfabric-build /usr/share/cassini-headers /usr/share/cassini-headers
+COPY --from=libfabric-build /opt/libfabric /opt/libfabric
+COPY --from=chapel-hpe-cray-ex-build /opt/chapel /opt/chapel
+COPY scripts/chapel-start /usr/local/bin/chapel-start
+COPY scripts/chapel-test-compile /usr/local/bin/chapel-test-compile
+
+RUN chmod +x /usr/local/bin/chapel-start \
+             /usr/local/bin/chapel-test-compile && \
+    mkdir -p /var/log/chapel /tmp/chapel /run/chapel && \
+    chmod 755 /var/log/chapel /tmp/chapel /run/chapel
+
+WORKDIR /opt/chapel
+
+CMD ["/usr/local/bin/chapel-start"]
+
+# Metadata capturing the actual component versions/commits this image was
+# built from
+LABEL org.opencontainers.image.title="chapel-hpe-cray-ex-chapel-pic" \
+      org.opencontainers.image.description="Debian bookworm Chapel image with dual hpe-cray-ex (OFI/CXI) and linux64 runtimes" \
+      chapel.version="${CHAPEL_VERSION}" \
+      chapel.runtimes="hpe-cray-ex,linux64" \
+      libfabric.version="${LIBFABRIC_VERSION}" \
+      cxi.version="${CXI_VERSION}" \
+      cxi.driver_commit="${CXI_DRIVER_COMMIT}" \
+      cxi.libcxi_commit="${LIBCXI_COMMIT}"
+
+FROM chapel-multi-rt-base AS chapel-hpe-cray-ex

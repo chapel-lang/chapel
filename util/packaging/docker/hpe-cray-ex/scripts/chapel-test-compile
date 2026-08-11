@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -euo pipefail
+
+WORK_DIR="$(mktemp -d /tmp/chapel-smoke-XXXXXX)"
+trap 'rm -rf "${WORK_DIR}"' EXIT
+
+cat >"${WORK_DIR}/hello.chpl" <<'EOF'
+writeln("hello from chapel");
+EOF
+
+if [[ -n "${CHPL_HOME:-}" && -d "${CHPL_HOME}/bin" ]]; then
+    export PATH="${CHPL_HOME}/bin:${CHPL_HOME}/util:${PATH}"
+fi
+
+echo "Compiling Chapel smoke test in ${WORK_DIR}" >&2
+chpl "${WORK_DIR}/hello.chpl" -o "${WORK_DIR}/hello"
+"${WORK_DIR}/hello"

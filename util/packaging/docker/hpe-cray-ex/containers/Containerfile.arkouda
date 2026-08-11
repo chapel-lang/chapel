@@ -1,0 +1,262 @@
+# Containerfile for Arkouda layered on a pre-built Chapel container
+# that contains both the CHPL_COMM=none and a distributed Chapel runtime.
+# Developed on top of Chapel images targeting HPE-Cray-EX with libfabric and CXI
+# provider. May be adaptable to other distributed Chapel builds.
+# ================================================================================
+
+# Build arguments for version control
+ARG CHAPEL_BASE_IMAGE=localhost/chapel-2.9.0-libfabric-2.3.1-cxi-pic:latest
+ARG LIBICONV_VERSION=1.17
+ARG ARROW_VERSION=19.0.1-1
+ARG ARKOUDA_VERSION=2026.07.15
+
+# ========================================
+# Stage 1: Arkouda Builder
+# Uses pre-built Chapel container as base
+# ========================================
+FROM ${CHAPEL_BASE_IMAGE} AS arkouda-builder
+
+# Re-declare build arguments for this stage
+ARG LIBICONV_VERSION=1.17
+ARG ARROW_VERSION=19.0.1-1
+ARG ARKOUDA_VERSION=2026.07.15
+
+# Install additional packages needed for Arkouda that may not be in Chapel base
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    WGET_CA_OPT=""; \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        WGET_CA_OPT="--ca-certificate=/tmp/build-ca-bundle.crt"; \
+    fi && \
+    apt-get update && apt-get install -y \
+    --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    autoconf \
+    automake \
+    libtool \
+    flex \
+    bison \
+    gfortran \
+    wget \
+    libzmq3-dev \
+    libhdf5-dev \
+    libhdf5-serial-dev \
+    hdf5-tools \
+    libidn2-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libre2-dev \
+    && wget ${WGET_CA_OPT:-} -qO /tmp/apache-arrow-apt.deb \
+        https://packages.apache.org/artifactory/arrow/debian/apache-arrow-apt-source-latest-$(lsb_release -cs).deb \
+    && apt-get install -y /tmp/apache-arrow-apt.deb \
+    && apt-get update \
+    && apt-get install -y \
+        --no-install-recommends \
+        libarrow-dev=${ARROW_VERSION} \
+        libparquet-dev=${ARROW_VERSION} \
+    && rm -f /tmp/apache-arrow-apt.deb /tmp/build-ca-bundle.crt \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV ARKOUDA_HOME=/opt/arkouda
+ENV ARKOUDA_VENV=/opt/arkouda-venv
+
+# Create Python venv using system Python
+RUN python3 -m venv ${ARKOUDA_VENV}
+ENV PATH=${ARKOUDA_VENV}/bin:${PATH}
+ENV VIRTUAL_ENV=${ARKOUDA_VENV}
+
+# Download Arkouda source
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export GIT_SSL_CAINFO=/tmp/build-ca-bundle.crt CURL_CA_BUNDLE=/tmp/build-ca-bundle.crt; \
+    fi && \
+    cd /opt && \
+    arkouda_ref="${ARKOUDA_VERSION}" && \
+    if echo "${ARKOUDA_VERSION}" | grep -Eq '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$'; then \
+        arkouda_ref="v${ARKOUDA_VERSION}"; \
+    fi && \
+    git clone --depth 1 --branch "${arkouda_ref}" https://github.com/Bears-R-Us/arkouda.git && \
+    rm -f /tmp/build-ca-bundle.crt
+
+# Copy patches directory (may be empty, that's OK)
+COPY patches/ /tmp/patches/
+
+# Apply patches conditionally based on Arkouda version
+RUN if [ "${ARKOUDA_VERSION}" = "2025.09.30" ]; then \
+        echo "Applying versioneer patch for Arkouda ${ARKOUDA_VERSION}" && \
+        cd /opt/arkouda && \
+        if [ -f "/tmp/patches/versioneer_update.patch" ]; then \
+            patch -p1 < /tmp/patches/versioneer_update.patch && \
+            echo "Patch applied successfully"; \
+        else \
+            echo "WARNING: versioneer_update.patch not found"; \
+        fi; \
+    else \
+        echo "No patches needed for Arkouda version ${ARKOUDA_VERSION}"; \
+    fi
+
+# Install build dependencies needed for pyproject.toml parsing
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export PIP_CERT=/tmp/build-ca-bundle.crt; \
+    fi && \
+    ${ARKOUDA_VENV}/bin/pip install --no-cache-dir \
+    setuptools>=64 \
+    wheel \
+    versioneer[toml]>=0.22 && \
+    rm -f /tmp/build-ca-bundle.crt
+
+# Install Arkouda's runtime dependencies using its own pyproject.toml
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        export PIP_CERT=/tmp/build-ca-bundle.crt; \
+    fi && \
+    cd /opt/arkouda && \
+    ${ARKOUDA_VENV}/bin/pip install --no-cache-dir -e .[dev] && \
+    rm -f /tmp/build-ca-bundle.crt
+
+# Build GNU libiconv from source - required for Arkouda
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    WGET_CA_OPT=""; \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        WGET_CA_OPT="--ca-certificate=/tmp/build-ca-bundle.crt"; \
+    fi && \
+    cd /tmp && \
+    wget ${WGET_CA_OPT:-} https://ftp.gnu.org/pub/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz && \
+    tar --no-same-owner -xzf libiconv-${LIBICONV_VERSION}.tar.gz && \
+    cd libiconv-${LIBICONV_VERSION} && \
+    ./configure --prefix=/usr/local --enable-shared --enable-static && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/libiconv-${LIBICONV_VERSION} /tmp/libiconv-${LIBICONV_VERSION}.tar.gz /tmp/build-ca-bundle.crt
+
+# Update library paths to include libiconv
+ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+ENV LIBRARY_PATH=/usr/local/lib:${LIBRARY_PATH}
+ENV CPATH=/usr/local/include:${CPATH}
+
+# Set Arkouda build environment variables
+ENV ARKOUDA_ZMQ_PATH=/usr/lib/x86_64-linux-gnu
+ENV ARKOUDA_HDF5_PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
+
+# Build two Arkouda server variants from the same source tree:
+# 1) OFI/Slurm variant for HPE Cray EX distributed runs
+# 2) CHPL_COMM=none variant for standalone single-node container runs
+RUN cd /opt/arkouda && \
+    ldconfig && \
+    ldconfig -p | grep -E "lib(arrow|parquet)" && \
+    cp .configs/registration-config-multi-dim.json registration-config.json && \
+    CHPL_FLAGS="--instantiate-max=1024" ARKOUDA_SKIP_CHECK_DEPS=true make ARRAY_ND_MAX=3 && \
+    cp -a /opt/arkouda /opt/arkouda-dist && \
+    CHPL_TARGET_PLATFORM=linux64 CHPL_COMM=none CHPL_LIBFABRIC=none CHPL_LAUNCHER=none \
+    CHPL_FLAGS="--instantiate-max=1024" ARKOUDA_SKIP_CHECK_DEPS=true make ARRAY_ND_MAX=3 && \
+    cp /opt/arkouda-dist/arkouda_server_real /opt/arkouda/arkouda_server_real && \
+    test -x /opt/arkouda/arkouda_server && \
+    test -x /opt/arkouda/arkouda_server_real
+
+# ========================================
+# Stage 2: Final Runtime Container
+# Uses the Chapel base runtime layer directly
+# ========================================
+FROM ${CHAPEL_BASE_IMAGE} AS runtime
+
+# Re-declare build arguments for this stage (also needed to capture their
+# values in the LABEL metadata below)
+ARG CHAPEL_BASE_IMAGE
+ARG ARKOUDA_VERSION=2026.07.15
+ARG ARROW_VERSION=19.0.1-1
+ARG LIBICONV_VERSION=1.17
+
+# Copy built Arkouda install tree and Python environment. /opt/arkouda-dist
+# (the builder stage's scratch copy of the OFI tree, used only to preserve
+# arkouda_server_real across the second/linux64 make) is intentionally not
+# copied here - that binary is already merged into /opt/arkouda.
+COPY --from=arkouda-builder /opt/arkouda /opt/arkouda
+COPY --from=arkouda-builder /opt/arkouda-venv /opt/arkouda-venv
+
+# Copy GNU libiconv libraries
+COPY --from=arkouda-builder /usr/local/lib/libiconv* /usr/local/lib/
+COPY --from=arkouda-builder /usr/local/lib/libcharset* /usr/local/lib/
+
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
+    WGET_CA_OPT=""; \
+    if [ -s /tmp/corp-ca.crt ]; then \
+        cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
+        WGET_CA_OPT="--ca-certificate=/tmp/build-ca-bundle.crt"; \
+    fi && \
+    apt-get update && apt-get install -y \
+    --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    wget \
+    && wget ${WGET_CA_OPT:-} -qO /tmp/apache-arrow-apt.deb \
+        https://packages.apache.org/artifactory/arrow/debian/apache-arrow-apt-source-latest-$(lsb_release -cs).deb \
+    && apt-get install -y /tmp/apache-arrow-apt.deb \
+    && apt-get update \
+    && apt-get install -y \
+        --no-install-recommends \
+        libarrow-dev=${ARROW_VERSION} \
+        libparquet-dev=${ARROW_VERSION} \
+        libzmq3-dev \
+        libhdf5-dev \
+        libhdf5-serial-dev \
+        hdf5-tools \
+        libidn2-dev \
+        libre2-dev \
+        libcurl4-openssl-dev \
+        libssl-dev \
+    && rm -f /tmp/apache-arrow-apt.deb /tmp/build-ca-bundle.crt \
+    && rm -rf /var/lib/apt/lists/*
+
+# Update library cache
+RUN ldconfig
+
+# Verify required Arkouda runtime libraries are present
+RUN ldconfig -p | grep -q 'libarrow\.so'
+RUN ldconfig -p | grep -q 'libparquet\.so'
+
+RUN ldconfig -p | grep -q 'libiconv\.so'
+RUN ldconfig -p | grep -q 'libidn2\.so' 
+RUN ldconfig -p | grep -q 'libre2\.so'     
+RUN ldconfig -p | grep -q 'libzmq\.so'
+
+RUN ldconfig -p | grep -q 'libhdf5'
+
+# Set up environment variables
+ENV ARKOUDA_HOME=/opt/arkouda \
+    ARKOUDA_VENV=/opt/arkouda-venv \
+    VIRTUAL_ENV=/opt/arkouda-venv
+
+ENV PATH=${ARKOUDA_VENV}/bin:${ARKOUDA_HOME}:${PATH}
+
+# Chapel environment and runtime stack are inherited from the base Chapel image
+
+# Create shared test directory mount point
+RUN mkdir -p /opt/arkouda/shared_tests
+ENV ARKOUDA_DEFAULT_TEMP_DIRECTORY=/opt/arkouda/shared_tests
+
+# Set working directory
+WORKDIR /opt/arkouda
+
+# Default command
+CMD ["/bin/bash"]
+
+# Metadata capturing the actual build-arg values this image was built from
+LABEL org.opencontainers.image.title="arkouda" \
+      org.opencontainers.image.description="Arkouda built on a Chapel container" \
+      arkouda.version="${ARKOUDA_VERSION}" \
+      arkouda.runtime="hpe-cray-ex-ofi-cxi" \
+      arkouda.chapel_base_image="${CHAPEL_BASE_IMAGE}" \
+      arkouda.arrow_version="${ARROW_VERSION}" \
+      arkouda.libiconv_version="${LIBICONV_VERSION}"
