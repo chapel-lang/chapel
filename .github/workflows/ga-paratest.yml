@@ -124,13 +124,13 @@ jobs:
             exit 1
           fi
           tar --null --files-from="$RUNNER_TEMP/chapel-build-files" \
-            -czf "$RUNNER_TEMP/chapel-build.tar.gz"
+            -czf "$RUNNER_TEMP/chapel-build-files.tar.gz"
       - name: upload Chapel build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: chapel-build-${{ inputs.configuration }}
-          path: ${{ runner.temp }}/chapel-build.tar.gz
-          compression-level: 0
+          name: chapel-build-files-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build-files.tar.gz
+          archive: false
           retention-days: ${{ inputs.retention-days }}
 
   determine-test-directories:
@@ -154,8 +154,8 @@ jobs:
       - name: download Chapel build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: chapel-build-${{ inputs.configuration }}
-          path: ${{ runner.temp }}/chapel-build
+          name: chapel-build-files-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build-files
       - name: run pre-build steps
         if: ${{ inputs.pre-build-steps != '' }}
         env:
@@ -173,7 +173,7 @@ jobs:
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
-          tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
+          tar -xzf "$RUNNER_TEMP/chapel-build-files/chapel-build-files.tar.gz"
 
           requested_tests=()
           while read -ra line_tests; do
@@ -279,8 +279,8 @@ jobs:
       - name: download Chapel build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: chapel-build-${{ inputs.configuration }}
-          path: ${{ runner.temp }}/chapel-build
+          name: chapel-build-files-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/chapel-build-files
       - name: Test runner setup
         run: |
           # Some tests assume git has been properly configured, so configure it here for the test runner.
@@ -306,7 +306,7 @@ jobs:
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
-          tar -xzf "$RUNNER_TEMP/chapel-build/chapel-build.tar.gz"
+          tar -xzf "$RUNNER_TEMP/chapel-build-files/chapel-build-files.tar.gz"
 
           result_dir="$CHPL_HOME/paratest-results/$TEST_ID"
           mkdir -p "$result_dir"
@@ -368,12 +368,12 @@ jobs:
         run: |
           mkdir -p aggregated-results paratest-results
           rm -f aggregated-results/results.log
-          find paratest-results -name results.log -print0 2>/dev/null \
+          find paratest-results -name results.log -print0 \
             | sort -z \
             | xargs -0 -r cat >> aggregated-results/results.log
 
           mapfile -t status_files < <(
-            find paratest-results -name status.txt -print 2>/dev/null | sort
+            find paratest-results -name status.txt -print | sort
           )
           actual_tests=${#status_files[@]}
           failed_tests=0
