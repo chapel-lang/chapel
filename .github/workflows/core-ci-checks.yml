@@ -546,11 +546,20 @@ jobs:
             echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
           } >> "$GITHUB_ENV"
       - name: build image ${{ env.IMAGE_FULL_NAME }}
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
+          tags: ${{ env.IMAGE_FULL_NAME }}
+          load: true
+      - name: test image
         run: |
-          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$DOCKERFILE" -t "$IMAGE_FULL_NAME"
-
           cp test/release/examples/hello.chpl .
           docker run --rm -i "$IMAGE_FULL_NAME" < "$TEST_SCRIPT"
-      - name: push image to ${{ env.REGISTRY }}
-        run: |
-          docker push "$IMAGE_FULL_NAME"
+      - name: push image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
+          tags: ${{ env.IMAGE_FULL_NAME }}
+          push: true
