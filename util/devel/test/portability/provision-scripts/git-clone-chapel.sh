@@ -8,6 +8,8 @@ then
 else
   git version
 
+  git config --global http.postBuffer 524288000
+
   GIT_REPO_URL=${GIT_REPO_URL:-https://github.com/chapel-lang/chapel}
 
   git_cmd=(git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 "$GIT_REPO_URL")
