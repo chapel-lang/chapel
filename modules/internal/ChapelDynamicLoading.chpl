@@ -428,20 +428,83 @@ module ChapelDynamicLoading {
       return ret;
     }
 
+    inline proc _localLookupBuildConstant(infoPtr, name: string,
+                                          out prgVal: (bool, string),
+                                          out rtVal: (bool, string)): bool {
+      extern 'chpl_rt_prginfo_lookup_build_constant_str'
+        proc lookup(prg         : c_ptr(chpl_rt_prginfo),
+                    var_name    : c_ptrConst(c_char),
+                    out_prg_val : c_ptr(c_ptrConst(c_char)),
+                    out_rt_val  : c_ptr(c_ptrConst(c_char))): bool;
+      var prg_val: c_ptrConst(c_char);
+      var rt_val: c_ptrConst(c_char);
+
+      const ret = lookup(infoPtr, name.c_str(),
+                         c_ptrTo(prg_val),
+                         c_ptrTo(rt_val));
+
+      prgVal[0] = prg_val != nil;
+      prgVal[1] = try! string.createBorrowingBuffer(prg_val);
+      rtVal[0] = rt_val != nil;
+      rtVal[1] = try! string.createBorrowingBuffer(rt_val);
+
+      return ret;
+    }
+
+    inline proc
+    _tryCheckBuildConstantMatchesRt(infoPtr, name: string) throws {
+      var prgVal, rtVal: (bool, string);
+      const match = _localLookupBuildConstant(infoPtr, name, prgVal, rtVal);
+      if !match {
+        const msg = 'Cannot load Chapel library because of a build ' +
+                    'constant mismatch: \'' + name + '=' + prgVal[1] + '\' ' +
+                    'versus a runtime value of \'' + rtVal[1] + '\'';
+        throw new DynLoadError(msg);
+      }
+    }
+
+    // TODO: Propagate warnings out as errors instead.
+    inline proc _localCheckIsBuildCompatibleWithRuntime(infoPtr) {
+      var ret = false;
+
+      const constants = [
+        // TODO: Add more here.
+        'CHPL_COMM',
+        'CHPL_TARGET_PLATFORM',
+        'CHPL_TARGET_MEM',
+        'CHPL_TARGET_CPU',
+        'CHPL_GASNET_SEGMENT'
+      ];
+
+      // TODO: Propagate each mismatch out as an error somehow (do we
+      //       combine them all into one error? Or somehow propagate
+      //       out all of them?).
+      //
+      // TODO: Or just dump the entire runtime configuration so users
+      //       can see what the difference is.
+      for str in constants {
+        try {
+          _tryCheckBuildConstantMatchesRt(infoPtr, str);
+        } catch e {
+          warning(e.message());
+          ret = false;
+        }
+      }
+
+      return ret;
+    }
+
+    // TODO: Check for 'CHPL_CACHE_REMOTE'.
+    inline proc _localCheckIsBuildCompatibleWithRoot(infoPtr) {
+      return true;
+    }
+
     // TODO: Propagate warnings out as errors instead.
     proc _inspectAndPrepareIfCompatibleChapelBinary(): binaryKind {
       use ChapelProgramRegistration;
 
       const info = _localPrepareProgramInfo();
       if info == nil then return binaryKind.FOREIGN;
-
-      //
-      // TODO: Confirm that the info is compatible with us. This can be
-      //       generated based on which fields are ABI-sensitive.
-      // TODO: Also, we need to make sure that it's compatible with the
-      //       runtime. To do that, we will need to store the runtime's
-      //       build configuration separately from the program.
-      //
 
       // The runtime records if it was compiled as a dynamic library or not,
       // so check that. If it was not, currently we cannot possibly load this
@@ -455,6 +518,12 @@ module ChapelDynamicLoading {
                 'because the runtime is not compiled as a dynamic library');
         return binaryKind.FOREIGN;
       }
+
+      const compat1 = _localCheckIsBuildCompatibleWithRuntime(info);
+      if !compat1 then return binaryKind.FOREIGN;
+
+      const compat2 = _localCheckIsBuildCompatibleWithRoot(info);
+      if !compat2 then return binaryKind.FOREIGN;
 
       var idBuf = new chpl_localBuffer(chpl_rt_prg_id, numLocales);
 
