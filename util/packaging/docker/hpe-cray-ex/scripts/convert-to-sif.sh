@@ -2,7 +2,7 @@
 # Convert podman container images to Apptainer SIF format
 # Usage: ./convert-to-sif.sh <container_uri> [options]
 
-set -e
+set -eo pipefail
 
 # Configuration
 KEEP_ARCHIVE="${KEEP_ARCHIVE:-false}"
@@ -11,7 +11,7 @@ FORCE_OVERWRITE="${FORCE_OVERWRITE:-false}"
 
 # Help function
 show_help() {
-    cat << 'EOF_HELP'
+    cat << EOF_HELP
 Usage: $0 <container_uri> [options]
 
 Convert podman container images to Apptainer SIF format via OCI archive.
@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            if [ -z "$CONTAINER_URI" ]; then
+            if [[ -z "$CONTAINER_URI" ]]; then
                 CONTAINER_URI="$1"
             else
                 echo "Error: Multiple container URIs provided"
@@ -84,7 +84,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate arguments
-if [ -z "$CONTAINER_URI" ]; then
+if [[ -z "$CONTAINER_URI" ]]; then
     echo "Error: Container URI required"
     show_help
     exit 1
@@ -138,7 +138,7 @@ echo "Output directory: $OUTPUT_DIR"
 echo ""
 
 # Generate filenames
-if [ -n "$CUSTOM_FILENAME" ]; then
+if [[ -n "$CUSTOM_FILENAME" ]]; then
     # Use custom filename (sanitize it)
     BASE_NAME=$(echo "$CUSTOM_FILENAME" | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g')
 else
@@ -154,9 +154,9 @@ echo "  SIF File: $SIF_FILE"
 echo ""
 
 # Check if SIF already exists
-if [ -f "$SIF_FILE" ]; then
+if [[ -f "$SIF_FILE" ]]; then
     echo "Warning: SIF file already exists: $SIF_FILE"
-    if [ "$FORCE_OVERWRITE" = "true" ]; then
+    if [[ "$FORCE_OVERWRITE" == "true" ]]; then
         echo "Force enabled: overwriting existing SIF without prompt"
     else
         read -p "Overwrite? (y/N): " -n 1 -r
@@ -175,8 +175,7 @@ if image_exists_locally "$CONTAINER_URI"; then
     echo "Image found locally: $CONTAINER_URI"
 else
     echo "Image not found locally. Pulling: $CONTAINER_URI"
-    podman pull "$CONTAINER_URI"
-    if [ $? -ne 0 ]; then
+    if ! podman pull "$CONTAINER_URI"; then
         echo "Error: Failed to pull image"
         exit 1
     fi
@@ -187,8 +186,7 @@ fi
 echo ""
 echo "=== Step 2: Export to OCI Archive ==="
 echo "Exporting to: $OCI_ARCHIVE"
-podman save --format oci-archive -o "$OCI_ARCHIVE" "$CONTAINER_URI"
-if [ $? -ne 0 ]; then
+if ! podman save --format oci-archive -o "$OCI_ARCHIVE" "$CONTAINER_URI"; then
     echo "Error: Failed to create OCI archive"
     exit 1
 fi
@@ -198,8 +196,7 @@ echo "OCI archive created: $OCI_ARCHIVE ($(ls -lh "$OCI_ARCHIVE" | awk '{print $
 echo ""
 echo "=== Step 3: Convert to SIF ==="
 echo "Converting to: $SIF_FILE"
-apptainer build "$SIF_FILE" "oci-archive:$OCI_ARCHIVE"
-if [ $? -ne 0 ]; then
+if ! apptainer build "$SIF_FILE" "oci-archive:$OCI_ARCHIVE"; then
     echo "Error: Failed to build SIF file"
     rm -f "$OCI_ARCHIVE"
     exit 1
@@ -209,7 +206,7 @@ echo "SIF file created: $SIF_FILE ($(ls -lh "$SIF_FILE" | awk '{print $5}'))"
 # Step 4: Cleanup
 echo ""
 echo "=== Step 4: Cleanup ==="
-if [ "$KEEP_ARCHIVE" = "true" ]; then
+if [[ "$KEEP_ARCHIVE" == "true" ]]; then
     echo "Keeping OCI archive: $OCI_ARCHIVE"
 else
     echo "Removing OCI archive: $OCI_ARCHIVE"
@@ -221,7 +218,7 @@ echo ""
 echo "=== Conversion Complete ==="
 echo "SUCCESS: Container URI: $CONTAINER_URI"
 echo "SUCCESS: SIF File: $(pwd)/$SIF_FILE"
-if [ "$KEEP_ARCHIVE" = "true" ]; then
+if [[ "$KEEP_ARCHIVE" == "true" ]]; then
     echo "SUCCESS: OCI Archive: $(pwd)/$OCI_ARCHIVE"
 fi
 

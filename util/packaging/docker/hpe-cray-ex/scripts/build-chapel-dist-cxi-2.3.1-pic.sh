@@ -41,7 +41,7 @@ echo ""
 cd "$PROJECT_DIR"
 
 if [ ! -f "$CONTAINERFILE" ]; then
-    echo "ERROR: $CONTAINERFILE not found"
+    echo "Error: $CONTAINERFILE not found"
     exit 1
 fi
 
@@ -76,13 +76,13 @@ echo "  CXI libcxi Commit=${LIBCXI_COMMIT}" | tee -a "$BUILD_LOG"
 echo "" | tee -a "$BUILD_LOG"
 
 # Optional: on networks behind a TLS-inspecting proxy, set CORP_CA_FILE to the
-# path of the corporate/internal root CA (PEM). It is passed in as a BuildKit
-# secret and is only mounted into the specific RUN steps that need it during
-# the build - it is never copied into the image or committed to any layer.
+# path of the corporate/internal root CA (PEM). It is passed in as a BuildKit/
+# Buildah secret and is only mounted into the specific RUN steps that need it
+# during the build - it is never copied into the image or committed to any layer.
 SECRET_ARGS=()
 if [ -n "${CORP_CA_FILE:-}" ]; then
     if [ ! -f "$CORP_CA_FILE" ]; then
-        echo "ERROR: CORP_CA_FILE is set but not found: $CORP_CA_FILE"
+        echo "Error: CORP_CA_FILE is set but not found: $CORP_CA_FILE"
         exit 1
     fi
     echo "Using corporate root CA from CORP_CA_FILE=${CORP_CA_FILE} (build-time only)" | tee -a "$BUILD_LOG"

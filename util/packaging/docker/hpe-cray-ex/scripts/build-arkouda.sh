@@ -188,7 +188,7 @@ cd "$CONTAINER_DIR"
 
 # Verify Containerfile exists
 if [ ! -f "containers/Containerfile.arkouda" ]; then
-    log_with_timestamp "ERROR: Containerfile not found: containers/Containerfile.arkouda"
+    log_with_timestamp "Error: Containerfile not found: containers/Containerfile.arkouda"
     exit 1
 fi
 
@@ -199,7 +199,7 @@ fi
 SECRET_ARGS=()
 if [ -n "${CORP_CA_FILE:-}" ]; then
     if [ ! -f "$CORP_CA_FILE" ]; then
-        log_with_timestamp "ERROR: CORP_CA_FILE is set but not found: $CORP_CA_FILE"
+        log_with_timestamp "Error: CORP_CA_FILE is set but not found: $CORP_CA_FILE"
         exit 1
     fi
     log_with_timestamp "Using corporate root CA from CORP_CA_FILE=${CORP_CA_FILE} (build-time only)"

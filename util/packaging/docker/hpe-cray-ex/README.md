@@ -41,7 +41,7 @@ scripts/
   convert-to-sif.sh                     # OCI image -> Apptainer .sif
   setup-e4s-cl-profile.sh               # HPC library-forwarding helper (e4s-cl)
   generate-e4s-cl-profile.sh            # detects HPC libs for e4s-cl profiles
-  chapel-start / chapel-test-compile / chapel-validate-hpe-ex
+  chapel-start / chapel-test-compile
 patches/                                # patches applied during the Arkouda build
 docs/                                   # full build/usage guide
 ```

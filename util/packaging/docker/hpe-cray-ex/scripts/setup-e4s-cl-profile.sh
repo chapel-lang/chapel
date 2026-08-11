@@ -4,12 +4,12 @@
 # an e4s-cl profile (or create a new one), and executes all valid commands
 # while avoiding duplicate binds in that profile.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GENERATOR_SCRIPT="$SCRIPT_DIR/generate-e4s-cl-profile.sh"
 
-if [ ! -x "$GENERATOR_SCRIPT" ]; then
+if [[ ! -x "$GENERATOR_SCRIPT" ]]; then
     echo "Error: Generator script not found or not executable: $GENERATOR_SCRIPT"
     exit 1
 fi
@@ -20,7 +20,7 @@ if ! command -v e4s-cl >/dev/null 2>&1; then
 fi
 
 NON_INTERACTIVE=0
-if [ "$1" = "--auto" ]; then
+if [[ "$1" == "--auto" ]]; then
     NON_INTERACTIVE=1
 fi
 
@@ -37,15 +37,15 @@ select_or_create_profile() {
 
     active=$(get_selected_profile_name)
 
-    if [ -n "$active" ] && [ "$non_interactive" -eq 1 ]; then
+    if [[ -n "$active" ]] && [[ "$non_interactive" -eq 1 ]]; then
         echo "Using currently selected e4s-cl profile: $active"
         PROFILE_NAME="$active"
         return
     fi
 
-    if [ -n "$active" ]; then
+    if [[ -n "$active" ]]; then
         echo "Currently selected e4s-cl profile: $active"
-        if [ "$non_interactive" -eq 0 ]; then
+        if [[ "$non_interactive" -eq 0 ]]; then
             read -p "Use this profile? (Y/n): " -r reply
             echo ""
             if [[ ! "$reply" =~ ^[Nn]$ ]]; then
@@ -60,7 +60,7 @@ select_or_create_profile() {
         echo "No e4s-cl profile is currently selected."
     fi
 
-    if [ "$non_interactive" -eq 1 ]; then
+    if [[ "$non_interactive" -eq 1 ]]; then
         echo "Error: No selected profile and --auto specified."
         echo "       Please run this script interactively once to create/select a profile."
         exit 1
@@ -69,7 +69,7 @@ select_or_create_profile() {
     while true; do
         read -p "Enter profile name to use (existing will be selected, new will be created): " name
         echo ""
-        if [ -n "$name" ]; then
+        if [[ -n "$name" ]]; then
             break
         fi
         echo "Profile name cannot be empty."
@@ -107,23 +107,25 @@ echo ""
 
 # Check if e4s-cl is available
 if ! command -v e4s-cl &> /dev/null; then
-    echo "Warning: e4s-cl command not found. Please ensure E4S-CL is installed and available in PATH."
+    echo "Error: e4s-cl command not found. Please ensure E4S-CL is installed and available in PATH."
     exit 1
 fi
 
 # Check if an e4s-cl profile exists
 if ! e4s-cl profile show &> /dev/null; then
-    echo "Warning: No e4s-cl profile found or e4s-cl profile is not properly configured."
+    echo "Error: No e4s-cl profile found or e4s-cl profile is not properly configured."
     echo "Please create and configure an e4s-cl profile first using:"
     echo "  e4s-cl profile create <profile-name>"
     echo "  e4s-cl profile select <profile-name>"
     exit 1
 fi
 
-# Generate commands and filter only the executable ones
-COMMANDS=$($GENERATOR_SCRIPT | grep '^e4s-cl profile edit')
+# Generate commands and filter only the executable ones. The `|| true` keeps
+# an empty (no-libraries-found) result from tripping `set -e` on this
+# assignment - that case is handled explicitly below.
+COMMANDS=$($GENERATOR_SCRIPT | grep '^e4s-cl profile edit' || true)
 
-if [ -z "$COMMANDS" ]; then
+if [[ -z "$COMMANDS" ]]; then
     echo "No valid e4s-cl profile edit commands were generated."
     echo "This could mean:"
     echo "  - Required Chapel/Arkouda libraries are not available in the expected locations"
@@ -144,9 +146,11 @@ echo ""
 EXISTING_LIBS=()
 EXISTING_FILES=()
 
-PROFILE_JSON=$(e4s-cl profile dump "$PROFILE_NAME" 2>/dev/null | awk 'BEGIN{found=0} /^[[:space:]]*[\[{]/{found=1} found{print}')
+# The `|| true` keeps a failed/unsupported `profile dump` from tripping
+# `set -e` here; EXISTING_LIBS/EXISTING_FILES simply stay empty in that case.
+PROFILE_JSON=$(e4s-cl profile dump "$PROFILE_NAME" 2>/dev/null | awk 'BEGIN{found=0} /^[[:space:]]*[\[{]/{found=1} found{print}' || true)
 
-if [ -n "$PROFILE_JSON" ]; then
+if [[ -n "$PROFILE_JSON" ]]; then
     if ! mapfile -t EXISTING_LIBS < <(printf '%s\n' "$PROFILE_JSON" | python3 -c '
 import sys, json
 text = sys.stdin.read().strip()
@@ -186,7 +190,7 @@ fi
 
 path_in_list() {
     local needle="$1"; shift
-    if [ "$#" -eq 0 ]; then
+    if [[ "$#" -eq 0 ]]; then
         return 1
     fi
     # Reason: avoid set -e exiting on a non-match from grep
@@ -222,8 +226,8 @@ while IFS= read -r cmd; do
 
     path="$(echo "$cmd" | sed -E 's/.*"([^"]+)".*/\1/')"
 
-    if [ -n "$type" ] && [ -n "$path" ]; then
-        if [ "$type" = "lib" ]; then
+    if [[ -n "$type" ]] && [[ -n "$path" ]]; then
+        if [[ "$type" == "lib" ]]; then
             if path_in_list "$path" "${EXISTING_LIBS[@]}" "${NEW_LIBS[@]}"; then
                 ((SKIP_COUNT++)) || true
                 continue
@@ -241,7 +245,7 @@ while IFS= read -r cmd; do
     FILTERED_COMMANDS+=("$cmd")
 done <<< "$COMMANDS"
 
-if [ "${#FILTERED_COMMANDS[@]}" -eq 0 ]; then
+if [[ "${#FILTERED_COMMANDS[@]}" -eq 0 ]]; then
     echo "No changes applied. All requested paths already exist in profile '$PROFILE_NAME'."
     echo "Skipped (already present): $SKIP_COUNT"
     echo "Nothing to add; verify with: e4s-cl profile show '$PROFILE_NAME'"
@@ -250,7 +254,7 @@ if [ "${#FILTERED_COMMANDS[@]}" -eq 0 ]; then
 fi
 
 # Ask for confirmation unless --auto flag is provided
-if [ "$NON_INTERACTIVE" -eq 0 ]; then
+if [[ "$NON_INTERACTIVE" -eq 0 ]]; then
     echo "Commands to execute (after skipping already-bound paths):"
     printf '%s\n' "${FILTERED_COMMANDS[@]}"
     echo ""
@@ -308,7 +312,7 @@ echo "Skipped (already present): $SKIP_COUNT"
 echo "Failed: $FAIL_COUNT"
 echo ""
 
-if [ $FAIL_COUNT -eq 0 ]; then
+if [[ $FAIL_COUNT -eq 0 ]]; then
     echo "All requested libraries/files processed for e4s-cl profile '$PROFILE_NAME'."
     echo "Verify with: e4s-cl profile show '$PROFILE_NAME'"
     show_next_steps
