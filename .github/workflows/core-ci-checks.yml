@@ -497,7 +497,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
-      packages: write # To push images to ghcr
+      # packages: write # To push images to ghcr
     env:
       CONFIG: ${{ matrix.config }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
