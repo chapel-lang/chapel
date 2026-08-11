@@ -348,7 +348,7 @@ Work with your reviewers
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
-.. _Get GitHub Actions tests passing
+.. _Get GitHub Actions tests passing:
 
 Get GitHub Actions tests passing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
