@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+OUTPUT=$2
+# any output that occurs after the last print from the program is not relevant
+# whats important is that the debugger output matches, what happens after `quit`
+# can be unpredictable and is not relevant
+sed -n '1,/New array on locale/p' "$OUTPUT" > "$OUTPUT.tmp"
+mv "$OUTPUT.tmp" "$OUTPUT"
