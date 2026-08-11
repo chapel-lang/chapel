@@ -603,11 +603,11 @@ module Errors {
 
         s += "\n  " + fS + ":" + l:string + ":";
         if first then
-          s += " uncaught here";
+          s += " thrown here";
         else if node != nil then
           s += " called from here";
         else
-           s += " thrown here";
+           s += " uncaught here";
         first = false;
       }
     } else {
