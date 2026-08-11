@@ -9,6 +9,8 @@ else
   git version
 
   git config --global http.postBuffer 524288000
+  git config --global http.maxRequestBuffer 524288000
+  git config --global core.compression 0
 
   GIT_REPO_URL=${GIT_REPO_URL:-https://github.com/chapel-lang/chapel}
 
