@@ -55,8 +55,14 @@ module Errors {
     var thrownLine:int;
     @chpldoc.nodoc
     var thrownFileId:int(32);
+    /*
+      despite the name stack, we store the stacktrace as a queue so the first
+      element is the original throw site and the last element is the most recent
+    */
     @chpldoc.nodoc
     var stackTraceHead: unmanaged ErrorStackNode? = nil;
+    @chpldoc.nodoc
+    var stackTraceTail: unmanaged ErrorStackNode? = nil;
 
     @chpldoc.nodoc
     var _msg: string;
@@ -93,8 +99,7 @@ module Errors {
     }
 
     /*
-      Yields the stack trace for this error, starting with the most recent call
-      site and ending with the original throw site. Each yielded value is a
+      Yields the stack trace for this error, starting with the original throw site and ending with the most recent call site. Each yielded value is a
       tuple of the form ``(filename, line number)``.
     */
     @edition(last="2.0")
@@ -103,8 +108,7 @@ module Errors {
       foreach tup in chpl_stacktrace() do yield tup;
 
     /*
-      Yields the stack trace for this error, starting with the most recent call
-      site and ending with the original throw site. Each yielded value is a
+      Yields the stack trace for this error, starting with the original throw site and ending with the most recent call site. Each yielded value is a
       tuple of the form ``(filename, line number)``.
     */
     @edition(first="preview")
@@ -565,8 +569,13 @@ module Errors {
       //     sized for error nodes, and then only allocating dynamically when
       //     we exceed the pre-allocated size
       var newNode = new unmanaged ErrorStackNode(line, fileId);
-      newNode.next = err!.stackTraceHead;
-      err!.stackTraceHead = newNode;
+      if err!.stackTraceTail == nil {
+        err!.stackTraceHead = newNode;
+        err!.stackTraceTail = newNode;
+      } else {
+        err!.stackTraceTail!.next = newNode;
+        err!.stackTraceTail = newNode;
+      }
     }
     return err;
   }
