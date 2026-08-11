@@ -572,7 +572,7 @@ jobs:
       - name: export base image to tarball
         if: ${{ env.CONFIG == 'base' }}
         run: |
-          docker image save "$BASE_IMAGE_TARBALL" "$BASE_IMAGE_FULL_NAME"
+          docker image save -o "$BASE_IMAGE_TARBALL" "$BASE_IMAGE_FULL_NAME"
       - name: upload base image tarball
         if: ${{ env.CONFIG == 'base' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
