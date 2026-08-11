@@ -513,46 +513,44 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: determine image name
+      - name: set up build env and vars
         run: |
+          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
+          TAG="$GITHUB_SHA-$ARCH"
+          BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
           name_prefix="chapel"
 
           if [[ "$CONFIG" == "base" ]]; then
-            base_image="true"
             image_name="$name_prefix"
+            DOCKERFILE="./Dockerfile"
+            TEST_SCRIPT="util/cron/docker-chapel.bash"
           else
-            base_image=""
             image_name="$name_prefix-$CONFIG"
-          fi
+            DOCKERFILE="util/packaging/docker/$CONFIG/Dockerfile"
+            TEST_SCRIPT="util/cron/docker-gasnet.bash"
 
-          TAG="$GITHUB_SHA-$ARCH"
-
-          {
-            echo "BASE_IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
-            echo "IMAGE_FULL_NAME=$REGISTRY/$NAMESPACE/$image_name:$TAG"
-            echo "base_image=$base_image"
-          } >> "$GITHUB_ENV"
-      - name: build image ${{ env.IMAGE_FULL_NAME }}
-        run: |
-          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
-
-          if [ -n "$base_image" ]; then
-            dockerfile_path="."
-            test_script="util/cron/docker-chapel.bash"
-          else
-            dockerfile_path="util/packaging/docker/$CONFIG"
-            test_script="util/cron/docker-gasnet.bash"
-            patch "$dockerfile_path/Dockerfile" << EOF
+            patch "$DOCKERFILE" << EOF
           < FROM chapel/chapel:latest
           ---
           > FROM $BASE_IMAGE_FULL_NAME
           EOF
           fi
 
-          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$dockerfile_path" -t "$IMAGE_FULL_NAME"
+          IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$image_name:$TAG"
+
+          {
+            echo "MAKE_THREADS=$MAKE_THREADS"
+            echo "TAG=$TAG"
+            echo "DOCKERFILE=$DOCKERFILE"
+            echo "TEST_SCRIPT=$TEST_SCRIPT"
+            echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
+          } >> "$GITHUB_ENV"
+      - name: build image ${{ env.IMAGE_FULL_NAME }}
+        run: |
+          docker build --build-arg "MAKE_THREADS=$MAKE_THREADS" "$DOCKERFILE" -t "$IMAGE_FULL_NAME"
 
           cp test/release/examples/hello.chpl .
-          docker run --rm -i "$IMAGE_FULL_NAME" < "$test_script"
+          docker run --rm -i "$IMAGE_FULL_NAME" < "$TEST_SCRIPT"
       - name: push image to ${{ env.REGISTRY }}
         run: |
           docker push "$IMAGE_FULL_NAME"
