@@ -218,21 +218,21 @@ class Test:
 
         return executable_output, debugger_output
 
-    def _run_prediff(self, output_file: Path):
-        PREDIFF = self.source_file.parent / "PREDIFF"
-        if not PREDIFF.exists():
+    def _run_prediff(self, prediff: Path, output_file: Path):
+        if not prediff.exists():
             return
-        sys.stdout.write('[Executing ./PREDIFF]\n')
+        sys.stdout.write(f'[Executing ./{prediff.name}]\n')
         sys.stdout.flush()
         stdout = sub_test_util.run_process(
-            [str(PREDIFF.absolute()), self.source_file.stem, str(output_file), chpl()],
+            [str(prediff.absolute()), self.source_file.stem, str(output_file), chpl()],
             stdout=sp.PIPE, stderr=sp.STDOUT)[1]
         sys.stdout.write(stdout)
         sys.stdout.flush()
 
     def _compare_output(self, executable_output: Path, debugger_output: Path) -> bool:
         # check executable output
-        self._run_prediff(executable_output)
+        self._run_prediff(self.source_file.parent / "PREDIFF", executable_output)
+        self._run_prediff(self.source_file.with_suffix(".prediff"), executable_output)
         if sub_test_util.DiffFiles(str(self.good_file), str(executable_output)) != 0:
             sys.stdout.write(f"[Error matching executable output for {self.source_file.stem}]\n")
             return False

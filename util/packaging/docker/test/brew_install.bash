@@ -4,7 +4,7 @@ set -exo pipefail
 
 # Hack to inject bogus bottle block into chapel.rb for testing purposes.
 cd /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core
-/home/linuxbrew/brew_get_bogus_bottles.bash | sed -i -e '/<bottle-block-placeholder-injected-during-testing>/r /dev/stdin' -e '/<bottle-block-placeholder-injected-during-testing>/d' Formula/c/chapel.rb
+/home/linuxbrew/brew_get_bogus_bottles.bash | /home/linuxbrew/brew_replace_bottles.bash Formula/c/chapel.rb
 git add Formula/c/chapel.rb && git commit -m "update chapel.rb for nightly testing" && PAGER=cat git show
 cd /home/linuxbrew
 

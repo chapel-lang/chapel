@@ -1,7 +1,7 @@
 # This is a container used to run homebrew-ci
 
 # Get the homebrew ubuntu container
-FROM ghcr.io/homebrew/brew:main
+FROM ghcr.io/homebrew/brew:latest
 
 # Redundant to brew_install.bash but imporant for anyone working in this container
 # which can be ran without brew_install.bash
@@ -34,3 +34,4 @@ RUN git add Formula/c/chapel.rb && git commit -m "update chapel.rb for nightly t
 WORKDIR /home/linuxbrew/
 
 COPY brew_get_bogus_bottles.bash brew_get_bogus_bottles.bash
+COPY brew_replace_bottles.bash brew_replace_bottles.bash

@@ -35,10 +35,14 @@
 
 #include "sys_basic.h"
 
+#ifdef LAUNCHER
+  #ifdef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Macro should not be set when building launcher!"
+  #endif
+#endif
+
 #ifndef LAUNCHER
-
-#define _noop(x)
-
-#endif // LAUNCHER
+  #define _noop(x)
+#endif
 
 #endif

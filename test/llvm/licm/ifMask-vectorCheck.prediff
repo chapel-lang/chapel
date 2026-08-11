@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter out -Winvalid-feature-combination
+if grep -q 'invalid-feature-combination' $OUTFILE; then
+  grep -v 'invalid-feature-combination' $OUTFILE > $TMPFILE
+  mv $TMPFILE $OUTFILE
+  grep -v 'warning generated' $OUTFILE > $TMPFILE
+  mv $TMPFILE $OUTFILE
+fi
+
