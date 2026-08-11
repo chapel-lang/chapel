@@ -8,7 +8,6 @@ on:
     - cron: "30 0 * * *"
       timezone: "America/Vancouver"
   workflow_dispatch:
-  pull_request:
 
 permissions:
   contents: read
