@@ -428,9 +428,9 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline proc _localLookupBuildConstant(infoPtr, name: string,
-                                          out prgVal: (bool, string),
-                                          out rtVal: (bool, string)): bool {
+    inline proc _lookupBuildConstant(infoPtr, name: string,
+                                     out prgVal: string,
+                                     out rtVal: string): bool {
       extern 'chpl_rt_prginfo_lookup_build_constant_str'
         proc lookup(prg         : c_ptr(chpl_rt_prginfo),
                     var_name    : c_ptrConst(c_char),
@@ -443,22 +443,20 @@ module ChapelDynamicLoading {
                          c_ptrTo(prg_val),
                          c_ptrTo(rt_val));
 
-      prgVal[0] = prg_val != nil;
-      prgVal[1] = try! string.createBorrowingBuffer(prg_val);
-      rtVal[0] = rt_val != nil;
-      rtVal[1] = try! string.createBorrowingBuffer(rt_val);
+      prgVal = try! string.createBorrowingBuffer(prg_val);
+      rtVal = try! string.createBorrowingBuffer(rt_val);
 
       return ret;
     }
 
     inline proc
     _tryCheckBuildConstantMatchesRt(infoPtr, name: string) throws {
-      var prgVal, rtVal: (bool, string);
-      const match = _localLookupBuildConstant(infoPtr, name, prgVal, rtVal);
+      var prgVal, rtVal: string;
+      const match = _lookupBuildConstant(infoPtr, name, prgVal, rtVal);
       if !match {
         const msg = 'Cannot load Chapel library because of a build ' +
-                    'constant mismatch: \'' + name + '=' + prgVal[1] + '\' ' +
-                    'versus a runtime value of \'' + rtVal[1] + '\'';
+                    'constant mismatch: \'' + name + '=' + prgVal + '\' ' +
+                    'versus a runtime value of \'' + rtVal + '\'';
         throw new DynLoadError(msg);
       }
     }
