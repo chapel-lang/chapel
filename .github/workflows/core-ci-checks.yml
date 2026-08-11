@@ -501,7 +501,7 @@ jobs:
     env:
       CONFIG: ${{ matrix.config }}
       OS: ${{ matrix.os }}
-      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
+      ARCH: ${{ endsWith(matrix.os, '-arm') && 'arm64' || 'x86' }}
       REGISTRY: "ghcr.io"
       NAMESPACE: "chapel"
     steps:
