@@ -675,20 +675,21 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 ************************************** | *************************************/
 
 bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
-  const DefExpr* ptr    = mCurrField;
-  bool           retval = true;
+  bool retval = true;
 
   AggregateType* at = toAggregateType(mFn->_this->type);
   if (at->isUnion()) {
-    // if we've set mCurrField to NULL then a field has been initialized,
-    // which means we consider all to be
-    retval = (ptr == NULL);
+    // for unions, if we've set mCurrField to NULL then a field has
+    // been initialized, which means we consider them all to be
+    retval = (mcurrField == NULL);
   } else {
+    const DefExpr* ptr = mCurrField;
+
     while (ptr != NULL && retval == true) {
       if (ptr == field) {
-	retval = false;
+        retval = false;
       } else {
-	ptr = toConstDefExpr(ptr->next);
+        ptr = toConstDefExpr(ptr->next);
       }
     }
   }
@@ -1014,7 +1015,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
         } else if (state->type()->isRecord()) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
         } else if (state->type()->isUnion()) {
-          USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
+          USR_FATAL_CONT(node, "cannot pass a union to a function before \"init this\"");
         }
       }
 
