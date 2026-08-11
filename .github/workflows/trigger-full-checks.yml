@@ -49,11 +49,11 @@ jobs:
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
            # Required mail server address if not connection_url:
-           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_address: ${{ secrets.SMTP_PROVIDER }}
            server_port: 465
            secure: true
-           username:  ${{ secrets.MAIL_USERNAME}}
-           password: ${{secrets.MAIL_PASSWORD}}
+           username:  ${{ secrets.MAIL_USERNAME }}
+           password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
