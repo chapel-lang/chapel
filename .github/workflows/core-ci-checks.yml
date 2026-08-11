@@ -540,6 +540,7 @@ jobs:
           IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$image_name:$TAG"
 
           {
+            echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
             echo "BASE_IMAGE_TARBALL=$BASE_IMAGE_TARBALL"
             echo "MAKE_THREADS=$MAKE_THREADS"
             echo "TAG=$TAG"
