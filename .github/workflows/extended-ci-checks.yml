@@ -1,3 +1,5 @@
+# Intermediate-runtime CI checks to be used in an intermediate-length pre-merge
+# feedback loop.
 name: Extended CI checks
 
 on:
