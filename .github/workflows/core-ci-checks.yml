@@ -517,8 +517,8 @@ jobs:
         run: |
           MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
           TAG="$GITHUB_SHA-$ARCH"
-          BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
           name_prefix="chapel"
+          BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
 
           if [[ "$CONFIG" == "base" ]]; then
             image_name="$name_prefix"
