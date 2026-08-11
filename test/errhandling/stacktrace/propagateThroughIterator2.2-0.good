@@ -5,7 +5,7 @@ stack trace:
   (frame 3) propagateThroughIterator2.chpl:14
   (frame 4) propagateThroughIterator2.chpl:20
 uncaught Error: oops
-  propagateThroughIterator2.chpl:2: uncaught here
+  propagateThroughIterator2.chpl:2: thrown here
   propagateThroughIterator2.chpl:14: called from here
   propagateThroughIterator2.chpl:14: called from here
-  propagateThroughIterator2.chpl:30: thrown here
+  propagateThroughIterator2.chpl:30: uncaught here

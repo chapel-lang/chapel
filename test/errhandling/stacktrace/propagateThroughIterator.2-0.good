@@ -1,3 +1,11 @@
+caught error: oops
+stack trace:
+  (frame 1) propagateThroughIterator.chpl:2
+  (frame 2) propagateThroughIterator.chpl:14
+  (frame 3) propagateThroughIterator.chpl:14
+  (frame 4) propagateThroughIterator.chpl:20
 uncaught Error: oops
-  propagateThroughIterator.chpl:14: uncaught here
   propagateThroughIterator.chpl:2: thrown here
+  propagateThroughIterator.chpl:14: called from here
+  propagateThroughIterator.chpl:14: called from here
+  propagateThroughIterator.chpl:30: uncaught here
