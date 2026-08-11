@@ -431,7 +431,7 @@ module ChapelDynamicLoading {
     inline proc _lookupBuildConstant(infoPtr, name: string,
                                      out prgVal: string,
                                      out rtVal: string): bool {
-      extern 'chpl_rt_prginfo_lookup_build_constant_str'
+      extern 'chpl_rt_prginfo_lookup_build_constant'
         proc lookup(prg         : c_ptr(chpl_rt_prginfo),
                     var_name    : c_ptrConst(c_char),
                     out_prg_val : c_ptr(c_ptrConst(c_char)),
@@ -461,18 +461,21 @@ module ChapelDynamicLoading {
       }
     }
 
+    iter _rtBuildConstantNames(): string {
+      extern proc chpl_rt_num_build_constants(): c_int;
+      extern proc chpl_rt_build_constant_name(idx: c_int): c_ptrConst(c_char);
+
+      const end = chpl_rt_num_build_constants();
+      for i in 0..<end {
+        const ptr = chpl_rt_build_constant_name(i);
+        var str = try! string.createBorrowingBuffer(ptr);
+        yield str;
+      }
+    }
+
     // TODO: Propagate warnings out as errors instead.
     inline proc _localCheckIsBuildCompatibleWithRuntime(infoPtr) {
       var ret = true;
-
-      const constants = [
-        // TODO: Add more here.
-        'CHPL_COMM',
-        'CHPL_TARGET_PLATFORM',
-        'CHPL_TARGET_MEM',
-        'CHPL_TARGET_CPU',
-        'CHPL_GASNET_SEGMENT'
-      ];
 
       // TODO: Propagate each mismatch out as an error somehow (do we
       //       combine them all into one error? Or somehow propagate
@@ -480,7 +483,7 @@ module ChapelDynamicLoading {
       //
       // TODO: Or just dump the entire runtime configuration so users
       //       can see what the difference is.
-      for str in constants {
+      for str in _rtBuildConstantNames() {
         try {
           _tryCheckBuildConstantMatchesRt(infoPtr, str);
         } catch e {
