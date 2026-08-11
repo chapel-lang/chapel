@@ -17,7 +17,8 @@ grep -v "Breakpoint 1: where" $tmpfile | \
   grep -v 'command script import' | \
   grep -v 'target stop-hook add' | \
   grep -v 'Stop hook #' | \
-  grep -v 'runtime/etc/debug/lldb.commands' \
+  grep -v 'runtime/etc/debug/lldb.commands' | \
+  grep -v 'runtime/etc/debug/lldb_with_python.commands' \
   > $outfile
 # Also filter out line about memleaks arguments to executable
 mv $outfile $tmpfile

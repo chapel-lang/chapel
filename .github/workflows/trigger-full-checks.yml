@@ -1,0 +1,55 @@
+# Kick off the full suite of checks post-merge and nightly.
+name: Run full checks
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: "30 0 * * *"
+      timezone: "America/Vancouver"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  core-checks:
+    uses: ./.github/workflows/core-ci-checks.yml
+
+  extended-checks:
+    uses: ./.github/workflows/extended-ci-checks.yml
+
+  full-checks:
+    uses: ./.github/workflows/full-ci-checks.yml
+
+  send-failure-mail:
+    if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
+    # if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
+    runs-on: ubuntu-slim
+    needs:
+      - core-checks
+      - extended-checks
+      - full-checks
+    steps:
+      - name: determine date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: Send mail
+        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
+        with:
+           # Required mail server address if not connection_url:
+           server_address: ${{ secrets.SMTP_PROVIDER }}
+           server_port: 465
+           secure: true
+           username:  ${{ secrets.MAIL_USERNAME }}
+           password: ${{ secrets.MAIL_PASSWORD }}
+           subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
+           to: "anna.rift@hpe.com"
+           from:  "Chapel Automaton <chapel_commits@cray.com>"
+           body: |
+             Test nightly mail from GA -- a required status check has failed
