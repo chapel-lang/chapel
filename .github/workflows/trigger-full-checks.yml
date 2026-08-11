@@ -34,7 +34,8 @@ jobs:
   #   uses: ./.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
-    if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
+    if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
+    # if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
     runs-on: ubuntu-slim
     needs:
       - core-checks
