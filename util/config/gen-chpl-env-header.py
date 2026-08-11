@@ -59,6 +59,8 @@ def generate_env_lookup_table(env):
   ret = str()
   ret += "// Sorted lookup table expression for use at runtime.\n"
   ret += "// This is a null-terminated array of 'const char*[2]'.\n"
+  size = len(env)
+  ret += f"#define CHPL_RT_ENV_LOOKUP_TABLE_SIZE {size}\n"
   ret += "#define CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR { \\\n"
   for k in sorted(env.keys()):
         entry_k = k.upper()

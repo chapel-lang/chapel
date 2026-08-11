@@ -232,13 +232,23 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
   #include "chpl-prginfo-data-macro-adapter.h"
 }
 
+// This is defined as a macro in the 'chpl-env-gen.h' header.
+static const char* lookup_table[][2] = CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR;
+
+int chpl_rt_num_build_constants(void) {
+  return CHPL_RT_ENV_LOOKUP_TABLE_SIZE;
+}
+
+const char* chpl_rt_build_constant_name(int idx) {
+  assert(0 <= idx && idx < CHPL_RT_ENV_LOOKUP_TABLE_SIZE);
+  return lookup_table[idx][0];
+}
+
 chpl_bool
-chpl_rt_prginfo_lookup_build_constant_str(chpl_rt_prginfo* prg,
-                                          const char* var_name,
-                                          const char** out_prg_val,
-                                          const char** out_rt_val) {
-  // This is defined as a macro in the 'chpl-env-gen.h' header.
-  static const char* lookup_table[][2] = CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR;
+chpl_rt_prginfo_lookup_build_constant(chpl_rt_prginfo* prg,
+                                      const char* var_name,
+                                      const char** out_prg_val,
+                                      const char** out_rt_val) {
   const char* prg_val = NULL;
   const char* rt_val = NULL;
   chpl_bool ret = false;
@@ -264,7 +274,7 @@ chpl_rt_prginfo_lookup_build_constant_str(chpl_rt_prginfo* prg,
   } while (false);
 
   // Search for the runtime value for the constant. TODO: Binary search.
-  for (int i = 0; lookup_table[i][0] != NULL; i++) {
+  for (int i = 0; i < CHPL_RT_ENV_LOOKUP_TABLE_SIZE; i++) {
     const char** pair = lookup_table[i];
     const char* k = pair[0];
     const char* v = pair[1];
