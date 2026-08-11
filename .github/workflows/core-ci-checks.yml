@@ -493,15 +493,14 @@ jobs:
       max-parallel: 1
       matrix:
         config: ["base", "gasnet", "gasnet-smp"]
-        os: [ubuntu-latest, ubuntu-24.04-arm]
-    runs-on: ${{ matrix.os }}
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write # To push images to ghcr
     env:
       CONFIG: ${{ matrix.config }}
-      OS: ${{ matrix.os }}
-      ARCH: ${{ endsWith(matrix.os, '-arm') && 'arm64' || 'x86' }}
+      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
       REGISTRY: "ghcr.io"
       NAMESPACE: "chapel"
     steps:
