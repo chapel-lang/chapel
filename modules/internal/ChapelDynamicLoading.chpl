@@ -465,7 +465,7 @@ module ChapelDynamicLoading {
 
     // TODO: Propagate warnings out as errors instead.
     inline proc _localCheckIsBuildCompatibleWithRuntime(infoPtr) {
-      var ret = false;
+      var ret = true;
 
       const constants = [
         // TODO: Add more here.
