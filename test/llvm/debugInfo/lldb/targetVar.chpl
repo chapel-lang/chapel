@@ -1,4 +1,4 @@
-// CHECK: breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+// CHECK: Stop hook #1
 // CHECK-NEXT: Breakpoint [[#BREAKPOINT_START:]]
 
 const myGlobal = 42;
