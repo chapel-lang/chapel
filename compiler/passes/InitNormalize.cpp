@@ -681,7 +681,7 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   if (at->isUnion()) {
     // for unions, if we've set mCurrField to NULL then a field has
     // been initialized, which means we consider them all to be
-    retval = (mcurrField == NULL);
+    retval = (mCurrField == NULL);
   } else {
     const DefExpr* ptr = mCurrField;
 
