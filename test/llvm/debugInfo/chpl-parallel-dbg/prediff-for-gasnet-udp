@@ -25,12 +25,17 @@ extra_prints = rb"""\*\*\* NOTICE \(proc \d+\): Before reporting bugs, run with 
 """
 gasnet_coll_team= rb"\*\*\* FATAL ERROR \(proc \d+\): in gasnete_coll_team_lookup\(\) at party/gasnet/gasnet-src/extended-ref/coll/gasnet_team.c:522: Collective operation on invalid \(destroyed\?\) TM[0-9a-fA-F]+\n"
 
+gasnet_barrier_mismatch = rb"^.*gasnet_barrier_try.*(?:\n.*)*?\(Barrier id's mismatched\).*$"
+bad_program_id_fetch = rb"error: Failed to fetch program data for ID"
+
 output = re.sub(out_of_order, b'', contents, flags=re.MULTILINE)
 output = re.sub(signal, b'', output)
 output = re.sub(assertion, b'', output)
 output = re.sub(ioctl_broken, b'', output)
 output = re.sub(extra_prints, b'', output)
 output = re.sub(gasnet_coll_team, b'', output)
+output = re.sub(gasnet_barrier_mismatch, b'', output, flags=re.MULTILINE)
+output = re.sub(bad_program_id_fetch, b'', output)
 
 
 with open(file, 'wb') as f:

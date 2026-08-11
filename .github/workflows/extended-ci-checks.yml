@@ -56,15 +56,23 @@ jobs:
       with:
         path: ${{ env.ARKOUDA_DEP_DIR }}
         key: arkouda-${{ env.ARKOUDA_SHA }}
-    - name: install Arkouda deps
+    - name: install Arkouda deps (retrying)
       if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
-      run: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        cd arkouda
-        # Download sources serially first before building, as it is flaky and
-        # that'll make it easier to diagnose failures.
-        make deps-download-source
-        make -j"$num_procs" install-deps
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        on_retry_command: |
+          cd arkouda
+          git clean -dfx
+        command: |
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          cd arkouda
+          # Download sources serially first before building, as it is flaky and
+          # that'll make it easier to diagnose failures.
+          make deps-download-source
+          make -j"$num_procs" install-deps
     - name: check contents of Arkouda deps install
       run: |
         test -d "$ARKOUDA_DEP_DIR"

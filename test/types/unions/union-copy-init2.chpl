@@ -3,6 +3,7 @@ union U {
   var y: real;
 }
 proc U.init=(other: U) {
+  writeln("In my init=");
   this.x = other.x;
 }
 
