@@ -19,18 +19,13 @@ defaults:
 
 jobs:
   core-checks:
-    runs-on: ubuntu-slim
-    steps:
-      - run: exit 1
+    uses: ./.github/workflows/core-ci-checks.yml
 
-  # core-checks:
-  #   uses: ./.github/workflows/core-ci-checks.yml
+  extended-checks:
+    uses: ./.github/workflows/extended-ci-checks.yml
 
-  # extended-checks:
-  #   uses: ./.github/workflows/extended-ci-checks.yml
-
-  # full-checks:
-  #   uses: ./.github/workflows/full-ci-checks.yml
+  full-checks:
+    uses: ./.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
     if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
@@ -38,8 +33,8 @@ jobs:
     runs-on: ubuntu-slim
     needs:
       - core-checks
-      # - extended-checks
-      # - full-checks
+      - extended-checks
+      - full-checks
     steps:
       - name: determine date
         id: date
