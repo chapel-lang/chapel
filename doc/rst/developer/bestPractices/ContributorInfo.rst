@@ -364,7 +364,7 @@ on the PR. Typically they should not be needed, but if relevant you can set
 them (or ask someone with commit privileges to do it for you).
 - `large files ok`: Silences failures from the check for excessively large files
   being committed (which are typically accidents). On occasion it is actually
-  inteded to add a large file to the repo, and this label should be used.
+  intended to add a large file to the repo, and this label should be used.
 - `run extended CI checks`: Run all GA checks on each commit to a PR, including
   those that typically only run in the merge queue. This is appropriate when
   iterating on a change to GA itself, or when making a change very likely to
