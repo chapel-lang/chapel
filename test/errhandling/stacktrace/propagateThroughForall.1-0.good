@@ -1,5 +1,5 @@
 uncaught TaskErrors: 1 errors: Error: oops
-  propagateThroughForall.chpl:5: uncaught here
+  propagateThroughForall.chpl:5: thrown here
   propagateThroughForall.chpl:5: called from here
   propagateThroughForall.chpl:11: called from here
-  propagateThroughForall.chpl:34: thrown here
+  propagateThroughForall.chpl:34: uncaught here

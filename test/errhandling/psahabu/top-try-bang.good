@@ -1,4 +1,4 @@
 should not continue
 uncaught Error: 
-  ../ExampleErrors.chpl:2: uncaught here
-  top-try-bang.chpl:5: thrown here
+  ../ExampleErrors.chpl:2: thrown here
+  top-try-bang.chpl:5: uncaught here

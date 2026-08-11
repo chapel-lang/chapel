@@ -4,6 +4,6 @@ stack trace:
   (frame 2) throwFromParIterator.chpl:17
   (frame 3) throwFromParIterator.chpl:23
 uncaught Error: oops
-  throwFromParIterator.chpl:17: uncaught here
+  throwFromParIterator.chpl:17: thrown here
   throwFromParIterator.chpl:17: called from here
-  throwFromParIterator.chpl:33: thrown here
+  throwFromParIterator.chpl:33: uncaught here

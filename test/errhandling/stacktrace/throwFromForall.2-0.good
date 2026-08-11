@@ -9,8 +9,8 @@ caught error: oops
 stack trace:
   (frame 1) throwFromForall.chpl:4
 uncaught TaskErrors: 1 errors: Error: oops
-  throwFromForall.chpl:2: uncaught here
+  throwFromForall.chpl:2: thrown here
   throwFromForall.chpl:2: called from here
   throwFromForall.chpl:8: called from here
   throwFromForall.chpl:11: called from here
-  throwFromForall.chpl:34: thrown here
+  throwFromForall.chpl:34: uncaught here

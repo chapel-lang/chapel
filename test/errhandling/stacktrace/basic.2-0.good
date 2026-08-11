@@ -5,7 +5,7 @@ stack trace:
   (frame 3) basic.chpl:8
   (frame 4) basic.chpl:14
 uncaught Error: oops
-  basic.chpl:2: uncaught here
+  basic.chpl:2: thrown here
   basic.chpl:5: called from here
   basic.chpl:8: called from here
-  basic.chpl:24: thrown here
+  basic.chpl:24: uncaught here
