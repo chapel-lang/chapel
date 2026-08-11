@@ -275,12 +275,12 @@ chpl_rt_prginfo_lookup_build_constant_str(chpl_rt_prginfo* prg,
     }
   }
 
-  // Set the out pointers for any constants we found if possible.
+  // Set the out pointers for the constants we found.
   if (out_prg_val) *out_prg_val = prg_val;
   if (out_rt_val) *out_rt_val = rt_val;
 
-  // If both constants exist, compare their values for the result.
   if (prg_val && rt_val) {
+    // If both constants exist, compare their values for the result.
     ret = !strcmp(prg_val, rt_val);
   }
 
