@@ -1,0 +1,23 @@
+# Longest-running CI checks which should run less frequently, and need not be
+# pre-merge. These are required for our full test coverage of Chapel.
+name: Full CI checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  NIGHTLY_TEST_SETTINGS: true
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  trigger-failure:
+    runs-on: ubuntu-slim
+    steps:
+      - run: exit 1
