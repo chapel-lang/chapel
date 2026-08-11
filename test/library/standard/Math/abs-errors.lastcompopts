@@ -1,0 +1,1 @@
+--checks --no-cc-warnings --ccflags -Wno-constant-conversion --ccflags -Wno-integer-overflow --ccflags -Wno-overflow

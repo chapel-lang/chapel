@@ -147,14 +147,8 @@ def connect(debugger: lldb.SBDebugger, command, result, internal_dict):
 def __lldb_init_module(debugger, internal_dict):
     print("Chapel parallel debugger commands loaded")
     directory = os.path.dirname(os.path.abspath(__file__))
-    pretty_printer_file = os.path.join(directory, "chpl_lldb_pretty_print.py")
-    lldb_commands_file = os.path.join(directory, "lldb.commands")
-    debuggerBreakHere_file = os.path.join(
-        directory, "chpl_lldb_debuggerBreakHere.py"
-    )
+    lldb_commands_file = os.path.join(directory, "lldb_with_python.commands")
     debugger.HandleCommand(f'command source "{lldb_commands_file}"')
-    debugger.HandleCommand(f'command script import "{debuggerBreakHere_file}"')
-    debugger.HandleCommand(f'command script import "{pretty_printer_file}"')
     debugger.HandleCommand(
         "command script add -f chpl_parallel_dbg_commands.on on"
     )
