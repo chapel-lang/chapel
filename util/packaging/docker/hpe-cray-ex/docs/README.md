@@ -1,7 +1,7 @@
 # Build & Usage Guide: Chapel + Arkouda Containers
 
 This guide covers the two supported container images and the scripts that
-build them. 
+build them.
 
 ## Table of contents
 
@@ -74,7 +74,7 @@ docker run --rm -it --init \
   arkouda_server
 ```
 
-All scripts can be run from any directory — they resolve their own project
+All scripts can be run from any directory - they resolve their own project
 directory relative to their own location, and both Containerfiles use that
 directory as their build context.
 
@@ -119,7 +119,7 @@ Build resource expectations:
 | `--libiconv-version` | `1.17` | GNU libiconv version |
 | `--arrow-version` | `19.0.1-1` | Apache Arrow/Parquet package version |
 | `-t, --tag` | `arkouda-<version>-cxi:latest` | Output image tag |
-| `-a, --build-arg` | — | Extra `--build-arg`, repeatable |
+| `-a, --build-arg` | - | Extra `--build-arg`, repeatable |
 | `-d, --docker-cmd` | `docker` | Use `podman` instead if preferred |
 | `-V, --verbose` | `false` | Stream full build output, useful for docker builds |
 
@@ -171,7 +171,7 @@ docker run --rm -it --init \
 
 ### Server + separate client container
 
-Arkouda's client/server split works across two independent containers or two 
+Arkouda's client/server split works across two independent containers or two
 shells in the same one.
 
 **1. Start the server container, publishing its port:**
@@ -194,7 +194,7 @@ docker run --rm -it \
 
 `--add-host=host.docker.internal:host-gateway` makes the special
 `host.docker.internal` hostname resolve to the host machine from inside the
-client container. 
+client container.
 
 Inside that shell, connect with the Arkouda Python client:
 
@@ -209,7 +209,7 @@ ak.disconnect()
 
 ### Distributed multi-node runs on real HPE Cray EX hardware
 
-This is a different path that forwards the *host's* SLURM, libfabric, and CXI 
+This is a different path that forwards the *host's* SLURM, libfabric, and CXI
 libraries into an Apptainer container, and then runs `arkouda_server_real` directly via `e4s-cl` rather than
 `docker run`/`podman run`. See
 [HPC library forwarding with e4s-cl](#hpc-library-forwarding-with-e4s-cl)
@@ -241,18 +241,14 @@ export CORP_CA_FILE=~/.config/corp-ca/my-root-ca.pem
 Every network-touching `RUN` step in both `Containerfile.hpe-cray-ex-chapel-pic`
 and `Containerfile.arkouda` (`git clone`, `curl`, `wget`, `pip
 install`) mounts the secret and builds a temporary combined CA bundle for
-just that step:
-
-Each `RUN` removes its own temporary combined bundle before the layer is
-committed.
+just that step, then removes it again before the layer is committed.
 
 ## HPC library forwarding with e4s-cl
 
-On HPE-Cray-EX systems you'll want the container to use the host's libfabric/CXI/PMI2/SLURM 
-stack rather than any ofthe versions baked into the image. This is a separate launch 
-path from the `docker run`/`podman run`
-commands above, `e4s-cl` invokes `srun` on the host, which launches `apptainer` 
-directly against the `.sif`.
+On HPE-Cray-EX systems you'll want the container to use the host's libfabric/CXI/PMI2/SLURM
+stack rather than the versions baked into the image. This is a separate launch
+path from the `docker run`/`podman run` commands above: `e4s-cl` invokes `srun` on the
+host, which launches `apptainer` directly against the `.sif`.
 
 The `e4s-cl` docs recommend a reusable-profile workflow for this case:
 
@@ -268,7 +264,7 @@ The `e4s-cl` docs recommend a reusable-profile workflow for this case:
 Convert the image first if you only have the OCI/Docker tag:
 
 ```bash
-./scripts/convert-to-sif.sh localhost/arkouda-2026.07.15-cxi:latest 
+./scripts/convert-to-sif.sh localhost/arkouda-2026.07.15-cxi:latest
 ```
 
 Then create a dedicated profile for the Arkouda container, select it, and
@@ -333,11 +329,11 @@ Common `srun` additions such as `--partition=<name>`, `--account=<acct>`,
 changing the container payload.
 
 If your site needs extra Chapel runtime exports, add them to the `srun`
-`--export=` list with the `APPTAINERENV_` prefix. The image is built for 
+`--export=` list with the `APPTAINERENV_` prefix. The image is built for
 `FI_PROVIDER=cxi` on an HPE-Cray-EX.
 
 If you need to experiment with Chapel heap sizing, modify the value of
-`APPTAINERENV_CHPL_RT_MAX_HEAP_SIZE=<value>` in that `--export=` list. Smaller 
+`APPTAINERENV_CHPL_RT_MAX_HEAP_SIZE=<value>` in that `--export=` list. Smaller
 values may be worth testing when the OFI runtime fails during memory registration,
 but values will be site-specific and may require tuning.
 
@@ -394,7 +390,7 @@ Build it first: `./scripts/build-chapel-dist-cxi-2.3.1-pic.sh`.
 
 **Chapel base image doesn't expose the Python `chapel` module**
 
-Rebuild the Chapel base image — the `arkouda-builder` stage of
+Rebuild the Chapel base image - the `arkouda-builder` stage of
 `Containerfile.arkouda` needs `make chapel-py-venv` to have run in
 the base image.
 
@@ -402,5 +398,5 @@ the base image.
 
 During `e4s-cl launch ... -- arkouda_server_real -nl 2` there can be a CXI/libfabric
 memory-registration failure during Chapel runtime startup. The failure starts with `cxil_map: write error`, then
-`cxip_do_map(...): Cannot allocate memory` .... `fi_mr_reg(...): Cannot allocate memory`. 
-See `APPTAINERENV_CHPL_RT_MAX_HEAP_SIZE=<value>` in the `--export=` list of the `srun` command above. 
+`cxip_do_map(...): Cannot allocate memory` .... `fi_mr_reg(...): Cannot allocate memory`.
+See `APPTAINERENV_CHPL_RT_MAX_HEAP_SIZE=<value>` in the `--export=` list of the `srun` command above.

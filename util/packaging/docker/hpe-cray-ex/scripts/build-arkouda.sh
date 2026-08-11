@@ -269,7 +269,7 @@ else
     echo
     echo "Last 20 lines from build log:"
     echo "------------------------------"
-    tail -20 "${LOG_PATH}" | sed 's/^/  /'   
+    tail -20 "${LOG_PATH}" | sed 's/^/  /'
     echo
     exit 1
 fi

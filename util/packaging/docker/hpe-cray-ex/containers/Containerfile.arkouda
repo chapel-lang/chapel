@@ -33,11 +33,17 @@ ARG ARROW_VERSION=19.0.1-1
 ARG ARKOUDA_VERSION=2026.07.15
 
 # Install additional packages needed for Arkouda that may not be in Chapel base
+# Note: apt-get's HTTPS transport (used below for the Apache Arrow repo) trusts
+# only the system CA store, not a CA bundle passed to wget/curl. So the corp CA
+# (if supplied) is temporarily installed via update-ca-certificates for this
+# RUN step and removed again before the layer commits.
 RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
     WGET_CA_OPT=""; \
     if [ -s /tmp/corp-ca.crt ]; then \
         cat /etc/ssl/certs/ca-certificates.crt /tmp/corp-ca.crt > /tmp/build-ca-bundle.crt; \
         WGET_CA_OPT="--ca-certificate=/tmp/build-ca-bundle.crt"; \
+        cp /tmp/corp-ca.crt /usr/local/share/ca-certificates/corp-ca.crt; \
+        update-ca-certificates; \
     fi && \
     apt-get update && apt-get install -y \
     --no-install-recommends \
@@ -69,6 +75,10 @@ RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
         libarrow-dev=${ARROW_VERSION} \
         libparquet-dev=${ARROW_VERSION} \
     && rm -f /tmp/apache-arrow-apt.deb /tmp/build-ca-bundle.crt \
+    && if [ -f /usr/local/share/ca-certificates/corp-ca.crt ]; then \
+        rm -f /usr/local/share/ca-certificates/corp-ca.crt; \
+        update-ca-certificates --fresh; \
+    fi \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
@@ -134,6 +144,8 @@ RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
     rm -f /tmp/build-ca-bundle.crt
 
 # Build GNU libiconv from source - required for Arkouda
+# Prefer a CDN-backed mirror (kernel.org) and fall
+# back to the GNU redirector if that's unavailable.
 RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
     WGET_CA_OPT=""; \
     if [ -s /tmp/corp-ca.crt ]; then \
@@ -141,7 +153,10 @@ RUN --mount=type=secret,id=corp_ca,target=/tmp/corp-ca.crt,required=false \
         WGET_CA_OPT="--ca-certificate=/tmp/build-ca-bundle.crt"; \
     fi && \
     cd /tmp && \
-    wget ${WGET_CA_OPT:-} https://ftp.gnu.org/pub/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz && \
+    ( wget ${WGET_CA_OPT:-} --tries=3 --timeout=30 --waitretry=10 --retry-connrefused \
+        https://mirrors.kernel.org/gnu/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz \
+      || wget ${WGET_CA_OPT:-} --tries=3 --timeout=30 --waitretry=10 --retry-connrefused \
+        https://ftpmirror.gnu.org/libiconv/libiconv-${LIBICONV_VERSION}.tar.gz ) && \
     tar --no-same-owner -xzf libiconv-${LIBICONV_VERSION}.tar.gz && \
     cd libiconv-${LIBICONV_VERSION} && \
     ./configure --prefix=/usr/local --enable-shared --enable-static && \
@@ -238,8 +253,8 @@ RUN ldconfig -p | grep -q 'libarrow\.so'
 RUN ldconfig -p | grep -q 'libparquet\.so'
 
 RUN ldconfig -p | grep -q 'libiconv\.so'
-RUN ldconfig -p | grep -q 'libidn2\.so' 
-RUN ldconfig -p | grep -q 'libre2\.so'     
+RUN ldconfig -p | grep -q 'libidn2\.so'
+RUN ldconfig -p | grep -q 'libre2\.so'
 RUN ldconfig -p | grep -q 'libzmq\.so'
 
 RUN ldconfig -p | grep -q 'libhdf5'
