@@ -2,7 +2,6 @@
 # Build script for Chapel container with CXI provider support
 
 set -e
-set -o pipefail
 
 # Get the directory where this script is located, and resolve this project's
 # root directory (build context for both target Containerfiles is always
@@ -33,7 +32,7 @@ fi
 # Configuration
 CONTAINER_NAME="chapel-${CHAPEL_VERSION}-libfabric-${LIBFABRIC_VERSION}-cxi-pic"
 CONTAINERFILE="containers/Containerfile.hpe-cray-ex-chapel-pic"
-PODMAN_IMAGE="localhost/${CONTAINER_NAME}:latest"
+IMAGE_TAG="localhost/${CONTAINER_NAME}:latest"
 
 # Build container
 echo "Building Chapel-Arkouda server container with CXI provider support..."
@@ -45,10 +44,6 @@ if [ ! -f "$CONTAINERFILE" ]; then
     echo "ERROR: $CONTAINERFILE not found"
     exit 1
 fi
-
-# NOTE: $CONTAINERFILE only COPYs scripts/chapel-start, scripts/chapel-test-compile
-# which live in this project's scripts/ directory. The build context is this project
-# directory, so no other files need to be staged - COPY paths inside the Containerfile resolve relative to $PROJECT_DIR.
 
 # Create build log directory
 BUILD_LOG_DIR="${PROJECT_DIR}/build-logs"
@@ -94,7 +89,7 @@ if [ -n "${CORP_CA_FILE:-}" ]; then
     SECRET_ARGS=(--secret "id=corp_ca,src=${CORP_CA_FILE}")
 fi
 
-"${DOCKER_CMD}" build --progress plain -t "$PODMAN_IMAGE" -f "$CONTAINERFILE" \
+"${DOCKER_CMD}" build --progress plain -t "$IMAGE_TAG" -f "$CONTAINERFILE" \
     --build-arg LIBFABRIC_VERSION="$LIBFABRIC_VERSION" \
     --build-arg CHAPEL_VERSION="$CHAPEL_VERSION" \
     --build-arg CXI_VERSION="$CXI_VERSION" \
@@ -103,7 +98,7 @@ fi
     "${SECRET_ARGS[@]}" \
     . 2>&1 | tee -a "$BUILD_LOG"
 
-BUILD_EXIT_CODE=$?
+BUILD_EXIT_CODE=${PIPESTATUS[0]}
 echo "Build completed at: $(date)" | tee -a "$BUILD_LOG"
 echo "Final disk space: $(df -h . | tail -1 | awk '{print $4}')" | tee -a "$BUILD_LOG"
 if [ $BUILD_EXIT_CODE -ne 0 ]; then

@@ -2,6 +2,17 @@
 # that contains both the CHPL_COMM=none and a distributed Chapel runtime.
 # Developed on top of Chapel images targeting HPE-Cray-EX with libfabric and CXI
 # provider. May be adaptable to other distributed Chapel builds.
+
+# Corporate/intercepting-proxy root CA support:
+# Some networks (e.g. behind a TLS-inspecting proxy) present a certificate
+# chain signed by an internal root CA that isn't in the public ca-certificates
+# bundle, which breaks `git clone`/`curl` over https during the build. Rather
+# than baking that root CA into the image, it can be supplied at build time as
+# a BuildKit/Buildah secret (id=corp_ca) and is only ever mounted into the
+# specific RUN step that needs it - it is never COPYed, never written to a
+# committed layer, and each RUN removes its own temporary combined CA bundle
+# before the layer is committed. Builds without the secret work unmodified
+# (required=false).
 # ================================================================================
 
 # Build arguments for version control
