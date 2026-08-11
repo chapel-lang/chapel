@@ -519,7 +519,7 @@ jobs:
           TAG="$GITHUB_SHA-$ARCH"
           name_prefix="chapel"
           BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
-          BASE_IMAGE_TARBALL="chapel-base-image-${{ env.TAG }}.tar"
+          BASE_IMAGE_TARBALL="chapel-base-image-$TAG.tar"
 
           if [[ "$CONFIG" == "base" ]]; then
             image_name="$name_prefix"
