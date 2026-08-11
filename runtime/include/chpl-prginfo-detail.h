@@ -74,6 +74,14 @@ int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg);
 void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
                                        int show_addresses);
 
+/** Given a program info and the name of a build constant, look up both the
+    program and runtime's values for that constant. Returns 'true' if the
+    constants match. */
+chpl_bool chpl_rt_prginfo_lookup_build_constant_str(chpl_rt_prginfo* prg,
+                                                    const char* var_name,
+                                                    const char** out_prg_val,
+                                                    const char** out_rt_val);
+
 #ifdef __cplusplus
 }
 #endif
