@@ -29,6 +29,7 @@
 
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-env-gen.h"
 #include "chpl-prginfo.h"
 
 #include <string.h>
@@ -229,4 +230,59 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
   } while (0);
 
   #include "chpl-prginfo-data-macro-adapter.h"
+}
+
+chpl_bool
+chpl_rt_prginfo_lookup_build_constant_str(chpl_rt_prginfo* prg,
+                                          const char* var_name,
+                                          const char** out_prg_val,
+                                          const char** out_rt_val) {
+  // This is defined as a macro in the 'chpl-env-gen.h' header.
+  static const char* lookup_table[][2] = CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR;
+  const char* prg_val = NULL;
+  const char* rt_val = NULL;
+  chpl_bool ret = false;
+
+  // Search for the program value for the constant.
+  do {
+    // Use 'do/while' in order to 'break'. Note that since each field that
+    // is expanded has a different type, we check and then reinterpret the
+    // address of the field as a 'const char**' in order to get the types
+    // to line up.
+    #define E_CONSTANT(name__, type__) { \
+      if (!strcmp(#name__, var_name)) { \
+        const char* t = #type__; \
+        if (!strcmp(t, "const char*") || !strcmp(t, "c_string")) { \
+          void* addr = &(CHPL_RT_PRGINFO_DATA(prg, name__)); \
+          prg_val = *((const char**) addr); \
+          break; \
+        } \
+      } \
+    }
+    #define E_CALLBACK(name__, ret_type__, ...)
+    #include "chpl-prginfo-data-macro-adapter.h"
+  } while (false);
+
+  // Search for the runtime value for the constant. TODO: Binary search.
+  for (int i = 0; lookup_table[i][0] != NULL; i++) {
+    const char** pair = lookup_table[i];
+    const char* k = pair[0];
+    const char* v = pair[1];
+
+    if (!strcmp(k, var_name)) {
+      rt_val = v;
+      break;
+    }
+  }
+
+  // Set the out pointers for any constants we found if possible.
+  if (out_prg_val) *out_prg_val = prg_val;
+  if (out_rt_val) *out_rt_val = rt_val;
+
+  // If both constants exist, compare their values for the result.
+  if (prg_val && rt_val) {
+    ret = !strcmp(prg_val, rt_val);
+  }
+
+  return ret;
 }
