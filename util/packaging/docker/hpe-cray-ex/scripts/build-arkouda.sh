@@ -247,63 +247,29 @@ if [ $BUILD_EXIT_CODE -eq 0 ]; then
     echo
     echo "To run the container:"
     echo "  # Interactive shell"
-    echo "  ${DOCKER_CMD} run -it ${IMAGE_TAG} /bin/bash"
+    echo "  ${DOCKER_CMD} run --rm -it ${IMAGE_TAG}"
     echo
-    echo "  # Run Arkouda server (single-locale, no in-container SLURM)"
-    echo "  ${DOCKER_CMD} run -it ${IMAGE_TAG} bash -c '/opt/arkouda/arkouda_server'"
+    echo "  # Run Arkouda server (single-locale)"
+    echo "  ${DOCKER_CMD} run -it --rm --init ${IMAGE_TAG} arkouda_server"
     echo
     echo "  # Server in one container (published port) + client in a second"
     echo "  # container connecting via host.docker.internal - see"
     echo "  # 'Server + separate client container' in docs/README.md:"
-    echo "  ${DOCKER_CMD} run --rm -d --name arkouda-server -p 5555:5555 \\"
-    echo "    ${IMAGE_TAG} /bin/bash -lc 'arkouda_server'"
+    echo "  ${DOCKER_CMD} run --rm --init --name arkouda-server -p 5555:5555 \\"
+    echo "    ${IMAGE_TAG} arkouda_server"
     echo "  ${DOCKER_CMD} run --rm -it --add-host=host.docker.internal:host-gateway \\"
-    echo "    ${IMAGE_TAG} /bin/bash"
+    echo "    ${IMAGE_TAG}"
     echo
 else
     log_with_timestamp "Build failed with exit code: $BUILD_EXIT_CODE"
     echo
-    echo " ERROR ANALYSIS:"
     echo "=================="
+    echo "See the log to investigate further"
     echo "Build log location: ${LOG_PATH}"
     echo
     echo "Last 20 lines from build log:"
     echo "------------------------------"
-    tail -20 "${LOG_PATH}" | sed 's/^/  /'
+    tail -20 "${LOG_PATH}" | sed 's/^/  /'   
     echo
-    echo " Checking for common issues..."
-
-    # Check for specific error patterns
-    if grep -q "No such file or directory" "${LOG_PATH}"; then
-        echo "Missing files detected - check file paths and COPY instructions"
-    fi
-
-    if grep -q "Failed to solve" "${LOG_PATH}"; then
-        echo "Docker build context issues detected"
-    fi
-
-    if grep -q "base image" "${LOG_PATH}" || grep -q "pull access denied" "${LOG_PATH}"; then
-        echo "Base image issues detected - verify Chapel base image exists:"
-        echo "   ${DOCKER_CMD} image ls | grep chapel"
-    fi
-
-    if grep -q "E: Unable to locate package" "${LOG_PATH}"; then
-        echo "Package installation issues detected - check apt package names"
-    fi
-
-    if grep -q "fatal: unable to access" "${LOG_PATH}" || grep -q "git clone" "${LOG_PATH}"; then
-        echo "Git access issues detected - check network connectivity and repository URLs"
-    fi
-
-    if grep -q "make.*error" "${LOG_PATH}" || grep -q "compilation.*failed" "${LOG_PATH}"; then
-        echo "Compilation errors detected - check build dependencies and source code"
-    fi
-
-    echo
-    echo "To investigate further:"
-    echo "  cat ${LOG_PATH} | less"
-    echo "  grep -i error ${LOG_PATH}"
-    echo "  grep -i failed ${LOG_PATH}"
-
     exit 1
 fi

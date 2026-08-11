@@ -23,7 +23,7 @@ See **[docs/README.md](docs/README.md)** for the full build and usage guide.
 # 3. Run it on a single workstation (standalone CHPL_COMM=none server)
 docker run --rm -it --init \
   arkouda-2026.07.15-cxi:latest \
-  /bin/bash -lc 'exec /opt/arkouda/arkouda_server'
+  arkouda_server
 ```
 
 See [docs/README.md](docs/README.md#3-running-the-arkouda-container)
