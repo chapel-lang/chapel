@@ -1,0 +1,3 @@
+union-user-init2.chpl:6: In initializer:
+union-user-init2.chpl:8: error: cannot pass a record to a function before "init this"
+union-user-init2.chpl:9: error: cannot call a method on a union before "init this"

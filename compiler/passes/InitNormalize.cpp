@@ -1015,8 +1015,6 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
         } else if (state->type()->isUnion()) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
-        } else {
-          INT_FATAL("Unexpected case in InitNormalize.cpp");
         }
       }
 
