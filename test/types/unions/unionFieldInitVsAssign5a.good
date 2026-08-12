@@ -1,0 +1,5 @@
+In u.init
+In init
+After r2
+(r2 = (x = 33))
+In deinit

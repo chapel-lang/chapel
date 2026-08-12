@@ -688,11 +688,7 @@ static InitNormalize preNormalize(AggregateType* at,
         if (state.isPhase2() == false) {
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
-            if (at->isUnion()) {
-              USR_FATAL(cond,
-                        "All branches of a conditional in a union initializer "
-                        "must initialize a field if any do");
-            } else {
+            if (!at->isUnion()) {
               USR_FATAL(cond,
                         "Both arms of a conditional must use 'this.init()' "
                         "or 'init this' in phase 1");
