@@ -1,0 +1,29 @@
+declared u and v
+((), ())
+
+R(0).init
+R(1).init
+R(1).deinit
+set u.r1
+((r1 = (x = 1)), ())
+
+R(0).init
+set v.r1 from u.r1
+((r1 = (x = 1)), (r1 = (x = 1)))
+
+R(1).deinit
+R(0).init
+set u.r2 from v.r1
+((r2 = (x = 1)), (r1 = (x = 1)))
+
+R(1).deinit
+R(0).init
+set v.r2 from u.r2
+((r2 = (x = 1)), (r2 = (x = 1)))
+
+set u.r2 from u.r2
+((r2 = (x = 1)), (r2 = (x = 1)))
+
+R(1).deinit
+R(0).init
+issue14287.chpl:42: error: halt reached - illegal union access: attempted to access field 'r2' but 'r1' is currently active
