@@ -532,6 +532,7 @@ jobs:
             TEST_SCRIPT="util/cron/docker-gasnet.bash"
 
             patch "$DOCKERFILE" << EOF
+          1c1
           < FROM chapel/chapel:latest
           ---
           > FROM $BASE_IMAGE_FULL_NAME
