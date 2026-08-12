@@ -158,6 +158,7 @@ jobs:
         with:
           name: chapel-build-files-${{ inputs.configuration }}
           path: ${{ runner.temp }}/chapel-build-files
+          skip-decompress: true
       - name: run pre-build steps
         if: ${{ inputs.pre-build-steps != '' }}
         env:
