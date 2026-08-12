@@ -1573,23 +1573,27 @@ def run_tests(testsrc, common_test_args):
     if not testsrc:
         return
 
+    def _run_test_capture(testname):
+        buffer = io.StringIO()
+        run_test(common_test_args, testname, out=buffer)
+        return buffer.getvalue()
+
+    def _run_test_nocapture(testname):
+        run_test(common_test_args, testname, out=sys.stdout)
+        return ""
+
+    func = _run_test_capture if num_workers > 1 else _run_test_nocapture
+
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-
-        def _run_test_capture(testname):
-            buffer = io.StringIO()
-            run_test(common_test_args, testname, out=buffer)
-            return buffer.getvalue()
-
-        def _run_test_nocapture(testname):
-            run_test(common_test_args, testname, out=sys.stdout)
-            return ""
-
-        func = _run_test_capture if num_workers > 1 else _run_test_nocapture
-        for output in executor.map(func, testsrc):
-            sys.stdout.write(output)
-            sys.stdout.flush()
+        try:
+            for output in executor.map(func, testsrc):
+                sys.stdout.write(output)
+                sys.stdout.flush()
+        except BaseException:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
 
 
 def run_test(test_args, testname, out=sys.stdout):

@@ -16,7 +16,7 @@ record R {
     writeln("In deinit");
   }
 }
-    
+
 union u {
   var r1: R;
   var r2: R;
@@ -25,7 +25,8 @@ union u {
   proc init() {
     writeln("In u.init");
     init this;
-    writeln("Before return");
+    this.r2 = new R(33);
+    writeln("After r2");
   }
 }
 
