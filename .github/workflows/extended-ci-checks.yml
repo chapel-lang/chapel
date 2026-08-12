@@ -387,10 +387,35 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
+    env:
+      C2CHAPEL_PYCPARSER_TARBALL_PATH: ${{ github.workspace }}/.cache/pycparser-tarball
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - name: find pycparser tarball
+      run: |
+        tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
+        echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
+        shasum=$(shasum -a 256 <<<$tarball | awk '{print $1}')
+        echo "C2CHAPEL_PYCPARSER_TARBALL_SHA256=$shasum" >> "$GITHUB_ENV"
+    - name: cache pycparser tarball
+      id: cache-pycparser-deps
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+      with:
+        path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
+        key: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_SHA256 }}
+    - name: install Arkouda deps (retrying)
+      if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        command: |
+          (cd "$C2CHAPEL_PYCPARSER_TARBALL_PATH" && wget "$C2CHAPEL_PYCPARSER_TARBALL_URL")
+          path_to_tarball=$(find $C2CHAPEL_PYCPARSER_TARBALL_PATH -type f -name ".tar.gz" | head -n 1)
+          echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
     - name: run test-c2chapel.bash
       run: |
         ./util/cron/test-c2chapel.bash
