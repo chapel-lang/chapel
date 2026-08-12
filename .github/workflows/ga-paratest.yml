@@ -72,6 +72,8 @@ env:
   # ensure we can source cron scripts with actually running the tests
   CHPL_NIGHTLY_DO_NOTHING: 1
   CHPL_HOME: ${{ github.workspace }}
+  PARATEST_RESULTS_DIR: paratest-results
+  AGGREGATED_RESULTS_DIR: aggregated-results
 
 # note: no -x, its not actually that useful here and there is plenty of other output
 defaults:
@@ -308,7 +310,7 @@ jobs:
           fi
           tar -xzf "$RUNNER_TEMP/chapel-build-files/chapel-build-files.tar.gz"
 
-          result_dir="$CHPL_HOME/paratest-results/$TEST_ID"
+          result_dir="$CHPL_HOME/$PARATEST_RESULTS_DIR/$TEST_ID"
           mkdir -p "$result_dir"
           echo "$TEST_DIR" > "$result_dir/directory.txt"
 
@@ -339,7 +341,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: paratest-${{ inputs.configuration }}-${{ matrix.id }}
-          path: paratest-results
+          path: ${{ env.PARATEST_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
 
@@ -357,7 +359,7 @@ jobs:
         with:
           pattern: paratest-${{ inputs.configuration }}-*
           merge-multiple: true
-          path: paratest-results
+          path: ${{ env.PARATEST_RESULTS_DIR }}
       - name: aggregate and report results
         env:
           BUILD_RESULT: ${{ needs.build.result }}
@@ -366,14 +368,14 @@ jobs:
           MATRIX_RESULT: ${{ needs.run-tests.result }}
           SETUP_RESULT: ${{ needs.determine-test-directories.result }}
         run: |
-          mkdir -p aggregated-results paratest-results
-          rm -f aggregated-results/results.log
-          find paratest-results -name results.log -print0 \
+          mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
+          rm -f "$AGGREGATED_RESULTS_DIR/results.log"
+          find "$PARATEST_RESULTS_DIR" -name results.log -print0 \
             | sort -z \
-            | xargs -0 -r cat >> aggregated-results/results.log
+            | xargs -0 -r cat >> "$AGGREGATED_RESULTS_DIR/results.log"
 
           mapfile -t status_files < <(
-            find paratest-results -name status.txt -print | sort
+            find "$PARATEST_RESULTS_DIR" -name status.txt -print | sort
           )
           actual_tests=${#status_files[@]}
           failed_tests=0
@@ -421,14 +423,14 @@ jobs:
             else
               echo "Overall result: FAIL"
             fi
-          } | tee aggregated-results/summary.txt | tee -a "$GITHUB_STEP_SUMMARY"
+          } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
 
           exit "$overall_status"
       - name: upload aggregated results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: paratest-results-${{ inputs.configuration }}
-          path: aggregated-results
+          name: ${{ env.PARATEST_RESULTS_DIR }}-${{ inputs.configuration }}
+          path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
