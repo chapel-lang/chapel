@@ -9,6 +9,10 @@
 // prefix.
 //
 
+// NOTE: This is not actually the case, but we need to get access to the
+//       runtime build constants, which are hidden behind this guard.
+#define CHPL_RT_IS_BUILDING_RUNTIME 1
+
 #include "chpl-prginfo.h"
 #include <fstream>
 #include <iostream>
