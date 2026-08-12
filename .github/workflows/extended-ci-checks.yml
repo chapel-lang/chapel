@@ -396,9 +396,10 @@ jobs:
     - name: find pycparser tarball
       run: |
         mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
+        # shellcheck disable=SC2016 -- This is a Make expression, not a shell expression.
         tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
         echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
-        shasum=$(shasum -a 256 <<<$tarball | awk '{print $1}')
+        shasum=$(shasum -a 256 <<<"$tarball" | awk '{print $1}')
         echo "C2CHAPEL_PYCPARSER_TARBALL_SHA256=$shasum" >> "$GITHUB_ENV"
     - name: cache pycparser tarball
       id: cache-pycparser-deps
