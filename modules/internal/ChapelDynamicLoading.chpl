@@ -455,8 +455,8 @@ module ChapelDynamicLoading {
       const match = _lookupBuildConstant(infoPtr, name, prgVal, rtVal);
       if !match {
         const msg = 'Cannot load Chapel library because of a build ' +
-                    'constant mismatch: \'' + name + '=' + prgVal + '\' ' +
-                    'versus a runtime value of \'' + rtVal + '\'';
+                    'constant mismatch: ' + name + '=\'' + prgVal +
+                    '\' versus a runtime value of \'' + rtVal + '\'';
         throw new DynLoadError(msg);
       }
     }

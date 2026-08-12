@@ -39,7 +39,8 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
 
-SET_PROGRAM_DATA_MODULE=$(CHPL_MAKE_HOME)/modules/internal/gen/ChapelSetProgramInfoDataEntries.chpl
+RT_INTERNAL_MODULES_DIR=$(CHPL_MAKE_HOME)/modules/internal/gen/$(CHPL_MAKE_RUNTIME_SUBDIR)
+SET_PROGRAM_DATA_MODULE=$(RT_INTERNAL_MODULES_DIR)/ChapelSetProgramInfoDataEntries.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
