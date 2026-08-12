@@ -207,11 +207,19 @@ jobs:
               if (index(path, home) == 1) return substr(path, length(home) + 1)
               return path
             }
+            function has_descendant_tests(dir, prefix, child) {
+              prefix = dir "/"
+              for (child in visited) {
+                if (index(child, prefix) == 1 && !(child in no_tests)) return 1
+              }
+              return 0
+            }
             /^\[Working on directory / {
               dir = $0
               sub(/^\[Working on directory /, "", dir)
               sub(/\]$/, "", dir)
               dir = relative(dir)
+              visited[dir] = 1
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
               if (dir ~ "^test/[^/]+$") {
@@ -231,7 +239,10 @@ jobs:
             }
             END {
               for (dir in testdirs) {
-                if (!(dir in no_tests)) print dir "," testdirs[dir]
+                if (!(dir in no_tests) ||
+                    (testdirs[dir] != "--no-recurse" && has_descendant_tests(dir))) {
+                  print dir "," testdirs[dir]
+                }
               }
             }
           ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
