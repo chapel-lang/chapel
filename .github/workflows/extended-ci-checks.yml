@@ -395,6 +395,7 @@ jobs:
         persist-credentials: false
     - name: find pycparser tarball
       run: |
+        mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
         tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
         echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
         shasum=$(shasum -a 256 <<<$tarball | awk '{print $1}')
@@ -405,7 +406,7 @@ jobs:
       with:
         path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
         key: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_SHA256 }}
-    - name: install Arkouda deps (retrying)
+    - name: install c2chapel tarball (retrying)
       if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       with:
