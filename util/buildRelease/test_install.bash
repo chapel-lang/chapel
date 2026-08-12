@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -exuo pipefail
+
 if [ ! -f configure ]
 then
   echo "Should be run from a CHPL_HOME directory" 1>&2
