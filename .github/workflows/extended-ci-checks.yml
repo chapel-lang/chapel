@@ -407,7 +407,7 @@ jobs:
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv mason
   paratest-darwin:
-    name: Chapel paratest
+    name: Chapel paratest on darwin
     uses: ./.github/workflows/ga-paratest.yml
     with:
       configuration: darwin
