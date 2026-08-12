@@ -160,7 +160,8 @@ static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
-          if (isClass(type) == true || isRecord(type) == true) { // TODO: Or union?
+          if (isClass(type) == true || isRecord(type) == true ||
+              isUnion(type)) {
             retval = type;
           }
         }
