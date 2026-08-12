@@ -174,6 +174,7 @@ jobs:
           source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: determine test directories
         env:
+          CONFIGURATION: ${{ inputs.configuration }}
           CRON_SCRIPT: ${{ inputs.cron-script }}
           TEST_DIRS: ${{ inputs.test-dirs }}
         run: |
@@ -181,7 +182,7 @@ jobs:
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
-          tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-${{ inputs.configuration }}.tar.gz"
+          tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-$CONFIGURATION.tar.gz"
 
           requested_tests=()
           while read -ra line_tests; do
@@ -304,6 +305,7 @@ jobs:
           source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: run tests
         env:
+          CONFIGURATION: ${{ inputs.configuration }}
           CRON_SCRIPT: ${{ inputs.cron-script }}
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_DIR: ${{ matrix.dir }}
@@ -314,7 +316,7 @@ jobs:
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
           fi
-          tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-${{ inputs.configuration }}.tar.gz"
+          tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-$CONFIGURATION.tar.gz"
 
           result_dir="$CHPL_HOME/$PARATEST_RESULTS_DIR/$TEST_ID"
           mkdir -p "$result_dir"
