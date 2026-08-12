@@ -360,6 +360,12 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          sparse-checkout: util/test/merge_start_test_log_summary
+          sparse-checkout-cone-mode: false
       - name: download test results
         id: download-results
         continue-on-error: true
@@ -382,6 +388,23 @@ jobs:
             | sort -z \
             | xargs -0 -r cat >> "$AGGREGATED_RESULTS_DIR/results.log"
 
+          mapfile -d '' -t summary_files < <(
+            find "$PARATEST_RESULTS_DIR" -name results.log.summary -print0 \
+              | sort -z
+          )
+          summary_count=${#summary_files[@]}
+          if (( summary_count > 0 )); then
+            "$CHPL_HOME/util/test/merge_start_test_log_summary" \
+              --output "$AGGREGATED_RESULTS_DIR/results.log.summary" \
+              "${summary_files[@]}"
+            for summary_file in "${summary_files[@]}"; do
+              relative_path=${summary_file#"$PARATEST_RESULTS_DIR/"}
+              destination="$AGGREGATED_RESULTS_DIR/log-summaries/$relative_path"
+              mkdir -p "$(dirname "$destination")"
+              cp "$summary_file" "$destination"
+            done
+          fi
+
           mapfile -t status_files < <(
             find "$PARATEST_RESULTS_DIR" -name status.txt -print | sort
           )
@@ -399,8 +422,8 @@ jobs:
             result_dir=$(dirname "$status_file")
             test_dir=$(cat "$result_dir/directory.txt")
             test_status=$(cat "$status_file")
-            summary=$(grep -a '^\[Summary: #Successes' "$result_dir/results.log" \
-              | tail -n 1 || true)
+            summary=$(grep -a '^\[Summary: #Successes' \
+              "$result_dir/results.log.summary" | tail -n 1 || true)
             if [[ "$test_status" == "0" ]]; then
               result=pass
             else
@@ -417,6 +440,7 @@ jobs:
           fi
           if [[ -z "$EXPECTED_TESTS" ||
                 "$actual_tests" != "$EXPECTED_TESTS" ||
+                "$summary_count" != "$EXPECTED_TESTS" ||
                 "$failed_tests" != "0" ]]; then
             overall_status=1
           fi
@@ -425,6 +449,7 @@ jobs:
             echo
             echo "Expected test jobs: ${EXPECTED_TESTS:-unknown}"
             echo "Reported test jobs: $actual_tests"
+            echo "Reported test summaries: $summary_count"
             echo "Failed test jobs: $failed_tests"
             if [[ "$overall_status" == "0" ]]; then
               echo "Overall result: PASS"
