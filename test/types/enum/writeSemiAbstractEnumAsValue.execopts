@@ -1,6 +1,6 @@
 --dontskip=0
 --dontskip=1
 --dontskip=2
---dontskip=3 # writeSemiAbstractEnumAsValue.2.good
---dontskip=4 # writeSemiAbstractEnumAsValue.2.good
+--dontskip=3 # writeSemiAbstractEnumAsValue.2
+--dontskip=4 # writeSemiAbstractEnumAsValue.2
 --dontskip=5
