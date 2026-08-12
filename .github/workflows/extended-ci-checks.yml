@@ -419,4 +419,5 @@ jobs:
           echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
     - name: run test-c2chapel.bash
       run: |
+        export C2CHAPEL_PYCPARSER_TARBALL
         ./util/cron/test-c2chapel.bash
