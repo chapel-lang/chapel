@@ -7,7 +7,6 @@ import re
 import sys
 import time
 
-
 HEADER_RE = re.compile(r"\[Test Summary - .+\]")
 RESULTS_RE = re.compile(
     r"\[Summary: #Successes = (\d+) \| #Failures = (\d+) "
@@ -56,8 +55,7 @@ def read_summary(path):
         raise ValueError("{0}: malformed test summary footer".format(path))
 
     counts = tuple(
-        int(value)
-        for value in result_match.groups() + passing_match.groups()
+        int(value) for value in result_match.groups() + passing_match.groups()
     )
     return lines[1:result_index], counts
 
@@ -88,9 +86,14 @@ def merge_summaries(paths):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("summary_files", nargs="+", help="summary files to merge")
     parser.add_argument(
-        "-o", "--output", metavar="FILE", help="write the merged summary to FILE"
+        "summary_files", nargs="+", help="summary files to merge"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        metavar="FILE",
+        help="write the merged summary to FILE",
     )
     args = parser.parse_args()
 
