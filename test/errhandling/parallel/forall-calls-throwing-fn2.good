@@ -1,3 +1,3 @@
-uncaught TaskErrors: 10 errors: Error: die! ... Error: die!
+uncaught TaskErrors: 4 errors: Error: die! ... Error: die!
   forall-calls-throwing-fn2.chpl:10: thrown here
   forall-calls-throwing-fn2.chpl:10: uncaught here
