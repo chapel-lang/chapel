@@ -88,9 +88,13 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      options: --user 1001
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
+    outputs:
+      matrix: ${{ steps.test-directories.outputs.matrix }}
+      test-count: ${{ steps.test-directories.outputs.test-count }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -139,39 +143,6 @@ jobs:
           path: ${{ runner.temp }}/${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}.tar.gz
           archive: false
           retention-days: ${{ inputs.retention-days }}
-
-  determine-test-directories:
-    name: Determine test jobs (${{ inputs.configuration }})
-    needs: build
-    runs-on: ${{ inputs.runner }}
-    timeout-minutes: ${{ inputs.timeout-minutes }}
-    container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
-    outputs:
-      matrix: ${{ steps.test-directories.outputs.matrix }}
-      test-count: ${{ steps.test-directories.outputs.test-count }}
-    steps:
-      - name: checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: download Chapel build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: ${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}.tar.gz
-          path: ${{ runner.temp }}/${{ env.CHAPEL_BUILD_FILES_SLUG }}
-          skip-decompress: true
-      - name: run pre-build steps
-        if: ${{ inputs.pre-build-steps != '' }}
-        env:
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
-        run: |
-          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-          # shellcheck source=/dev/null
-          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: determine test directories
         env:
           CONFIGURATION: ${{ inputs.configuration }}
@@ -279,18 +250,19 @@ jobs:
 
   run-tests:
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
-    needs: determine-test-directories
+    needs: build
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      options: --user 1001
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
     strategy:
       fail-fast: false
       max-parallel: ${{ inputs.max-parallel }}
-      matrix: ${{ fromJSON(needs.determine-test-directories.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -367,7 +339,7 @@ jobs:
   aggregate-results:
     name: Aggregate results (${{ inputs.configuration }})
     if: ${{ !cancelled() }}
-    needs: [build, determine-test-directories, run-tests]
+    needs: [build, run-tests]
     runs-on: ubuntu-slim
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
@@ -389,9 +361,9 @@ jobs:
         env:
           BUILD_RESULT: ${{ needs.build.result }}
           CONFIGURATION: ${{ inputs.configuration }}
-          EXPECTED_TESTS: ${{ needs.determine-test-directories.outputs.test-count }}
+          EXPECTED_TESTS: ${{ needs.build.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
-          SETUP_RESULT: ${{ needs.determine-test-directories.result }}
+          SETUP_RESULT: ${{ needs.build.result }}
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
           rm -f "$AGGREGATED_RESULTS_DIR/results.log"
