@@ -322,6 +322,7 @@ void setupModuleSearchPaths(
                   bool enableTaskTracking,
                   const std::string& chplTasks,
                   const std::string& chplComm,
+                  const std::string& chplRtModulesSubdir,
                   const std::string& chplSysModulesSubdir,
                   const std::string& chplModulePath,
                   const std::vector<std::string>& prependInternalModulePaths,
