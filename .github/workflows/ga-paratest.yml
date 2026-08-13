@@ -137,8 +137,6 @@ jobs:
       - name: upload Chapel build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          # With archive: false, upload-artifact uses the file's basename as
-          # the artifact name and ignores name, so both must include the configuration.
           name: ${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}.tar.gz
           path: ${{ runner.temp }}/${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}.tar.gz
           archive: false
