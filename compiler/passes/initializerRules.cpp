@@ -160,7 +160,7 @@ static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
-          if (isClass(type) == true || isRecord(type) == true) {
+          if (isClass(type) || isRecord(type) || isUnion(type)) {
             retval = type;
           }
         }
@@ -291,10 +291,10 @@ static InitNormalize preNormalize(AggregateType* at,
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (at->isRecord() == true || at->isUnion()) {
+  if (at->isRecord() || at->isUnion()) {
     preNormalizeInitRecordUnion(fn);
 
-  } else if (at->isClass()  == true) {
+  } else if (at->isClass()) {
     preNormalizeInitClass(fn);
 
   } else {
@@ -519,8 +519,8 @@ static InitNormalize preNormalize(AggregateType* at,
           }
           state.completePhase0(callExpr);
 
-          if (at->isRecord() == true) {
-            USR_FATAL_CONT(stmt, "super.init() not allowed in records");
+          if (at->isRecord() || at->isUnion()) {
+            USR_FATAL_CONT(stmt, "super.init() is only allowed in classes");
             callExpr->remove();
 
           } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
@@ -1543,7 +1543,7 @@ void preNormalizePostInit(AggregateType* at) {
     }
   }
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if ((isRecord(at) || isUnion(at)) && at->hasPostInitializer()) {
     at->symbol->addFlag(FLAG_NOT_POD);
   }
 

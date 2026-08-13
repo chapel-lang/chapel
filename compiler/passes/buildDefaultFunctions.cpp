@@ -1634,15 +1634,32 @@ static void buildUnionAssignmentFunction(AggregateType* ct) {
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_OPERATOR);
+
+  // Make the generated operator be an operator method
+  ArgSymbol* methodToken = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+  fn->insertFormalAtTail(methodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  fn->_this = _this;
+  fn->setMethod(true);
+  ct->methods.add(fn);
+
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_REF_MAYBE_CONST, "_arg2", ct);
+
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->retType = dtUnknown;
+
+  fn->retType = dtVoid;
+
   fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(-1)));
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) &&
+          !tmp->isParameter()) {
         fn->insertAtTail(new CondStmt(
             new CallExpr("==",
               new CallExpr(PRIM_GET_UNION_ID, arg2),
