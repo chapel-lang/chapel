@@ -145,16 +145,8 @@ jobs:
           retention-days: ${{ inputs.retention-days }}
       - name: determine test directories
         env:
-          CONFIGURATION: ${{ inputs.configuration }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
           TEST_DIRS: ${{ inputs.test-dirs }}
         run: |
-          if [[ -n "$CRON_SCRIPT" ]]; then
-            # shellcheck source=/dev/null
-            source "$CRON_SCRIPT"
-          fi
-          tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-$CONFIGURATION.tar.gz"
-
           requested_tests=()
           while read -ra line_tests; do
             requested_tests+=("${line_tests[@]}")
