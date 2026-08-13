@@ -443,9 +443,9 @@ jobs:
             echo
             echo "start_test log summary:"
             echo "-----------------------"
-            echo "```"
+            echo '```'
             cat "$AGGREGATED_RESULTS_DIR/results.log.summary" || true
-            echo "```"
+            echo '```'
 
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
 
