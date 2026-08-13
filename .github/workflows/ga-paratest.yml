@@ -467,6 +467,14 @@ jobs:
             else
               echo "Overall result: FAIL"
             fi
+
+            echo
+            echo "start_test log summary:"
+            echo "-----------------------"
+            echo "```"
+            cat "$AGGREGATED_RESULTS_DIR/results.log.summary" || true
+            echo "```"
+
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
 
           exit "$overall_status"
