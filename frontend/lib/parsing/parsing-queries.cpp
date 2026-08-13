@@ -684,6 +684,7 @@ void setupModuleSearchPaths(
                   bool enableTaskTracking,
                   const std::string& chplTasks,
                   const std::string& chplComm,
+                  const std::string& chplRtModulesSubdir,
                   const std::string& chplSysModulesSubdir,
                   const std::string& chplModulePath,
                   const std::vector<std::string>& prependInternalModulePaths,
@@ -734,7 +735,7 @@ void setupModuleSearchPaths(
 
   searchPath.push_back(internal + "/comm/" + chplComm);
 
-  searchPath.push_back(internal + "/gen");
+  searchPath.push_back(internal + "/gen/" + chplRtModulesSubdir);
 
   searchPath.push_back(internal);
 
@@ -816,6 +817,7 @@ void setupModuleSearchPaths(Context* context,
                          false,
                          chplEnv->at("CHPL_TASKS"),
                          chplEnv->at("CHPL_COMM"),
+                         chplEnv->at("CHPL_RUNTIME_SUBDIR"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
                          {},  // prependInternalModulePaths

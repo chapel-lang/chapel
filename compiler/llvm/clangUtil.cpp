@@ -2951,6 +2951,11 @@ static void helpComputeClangArgs(std::string& clangCC,
     args.push_back(dashI + CHPL_HOME + "/modules/standard");
     args.push_back(dashI + CHPL_HOME + "/modules/packages");
 
+    // add -I$CHPL_HOME/build/runtime/.../include/
+    args.push_back(dashI + CHPL_HOME + "/build/runtime/" +
+                   CHPL_RUNTIME_SUBDIR +
+                   "/include/");
+
     // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
     splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
     // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
