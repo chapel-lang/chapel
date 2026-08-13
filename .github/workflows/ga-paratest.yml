@@ -377,15 +377,15 @@ jobs:
           )
           summary_count=${#summary_files[@]}
           if (( summary_count > 0 )); then
-            "$CHPL_HOME/util/test/merge_start_test_log_summary" \
-              --output "$AGGREGATED_RESULTS_DIR/results.log.summary" \
-              "${summary_files[@]}"
             for summary_file in "${summary_files[@]}"; do
               relative_path=${summary_file#"$PARATEST_RESULTS_DIR/"}
               destination="$AGGREGATED_RESULTS_DIR/log-summaries/$relative_path"
               mkdir -p "$(dirname "$destination")"
               cp "$summary_file" "$destination"
             done
+            "$CHPL_HOME/util/test/merge_start_test_log_summary" \
+              --output "$AGGREGATED_RESULTS_DIR/results.log.summary" \
+              "${summary_files[@]}"
           fi
 
           mapfile -t status_files < <(
