@@ -1,0 +1,3 @@
+returnNonArray7.chpl:1: In function 'doit':
+returnNonArray7.chpl:3: error: array element type mismatch in return from int(64) to real(64)
+  returnNonArray7.chpl:6: called as doit(D: domain(1,int(64),one))

@@ -1,4 +1,4 @@
-proc doit(D): [D] {
+proc doit(D): [] {
   return 2; // can't coerce to generic array
 }
 
