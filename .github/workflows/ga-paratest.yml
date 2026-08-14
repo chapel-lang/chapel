@@ -88,7 +88,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user 1001
+      options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
@@ -245,7 +245,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user 1001
+      options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
@@ -430,12 +430,16 @@ jobs:
               echo "Overall result: FAIL"
             fi
 
-            echo
-            echo "start_test log summary:"
-            echo "-----------------------"
-            echo '```'
-            cat "$AGGREGATED_RESULTS_DIR/results.log.summary" || true
-            echo '```'
+            if [ -f "$AGGREGATED_RESULTS_DIR/results.log.summary" ]; then
+              echo
+              echo "start_test log summary:"
+              echo "-----------------------"
+              echo '```'
+              cat "$AGGREGATED_RESULTS_DIR/results.log.summary"
+              echo '```'
+            else
+              echo "No results.log.summary file found"
+            fi
 
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
 
