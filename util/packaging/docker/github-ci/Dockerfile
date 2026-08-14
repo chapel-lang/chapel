@@ -38,6 +38,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd --gid 1001 chpl-tester && \
+    useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester
+
 
 # Configure locale (taken from primary Chapel Dockerfile)
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
