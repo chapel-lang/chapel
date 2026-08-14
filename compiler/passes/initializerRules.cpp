@@ -160,7 +160,7 @@ static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
-          if (isClass(type) == true || isRecord(type) == true) {
+          if (isClass(type) || isRecord(type) || isUnion(type)) {
             retval = type;
           }
         }
@@ -291,10 +291,10 @@ static InitNormalize preNormalize(AggregateType* at,
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (at->isRecord() == true || at->isUnion()) {
+  if (at->isRecord() || at->isUnion()) {
     preNormalizeInitRecordUnion(fn);
 
-  } else if (at->isClass()  == true) {
+  } else if (at->isClass()) {
     preNormalizeInitClass(fn);
 
   } else {
@@ -519,8 +519,8 @@ static InitNormalize preNormalize(AggregateType* at,
           }
           state.completePhase0(callExpr);
 
-          if (at->isRecord() == true) {
-            USR_FATAL_CONT(stmt, "super.init() not allowed in records");
+          if (at->isRecord() || at->isUnion()) {
+            USR_FATAL_CONT(stmt, "super.init() is only allowed in classes");
             callExpr->remove();
 
           } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
@@ -644,6 +644,10 @@ static InitNormalize preNormalize(AggregateType* at,
                                                   cond->thenStmt,
                                                   InitNormalize(cond, state));
 
+        // This union special-case is necessary because of the way
+        // compiler-generated copy initializers are written.  We could
+        // probably write them to use `if then ... else if ... else
+        // init this; to address this (?)
         if (state.isPhase2() == false && !at->isUnion()) {
           if (stateThen.isPhase2() == true) {
             if (phaseThen == InitNormalize::cPhase0) {
@@ -684,11 +688,7 @@ static InitNormalize preNormalize(AggregateType* at,
         if (state.isPhase2() == false) {
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
-            if (at->isUnion()) {
-              USR_FATAL(cond,
-                        "All branches of a conditional in a union initializer "
-                        "must initialize a field if any do");
-            } else {
+            if (!at->isUnion()) {
               USR_FATAL(cond,
                         "Both arms of a conditional must use 'this.init()' "
                         "or 'init this' in phase 1");
@@ -1543,7 +1543,7 @@ void preNormalizePostInit(AggregateType* at) {
     }
   }
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if ((isRecord(at) || isUnion(at)) && at->hasPostInitializer()) {
     at->symbol->addFlag(FLAG_NOT_POD);
   }
 

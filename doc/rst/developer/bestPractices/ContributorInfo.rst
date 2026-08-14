@@ -348,6 +348,33 @@ Work with your reviewers
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
+.. _Get GitHub Actions tests passing:
+
+Get GitHub Actions tests passing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A subset of the Chapel test suite runs on your PR via GitHub Actions before it
+is merged, on each commit. All GitHub Actions checks will need to be passing
+before the PR can be merged. Upon merging, a larger subset of tests will be run
+on it in the merge queue, and if any fail the merge attempt will be rejected
+(and can be retried).
+
+Some of the behavior of the GitHub Actions checks can be controlled by labels
+on the PR. Typically they should not be needed, but if relevant, you can set
+them (or ask someone with commit privileges to do it for you).
+
+* `large files ok`: Silences failures from the check for excessively large
+  files being committed (which are typically accidents). On occasion it is
+  actually intended to add a large file to the repo, and this label should be
+  used.
+
+* `run extended CI checks`: Run all GA checks on each commit to a PR, including
+  those that typically only run in the merge queue. This is appropriate when
+  iterating on a change to GA itself, or when making a change very likely to
+  pass per-commit checks but fail extended checks. In other cases it will just
+  make it take longer to get CI results passing, and significantly eats into
+  the Chapel repo's budget of concurrent action runs.
+
 .. _Before merging:
 
 Before merging

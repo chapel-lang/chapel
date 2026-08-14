@@ -24,7 +24,7 @@ proc main() {
   breakpoint;
 }
 
-// CHECK: breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+// CHECK: Stop hook #1
 // CHECK-NEXT: Breakpoint [[#BREAKPOINT_START:]]
 
 // CHECK: b methodCallsRec.chpl:8

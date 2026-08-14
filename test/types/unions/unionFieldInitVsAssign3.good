@@ -2,13 +2,19 @@ In u.init
 In init
 In init
 In assign
+In deinit
 After r1
+In deinit
 In init
 In init
 In assign
+In deinit
 After r3
+In deinit
 In init
 In init
 In assign
+In deinit
 Before return
 (r2 = (x = 33))
+In deinit

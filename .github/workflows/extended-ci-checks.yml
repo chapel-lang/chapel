@@ -1,3 +1,5 @@
+# Intermediate-runtime CI checks to be used in an intermediate-length pre-merge
+# feedback loop.
 name: Extended CI checks
 
 on:
@@ -54,15 +56,23 @@ jobs:
       with:
         path: ${{ env.ARKOUDA_DEP_DIR }}
         key: arkouda-${{ env.ARKOUDA_SHA }}
-    - name: install Arkouda deps
+    - name: install Arkouda deps (retrying)
       if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
-      run: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        cd arkouda
-        # Download sources serially first before building, as it is flaky and
-        # that'll make it easier to diagnose failures.
-        make deps-download-source
-        make -j"$num_procs" install-deps
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        on_retry_command: |
+          cd arkouda
+          git clean -dfx
+        command: |
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          cd arkouda
+          # Download sources serially first before building, as it is flaky and
+          # that'll make it easier to diagnose failures.
+          make deps-download-source
+          make -j"$num_procs" install-deps
     - name: check contents of Arkouda deps install
       run: |
         test -d "$ARKOUDA_DEP_DIR"
@@ -347,6 +357,7 @@ jobs:
       with:
         path: ./tar/chapel-test.tar.gz
         archive: false
+        if-no-files-found: error
 
   test-homebrew:
     strategy:
@@ -383,6 +394,16 @@ jobs:
     - name: run test-c2chapel.bash
       run: |
         ./util/cron/test-c2chapel.bash
+
+  test-make-install-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: run test-make-install-check.bash
+      run: |
+        ./util/cron/test-make-install-check.bash
 
   paratest-linux64:
     name: Chapel paratest on linux64
