@@ -412,7 +412,7 @@ jobs:
       with:
         path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
         key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
-    - name: install c2chapel tarball (retrying)
+    - name: download pycparser tarball (retrying)
       if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       with:
@@ -422,7 +422,7 @@ jobs:
         command: |
           tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
           wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
-    - name: configure c2chapel tarball
+    - name: configure pycparser tarball for c2chapel
       run: |
         path_to_tarball=$(find "$C2CHAPEL_PYCPARSER_TARBALL_PATH" -type f -name '*.tar.gz' -print -quit)
         if [[ -z "$path_to_tarball" ]]; then
