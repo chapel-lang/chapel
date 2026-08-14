@@ -2282,10 +2282,21 @@ static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
   retVar->insertBefore(checkEltType);
 }
 
+// Validates the actual return type is an array of some kind
+static void insertGenericArrayCheck(Expr* actualRet, CallExpr* retVar) {
+  CallExpr* checkGenericArray = new CallExpr("chpl__checkGenericArrayReturn",
+                                             actualRet->copy());
+  retVar->insertBefore(checkGenericArray);
+}
+
 static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
                                                     VarSymbol* retval,
                                                     CallExpr* ret,
                                                     Expr* retExpr);
+static Expr* modifyPartiallyGenericArrayReturnRecurse(FnSymbol* fn,
+                                                      CallExpr* ret,
+                                                      Expr* typeExpr,
+                                                      Expr* retExpr);
 static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
                                               VarSymbol* retval,
                                               CallExpr* ret,
@@ -2295,57 +2306,53 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
     modifyPartiallyGenericArrayReturnSimple(fn, retval, ret, retExpr);
     return;
   }
-
-  // // at this point, its a pretty good assumption that the return type is a
-  // // tuple that contains one or more generic arrays
-  // // to prevent side-effects, we need to insert call temps for the return
-  // // expression before we start
-  // // we do this for the entire call expression up front, and then insert checks
-  // // for each of the generic arrays in the tuple
-  // prepareRetExpr(retExpr, ret);
-
-  // pair(typeExpr, retExpr)
-  std::stack<std::pair<Expr*, Expr*>> calls;
-  calls.push(std::make_pair(toCallExpr(typeExpr->body.tail), toCallExpr(retExpr)));
-  while(calls.size() > 0) {
-    auto call = calls.top();
-    calls.pop();
-    auto typeCall = toCallExpr(call.first);
-    auto myRetExpr = call.second;
-    auto retCall = toCallExpr(myRetExpr);
-    if (typeCall && typeCall->isNamed("_build_tuple")) {
-      if (!(retCall && retCall->isNamed("_build_tuple"))) {
-        USR_FATAL(fn, "return type is a tuple, but return value is not");
-      }
-      int nTypeArgs = typeCall->numActuals();
-      int nRetArgs = retCall->numActuals();
-      if (nTypeArgs != nRetArgs) {
-        USR_FATAL(fn, "return type is a tuple of size %d, but return value is a tuple of size %d", nTypeArgs, nRetArgs);
-      }
-      for (int i = 1; i <= nTypeArgs; i++) {
-        Expr* typeArg = typeCall->get(i);
-        Expr* retArg = retCall->get(i);
-        calls.push(std::make_pair(typeArg, retArg));
-      }
-    } else if (typeCall && isGenericArray(typeCall)) {
-      int nArgs = typeCall->numActuals();
-      Expr* domExpr = typeCall->get(1);
-      Expr* retEltExpr = nArgs == 2 ? typeCall->get(2) : nullptr;
-      bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
-      if (!noDom || retEltExpr != nullptr) {
-        prepareRetExpr(myRetExpr, ret);
-      }
-      if (!noDom) {
-        // Add checks against the declared domain
-        insertDomainCheck(myRetExpr, ret, domExpr);
-      }
-      if (retEltExpr != nullptr) {
-        insertElementTypeCheck(retEltExpr, myRetExpr, ret);
-      }
+  auto newRetExpr =
+    modifyPartiallyGenericArrayReturnRecurse(fn, ret, typeExpr->body.tail, retExpr);
+  ret->insertBefore(new CallExpr(PRIM_MOVE, retval, newRetExpr));
+}
+static Expr* modifyPartiallyGenericArrayReturnRecurse(FnSymbol* fn,
+                                                      CallExpr* ret,
+                                                      Expr* typeExpr,
+                                                      Expr* retExpr) {
+  auto typeCall = toCallExpr(typeExpr);
+  auto retCall = toCallExpr(retExpr);
+  if (typeCall && typeCall->isNamed("_build_tuple")) {
+    if (!(retCall && retCall->isNamed("_build_tuple"))) {
+      USR_FATAL(fn, "return type is a tuple, but return value is not");
     }
+    int nTypeArgs = typeCall->numActuals();
+    int nRetArgs = retCall->numActuals();
+    if (nTypeArgs != nRetArgs) {
+      USR_FATAL(fn, "return type is a tuple of size %d, but return value is a tuple of size %d", nTypeArgs, nRetArgs);
+    }
+    for (int i = 1; i <= nTypeArgs; i++) {
+      Expr* typeArg = typeCall->get(i);
+      Expr* retArg = retCall->get(i);
+      retCall->get(i)->replace(new SymExpr(gNil)); // dummy replacement
+      auto newRetArg =
+        modifyPartiallyGenericArrayReturnRecurse(fn, ret, typeArg, retArg);
+      retCall->get(i)->replace(newRetArg);
+    }
+  } else if (typeCall && isGenericArray(typeCall)) {
+    int nArgs = typeCall->numActuals();
+    Expr* domExpr = typeCall->get(1);
+    Expr* retEltExpr = nArgs == 2 ? typeCall->get(2) : nullptr;
+    bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+    if (!noDom || retEltExpr != nullptr) {
+      prepareRetExpr(retExpr, ret);
+    }
+    if (!noDom) {
+      // Add checks against the declared domain
+      insertDomainCheck(retExpr, ret, domExpr);
+    }
+    if (retEltExpr != nullptr) {
+      insertElementTypeCheck(retEltExpr, retExpr, ret);
+    }
+    if (noDom && retEltExpr == nullptr) {
+    insertGenericArrayCheck(retExpr, ret);
   }
-  // TODO: Do something about coercion
-  ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
+  }
+  return retExpr;
 }
 
 
@@ -2360,7 +2367,7 @@ static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
   CallExpr* call = toCallExpr(typeExpr->body.tail);
   int nArgs = call->numActuals();
   Expr* domExpr = call->get(1);
-  Expr* retEltExpr = nArgs == 2 ? call->get(2) : NULL;
+  Expr* retEltExpr = nArgs == 2 ? call->get(2) : nullptr;
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
   if (!noDom || retEltExpr != nullptr) {
@@ -2370,8 +2377,12 @@ static void modifyPartiallyGenericArrayReturnSimple(FnSymbol* fn,
     // Add checks against the declared domain
     insertDomainCheck(retExpr, ret, domExpr);
   }
-  if (retEltExpr != NULL) {
+  if (retEltExpr != nullptr) {
     insertElementTypeCheck(retEltExpr, retExpr, ret);
+  }
+
+  if (noDom && retEltExpr == nullptr) {
+    insertGenericArrayCheck(retExpr, ret);
   }
 
   // TODO: Do something about coercion
