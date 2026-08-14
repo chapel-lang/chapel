@@ -674,6 +674,14 @@ module ChapelArray {
     }
   }
 
+  proc chpl__checkGenericArrayReturn(a: []) { }
+  proc chpl__checkGenericArrayReturn(a: _iteratorRecord) { }
+  pragma "last resort"
+  proc chpl__checkGenericArrayReturn(a) {
+    compilerError("expected an array or iterator but got a value of type ",
+                  a.type:string);
+  }
+
   //
   // Support for distributions
   //
