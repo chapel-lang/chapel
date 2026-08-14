@@ -1,1 +1,2 @@
 bug: cannot return promoted expression in tuple with explicit domain
+#29261
