@@ -80,7 +80,7 @@ def generate_env_header_str(env, template_str):
     ret += "#define _CHPL_ENV_GEN_H_\n"
     ret += "\n"
     ret += "#ifndef CHPL_RT_IS_BUILDING_RUNTIME\n"
-    ret += "  #error \"Should not be included outside of runtime code!\"\n"
+    ret += '  #error "Should not be included outside of runtime code!"\n'
     ret += "#endif\n"
     ret += "\n"
     ret += generate_env_defines(env)
