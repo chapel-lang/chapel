@@ -93,14 +93,14 @@ Github Codespaces
 
 Github Codespaces are a great way to quickly setup a developer environment for
 Chapel without needing to install anything on your local machine. The
-`chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__
+`chapel-codespaces <https://github.com/chapel-lang/chapel-codespaces>`__
 repository provides a simple example of how to set up a Codespace for Chapel
 development. This repository also provides a template that you can use to
 create your own Codespace for Chapel development.
 
 To start using Chapel with a Codespace, use the following steps:
 
-1. Go to the `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__ repository.
+1. Go to the `chapel-codespaces <https://github.com/chapel-lang/chapel-codespaces>`__ repository.
 2. Click on "Use this template" to create a new repository based on the template.
 3. In the new repository, click on the "Code" button, select "Codespaces", and then click on "Create codespace on main".
 
