@@ -39,9 +39,11 @@ jobs:
       - name: gather info for email
         id: info
         run: |
+          gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} > commit.json
+
           {
             echo "date=$(date +'%Y-%m-%d')"
-            echo "message=$(gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | jq -r '.commit.message' | head -n 1)"
+            echo "message=$(jq -r '.commit.message' commit.json | head -n 1)"
           } >> "$GITHUB_OUTPUT"
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
