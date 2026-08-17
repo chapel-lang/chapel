@@ -178,6 +178,12 @@ jobs:
             echo "GIT_REPO_URL=$PWD"
             echo "GIT_COMMIT=${{ github.sha }}"
           } >> "$GITHUB_ENV"
+      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }}
+          export APPTAINER_IMAGE
+
+          cd "$apptainer_dir"
+
+          ./image-rebuild.sh
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
           export APPTAINER_IMAGE
@@ -186,10 +192,11 @@ jobs:
 
           cd "$apptainer_dir"
 
-          ./chapel-quickstart-fresh.sh
+          ./chapel-quickstart.sh
           # Default config requires LLVM
           if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
-              ./chapel-default-fresh.sh
+              ./chapel-clean.sh
+              ./chapel-default.sh
           fi
 
   gcc-version-tests:
