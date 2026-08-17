@@ -90,6 +90,6 @@ jobs:
            username:  ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
-           to: "anna.rift@hpe.com"
+           to: ${{ secrets.CHAPEL_BUILD_MAIL_ADDRESS }}
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            html_body: file://${{ env.EMAIL_BODY_FILENAME }}
