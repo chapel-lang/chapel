@@ -113,14 +113,30 @@ jobs:
           BUILD_STEPS: ${{ inputs.build-steps }}
           CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
-          if [[ -n "$CRON_SCRIPT" ]]; then
-            # shellcheck source=/dev/null
-            source "$CRON_SCRIPT"
-          fi
+          rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
+          {
+            if [[ -n "$CRON_SCRIPT" ]]; then
+              # shellcheck source=/dev/null
+              source "$CRON_SCRIPT"
+            fi
 
-          echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
-          # shellcheck source=/dev/null
-          source "$RUNNER_TEMP/build-steps.bash"
+            "$CHPL_HOME/util/printchplenv" --all --internal \
+              > "$RUNNER_TEMP/printchplenv.txt"
+
+            echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
+            # shellcheck source=/dev/null
+            source "$RUNNER_TEMP/build-steps.bash"
+          } 2>&1 | tee "$RUNNER_TEMP/chapel-build.log"
+      - name: upload Chapel build diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chapel-build-diagnostics-${{ inputs.configuration }}
+          path: |
+            ${{ runner.temp }}/chapel-build.log
+            ${{ runner.temp }}/printchplenv.txt
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
       - name: package Chapel build
         env:
           CONFIGURATION: ${{ inputs.configuration }}
@@ -144,7 +160,14 @@ jobs:
       - name: determine test directories
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
+          CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
+          # source cron script before running start_test
+          if [[ -n "$CRON_SCRIPT" ]]; then
+            # shellcheck source=/dev/null
+            source "$CRON_SCRIPT"
+          fi
+
           requested_tests=()
           while read -ra line_tests; do
             requested_tests+=("${line_tests[@]}")
