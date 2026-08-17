@@ -14,13 +14,13 @@ function run_cmd_retrying()
   i=1
   until [ "$i" -gt "$NUM_RETRIES" ]
   do
-    print_status_message "Trying '$CMD' (attempt $i/$NUM_RETRIES)..."
-    { eval "$CLEAN_CMD"; } && { eval "$CMD"; } && print_status_message "'$CMD' successful on attempt $i" && break || {
-      print_status_message "'$CMD' failed"
+    echo "Trying '$CMD' (attempt $i/$NUM_RETRIES)..."
+    { eval "$CLEAN_CMD"; } && { eval "$CMD"; } && echo "'$CMD' successful on attempt $i" && break || {
+      echo "'$CMD' failed"
       if [ "$i" -lt "$NUM_RETRIES" ]; then
         ((i++))
         if [ "$RETRY_SLEEP" -gt 0 ]; then
-          print_status_message "Sleeping $RETRY_SLEEP seconds before retrying"
+          echo "Sleeping $RETRY_SLEEP seconds before retrying"
           sleep $RETRY_SLEEP
         fi
       else
