@@ -52,8 +52,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       - name: generate email body
         run: |
-          cat << 'EOF' > ${{ env.EMAIL_BODY_FILENAME }}
-          The following GitHub Actions jobs have failed:
+          [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
+
+          cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
+          The following GitHub Actions job$plural failed:
 
           --------
           ${{ steps.info.outputs.failed_jobs }}
