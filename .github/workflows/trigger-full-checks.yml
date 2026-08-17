@@ -67,6 +67,8 @@ jobs:
           - Run number: ${{ github.run_number }}
           - Triggering event name: ${{ github.event_name }}
           EOF
+
+          cat email.html
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
