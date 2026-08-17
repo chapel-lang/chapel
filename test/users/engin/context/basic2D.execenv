@@ -1,1 +1,2 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE=4
+# use QT_HWPAR instead of CHPL_RT_NUM_THREADS_PER_LOCALE to avoid warning about oversubscription
+QT_HWPAR=4
