@@ -57,7 +57,7 @@ jobs:
           ${{ steps.info.outputs.failed_jobs }}
           --------
 
-          Ran ${{ steps.info.outputs.num_jobs }} jobs at commit ${{ github.sha }}.
+          Ran ${{ steps.info.outputs.num_jobs }} total jobs at commit ${{ github.sha }}.
           > ${{ steps.info.outputs.message }}
 
           GitHub Actions run info:
