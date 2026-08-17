@@ -38,7 +38,7 @@ jobs:
     env:
       EMAIL_BODY_FILENAME: email.html
     steps:
-      - name: get date
+      - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
       - name: generate email body
