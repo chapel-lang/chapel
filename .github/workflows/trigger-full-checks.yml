@@ -61,11 +61,11 @@ jobs:
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            body: |
-             One or more GitHub Actions jobs have failed:
+             The following GitHub Actions jobs have failed:
 
-             ---
+             --------
              ${{ steps.info.outputs.failed_jobs }}
-             ---
+             --------
 
              Ran ${{ steps.info.outputs.num_jobs }} jobs at commit ${{ github.sha }}.
              > ${{ steps.info.outputs.message }}
