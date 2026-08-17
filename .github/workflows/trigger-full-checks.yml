@@ -48,14 +48,22 @@ jobs:
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
           num_jobs=$(jq '.jobs | length' jobs.json)
-          failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json | sort)
+          failed_job_ids=$(jq '[.jobs[] | select(.status != "completed" or .conclusion != "success")] | sort_by(.name) | .[].id' jobs.json)
+
+          failed_jobs_html=""
+          for id in "${failed_job_ids[@]}"; do
+            gh api "/repos/chapel-lang/chapel/actions/jobs/$id" > "job_$id.json"
+            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<a href=\"\(.html_url)\">\(.name)</a>, step \(.first_bad_step)"' "job_$id.json")
+          done
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
           <h3>The following GitHub Actions job$plural failed:</h3>
 
-          $failed_jobs
+          <ul>
+          $failed_jobs_html
+          </ul>
           <hr>
 
           <p>Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".</p>
