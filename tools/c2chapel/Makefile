@@ -20,8 +20,6 @@
 #
 # c2chapel -- a tool to generate Chapel bindings from a C99 file
 #
-# TODO: Allow builders to specifiy a local tarball for pyparser
-#
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
@@ -35,10 +33,10 @@ link=$(bdir)/c2chapel
 
 # Note, this version is used only for the fake headers,
 # and it should match third-party/chpl-venv/c2chapel-requirements.txt
-VERSION=3.00
-TAR=release_v$(VERSION).tar.gz
+C2CHAPEL_PYCPARSER_VERSION?=3.00
 
-RELEASE=https://github.com/eliben/pycparser/archive/$(TAR)
+# This can be set to either a URL or a local tarball.
+C2CHAPEL_PYCPARSER_TARBALL?=https://github.com/eliben/pycparser/archive/release_v$(C2CHAPEL_PYCPARSER_VERSION).tar.gz
 
 INSTALL=$(realpath .)/install
 
@@ -58,10 +56,27 @@ c2chapel: c2chapel-venv $(FAKES)
 
 $(FAKES):
 	mkdir -p $(FAKES)
-	cd $(INSTALL) && \
-	echo "Fetching pycparser release $(VERSION) tarball for fake headers..." && \
-	$(CHPL_MAKE_PYTHON) -c "import urllib.request; urllib.request.urlretrieve('$(RELEASE)', '$(TAR)')" && \
-	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
+	if [ -f "$(C2CHAPEL_PYCPARSER_TARBALL)" ]; then \
+		echo "Using local pycparser tarball $(C2CHAPEL_PYCPARSER_TARBALL) for fake headers..."; \
+		tarball="$(C2CHAPEL_PYCPARSER_TARBALL)"; \
+	else \
+		echo "Fetching pycparser release $(C2CHAPEL_PYCPARSER_VERSION) tarball for fake headers..."; \
+		tarball="$(INSTALL)/pycparser-release_v$(C2CHAPEL_PYCPARSER_VERSION).tar.gz"; \
+		$(CHPL_MAKE_PYTHON) -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+			"$(C2CHAPEL_PYCPARSER_TARBALL)" "$$tarball" || exit; \
+	fi; \
+	source_dir="$(INSTALL)/pycparser-source"; \
+	rm -rf "$$source_dir"; \
+	mkdir -p "$$source_dir"; \
+	tar xzf "$$tarball" -C "$$source_dir"; \
+	fake_headers=$$(find "$$source_dir" -type d -path '*/utils/fake_libc_include' -print -quit); \
+	if [ -z "$$fake_headers" ]; then \
+		echo "Could not find utils/fake_libc_include in $$tarball" >&2; \
+		rm -rf "$$source_dir"; \
+		exit 1; \
+	fi; \
+	cp -R "$$fake_headers"/. "$(FAKES)"; \
+	rm -rf "$$source_dir"
 
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
