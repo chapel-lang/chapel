@@ -1,0 +1,9 @@
+u1 got NoFieldError: 
+u2 got NoFieldError: 
+u6 got DupFieldError: 
+u7 got DupFieldError: 
+u8 got DupFieldError: 
+u9 got DupFieldError: 
+uncaught DupFieldError: 
+  union-init-throws.chpl:31: thrown here
+  union-init-throws.chpl:92: uncaught here

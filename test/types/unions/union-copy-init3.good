@@ -1,2 +1,7 @@
-union-copy-init3.chpl:5: In method 'init=':
-union-copy-init3.chpl:7: error: All branches of a conditional in a union initializer must initialize a field if any do
+In my init=
+(x = 1)
+In my init=
+()
+In my init=
+(x = 3) (x = 3)
+(x = 3)

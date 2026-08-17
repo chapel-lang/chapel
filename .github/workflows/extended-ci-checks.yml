@@ -497,10 +497,59 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
+    env:
+      C2CHAPEL_PYCPARSER_TARBALL_PATH: ${{ github.workspace }}/.cache/pycparser-tarball
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - name: find pycparser tarball
+      id: find-pycparser-tarball
+      run: |
+        mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
+        # shellcheck disable=SC2016 # This is a Make expression, not a shell expression.
+        tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
+        if [[ -z "$tarball" ]]; then
+          echo "Could not determine the pycparser tarball URL" >&2
+          exit 1
+        fi
+        echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
+        shasum=$(shasum -a 256 <<<"$tarball" | awk '{print $1}')
+        echo "sha256=$shasum" >> "$GITHUB_OUTPUT"
+    - name: cache pycparser tarball
+      id: cache-pycparser-deps
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+      with:
+        path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
+        key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
+    - name: download pycparser tarball (retrying)
+      if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        command: |
+          tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
+          wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
+    - name: configure pycparser tarball for c2chapel
+      run: |
+        path_to_tarball=$(find "$C2CHAPEL_PYCPARSER_TARBALL_PATH" -type f -name '*.tar.gz' -print -quit)
+        if [[ -z "$path_to_tarball" ]]; then
+          echo "No pycparser tarball found in $C2CHAPEL_PYCPARSER_TARBALL_PATH" >&2
+          exit 1
+        fi
+        echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
     - name: run test-c2chapel.bash
       run: |
         ./util/cron/test-c2chapel.bash
+
+  test-make-install-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: run test-make-install-check.bash
+      run: |
+        ./util/cron/test-make-install-check.bash
