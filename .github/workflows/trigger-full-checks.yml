@@ -48,6 +48,25 @@ jobs:
             echo "num_jobs=$(jq '.jobs | length' jobs.json)"
             echo "failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json | sort)"
           } >> "$GITHUB_OUTPUT"
+      - name: generate email body
+        run: |
+          cat << 'EOF' > email.html
+          The following GitHub Actions jobs have failed:
+
+          --------
+          ${{ steps.info.outputs.failed_jobs }}
+          --------
+
+          Ran ${{ steps.info.outputs.num_jobs }} jobs at commit ${{ github.sha }}.
+          > ${{ steps.info.outputs.message }}
+
+          GitHub Actions run info:
+          - SHA: ${{ github.sha }}
+          - Run ID: ${{ github.run_id }}
+          - Run attempt #: ${{ github.run_attempt }}
+          - Run number: ${{ github.run_number }}
+          - Triggering event name: ${{ github.event_name }}
+          EOF
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
@@ -60,19 +79,4 @@ jobs:
            subject: "[Chapel GA Tests] ${{ steps.info.outputs.date }}"
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
-           body: |
-             The following GitHub Actions jobs have failed:
-
-             --------
-             ${{ steps.info.outputs.failed_jobs }}
-             --------
-
-             Ran ${{ steps.info.outputs.num_jobs }} jobs at commit ${{ github.sha }}.
-             > ${{ steps.info.outputs.message }}
-
-             GitHub Actions run info:
-             - SHA: ${{ github.sha }}
-             - Run ID: ${{ github.run_id }}
-             - Run attempt #: ${{ github.run_attempt }}
-             - Run number: ${{ github.run_number }}
-             - Triggering event name: ${{ github.event_name }}
+           html_body: file://email.html
