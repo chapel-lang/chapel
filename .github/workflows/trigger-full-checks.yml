@@ -53,21 +53,21 @@ jobs:
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
-          The following GitHub Actions job$plural failed:
+          <h3>The following GitHub Actions job$plural failed:</h3>
 
-          --------
           $failed_jobs
-          --------
+          <hr>
 
-          Ran $num_jobs total jobs at commit ${{ github.sha }}.
-          > $message
+          <p>Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".</p>
 
-          GitHub Actions run info:
-          - SHA: ${{ github.sha }}
-          - Run ID: ${{ github.run_id }}
-          - Run attempt #: ${{ github.run_attempt }}
-          - Run number: ${{ github.run_number }}
-          - Triggering event name: ${{ github.event_name }}
+          <p>GitHub Actions run info:</p>
+          <ul>
+            <li>SHA: ${{ github.sha }}</li>
+            <li>Run ID: ${{ github.run_id }}</li>
+            <li>Run attempt #: ${{ github.run_attempt }}</li>
+            <li>Run number: ${{ github.run_number }}</li>
+            <li>Triggering event name: ${{ github.event_name }}</li>
+          </ul>
           EOF
 
           cat email.html
