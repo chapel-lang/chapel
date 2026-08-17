@@ -38,31 +38,29 @@ jobs:
     env:
       EMAIL_BODY_FILENAME: email.html
     steps:
-      - name: gather info for email
-        id: info
+      - name: get date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: generate email body
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
           gh api /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs.json
 
-          {
-            echo "date=$(date +'%Y-%m-%d')"
-            echo "message=$(jq -r '.commit.message' commit.json | head -n 1)"
-            echo "num_jobs=$(jq '.jobs | length' jobs.json)"
-            echo "failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json | sort)"
-          } >> "$GITHUB_OUTPUT"
-      - name: generate email body
-        run: |
+          message=$(jq -r '.commit.message' commit.json | head -n 1)
+          num_jobs=$(jq '.jobs | length' jobs.json)
+          failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json | sort)
+
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
           The following GitHub Actions job$plural failed:
 
           --------
-          ${{ steps.info.outputs.failed_jobs }}
+          $failed_jobs
           --------
 
-          Ran ${{ steps.info.outputs.num_jobs }} total jobs at commit ${{ github.sha }}.
-          > ${{ steps.info.outputs.message }}
+          Ran $num_jobs total jobs at commit ${{ github.sha }}.
+          > $message
 
           GitHub Actions run info:
           - SHA: ${{ github.sha }}
@@ -82,7 +80,7 @@ jobs:
            secure: true
            username:  ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
-           subject: "[Chapel GA Tests] ${{ steps.info.outputs.date }}"
+           subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            html_body: file://${{ env.EMAIL_BODY_FILENAME }}
