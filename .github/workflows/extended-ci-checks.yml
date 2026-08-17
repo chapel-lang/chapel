@@ -186,18 +186,15 @@ jobs:
           retry_wait_seconds: 60
           command: |
             export APPTAINER_IMAGE
-
             cd "$apptainer_dir"
-
             ./image-rebuild.sh
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
-          export APPTAINER_IMAGE
           MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
           export MAKEJ
 
+          export APPTAINER_IMAGE
           cd "$apptainer_dir"
-
           ./chapel-quickstart.sh
           # Default config requires LLVM
           if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
