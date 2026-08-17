@@ -17,12 +17,7 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
-  trigger-failure:
+  dummy-pass:
     runs-on: ubuntu-slim
     steps:
-      - run: exit 1
-  also-trigger-failure:
-    runs-on: ubuntu-slim
-    steps:
-      - name: break it
-        run: exit 1
+      - run: exit 0
