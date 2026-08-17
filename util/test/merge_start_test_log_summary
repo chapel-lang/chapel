@@ -69,6 +69,17 @@ def merge_summaries(paths):
         details.extend(summary_details)
         totals = [total + count for total, count in zip(totals, counts)]
 
+    def sort_key(line):
+        if line.startswith("[Error"):
+            return (0, line)
+        elif line.startswith("[Suppress"):
+            return (1, line)
+        elif line.startswith("[Future"):
+            return (2, line)
+        else:
+            return (3, line)
+    details.sort(key=sort_key)
+
     lines = ["[Test Summary - {0}]".format(time.strftime("%y%m%d.%H%M%S"))]
     lines.extend(details)
     lines.append(
