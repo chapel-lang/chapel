@@ -158,7 +158,7 @@ jobs:
       matrix:
         apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
     env:
-      apptainer_config: ${{ matrix.apptainer_config }}
+      APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
     steps:
       - name: install Apptainer
         run: |
@@ -179,7 +179,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
-          export APPTAINER_IMAGE=$apptainer_config
+          export APPTAINER_IMAGE
           MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
           export MAKEJ
 
