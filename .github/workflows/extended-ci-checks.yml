@@ -178,12 +178,18 @@ jobs:
             echo "GIT_REPO_URL=$PWD"
             echo "GIT_COMMIT=${{ github.sha }}"
           } >> "$GITHUB_ENV"
-      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }}
-          export APPTAINER_IMAGE
+      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }} (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: 30
+          retry_wait_seconds: 60
+          command: |
+            export APPTAINER_IMAGE
 
-          cd "$apptainer_dir"
+            cd "$apptainer_dir"
 
-          ./image-rebuild.sh
+            ./image-rebuild.sh
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
           export APPTAINER_IMAGE
