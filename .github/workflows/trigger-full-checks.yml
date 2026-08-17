@@ -40,10 +40,13 @@ jobs:
         id: info
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
+          gh api /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs.json
 
           {
             echo "date=$(date +'%Y-%m-%d')"
             echo "message=$(jq -r '.commit.message' commit.json | head -n 1)"
+            echo "num_jobs=$(jq '.jobs | length' jobs.json)"
+            echo "failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json)"
           } >> "$GITHUB_OUTPUT"
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
@@ -58,9 +61,13 @@ jobs:
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            body: |
-             One or more GitHub Actions jobs have failed.
+             One or more GitHub Actions jobs have failed:
 
-             Ran at commit ${{ github.sha }}.
+             ---
+             ${{ steps.info.outputs.failed_jobs }}
+             ---
+
+             Ran ${{ steps.info.outpus.num_jobs }} jobs at commit ${{ github.sha }}.
              > ${{ steps.info.outputs.message }}
 
              GitHub Actions run info:
