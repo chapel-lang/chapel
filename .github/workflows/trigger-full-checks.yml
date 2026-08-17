@@ -39,7 +39,7 @@ jobs:
       - name: gather info for email
         id: info
         run: |
-          gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} > commit.json
+          gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
 
           {
             echo "date=$(date +'%Y-%m-%d')"
