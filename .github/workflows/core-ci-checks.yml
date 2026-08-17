@@ -333,7 +333,7 @@ jobs:
           severity: error
           ignore_paths: ./test/* ./third-party/*
 
-  check-format:
+  check-python-format:
     runs-on: ubuntu-slim
     env:
       EXTENSIONLESS_PYTHON_FILES: ""
