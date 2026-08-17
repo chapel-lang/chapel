@@ -529,7 +529,9 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c #v4.2.0
       - name: set up build env and vars
         run: |
-          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
+          # Use half the available cores for each of the two builds.
+          MAKE_THREADS=$(($(util/buildRelease/chpl-make-cpu_count) / 2))
+
           TAG="$GITHUB_SHA"
           name_prefix="chapel"
           BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
