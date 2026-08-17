@@ -21,3 +21,8 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - run: exit 1
+  also-trigger-failure:
+    runs-on: ubuntu-slim
+    steps:
+      - name: break it
+        run: exit 1
