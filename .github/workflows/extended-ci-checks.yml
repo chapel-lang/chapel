@@ -159,6 +159,7 @@ jobs:
         apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
     env:
       APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
+      apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
       - name: install Apptainer
         run: |
@@ -183,7 +184,7 @@ jobs:
           MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
           export MAKEJ
 
-          cd ./util/devel/test/portability/apptainer
+          cd "$apptainer_dir"
 
           ./chapel-quickstart-fresh.sh
           # Default config requires LLVM
