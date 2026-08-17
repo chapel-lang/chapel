@@ -36,6 +36,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     time \
     tzdata \
     wget \
+    xxd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1001 chpl-tester && \
