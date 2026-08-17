@@ -64,6 +64,7 @@ jobs:
           <ul>
           $failed_jobs_html
           </ul>
+
           <hr>
 
           <p>Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".</p>
