@@ -264,11 +264,11 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
   AggregateType* at = toAggregateType(mFn->_this->type);
-  if (at->isUnion()) {
-    INT_FATAL("initializeFieldsAtTail() unexpectedly called on a union type");
-  }
 
-  if (mCurrField != NULL && mCurrField != endField) {
+  // unions don't initialize fields automatically
+  if (at->isUnion()) {
+    return;
+  } else if (mCurrField != NULL && mCurrField != endField) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
     block->insertAtTail(noop);
@@ -675,14 +675,22 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 ************************************** | *************************************/
 
 bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
-  const DefExpr* ptr    = mCurrField;
-  bool           retval = true;
+  bool retval = true;
 
-  while (ptr != NULL && retval == true) {
-    if (ptr == field) {
-      retval = false;
-    } else {
-      ptr = toConstDefExpr(ptr->next);
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    // for unions, if we've set mCurrField to NULL then a field has
+    // been initialized, which means we consider them all to be
+    retval = (mCurrField == NULL);
+  } else {
+    const DefExpr* ptr = mCurrField;
+
+    while (ptr != NULL && retval == true) {
+      if (ptr == field) {
+        retval = false;
+      } else {
+        ptr = toConstDefExpr(ptr->next);
+      }
     }
   }
 
@@ -1006,6 +1014,8 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
           USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
         } else if (state->type()->isRecord()) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
+        } else if (state->type()->isUnion()) {
+          USR_FATAL_CONT(node, "cannot pass a union to a function before \"init this\"");
         }
       }
 
@@ -1098,6 +1108,9 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
     } else if (type->isRecord()) {
       USR_FATAL_CONT(node, "cannot call a method on a record before \"init this\"");
       return false;
+    } else if (type->isUnion()) {
+      USR_FATAL_CONT(node, "cannot call a method on a union before \"init this\"");
+      return false;
     } else {
       Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
       const char*    methodName = imm->string_value();
@@ -1159,17 +1172,6 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                         new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                                                      at->symbol,
                                                      new_CStringSymbol(field->sym->name))));
-
-    // if the next statement isn't an `init this;`, implicitly insert
-    // one since initializing one union field is sufficient for the
-    // union to be initialized
-    //
-    CallExpr* ce = toCallExpr(initStmt->next);
-    if (!ce || !isInitDone(ce)) {
-      initStmt->insertAfter(new CallExpr(new CallExpr(".",
-                                                      mFn->_this,
-                                                      new_CStringSymbol("chpl__initThisType"))));
-    }
   }
 
   Expr* initExpr = initStmt->get(2)->remove();
@@ -1178,7 +1180,14 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
   initializeField(initStmt, field, initExpr);
   initStmt->remove();
 
-  mCurrField = toDefExpr(mCurrField->next);
+  if (isUnion) {
+    // If this is a union, initializing any field is like initializing
+    // all of them since only one can be active at a time
+    mCurrField = NULL;
+  } else {
+    // Otherwise, advance to the next field
+    mCurrField = toDefExpr(mCurrField->next);
+  }
 
   return retval;
 }

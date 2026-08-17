@@ -1,17 +1,19 @@
 #!/bin/bash
 
+set -exuo pipefail
+
 if [ ! -f configure ]
 then
   echo "Should be run from a CHPL_HOME directory" 1>&2
   exit 1
 fi
 
+num_procs=`$CHPL_HOME/util/buildRelease/chpl-make-cpu_count`
+echo "Using $num_procs threads for parallel make"
+
 unset CHPL_HOME
 export CHPL_CHECK_HOME=`pwd`
 wd=`pwd`
-
-num_procs=`$CHPL_HOME/util/buildRelease/chpl-make-cpu_count`
-echo "Using $num_procs threads for parallel make"
 
 export CHPL_LLVM=bundled
 
