@@ -35,6 +35,8 @@ jobs:
       - core-checks
       - extended-checks
       - full-checks
+    env:
+      EMAIL_BODY_FILENAME: email.html
     steps:
       - name: gather info for email
         id: info
@@ -50,7 +52,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       - name: generate email body
         run: |
-          cat << 'EOF' > email.html
+          cat << 'EOF' > ${{ env.EMAIL_BODY_FILENAME }}
           The following GitHub Actions jobs have failed:
 
           --------
@@ -81,4 +83,4 @@ jobs:
            subject: "[Chapel GA Tests] ${{ steps.info.outputs.date }}"
            to: "anna.rift@hpe.com"
            from:  "Chapel Automaton <chapel_commits@cray.com>"
-           html_body: file://email.html
+           html_body: file://${{ env.EMAIL_BODY_FILENAME }}
