@@ -46,7 +46,7 @@ jobs:
             echo "date=$(date +'%Y-%m-%d')"
             echo "message=$(jq -r '.commit.message' commit.json | head -n 1)"
             echo "num_jobs=$(jq '.jobs | length' jobs.json)"
-            echo "failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json)"
+            echo "failed_jobs=$(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .name' jobs.json | sort)"
           } >> "$GITHUB_OUTPUT"
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
