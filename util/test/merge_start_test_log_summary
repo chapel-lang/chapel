@@ -78,6 +78,7 @@ def merge_summaries(paths):
             return (2, line)
         else:
             return (3, line)
+
     details.sort(key=sort_key)
 
     lines = ["[Test Summary - {0}]".format(time.strftime("%y%m%d.%H%M%S"))]
