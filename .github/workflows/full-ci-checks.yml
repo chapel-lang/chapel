@@ -26,3 +26,13 @@ jobs:
     steps:
       - name: break it
         run: exit 1
+
+  test-make-install-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: run test-make-install-check.bash
+      run: |
+        ./util/cron/test-make-install-check.bash

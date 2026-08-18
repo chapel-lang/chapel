@@ -184,3 +184,6 @@ remain in the preview until they are deemed sufficiently complete.
 
 - The ``isFinite()``, ``isInf()``, and ``isNan()`` functions are now defined
   for ``imag`` values, in addition to ``real`` values.
+
+- The ``Error.stacktrace()`` method has been added to inspect the stack trace
+  of a thrown error.
