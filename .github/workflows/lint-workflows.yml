@@ -31,8 +31,10 @@ jobs:
       shell: bash
     - name: Check workflow files
       run: |
-        # ignore is to work around https://github.com/rhysd/actionlint/issues/657
-        ${STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section'
+        # ignores are to work around:
+        # - https://github.com/rhysd/actionlint/issues/657
+        # - https://github.com/rhysd/actionlint/issues/726
+        ${STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section' -ignore 'invalid activity type "destroyed" for "merge_group" Webhook event'
       shell: bash
       env:
         STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE: ${{ steps.get_actionlint.outputs.executable }}
@@ -45,7 +47,7 @@ jobs:
         sparse-checkout: .github
         persist-credentials: false
     - name: Run zizmor
-      uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+      uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
       with:
         advanced-security: false
         inputs: |
