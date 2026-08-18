@@ -20,12 +20,15 @@ defaults:
 jobs:
   core-checks:
     uses: ./.github/workflows/core-ci-checks.yml
+    timeout-minutes: 30
 
   extended-checks:
     uses: ./.github/workflows/extended-ci-checks.yml
+    timeout-minutes: 90
 
   full-checks:
     uses: ./.github/workflows/full-ci-checks.yml
+    timeout-minutes: 240
 
   send-failure-mail:
     if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
