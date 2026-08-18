@@ -13,9 +13,9 @@ on:
 
 # In the merge queue case, cancel previous merge groups headed by the same PR,
 # since only the latest may be relevant to merging.
-# In the PR case, just serialize runs against the same SHA.
+# In any other case (PRs), just serialize runs against the same SHA.
 concurrency:
-  group: "${{ github.workflow }}-${{ github.event.merge_group.head_commit.message || github.event.pull_request.head.sha }}"
+  group: ${{ github.workflow }}-${{ github.event.merge_group.head_ref || github.sha }}
   cancel-in-progress: ${{ case(github.event_name == 'merge_group', true, false) }}
 
 
