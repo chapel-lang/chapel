@@ -3,6 +3,9 @@ name: Arkouda smoke testing
 
 on:
   workflow_call:
+    inputs:
+      arkouda-version:
+        type: string
 
 permissions:
   contents: read
@@ -31,10 +34,26 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - name: checkout Arkouda
+    - name: determine version of Arkouda to use
+      id: arkouda_version
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version }}
+      run: |
+        if [ -z "$ARKOUDA_VERSION_INPUT" ]; then
+          arkouda_version="$ARKOUDA_VERSION_INPUT"
+        else
+          echo "Using latest release version of Arkouda"
+          arkouda_version=$(gh api /repos/Bears-R-Us/arkouda/releases/latest | jq -r '.tag_name')
+        fi
+        echo "Picked Arkouda version: $arkouda_version"
+
+        echo "arkouda_version=$arkouda_version" >> "$GITHUB_OUTPUT"
+    - name: checkout Arkouda at ${{ steps.arkouda_version.outputs.arkouda_version }}
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: ${{ env.ARKOUDA_REPO }}
+        ref: ${{ steps.arkouda_version.outputs.arkouda_version }}
         path: arkouda
         persist-credentials: false
     - name: apt install some Arkouda deps
