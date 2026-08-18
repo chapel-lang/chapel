@@ -36,6 +36,7 @@ jobs:
       - extended-checks
       - full-checks
     env:
+      GH_TOKEN: ${{ github.token }}
       EMAIL_BODY_FILENAME: email.html
     steps:
       - name: determine date

@@ -1,0 +1,8 @@
+uncaught IllegalArgumentError: User error thrown from serialize!
+  serializeUserError.chpl:12: thrown here
+  serializeUserError.chpl:20: called from here
+  serializeUserError.chpl:20: called from here
+  serializeUserError.chpl:20: called from here
+  serializeUserError.chpl:20: called from here
+  serializeUserError.chpl:20: called from here
+  serializeUserError.chpl:20: uncaught here
