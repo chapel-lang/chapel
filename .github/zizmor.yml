@@ -1,9 +1,10 @@
 rules:
   unpinned-images:
     ignore:
+      - arkouda-smoke-test.yml
       - core-ci-checks.yml
       - extended-ci-checks.yml
-      - arkouda-smoke-test.yml
+      - full-ci-checks.yml
   dangerous-triggers:
     ignore:
       - email.yml:2
