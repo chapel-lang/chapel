@@ -29,11 +29,11 @@ defaults:
 
 jobs:
   core-checks:
-    if: github.event.merge_group.action != 'destroyed'
+    if: github.event.action != 'destroyed'
     uses: ./.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
-    if: github.event.merge_group.action != 'destroyed'
+    if: github.event.action != 'destroyed'
     runs-on: ubuntu-slim
     env:
       EXTENDED_CHECKS_LABEL: "run extended CI checks"
