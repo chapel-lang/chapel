@@ -21,6 +21,12 @@ defaults:
   run:
     shell: bash -exuo pipefail {0}
 
+env:
+  CONFIG: ${{ inputs.config }}
+  REGISTRY: "docker.io"
+  NAMESPACE: "chapel"
+  TARBALL_NAME_PREFIX: "chapel-image-"
+
 jobs:
   build-test-image-each-arch:
     strategy:
@@ -31,10 +37,9 @@ jobs:
       contents: read
       # packages: write # To push images to ghcr
     env:
-      CONFIG: ${{ inputs.config }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
-      REGISTRY: "docker.io"
-      NAMESPACE: "chapel"
+    outputs:
+      IMAGE_FULL_NAME: ${{ steps.vars.outputs.IMAGE_FULL_NAME }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,6 +51,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PAT }}
       - name: set up build env and vars
+        id: vars
         run: |
           MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
 
@@ -70,7 +76,7 @@ jobs:
           EOF
           fi
 
-          IMAGE_TARBALL="chapel-image-$image_name-$TAG-$ARCH.tar"
+          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$image_name-$TAG-$ARCH.tar"
           IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$image_name:$TAG"
 
           {
@@ -81,7 +87,7 @@ jobs:
             echo "DOCKERFILE=$DOCKERFILE"
             echo "TEST_SCRIPT=$TEST_SCRIPT"
             echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
-          } >> "$GITHUB_ENV"
+          } | tee "$GITHUB_ENV" "$GITHUB_OUTPUT"
       - name: build image ${{ env.IMAGE_FULL_NAME }}
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -101,4 +107,22 @@ jobs:
         with:
           name: ${{ env.IMAGE_TARBALL }}
           path: ${{ env.IMAGE_TARBALL }}
+
+  combine-push-multiarch:
+    needs: build-test-image-each-arch
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
+    steps:
+      - name: download image tarball for each arch
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: ${{ env.TARBALL_NAME_PREFIX }}*.tar
+      - name: import images into docker
+        run: |
+          docker image import "$TARBALL_NAME_PREFIX*arm64*" "chapel/chapel:arm64"
+          docker image import "$TARBALL_NAME_PREFIX*x86*" "chapel/chapel:x86"
+      - name: create multiarch image
+        run: |
+          docker manifest create "$IMAGE_FULL_NAME" --amend "chapel/chapel:arm64" --amend "chapel/chapel:x86"
       # TODO: push to ghcr / dockerhub
