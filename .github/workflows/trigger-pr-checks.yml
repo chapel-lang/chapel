@@ -16,7 +16,7 @@ on:
 # In the PR case, just serialize runs against the same SHA.
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.merge_group.head_commit.message || github.event.pull_request.head.sha }}"
-  cancel-in-progress: ${{ case(github.event_name == 'merge_group', 'true', 'false') }}
+  cancel-in-progress: ${{ case(github.event_name == 'merge_group', true, false) }}
 
 
 permissions:
