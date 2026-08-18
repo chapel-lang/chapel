@@ -43,7 +43,7 @@ on:
         description: Maximum number of minutes each job may run
         required: false
         type: number
-        default: 120
+        default: 180
       retention-days:
         description: Number of days to retain build and test artifacts
         required: false
