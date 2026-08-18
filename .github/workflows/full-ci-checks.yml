@@ -17,11 +17,6 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
-  dummy-pass:
-    runs-on: ubuntu-slim
-    steps:
-      - run: exit 0
-
   arkouda-smoke-test:
     runs-on: ubuntu-latest
     container:
