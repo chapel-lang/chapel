@@ -15,5 +15,7 @@ config-variables: null
 # "ignore" is an array of regular expression patterns. Matched error messages
 # are ignored. This is similar to the "-ignore" command line option.
 paths:
-#  .github/workflows/**/*.yml:
-#    ignore: []
+ .github/workflows/**/*.yml:
+   ignore:
+     - 'unexpected key \"queue\" for \"concurrency\" section' # https://github.com/rhysd/actionlint/issues/657
+     - 'invalid activity type "destroyed" for "merge_group" Webhook event' # https://github.com/rhysd/actionlint/issues/726
