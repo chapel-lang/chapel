@@ -31,8 +31,10 @@ jobs:
       shell: bash
     - name: Check workflow files
       run: |
-        # ignore is to work around https://github.com/rhysd/actionlint/issues/657
-        ${STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section'
+        # ignores are to work around:
+        # - https://github.com/rhysd/actionlint/issues/657
+        # - https://github.com/rhysd/actionlint/issues/726
+        ${STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE} -color -ignore 'unexpected key \"queue\" for \"concurrency\" section' -ignore 'invalid activity type "destroyed" for "merge_group" Webhook event'
       shell: bash
       env:
         STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE: ${{ steps.get_actionlint.outputs.executable }}
