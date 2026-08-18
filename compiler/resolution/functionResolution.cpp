@@ -10167,7 +10167,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         if (isRecord(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
                                   toString(manager), toString(type));
-        if (isUnion(type) && !isManagedPtrType(type))
+        else if (isUnion(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use 'new %s' with union '%s'",
                                   toString(manager), toString(type));
         else if (!isClassLikeOrManaged(type))
