@@ -8,6 +8,16 @@ on:
     # specified, so make sure to keep them.
     types: [opened, synchronize, reopened, labeled, unlabeled]
   merge_group:
+    # Also trigger on destroyed groups, just to cancel old runs in progress.
+    types: [checks_requested, destroyed]
+
+# In the merge queue case, cancel previous merge groups headed by the same PR,
+# since only the latest may be relevant to merging.
+# In any other case (PRs), just serialize runs against the same SHA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.merge_group.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'merge_group' }}
+
 
 permissions:
   contents: read
@@ -19,9 +29,11 @@ defaults:
 
 jobs:
   core-checks:
+    if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
     uses: ./.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
+    if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
     runs-on: ubuntu-slim
     env:
       EXTENDED_CHECKS_LABEL: "run extended CI checks"
