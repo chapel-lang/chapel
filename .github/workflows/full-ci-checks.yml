@@ -27,82 +27,10 @@ jobs:
       - name: break it
         run: exit 1
 
-  arkouda-smoke-test:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
-    env:
-      ARROW_VERSION: "19.0.1"
-    timeout-minutes: 90 # usually takes ~45 minutes, double for safety
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: checkout Arkouda
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        repository: Bears-R-Us/arkouda
-        path: arkouda
-        persist-credentials: false
-    - name: apt install some Arkouda deps
-      run: |
-        apt update && apt install -y \
-          libzmq3-dev \
-          libcurl4-openssl-dev
-    - name: set Arkouda env vars
-      run: |
-        cd arkouda
-        {
-          echo "ARKOUDA_URL=$(pwd)"
-          echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
-          echo "ARKOUDA_SKIP_CHECK_DEPS=true"
-          echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
-        } >> "$GITHUB_ENV"
-    - name: cache Arkouda deps install
-      id: cache-arkouda-deps
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
-      with:
-        path: ${{ env.ARKOUDA_DEP_DIR }}
-        key: arkouda-${{ env.ARKOUDA_SHA }}
-    - name: install Arkouda deps (retrying)
-      if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
-      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-      with:
-        max_attempts: 3
-        timeout_seconds: 900
-        retry_wait_seconds: 30
-        on_retry_command: |
-          cd arkouda
-          git clean -dfx
-        command: |
-          num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          cd arkouda
-          # Download sources serially first before building, as it is flaky and
-          # that'll make it easier to diagnose failures.
-          make deps-download-source
-          make -j"$num_procs" install-deps
-    - name: check contents of Arkouda deps install
-      run: |
-        test -d "$ARKOUDA_DEP_DIR"
-        ls -R "$ARKOUDA_DEP_DIR"
-    - name: build Chapel and run Arkouda smoke testing
-      run: |
-        source ./util/cron/common.bash
-        source ./util/setchplenv.bash
-        export CHPL_TEST_ARKOUDA_PERF=false
-        source ./util/cron/common-arkouda.bash
-
-        export NIGHTLY_TEST_SETTINGS=true
-        export CHPL_SMOKE_SKIP_DOC=true
-        export CHPL_SMOKE_SKIP_MAKE_MASON=true
-        export ARKOUDA_SMOKE_TEST=true
-        ./util/buildRelease/smokeTest
-        make -j"$(util/buildRelease/chpl-make-cpu_count)" test-venv
-
-        start_test test/studies/arkouda/
+  arkouda-main-smoke-test:
+    uses: ./.github/workflows/arkouda-smoke-test.yml
+    with:
+      arkouda-version: "main"
 
   test-make-install-check:
     runs-on: ubuntu-latest
