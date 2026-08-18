@@ -36,6 +36,7 @@ jobs:
         password: ${{ secrets.github_token }}
     env:
       ARROW_VERSION: "19.0.1"
+    timeout-minutes: 90 # usually takes ~45 minutes, double for safety
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
