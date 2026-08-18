@@ -39,6 +39,7 @@ jobs:
     env:
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
     outputs:
+      IMAGE_NAME: ${{ steps.vars.outputs.IMAGE_NAME }}
       IMAGE_FULL_NAME: ${{ steps.vars.outputs.IMAGE_FULL_NAME }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,11 +61,11 @@ jobs:
           BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
 
           if [[ "$CONFIG" == "base" ]]; then
-            image_name="$name_prefix"
+            IMAGE_NAME="$name_prefix"
             DOCKERFILE="./Dockerfile"
             TEST_SCRIPT="util/cron/docker-chapel.bash"
           else
-            image_name="$name_prefix-$CONFIG"
+            IMAGE_NAME="$name_prefix-$CONFIG"
             DOCKERFILE="util/packaging/docker/$CONFIG/Dockerfile"
             TEST_SCRIPT="util/cron/docker-gasnet.bash"
 
@@ -76,8 +77,8 @@ jobs:
           EOF
           fi
 
-          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$image_name-$TAG-$ARCH.tar"
-          IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$image_name:$TAG"
+          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$IMAGE_NAME-$TAG-$ARCH.tar"
+          IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
 
           {
             echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
@@ -120,8 +121,8 @@ jobs:
           pattern: ${{ env.TARBALL_NAME_PREFIX }}*.tar
       - name: import images into docker
         run: |
-          docker image import "$TARBALL_NAME_PREFIX*arm64*" "chapel/chapel:arm64"
-          docker image import "$TARBALL_NAME_PREFIX*x86*" "chapel/chapel:x86"
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME*arm64*" "chapel/chapel:arm64"
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME*x86*" "chapel/chapel:x86"
       - name: create multiarch image
         run: |
           docker manifest create "$IMAGE_FULL_NAME" --amend "chapel/chapel:arm64" --amend "chapel/chapel:x86"
