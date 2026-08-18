@@ -17,7 +17,7 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
-  build-test-docker-image:
+  build-test-image-each-arch:
     strategy:
       matrix:
         runner: [ubuntu-latest, ubuntu-24.04-arm]

@@ -489,13 +489,13 @@ jobs:
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
 
-  build-base-docker-images:
+  base-docker-image:
     uses: ./.github/workflows/docker-image-builds.yml
     with:
       config: "base"
 
-  build-remaining-docker-images:
-    needs: build-base-docker-images
+  gasnet-docker-images:
+    needs: base-docker-image
     uses: ./.github/workflows/docker-image-builds.yml
     strategy:
       fail-fast: false
