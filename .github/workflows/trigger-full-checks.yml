@@ -10,6 +10,8 @@ on:
   workflow_dispatch:
 
 # Run serially per type of triggering event.
+# Primarily intended to limit (avoid) concurrent runs for multiple PR merges in
+# a row.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}
   queue: max
