@@ -456,6 +456,7 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv mason
+      timeout-minutes: 180
   paratest-darwin:
     name: Chapel paratest on darwin
     uses: ./.github/workflows/ga-paratest.yml
