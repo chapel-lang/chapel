@@ -333,7 +333,7 @@ jobs:
           severity: error
           ignore_paths: ./test/* ./third-party/*
 
-  check-format:
+  check-python-format:
     runs-on: ubuntu-slim
     env:
       EXTENSIONLESS_PYTHON_FILES: ""
@@ -342,11 +342,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+      - name: Check most .py files
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
-      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+      - name: Check our .py files under third-party/
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
