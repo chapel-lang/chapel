@@ -1,0 +1,11 @@
+Testing assemble_tree
+  starting test 1
+  starting test 2
+  all tests passed
+Testing find_nearest_point
+  testing traverse_to_point
+  testing find_nearest_point
+  all tests passed
+
+Overall test results
+  all tests passed
