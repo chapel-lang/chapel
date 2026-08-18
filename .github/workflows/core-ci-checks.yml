@@ -481,8 +481,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
-            "${{ env.PORTABILITY_TEST_DIR }}"
-            "doc"
+            ${{ env.PORTABILITY_TEST_DIR }}
+            doc
           persist-credentials: false
       - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
         run: |
