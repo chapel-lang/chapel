@@ -9,6 +9,11 @@ on:
       timezone: "America/Vancouver"
   workflow_dispatch:
 
+# Run serially per type of triggering event.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}
+  queue: max
+
 permissions:
   contents: read
   packages: read
