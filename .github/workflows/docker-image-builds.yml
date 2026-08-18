@@ -111,6 +111,7 @@ jobs:
     needs: build-test-image-each-arch
     runs-on: ubuntu-latest
     env:
+      IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
       IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
     steps:
       - name: download image tarball for each arch
