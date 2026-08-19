@@ -99,7 +99,7 @@ jobs:
         if: always()
         run: |
           cat "$EMAIL_BODY_FILENAME"
-      - name: Send mail
+      - name: send mail
         if: always()
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
