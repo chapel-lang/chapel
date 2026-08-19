@@ -19,6 +19,8 @@ defaults:
 jobs:
   arkouda-release-smoke-test:
     uses: ./.github/workflows/arkouda-smoke-test.yml
+    with:
+      arkouda-version: "release"
 
   check_blog:
     runs-on: ubuntu-latest

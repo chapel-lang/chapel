@@ -5,6 +5,7 @@ on:
   workflow_call:
     inputs:
       arkouda-version:
+        required: true
         type: string
 
 permissions:
@@ -40,11 +41,11 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version }}
       run: |
-        if [ -n "$ARKOUDA_VERSION_INPUT" ]; then
-          arkouda_version="$ARKOUDA_VERSION_INPUT"
-        else
+        if [[ "$ARKOUDA_VERSION_INPUT" == "release" ]]; then
           echo "Using latest release version of Arkouda"
           arkouda_version=$(gh api /repos/Bears-R-Us/arkouda/releases/latest | jq -r '.tag_name')
+        else
+          arkouda_version="$ARKOUDA_VERSION_INPUT"
         fi
         echo "Picked Arkouda version: $arkouda_version"
 
