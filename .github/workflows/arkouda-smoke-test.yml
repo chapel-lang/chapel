@@ -68,6 +68,7 @@ jobs:
         cd arkouda
         {
           echo "ARKOUDA_URL=$(pwd)"
+          echo "ARKOUDA_BRANCH=${{ steps.arkouda_version.outputs.arkouda_version }}"
           echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
           echo "ARKOUDA_SKIP_CHECK_DEPS=true"
           echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
