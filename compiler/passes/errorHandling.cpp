@@ -410,9 +410,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       errorVar = info.errorVar;
 
       // (a) an enclosing try/try!
-      errorPolicy->insertAtTail(
-        new CallExpr(PRIM_MOVE, errorVar,
-          new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
+      if (!node->parentSymbol ||
+          !node->parentSymbol->hasFlag(FLAG_COMPILER_GENERATED)) {
+        errorPolicy->insertAtTail(
+          new CallExpr(PRIM_MOVE, errorVar,
+            new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
+      }
       errorPolicy->insertAtTail(gotoHandler());
     } else {
       // without try, need an error variable
