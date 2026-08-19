@@ -36,7 +36,6 @@ jobs:
       with:
         persist-credentials: false
     - name: determine version of Arkouda to use
-      id: arkouda_version
       env:
         GH_TOKEN: ${{ github.token }}
         ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version }}
@@ -49,12 +48,12 @@ jobs:
         fi
         echo "Picked Arkouda version: $arkouda_version"
 
-        echo "arkouda_version=$arkouda_version" >> "$GITHUB_OUTPUT"
-    - name: checkout Arkouda at ${{ steps.arkouda_version.outputs.arkouda_version }}
+        echo "arkouda_version=$arkouda_version" >> "$GITHUB_ENV"
+    - name: checkout Arkouda at ${{ env.arkouda_version }}
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: ${{ env.ARKOUDA_REPO }}
-        ref: ${{ steps.arkouda_version.outputs.arkouda_version }}
+        ref: ${{ env.arkouda_version }}
         path: arkouda
         persist-credentials: false
     - name: apt install some Arkouda deps
@@ -68,7 +67,7 @@ jobs:
         cd arkouda
         {
           echo "ARKOUDA_URL=$(pwd)"
-          echo "ARKOUDA_BRANCH=${{ steps.arkouda_version.outputs.arkouda_version }}"
+          echo "ARKOUDA_BRANCH=$arkouda_version"
           echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
           echo "ARKOUDA_SKIP_CHECK_DEPS=true"
           echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
