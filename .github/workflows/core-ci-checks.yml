@@ -43,6 +43,7 @@ jobs:
       with:
         persist-credentials: false
     - name: install fluid and libfltk-dev
+      timeout-minutes: 10
       run: |
         apt update && apt install -y \
           fluid \
@@ -428,6 +429,7 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
+        timeout-minutes: 10
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm
