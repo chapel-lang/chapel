@@ -259,6 +259,7 @@ jobs:
         with:
           name: packaging-tarball
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
+        timeout-minutes: 90
         run: |
           echo "Building the Chapel Package for: "
 
