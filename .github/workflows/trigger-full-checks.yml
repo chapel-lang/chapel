@@ -95,7 +95,9 @@ jobs:
             <li>Triggering event name: ${{ github.event_name }}</li>
           </ul>
           EOF
-
+      - name: print email body
+        if: always()
+        run: |
           cat "$EMAIL_BODY_FILENAME"
       - name: Send mail
         if: always()
