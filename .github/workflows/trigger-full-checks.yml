@@ -9,6 +9,13 @@ on:
       timezone: "America/Vancouver"
   workflow_dispatch:
 
+# Run serially per type of triggering event.
+# Primarily intended to limit (avoid) concurrent runs for multiple PR merges in
+# a row.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}
+  queue: max
+
 permissions:
   contents: read
   packages: read
@@ -36,6 +43,7 @@ jobs:
       - extended-checks
       - full-checks
     env:
+      GH_TOKEN: ${{ github.token }}
       EMAIL_BODY_FILENAME: email.html
     steps:
       - name: determine date
@@ -48,7 +56,7 @@ jobs:
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
           num_jobs=$(jq '.jobs | length' jobs.json)
-          failed_job_ids=$(jq '[.jobs[] | select(.status != "completed" or .conclusion != "success")] | sort_by(.name) | .[].id' jobs.json)
+          readarray -t failed_job_ids < <(jq '.jobs[] | select(.status != "completed" or .conclusion == "success" ) | .id' jobs.json)
 
           failed_jobs_html=""
           for id in "${failed_job_ids[@]}"; do

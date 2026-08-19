@@ -1,2 +1,2 @@
---trywrite=true  # error-invalid-channel.write.good
---trywrite=false # error-invalid-channel.close.good
+--trywrite=true  # error-invalid-channel.write
+--trywrite=false # error-invalid-channel.close
