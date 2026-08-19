@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Rebuilds the apptainer image in each current subdirectory
+# Git cleans the chapel checkout in each image's directory
 
 if [ -z "$APPTAINER_IMAGE" ]
 then
@@ -20,7 +20,8 @@ do
       fi
     fi
 
-    echo "cd $name && apptainer build --force --fakeroot image.sif image.def"
-    ( cd $name && apptainer build --force --fakeroot image.sif image.def )
+    cd $name
+    cd chapel
+    git clean -ffdx
   fi
 done

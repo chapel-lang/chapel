@@ -13,10 +13,11 @@ on:
 
 # In the merge queue case, cancel previous merge groups headed by the same PR,
 # since only the latest may be relevant to merging.
-# In any other case (PRs), just serialize runs against the same SHA.
+# In any other case (PRs), cancel previous runs against the same SHA, which
+# should only occur if a PR is closed/reopened or has a label change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.merge_group.head_ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'merge_group' }}
+  cancel-in-progress: true
 
 
 permissions:

@@ -10167,6 +10167,9 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         if (isRecord(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
                                   toString(manager), toString(type));
+        else if (isUnion(type) && !isManagedPtrType(type))
+          USR_FATAL_CONT(newExpr, "Cannot use 'new %s' with union '%s'",
+                                  toString(manager), toString(type));
         else if (!isClassLikeOrManaged(type))
           USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
                                    toString(manager), toString(type));
@@ -13273,7 +13276,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
           deflt = new SymExpr(defaultTmp);
         }
         stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, deflt));
-      } else if (isRecord(field->type)) {
+      } else if (isRecord(field->type) || isUnion(field->type)) {
         VarSymbol* tmp = newTemp("_init_class_tmp_", field->type);
         stmt->insertBefore(new DefExpr(tmp));
         initializeClass(stmt, tmp);
@@ -14400,7 +14403,7 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 
   resolveCallAndCallee(callInit);
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if ((isRecord(at) || isUnion(at)) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);
@@ -14651,7 +14654,7 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
     USR_PRINT(call, "init resulted in type '%s'", toString(val->type));
   }
 
-  if (at && at->isRecord() && at->hasPostInitializer()) {
+  if (at && (at->isRecord() || at->isUnion()) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);
