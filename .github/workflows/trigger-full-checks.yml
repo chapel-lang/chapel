@@ -90,6 +90,7 @@ jobs:
 
           cat "$EMAIL_BODY_FILENAME"
       - name: Send mail
+        if: always()
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
            # Required mail server address if not connection_url:
