@@ -7,7 +7,6 @@ Initializing Modules:
        Atomics
         MemConsistency
         currentTask
-    ChapelThreads
     ChapelTuple
      DSIUtil
     ChapelRange
