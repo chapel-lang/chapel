@@ -49,7 +49,7 @@ jobs:
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
           num_jobs=$(jq '.jobs | length' jobs.json)
-          failed_job_ids=$(jq '[.jobs[] | select(.status != "completed" or .conclusion != "success")] | sort_by(.name) | .[].id' jobs.json)
+          readarray -t failed_job_ids < <(jq '.jobs[] | select(.status != "completed" or .conclusion == "success" ) | .id' jobs.json)
 
           failed_jobs_html=""
           for id in "${failed_job_ids[@]}"; do
