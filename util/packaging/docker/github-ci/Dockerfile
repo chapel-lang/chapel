@@ -16,6 +16,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     g++ \
     gcc \
     git \
+    jq \
     libclang-19-dev \
     libclang-cpp19-dev \
     libedit-dev \
