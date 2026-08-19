@@ -40,7 +40,7 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version }}
       run: |
-        if [ -z "$ARKOUDA_VERSION_INPUT" ]; then
+        if [ -n "$ARKOUDA_VERSION_INPUT" ]; then
           arkouda_version="$ARKOUDA_VERSION_INPUT"
         else
           echo "Using latest release version of Arkouda"
