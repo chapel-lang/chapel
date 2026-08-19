@@ -26,13 +26,13 @@ defaults:
 
 jobs:
   core-checks:
-    uses: ./.github/workflows/core-ci-checks.yml
+    uses: ./.github/workflows/reusable/core-ci-checks.yml
 
   extended-checks:
-    uses: ./.github/workflows/extended-ci-checks.yml
+    uses: ./.github/workflows/reusable/extended-ci-checks.yml
 
   full-checks:
-    uses: ./.github/workflows/full-ci-checks.yml
+    uses: ./.github/workflows/reusable/full-ci-checks.yml
 
   send-failure-mail:
     if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')

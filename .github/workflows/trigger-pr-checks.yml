@@ -31,7 +31,7 @@ defaults:
 jobs:
   core-checks:
     if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
-    uses: ./.github/workflows/core-ci-checks.yml
+    uses: ./.github/workflows/reusable/core-ci-checks.yml
 
   should-run-extended-checks:
     if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
@@ -52,7 +52,7 @@ jobs:
   extended-checks:
     needs: should-run-extended-checks
     if: needs.should-run-extended-checks.outputs.run-all == 'true'
-    uses: ./.github/workflows/extended-ci-checks.yml
+    uses: ./.github/workflows/reusable/extended-ci-checks.yml
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
