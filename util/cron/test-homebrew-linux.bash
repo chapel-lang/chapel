@@ -60,6 +60,8 @@ sed_command="sed -i.bak -e "
 # Replace the tarball location in the container where the tarball is copied over
 $sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
+# drop any revision
+$sed_command "/^[[:space:]]*revision [[:digit:]][[:digit:]]*[[:space:]]*$/d" chapel.rb
 
 # To mimic home-brew CI. Run homebrew chpl install inside a container.
 # This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
