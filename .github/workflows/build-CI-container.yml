@@ -62,3 +62,5 @@ jobs:
           # example: ghcr.io/chapel-lang/chapel-github-ci:latest
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           push: ${{ github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'schedule')) }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
