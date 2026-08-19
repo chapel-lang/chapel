@@ -6,25 +6,25 @@ class Chapel < Formula
   url "https://github.com/chapel-lang/chapel/releases/download/2.9.0/chapel-2.9.0.tar.gz"
   sha256 "d91ececfc070f0e94c979dd08cdd3f6da84db4ee48fe06f3187ad259ea9553e7"
   license "Apache-2.0"
+  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    rebuild 1
-    sha256 arm64_tahoe:   "3ded4e7d42c96a60a9615c5e9454669d2a46788f639654b0a9e9236e9297b9b3"
-    sha256 arm64_sequoia: "d75bb97cf1f91fc42f6f3a25b73fe78201076a383f47da26cd15d2d455d210d8"
-    sha256 arm64_sonoma:  "c13f33fca8b60cb09857f064c1a0ed17f12635ca868afa9973604a756d3469ab"
-    sha256 sonoma:        "428acfcd0cb99eb488423806b15364f16f89b8bdfb60855641897a52da5ace46"
-    sha256 arm64_linux:   "d0c0c978097429cfe2d690d5bdde8be352694e30cad91b868be18502de694561"
-    sha256 x86_64_linux:  "c73fc002ef030ef5ce18edf54b1ed1d737f74336fa7ebc9e1f7af903b914c97b"
+    sha256 arm64_tahoe:   "02a0ac8fd456d4370bf14bead7f287056b2445b083e6023e9c82a3b6bcbf2446"
+    sha256 arm64_sequoia: "fe9c991b88fbbc248466c5ba1597c982f5b95760e1dfec924e54ba94e0aefa64"
+    sha256 arm64_sonoma:  "e65c9c49a4b9f0cf664eadb9bdfcc4b779cdb601d7c1e37e21723c0330412da8"
+    sha256 sonoma:        "16ea1b15ae7f4051236e3483a14091b3b6ff5658fd05a7fb13000d12f18c298f"
+    sha256 arm64_linux:   "80ce9f9f681e7a494740675b0e9cc6deba17d3faeaa53bed0aacce827fdf4bdb"
+    sha256 x86_64_linux:  "df7fc5d6f337777e8be3036def8b5075f780126fa9ac21017aed99432ef283af"
   end
 
   depends_on "cmake"
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm"
+  depends_on "llvm@22"
   depends_on "pkgconf"
   depends_on "python@3.14"
 
