@@ -56,6 +56,8 @@ log_info $sha256
 sed_command="sed -i.bak -e "
 $sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
 $sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
+# drop any revision
+$sed_command "/^[[:space:]]*revision [[:digit:]][[:digit:]]*[[:space:]]*$/d" chapel.rb
 
 ${CHPL_HOME}/util/packaging/docker/test/brew_get_bogus_bottles.bash |
   ${CHPL_HOME}/util/packaging/docker/test/brew_replace_bottles.bash chapel.rb
