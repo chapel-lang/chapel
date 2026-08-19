@@ -62,6 +62,7 @@ jobs:
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
       - name: Install GCC
+        timeout-minutes: 10
         uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
         with:
           version: ${{ matrix.gcc_version }}
@@ -111,6 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Python
+        timeout-minutes: 10
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python_version }}
@@ -122,6 +124,7 @@ jobs:
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
+        timeout-minutes: 10
         run: |
           sudo apt install \
             clang \
@@ -151,6 +154,7 @@ jobs:
     runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
+        timeout-minutes: 10
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh

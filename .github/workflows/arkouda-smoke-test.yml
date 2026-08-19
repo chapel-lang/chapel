@@ -58,6 +58,7 @@ jobs:
         path: arkouda
         persist-credentials: false
     - name: apt install some Arkouda deps
+      timeout-minutes: 10
       run: |
         apt update && apt install -y \
           libzmq3-dev \
