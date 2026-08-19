@@ -49,6 +49,14 @@ jobs:
       - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: generate fallback email body
+        run: |
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          GitHub Actions nightly run failed, and an additional failure was
+          encountered in generating a failure mail.
+
+          Run ID: ${{ github.run_id }}
+          EOF
       - name: generate email body
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
