@@ -67,7 +67,7 @@ jobs:
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
-          cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
+          cat << EOF > "$EMAIL_BODY_FILENAME"
           <h3>The following GitHub Actions job$plural failed:</h3>
 
           <ul>
@@ -88,7 +88,7 @@ jobs:
           </ul>
           EOF
 
-          cat ${{ env.EMAIL_BODY_FILENAME }}
+          cat "$EMAIL_BODY_FILENAME"
       - name: Send mail
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
