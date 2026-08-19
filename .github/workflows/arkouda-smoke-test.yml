@@ -22,11 +22,6 @@ defaults:
 jobs:
   arkouda-smoke-test:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
     env:
       ARKOUDA_REPO: "Bears-R-Us/arkouda"
       ARROW_VERSION: "19.0.1"
@@ -59,7 +54,7 @@ jobs:
         persist-credentials: false
     - name: apt install some Arkouda deps
       run: |
-        apt update && apt install -y \
+        sudo apt update && sudo apt install -y \
           libzmq3-dev \
           libcurl4-openssl-dev
     - name: set Arkouda env vars
