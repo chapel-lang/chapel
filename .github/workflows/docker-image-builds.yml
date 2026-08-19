@@ -120,8 +120,8 @@ jobs:
           pattern: ${{ env.TARBALL_NAME_PREFIX }}*.tar
       - name: import images into docker
         run: |
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME*arm64*" "chapel/chapel:arm64"
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME*x86*" "chapel/chapel:x86"
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64* chapel/chapel:arm64
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* chapel/chapel:x86
       - name: create multiarch image
         run: |
           docker manifest create "$IMAGE_FULL_NAME" --amend "chapel/chapel:arm64" --amend "chapel/chapel:x86"
