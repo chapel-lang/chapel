@@ -63,7 +63,8 @@ jobs:
       matrix:
         apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
     env:
-      apptainer_config: ${{ matrix.apptainer_config }}
+      APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
+      apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
       - name: install Apptainer
         timeout-minutes: 10
@@ -83,20 +84,29 @@ jobs:
             echo "GIT_REPO_URL=$PWD"
             echo "GIT_COMMIT=${{ github.sha }}"
           } >> "$GITHUB_ENV"
+      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }} (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: 30
+          retry_wait_seconds: 60
+          command: |
+            export APPTAINER_IMAGE
+            cd "$apptainer_dir"
+            ./image-rebuild.sh
       - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
         run: |
-          export APPTAINER_IMAGE=$apptainer_config
           MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
           export MAKEJ
 
-          cd ./util/devel/test/portability/apptainer
-
-          ./chapel-quickstart-fresh.sh
+          export APPTAINER_IMAGE
+          cd "$apptainer_dir"
+          ./chapel-quickstart.sh
           # Default config requires LLVM
           if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
-              ./chapel-default-fresh.sh
+              ./chapel-clean.sh
+              ./chapel-default.sh
           fi
-
 
   arkouda-smoke-test:
     runs-on: ubuntu-latest
