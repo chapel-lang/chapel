@@ -3,6 +3,6 @@
 cd dummyRegistry
 git init >/dev/null
 git add . >/dev/null
-git commit -sm'initial' >/dev/null
+git commit -sm 'initial' >/dev/null
 cd ..
 

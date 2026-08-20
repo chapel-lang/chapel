@@ -192,7 +192,7 @@ class Function {
         var nf = normf(dc[k..2*k-1]);
         const (n, _) = curNode.get_coords();
         if((nf < thresh) || (n >= (max_level-1))) {
-            if ( n+1 < log2(numThreadsPerLocale) ) then {
+            if ( n+1 < log2(here.maxTaskPar) ) then {
                 on sumC.node2loc(child(0)) do begin sumC[child(0)] = s0;
                 on sumC.node2loc(child(1)) do begin sumC[child(1)] = s1;
             }
@@ -204,7 +204,7 @@ class Function {
         else {
             // these recursive calls on sub-trees can go in parallel
             // if the HashMap is syncronized
-            if ( n+1 < log2(numThreadsPerLocale) ) then {
+            if ( n+1 < log2(here.maxTaskPar) ) then {
                 on sumC.node2loc(child(0)) do begin refine(child(0));
                 on sumC.node2loc(child(1)) do begin refine(child(1));
             }

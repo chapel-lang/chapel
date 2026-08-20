@@ -4,7 +4,7 @@
 /* START_EXAMPLE */
 use IO, Subprocess;
 
-var sub = spawn(["hexdump", "-C"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+var sub = spawn(["xxd", "-g", "1"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
 
 // Use 'withSerializer' to create a binary-serializing alias of 'sub.stdin'
 var bin = sub.stdin.withSerializer(binarySerializer);

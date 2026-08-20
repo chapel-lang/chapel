@@ -116,7 +116,7 @@ fi
 if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # If Arkouda deps use any of our test deps, try to use the versions we want
-  AK_PIP_CONTRAINTS="--constraint $CHPL_HOME/third-party/chpl-venv/test-requirements.txt"
+  AK_PIP_CONSTRAINTS="--constraint $CHPL_HOME/third-party/chpl-venv/test-requirements.txt $AK_PIP_CONSTRAINTS"
   # create a virtual environment for running the tests
   # if one was already created and set in CHPL_TEST_VENV_DIR, use it
   if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
@@ -132,7 +132,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
   fi
 
   log "Installing Arkouda in the virtual environment using '$(which python3)'"
-  if ! python3 -m pip install --force-reinstall --timeout 60 $AK_PIP_CONTRAINTS -e .[dev] ; then
+  if ! python3 -m pip install --force-reinstall --timeout 60 $AK_PIP_CONSTRAINTS -e .[dev] ; then
     log_fatal_error "installing arkouda"
   else
     log "Use 'source $(pwd)/$ARKOUDA_TEST_VENV/bin/activate' to activate the venv"
