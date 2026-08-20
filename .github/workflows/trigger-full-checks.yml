@@ -70,7 +70,7 @@ jobs:
           for id in "${failed_job_ids[@]}"; do
             gh api "/repos/chapel-lang/chapel/actions/jobs/$id" > "job_$id.json"
             sleep 0.25
-            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step \"\(.first_bad_step)\"</li>"' "job_$id.json")
+            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step: \"\(.first_bad_step)\"</li>"' "job_$id.json")
           done
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
