@@ -37,6 +37,7 @@ use TOML;
 import Path.joinPath;
 import ThirdParty.Pathlib.path;
 use ThirdParty.Pathlib.IOHelpers;
+import Package;
 
 enum OutputFormat {
   json,
@@ -73,50 +74,21 @@ proc masonModules(args: [] string) throws {
                          "Valid options are 'json' and 'text'.");
   }
 
-  if !isDir(MASON_HOME) {
-    mkdir(MASON_HOME, parents=true);
-  }
-  const (tomlName, lockName) = updateLock(skipUpdate, show=false);
+  const package = Package.getMasonPackage(skipUpdate, show=false, force=false);
+  const projectHome = package.projectHome;
 
-  const projectHome = getProjectHome(path.cwd());
-  var tomlFile = parseToml(open(projectHome / tomlName, ioMode.r));
-  var lockFile = parseToml(open(projectHome / lockName, ioMode.r));
-
-  // generate list of dependencies and get src code
-  var (sourceList, gitList) = genSourceList(lockFile);
-  getSrcCode(sourceList, skipUpdate, false);
-  getGitCode(gitList, skipUpdate, false);
-
-  const depPath = MASON_HOME:path / "src";
-  const gitDepPath = MASON_HOME:path / "git";
-  var modules: list(path);
-  // can't use _ since it will leak
-  // see https://github.com/chapel-lang/chapel/issues/25926
-  @chplcheck.ignore("UnusedLoopIndex")
-  for (_x, name, version) in srcSource.iterList(sourceList) {
-    const depM = depPath / (name + "-" + version) / "src" / (name + ".chpl");
-    modules.pushBack(depM);
-  }
-
-  // can't use _ since it will leak
-  // see https://github.com/chapel-lang/chapel/issues/25926
-  @chplcheck.ignore("UnusedLoopIndex")
-  for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-    const gitDepSrc =
-      gitDepPath / (name + "-" + branch) / "src" / (name + ".chpl");
-    modules.pushBack(gitDepSrc);
-  }
+  var modules: list(string);
+  for dep in package.allDependencies() do
+    modules.pushBack(dep.getSourceFiles());
 
   const srcPath = projectHome / "src";
   const testPath = projectHome / "test";
   const examplePath = projectHome / "example";
+
   const sources = [f in srcPath.findFiles(recursive=true)]
                     if f.suffix == ".chpl" then f;
-
-  const tests =
-    [f in MasonTest.getTests(lockFile, projectHome)] testPath / f;
-  const examples =
-    [f in MasonExample.getExamples(tomlFile, projectHome)] examplePath / f;
+  const tests = [t in package.tests] testPath / t.name;
+  const examples = [e in package.examples] examplePath / e.name;
 
   select outputFormat {
     when OutputFormat.text {
