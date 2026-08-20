@@ -134,9 +134,9 @@ jobs:
           merge-multiple: true
       - name: import images into docker
         run: |
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64* chapel/chapel:arm64
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* chapel/chapel:x86
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64* "$IMAGE_FULL_NAME-arm64"
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* "$IMAGE_FULL_NAME-x86"
       - name: create multiarch image
         run: |
-          docker manifest create "$IMAGE_FULL_NAME" --amend "chapel/chapel:arm64" --amend "chapel/chapel:x86"
+          docker manifest create "$IMAGE_FULL_NAME" --amend "$IMAGE_FULL_NAME-arm64" --amend "$IMAGE_FULL_NAME-x86"
       # TODO: push to ghcr / dockerhub
