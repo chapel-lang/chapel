@@ -1,0 +1,142 @@
+# Reusable workflow to build a Chapel Docker image.
+name: Build Docker image
+
+on:
+  workflow_call:
+    inputs:
+      config:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+env:
+  CONFIG: ${{ inputs.config }}
+  REGISTRY: "docker.io"
+  NAMESPACE: "chapel"
+  TARBALL_NAME_PREFIX: "chapel-image-"
+
+jobs:
+  build-test-image-each-arch:
+    strategy:
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      # packages: write # To push images to ghcr
+    env:
+      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
+    outputs:
+      IMAGE_NAME: ${{ steps.vars.outputs.IMAGE_NAME }}
+      IMAGE_FULL_NAME: ${{ steps.vars.outputs.IMAGE_FULL_NAME }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - name: set up build env and vars
+        id: vars
+        run: |
+          MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
+
+          TAG="$GITHUB_SHA"
+          name_prefix="chapel"
+          BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
+
+          if [[ "$CONFIG" == "base" ]]; then
+            IMAGE_NAME="$name_prefix"
+            DOCKERFILE="./Dockerfile"
+            TEST_SCRIPT="util/cron/docker-chapel.bash"
+          else
+            IMAGE_NAME="$name_prefix-$CONFIG"
+            DOCKERFILE="util/packaging/docker/$CONFIG/Dockerfile"
+            TEST_SCRIPT="util/cron/docker-gasnet.bash"
+
+            patch "$DOCKERFILE" << EOF
+          1c1
+          < FROM chapel/chapel:latest
+          ---
+          > FROM $BASE_IMAGE_FULL_NAME
+          EOF
+          fi
+
+          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$IMAGE_NAME-$TAG-$ARCH.tar"
+          IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
+
+          {
+            echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
+            echo "IMAGE_TARBALL=$IMAGE_TARBALL"
+            echo "MAKE_THREADS=$MAKE_THREADS"
+            echo "TAG=$TAG"
+            echo "DOCKERFILE=$DOCKERFILE"
+            echo "TEST_SCRIPT=$TEST_SCRIPT"
+            echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
+          } | tee "$GITHUB_ENV" "$GITHUB_OUTPUT"
+      - name: download base image tarball
+        if: ${{ env.CONFIG != 'base' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ env.BASE_IMAGE_TARBALL }}
+      - name: import base image from tarball
+        if: ${{ env.CONFIG != 'base' }}
+        run: |
+          docker image import "$BASE_IMAGE_TARBALL" "$BASE_IMAGE_FULL_NAME"
+      - name: build image ${{ env.IMAGE_FULL_NAME }}
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
+          tags: ${{ env.IMAGE_FULL_NAME }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: test image
+        run: |
+          cp test/release/examples/hello.chpl .
+          docker run --rm -i "$IMAGE_FULL_NAME" < "$TEST_SCRIPT"
+      - name: export image to tarball
+        run: |
+          docker image save -o "$IMAGE_TARBALL" "$BASE_IMAGE_FULL_NAME"
+      - name: upload image tarball
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.IMAGE_TARBALL }}
+          path: ${{ env.IMAGE_TARBALL }}
+          if-no-files-found: error
+
+  combine-push-multiarch:
+    needs: build-test-image-each-arch
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
+      IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
+    steps:
+      - name: download image tarball for each arch
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: ${{ env.TARBALL_NAME_PREFIX }}*.tar
+          merge-multiple: true
+      - name: import images into docker
+        run: |
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64* "$IMAGE_FULL_NAME-arm64"
+          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* "$IMAGE_FULL_NAME-x86"
+      - name: create multiarch image
+        run: |
+          docker manifest create "$IMAGE_FULL_NAME" --amend "$IMAGE_FULL_NAME-arm64" --amend "$IMAGE_FULL_NAME-x86"
+      # TODO: push to ghcr / dockerhub

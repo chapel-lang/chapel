@@ -494,3 +494,18 @@ jobs:
       - name: compare against checked-in file
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
+
+  base-docker-image:
+    uses: ./.github/workflows/docker-image-builds.yml
+    with:
+      config: "base"
+
+  gasnet-docker-images:
+    needs: base-docker-image
+    uses: ./.github/workflows/docker-image-builds.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ["gasnet", "gasnet-smp"]
+    with:
+      config: ${{ matrix.config }}
