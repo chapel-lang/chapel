@@ -40,6 +40,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Set up Docker
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
       - name: set up build env and vars
         id: vars
         run: |
@@ -94,6 +104,8 @@ jobs:
           build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
           tags: ${{ env.IMAGE_FULL_NAME }}
           load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: test image
         run: |
           cp test/release/examples/hello.chpl .
