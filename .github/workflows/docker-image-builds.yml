@@ -118,6 +118,7 @@ jobs:
         with:
           name: ${{ env.IMAGE_TARBALL }}
           path: ${{ env.IMAGE_TARBALL }}
+          if-no-files-found: error
 
   combine-push-multiarch:
     needs: build-test-image-each-arch
