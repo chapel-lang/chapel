@@ -648,6 +648,11 @@ module ChapelArray {
                     b: string);
     }
   }
+  pragma "last resort"
+  proc chpl__checkRetEltTypeMatch(a, type b) {
+    compilerError("expected an array or iterator but got a value of type ",
+                  a.type:string);
+  }
   proc chpl__checkOutEltTypeMatch(a: [], type b) {
     if (a.eltType != b) {
       compilerError("array element type mismatch in initializing out formal ",
@@ -667,6 +672,14 @@ module ChapelArray {
                     " from iterator with element type ",
                     eltType: string);
     }
+  }
+
+  proc chpl__checkGenericArrayReturn(a: []) { }
+  proc chpl__checkGenericArrayReturn(a: _iteratorRecord) { }
+  pragma "last resort"
+  proc chpl__checkGenericArrayReturn(a) {
+    compilerError("expected an array or iterator but got a value of type ",
+                  a.type:string);
   }
 
   //
