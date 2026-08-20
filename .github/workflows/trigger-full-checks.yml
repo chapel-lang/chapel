@@ -89,8 +89,8 @@ jobs:
           <p>GitHub Actions run info:</p>
           <ul>
             <li>SHA: <a href="https://github.com/chapel-lang/chapel/commit/${{ github.sha }}">${{ github.sha }}</a></li>
-            <li>Run ID: ${{ github.run_id }}</li>
-            <li>Run attempt: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_attempt }}">${{ github.run_attempt }}</a></li>
+            <li>Run ID: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a></li>
+            <li>Run attempt: ${{ github.run_attempt }}</li>
             <li>Run number: ${{ github.run_number }}</li>
             <li>Triggering event name: ${{ github.event_name }}</li>
           </ul>
