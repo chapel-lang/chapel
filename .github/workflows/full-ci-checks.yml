@@ -17,16 +17,6 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
-  trigger-failure:
-    runs-on: ubuntu-slim
-    steps:
-      - run: exit 1
-  also-trigger-failure:
-    runs-on: ubuntu-slim
-    steps:
-      - name: break it
-        run: exit 1
-
   arkouda-main-smoke-test:
     uses: ./.github/workflows/arkouda-smoke-test.yml
     with:
