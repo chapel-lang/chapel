@@ -24,7 +24,6 @@ stack trace:
   (frame 2) throwingAggregate.chpl:55
   (frame 3) throwingAggregate.chpl:55
   (frame 4) throwingAggregate.chpl:55
-  (frame 5) throwingAggregate.chpl:55
 creating owned C with value 1
 caught error: value is equal to 1
 stack trace:
@@ -32,7 +31,6 @@ stack trace:
   (frame 2) throwingAggregate.chpl:29
   (frame 3) throwingAggregate.chpl:55
   (frame 4) throwingAggregate.chpl:55
-  (frame 5) throwingAggregate.chpl:55
 creating owned C with value 2
 created {x = 2}
 caught error: value is equal to 2
@@ -47,7 +45,6 @@ stack trace:
   (frame 2) throwingAggregate.chpl:55
   (frame 3) throwingAggregate.chpl:55
   (frame 4) throwingAggregate.chpl:55
-  (frame 5) throwingAggregate.chpl:55
 creating shared C with value 1
 caught error: value is equal to 1
 stack trace:
@@ -55,7 +52,6 @@ stack trace:
   (frame 2) throwingAggregate.chpl:29
   (frame 3) throwingAggregate.chpl:55
   (frame 4) throwingAggregate.chpl:55
-  (frame 5) throwingAggregate.chpl:55
 creating shared C with value 2
 created {x = 2}
 caught error: value is equal to 2
