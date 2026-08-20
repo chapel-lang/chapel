@@ -43,6 +43,7 @@ jobs:
       with:
         persist-credentials: false
     - name: install fluid and libfltk-dev
+      timeout-minutes: 10
       run: |
         apt update && apt install -y \
           fluid \
@@ -333,7 +334,7 @@ jobs:
           severity: error
           ignore_paths: ./test/* ./third-party/*
 
-  check-format:
+  check-python-format:
     runs-on: ubuntu-slim
     env:
       EXTENSIONLESS_PYTHON_FILES: ""
@@ -342,11 +343,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+      - name: Check most .py files
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
-      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+      - name: Check our .py files under third-party/
+        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
@@ -426,6 +429,7 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
+        timeout-minutes: 10
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm
@@ -476,13 +480,17 @@ jobs:
     runs-on: ubuntu-slim
     env:
       PREREQS_COMMANDS_FILE: "doc/rst/usingchapel/prereqs-commands.rst"
+      PORTABILITY_TEST_DIR: "util/devel/test/portability"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          sparse-checkout: |
+            ${{ env.PORTABILITY_TEST_DIR }}
+            doc
           persist-credentials: false
       - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
         run: |
-          util/devel/test/portability/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILE"
+          ${{ env.PORTABILITY_TEST_DIR }}/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILE"
       - name: compare against checked-in file
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"

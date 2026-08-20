@@ -9,6 +9,13 @@ on:
       timezone: "America/Vancouver"
   workflow_dispatch:
 
+# Run serially per type of triggering event.
+# Primarily intended to limit (avoid) concurrent runs for multiple PR merges in
+# a row.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}
+  queue: max
+
 permissions:
   contents: read
   packages: read
@@ -36,11 +43,20 @@ jobs:
       - extended-checks
       - full-checks
     env:
+      GH_TOKEN: ${{ github.token }}
       EMAIL_BODY_FILENAME: email.html
     steps:
       - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: generate fallback email body
+        run: |
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          GitHub Actions nightly run failed, and an additional failure was
+          encountered in generating a failure mail.
+
+          Run ID: ${{ github.run_id }}
+          EOF
       - name: generate email body
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
@@ -48,18 +64,18 @@ jobs:
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
           num_jobs=$(jq '.jobs | length' jobs.json)
-          failed_job_ids=$(jq '[.jobs[] | select(.status != "completed" or .conclusion != "success")] | sort_by(.name) | .[].id' jobs.json)
+          readarray -t failed_job_ids < <(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs.json)
 
           failed_jobs_html=""
           for id in "${failed_job_ids[@]}"; do
             gh api "/repos/chapel-lang/chapel/actions/jobs/$id" > "job_$id.json"
             sleep 0.25
-            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<a href=\"\(.html_url)\">\(.name)</a>, step \(.first_bad_step)"' "job_$id.json")
+            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step \(.first_bad_step)</li>"' "job_$id.json")
           done
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
-          cat << EOF > ${{ env.EMAIL_BODY_FILENAME }}
+          cat << EOF > "$EMAIL_BODY_FILENAME"
           <h3>The following GitHub Actions job$plural failed:</h3>
 
           <ul>
@@ -72,16 +88,19 @@ jobs:
 
           <p>GitHub Actions run info:</p>
           <ul>
-            <li>SHA: ${{ github.sha }}</li>
+            <li>SHA: <a href="https://github.com/chapel-lang/chapel/commit/${{ github.sha }}">${{ github.sha }}</a></li>
             <li>Run ID: ${{ github.run_id }}</li>
-            <li>Run attempt #: ${{ github.run_attempt }}</li>
+            <li>Run attempt: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_attempt }}">${{ github.run_attempt }}</a></li>
             <li>Run number: ${{ github.run_number }}</li>
             <li>Triggering event name: ${{ github.event_name }}</li>
           </ul>
           EOF
-
-          cat email.html
-      - name: Send mail
+      - name: print email body
+        if: always()
+        run: |
+          cat "$EMAIL_BODY_FILENAME"
+      - name: send mail
+        if: always()
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
            # Required mail server address if not connection_url:

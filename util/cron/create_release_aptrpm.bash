@@ -47,16 +47,18 @@ if [ -n "$CHPL_TARBALL" ]; then
 fi
 
 # For debian builds, setup some extra proxy/network information
-if [ $(__package_type_from_os $OS) == "apt" ]; then
-  apt_conf="./util/packaging/common/apt.conf"
-  rm -f $apt_conf
+if [ -n "$PROXY_ADDRESS_FOR_HTTP" -o -n "$PROXY_ADDRESS_FOR_HTTPS" ]; then
+  if [ $(__package_type_from_os $OS) == "apt" ]; then
+    apt_conf="./util/packaging/common/apt.conf"
+    rm -f $apt_conf
 
-  if [ -z "$PROXY_ADDRESS_FOR_HTTP" ]; then echo "PROXY_ADDRESS_FOR_HTTP must be set."; exit 1; fi
-  if [ -z "$PROXY_ADDRESS_FOR_HTTPS" ]; then echo "PROXY_ADDRESS_FOR_HTTPS must be set."; exit 1; fi
+    if [ -z "$PROXY_ADDRESS_FOR_HTTP" ]; then echo "PROXY_ADDRESS_FOR_HTTP must be set."; exit 1; fi
+    if [ -z "$PROXY_ADDRESS_FOR_HTTPS" ]; then echo "PROXY_ADDRESS_FOR_HTTPS must be set."; exit 1; fi
 
-  echo "Acquire::http::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
-  echo "Acquire::https::proxy \"$PROXY_ADDRESS_FOR_HTTPS\";" >> $apt_conf
-  export INJECT_BEFORE_DEPS="COPY ./common/apt.conf /etc/apt/apt.conf"
+    echo "Acquire::http::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
+    echo "Acquire::https::proxy \"$PROXY_ADDRESS_FOR_HTTPS\";" >> $apt_conf
+    export INJECT_BEFORE_DEPS="COPY ./common/apt.conf /etc/apt/apt.conf"
+  fi
 fi
 
 # if BUILD_CROSS_PLATFORM is set, build the cross-platform package
