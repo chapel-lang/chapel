@@ -1,6 +1,7 @@
 rules:
   unpinned-images:
     ignore:
+      - arkouda-smoke-test.yml
       - core-ci-checks.yml
       - extended-ci-checks.yml
       - full-ci-checks.yml
