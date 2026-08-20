@@ -43,6 +43,12 @@ jobs:
         if [[ "$ARKOUDA_VERSION_INPUT" == "release" ]]; then
           echo "Using latest release version of Arkouda"
           arkouda_version=$(gh api /repos/Bears-R-Us/arkouda/releases/latest | jq -r '.tag_name')
+          if [[ "$arkouda_version" == "v2026.07.15" ]]; then
+            # Work around issue in release v2026.07.15, which is fixed in
+            # https://github.com/Bears-R-Us/arkouda/pull/5524.
+            echo "numpy <= 2.4" > requirements-hack.txt
+            echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
+          fi
         else
           arkouda_version="$ARKOUDA_VERSION_INPUT"
         fi
