@@ -19,4 +19,4 @@ forall idx in dom.customThese() {
 
   // localTaskContext <-- innerCtx, localeContext <-- onCtx
   writeln(here, " ", idx, ": ", localTaskContext, " ", localeContext);
-} // forall idx in dom.customThese()
+}
