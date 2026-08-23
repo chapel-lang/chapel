@@ -58,7 +58,7 @@ class InterfaceType final : public Type {
   SubstitutionsMap subs_;
 
   // check that the substitutions are valid for the given interface.
-  // executed from an assertion, so does not haev an impact in release mode.
+  // executed from an assertion, so does not have an impact in release mode.
   static bool validateSubstitutions(Context* context,
                                     const ID& id,
                                     SubstitutionsMap& subs);

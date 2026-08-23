@@ -236,7 +236,7 @@ CanPassResult canPassScalar(Context* context,
    'instances' is an instantiation of a type with substitutions 'generics'.
 
    If 'allowMissing' is true, considers missing substitutions in 'generics'
-   to be "any type". Otherwise, requires that each susbtitution in
+   to be "any type". Otherwise, requires that each substitution in
    instances is matched by an existing substitution in generics. */
 bool canInstantiateSubstitutions(Context* context,
                                  const SubstitutionsMap& instances,

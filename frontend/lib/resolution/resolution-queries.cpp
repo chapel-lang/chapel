@@ -3328,7 +3328,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
     auto re = rr.byAst(linkageName);
     auto& qt = re.type();
     if (qt.isErroneousType()) {
-      // coudn't compute linkage name, error already issued
+      // couldn't compute linkage name, error already issued
     } else if (qt.isUnknownOrErroneous()) {
       context->error(linkageName,
                      "could not determine linkage name for function '%s'",
@@ -3528,7 +3528,7 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
 //
 // Unresolved PoI infos simply contain a PoI scope in which a function's
 // body should be resolved. Caching these queries would prevent having
-// to re-resolve a function called mutliple times from the same scope, but
+// to re-resolve a function called multiple times from the same scope, but
 // it will not do anything clever about PoI compatibility (see see PR #16261, e.g.).
 //
 // Resolved PoI infos don't contain the scope in which they were resolved; instead,
@@ -3892,10 +3892,10 @@ collectImplementationPointsInScope(Context* context,
 }
 
 static void
-helpCollectVisibileImplementationPoints(Context* context,
-                                        const Scope* scope,
-                                        std::unordered_set<const Scope*>& seen,
-                                        std::map<ID, std::vector<const ImplementationPoint*>>& into) {
+helpCollectVisibleImplementationPoints(Context* context,
+                                       const Scope* scope,
+                                       std::unordered_set<const Scope*>& seen,
+                                       std::map<ID, std::vector<const ImplementationPoint*>>& into) {
   auto insertResult = seen.insert(scope);
   if (!insertResult.second) return;
 
@@ -3911,7 +3911,7 @@ helpCollectVisibileImplementationPoints(Context* context,
     for (auto visClause : visStmts->visibilityClauses()) {
       auto nextScope = visClause.scope();
       if (nextScope && asttags::isModule(nextScope->tag())) {
-        helpCollectVisibileImplementationPoints(context, nextScope, seen, into);
+        helpCollectVisibleImplementationPoints(context, nextScope, seen, into);
       }
     }
   }
@@ -3924,19 +3924,19 @@ visibleImplementationPoints(Context* context,
   QUERY_BEGIN(visibleImplementationPoints, context, scope, poiScope);
   std::map<ID, std::vector<const ImplementationPoint*>> result;
   std::unordered_set<const Scope*> seen;
-  helpCollectVisibileImplementationPoints(context, scope->moduleScope(), seen, result);
+  helpCollectVisibleImplementationPoints(context, scope->moduleScope(), seen, result);
   for (; poiScope; poiScope = poiScope->inFnPoi()) {
     auto inScope = poiScope->inScope()->moduleScope();
-    helpCollectVisibileImplementationPoints(context, inScope, seen, result);
+    helpCollectVisibleImplementationPoints(context, inScope, seen, result);
   }
   return QUERY_END(result);
 }
 
 const std::vector<const ImplementationPoint*>*
-visibileImplementationPointsForInterface(Context* context,
-                                         const Scope* scope,
-                                         const PoiScope* poiScope,
-                                         ID id) {
+visibleImplementationPointsForInterface(Context* context,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
+                                        ID id) {
   auto& allInstantiationPoints = visibleImplementationPoints(context, scope, poiScope);
   auto it = allInstantiationPoints.find(id);
   if (it != allInstantiationPoints.end()) {
@@ -4123,7 +4123,7 @@ isInitialTypedSignatureApplicable(Context* context,
       // Either we're partially instantiating a type `R(x, ?)`, in which any subsequent generic type
       // fields are defaulted, or we are using defaults, in which case
       // there should be a 'hasDefault' entry here. We allow (but warn about)
-      // partial instnatiations without '?', if it's a type constructor.
+      // partial instantiations without '?', if it's a type constructor.
       //
       // One other niche case is that the 'this' formal of operators is unused.
       CHPL_ASSERT(tfs->untyped()->isTypeConstructor() || entry.hasDefault() ||
@@ -4356,7 +4356,7 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     if (ret->formalProducedError(i))
       return ApplicabilityResult::failureErrorInFormal(ret, i);
   }
-  if (ret->whereClausePrducedError())
+  if (ret->whereClauseProducedError())
     return ApplicabilityResult::failureErrorInWhereClause(ret);
 
   auto faMap = FormalActualMap(ufs, ci);
@@ -4694,7 +4694,7 @@ static const Type* getNumericType(Context* context,
         // bool used to support custom widths, but now it doesn't. Now,
         // there's no bool(..) type constructor.
         context->error(astForErr, "the 'bool' type is not generic and only has one width, so"
-                       " it doen't take type constructor arguments.");
+                       " it doesn't take type constructor arguments.");
         return ErroneousType::get(context);
       }
 
@@ -7265,7 +7265,7 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
                                                             const types::InterfaceType* ift,
                                                             const CallScopeInfo& inScopes) {
   auto implPoints =
-    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), inScopes.poiScope(), ift->id());
+    visibleImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), inScopes.poiScope(), ift->id());
 
   // TODO: this matches production, in which the first matching generic
   // implementation is used if no concrete one is found. It's probably
@@ -8537,7 +8537,7 @@ shapeForIteratorQuery(Context* context,
     // Resolve this using  call, and make that call a query because typed
     // conversion might eventually require access to it for the purposes
     // of runtime types. Some additional wrangling will be needed to avoid
-    // re-extracing leaderType (could we have a set-only query that computes
+    // re-extracting leaderType (could we have a set-only query that computes
     // the CallResolutionResult from iter, that we set right here?) but I
     // leave that to you, O brave future implementer.
 

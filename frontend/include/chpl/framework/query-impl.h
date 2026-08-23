@@ -730,7 +730,7 @@ Context::querySetterUpdateResult(
 
   To do this in a way that works out of the box using the query system,
   use the QUERY_STORE_RESULT macro, which sets certain flags to avoid
-  running into these issues (but could result in redunant recomputations).
+  running into these issues (but could result in redundant recomputations).
  */
 #define QUERY_UNSAFE_STORE_RESULT(func, context, result, ...) \
   context->querySetterUpdateResult(func, \

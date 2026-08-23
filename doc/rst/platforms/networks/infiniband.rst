@@ -376,7 +376,7 @@ allows the blocking progress thread to be bound to a specific core:
 This combination dedicates a core for the receive progress thread (as
 well as the PSHM progress thread, if using co-locales). That core will be
 dedicated to improving communication performance and will not be
-avaliable for other computation. Note that it is possible to dedicate a
+available for other computation. Note that it is possible to dedicate a
 core for the PSHM progress thread without changing the receive progress
 thread by setting only the first of these.
 

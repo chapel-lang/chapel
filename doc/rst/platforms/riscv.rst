@@ -26,7 +26,7 @@ One working example for building Chapel on RISC-V is:
     make -j
 
 The mimalloc and cstdlib allocators are confirmed to work, jemalloc currently does not.
-To learn more about the different alloocators available in Chapel, see :ref:`readme-chplenv.CHPL_HOST_MEM` and :ref:`readme-chplenv.CHPL_TARGET_MEM`.
+To learn more about the different allocators available in Chapel, see :ref:`readme-chplenv.CHPL_HOST_MEM` and :ref:`readme-chplenv.CHPL_TARGET_MEM`.
 Using mimalloc (instead of cstdlib) and enabling LLVM is expected to give better performance.
 This particular example builds the bundled copy of LLVM included with the Chapel source, but the mechanisms for using another installation of LLVM will also work.
 See :ref:`readme-chplenv.CHPL_LLVM` for details on how to do that.

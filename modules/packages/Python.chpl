@@ -1502,7 +1502,7 @@ module Python {
 
   /*
     Represents an isolated Python sub-interpreter. This is useful for running
-    truly parallel Python code, without the GIL interferring.
+    truly parallel Python code, without the GIL interfering.
   */
   class SubInterpreter: Interpreter {
     @chpldoc.nodoc
@@ -3416,7 +3416,7 @@ module Python {
       compilerError("docs only");
     //
     // TODO: these are meant to prevent users from calling .these on a PyArray
-    // when they probaby wanted .values. But the mere presence of these as
+    // when they probably wanted .values. But the mere presence of these as
     // compiler errors prevents any program using Value.these from
     // compiling. And we can't just make them throw instead because inheritance
     // prevents iterator inlining, which is not yet supported

@@ -2023,7 +2023,7 @@ int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       struct cache_entry_s* entry) {
 
-  // read and do an aquire fence
+  // read and do an acquire fence
   chpl_cache_taskPrvData_t* v = read_reservedByTask(entry);
 
   if (v != NULL) {
