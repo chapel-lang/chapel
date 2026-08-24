@@ -355,8 +355,6 @@ int32_t getArgNumLocalesPerNode(void) {
   return _argNumLocalesPerNode;
 }
 
-
-extern void chpl_program_about(void); // The generated code provides this
 void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                int* argc, char* argv[]) {
   int i = 0;
@@ -591,6 +589,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   }
 
   if (printAbout) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_program_about);
     chpl_program_about();
     chpl_exit_any(0);
   }
