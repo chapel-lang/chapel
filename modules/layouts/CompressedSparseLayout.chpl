@@ -57,6 +57,7 @@
 module CompressedSparseLayout {
   import Sort.{keyComparator};
   import RangeChunk;
+  use ChapelLocks;
 
   @chpldoc.nodoc
   /* Debug flag */
@@ -96,27 +97,32 @@ module CompressedSparseLayout {
   class CSImpl: BaseDist {
     param compressRows: bool;
     param sortedIndices: bool = csLayoutSortByDefault;
+    param parSafe: bool;
 
     proc init(param compressRows: bool,
-              param sortedIndices: bool = csLayoutSortByDefault) {
+              param sortedIndices: bool = csLayoutSortByDefault,
+              param parSafe: bool) {
       this.compressRows = compressRows;
       this.sortedIndices = sortedIndices;
+      this.parSafe = parSafe;
     }
 
     override proc dsiNewSparseDom(param rank: int, type idxType,
                                   dom: domain(?)) {
       return new unmanaged CSDom(rank, idxType, this.compressRows,
-                                 this.sortedIndices, dom.strides,
+                                 this.sortedIndices, dom.strides, this.parSafe,
                                  _to_unmanaged(this), dom);
     }
 
     proc dsiClone() {
       return new unmanaged CSImpl(compressRows=this.compressRows,
-                                  sortedIndices=this.sortedIndices);
+                                  sortedIndices=this.sortedIndices,
+                                  parSafe=this.parSafe);
     }
 
     proc dsiEqualDMaps(that: CSImpl(this.compressRows,
-                                    this.sortedIndices)) param {
+                                    this.sortedIndices,
+                                    this.parSafe)) param {
       return true;
     }
 
@@ -181,16 +187,19 @@ module CompressedSparseLayout {
     // would be generic due to the 'csl' field not being able to
     // specify its 'sortedIndices' param value.
     param sortedIndices: bool = csLayoutSortByDefault;
-    forwarding var csl: csLayout(compressRows=true, sortedIndices);
+    param parSafe: bool = false;
+    forwarding var csl: csLayout(compressRows=true, sortedIndices, parSafe);
 
-    proc init(param sortedIndices: bool = csLayoutSortByDefault) {
+    proc init(param sortedIndices: bool = csLayoutSortByDefault, param parSafe: bool = false) {
       this.sortedIndices = sortedIndices;
-      this.csl = new csLayout(compressRows=true, sortedIndices);
+      this.parSafe = parSafe;
+      this.csl = new csLayout(compressRows=true, sortedIndices, parSafe);
     }
 
     @chpldoc.nodoc
     proc init(value: CSImpl(?)) {
       this.sortedIndices = value.sortedIndices;
+      this.parSafe = value.parSafe;
       this.csl = new csLayout(value);
     }
   }
@@ -213,16 +222,19 @@ module CompressedSparseLayout {
     // would be generic due to the 'csl' field not being able to
     // specify its 'sortedIndices' param value.
     param sortedIndices: bool = csLayoutSortByDefault;
-    forwarding var csl: csLayout(compressRows=false, sortedIndices);
+    param parSafe: bool = false;
+    forwarding var csl: csLayout(compressRows=false, sortedIndices, parSafe);
 
-    proc init(param sortedIndices: bool = csLayoutSortByDefault) {
+    proc init(param sortedIndices: bool = csLayoutSortByDefault, param parSafe:bool = false) {
       this.sortedIndices = sortedIndices;
-      this.csl = new csLayout(compressRows=false, sortedIndices);
+      this.parSafe = parSafe;
+      this.csl = new csLayout(compressRows=false, sortedIndices, parSafe);
     }
 
     @chpldoc.nodoc
     proc init(value: CSImpl(?)) {
       this.sortedIndices = value.sortedIndices;
+      this.parSafe = value.parSafe;
       this.csl = new csLayout(value);
     }
   }
@@ -231,19 +243,23 @@ module CompressedSparseLayout {
   record csLayout {
     param compressRows: bool;
     param sortedIndices: bool = csLayoutSortByDefault;
-    forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
+    param parSafe: bool;
+    forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices, parSafe)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
 
     proc init(param compressRows: bool,
-              param sortedIndices: bool = csLayoutSortByDefault) {
-      const value = new unmanaged CSImpl(compressRows, sortedIndices);
+              param sortedIndices: bool = csLayoutSortByDefault,
+              param parSafe: bool) {
+      const value = new unmanaged CSImpl(compressRows, sortedIndices, parSafe);
       this.compressRows = compressRows;
       this.sortedIndices = sortedIndices;
+      this.parSafe = parSafe;
       this.chpl_layoutHelp = new chpl_layoutHelper(value);
     }
 
     proc init(value: CSImpl(?)) {
       this.compressRows = value.compressRows;
       this.sortedIndices = value.sortedIndices;
+      this.parSafe = value.parSafe;
       this.chpl_layoutHelp = new chpl_layoutHelper(value.dsiClone());
     }
 
@@ -263,7 +279,8 @@ module CompressedSparseLayout {
     param compressRows;
     param sortedIndices;
     param strides;
-    var dist: unmanaged CSImpl(compressRows,sortedIndices);
+    param parSafe;
+    var dist: unmanaged CSImpl(compressRows,sortedIndices,parSafe);
 
     var rowRange: range(idxType, strides=strides);
     var colRange: range(idxType, strides=strides);
@@ -280,10 +297,22 @@ module CompressedSparseLayout {
     pragma "local field"
     var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
+    // We explicitly use processor atomics here since this is not
+    // by design a distributed data structure
+    var _domainLock: if parSafe then chpl_LocalSpinlock else nothing;
+
+    inline proc lockDomain() {
+      if parSafe then _domainLock.lock();
+    }
+
+    inline proc unlockDomain() {
+      if parSafe then _domainLock.unlock();
+    }
+
     /* Initializer */
     proc init(param rank, type idxType, param compressRows,
-              param sortedIndices, param strides,
-              dist: unmanaged CSImpl(compressRows,sortedIndices),
+              param sortedIndices, param strides, param parSafe,
+              dist: unmanaged CSImpl(compressRows,sortedIndices,parSafe),
               parentDom: domain(?)) {
       if (rank != 2 || parentDom.rank != 2) then
         compilerError("Only 2D sparse domains are supported by the CSR/CSC layouts");
@@ -294,7 +323,8 @@ module CompressedSparseLayout {
 
       this.compressRows = compressRows;
       this.sortedIndices = sortedIndices;
-      this.strides      = strides;
+      this.strides = strides;
+      this.parSafe = parSafe;
 
       this.dist = dist;
       rowRange = parentDom.dim(0);
@@ -581,6 +611,11 @@ module CompressedSparseLayout {
           halt("Bulk index addition is only possible on the locale where the\
             sparse domain is created");
         }
+      }
+
+      lockDomain();
+      defer {
+        unlockDomain();
       }
 
       if this.compressRows then
