@@ -3,6 +3,8 @@
 # Rebuild all of the VMs. This will delete all data on the VMs.
 # Don't do that if you have data you want to keep in any VM!
 
+set -exuo pipefail
+
 # enable resizing disks to get
 #  config.vm.disk to work
 #  (to resize the disk for some VMs that come too small)

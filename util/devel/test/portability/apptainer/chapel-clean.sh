@@ -2,6 +2,8 @@
 
 # Git cleans the chapel checkout in each image's directory
 
+set -exuo pipefail
+
 if [ -z "$APPTAINER_IMAGE" ]
 then
   echo "Please set the APPTAINER_IMAGE environment variable to the name of the config you want to run this on."

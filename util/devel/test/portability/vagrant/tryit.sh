@@ -8,6 +8,8 @@
 # Expects the VM name to be given as an environment variable. The special name
 # "all" can be used to run the command on all VMs.
 
+set -exuo pipefail
+
 if [ -z "$VM_NAME" ]
 then
   echo "Please set the VM_NAME environment variable to the name of the VM you want to run this on."
