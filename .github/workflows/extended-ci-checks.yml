@@ -330,3 +330,10 @@ jobs:
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
         brew install llvm
+  paratest-linux64-gasnet-everything:
+    name: Chapel paratest on linux64 with gasnet-everything
+    uses: ./.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-gasnet-everything
+      cron-script: util/cron/test-gasnet-everything.bash
+      start-test-args: --futures
