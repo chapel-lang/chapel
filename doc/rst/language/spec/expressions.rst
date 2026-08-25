@@ -947,7 +947,7 @@ Exponentiation Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The exponentiation operator, ``**``, computes the value of the first
-operand raised to the power of the second, potentially appoximated by
+operand raised to the power of the second, potentially approximated by
 the limits of the numeric representations.
 
 .. code-block:: chapel

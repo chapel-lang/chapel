@@ -16,4 +16,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading str
   union-readWrite.chpl:38: called from here
   union-readWrite.chpl:38: called from here
   union-readWrite.chpl:38: called from here
+  union-readWrite.chpl:38: called from here
   union-readWrite.chpl:38: uncaught here

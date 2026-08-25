@@ -3,6 +3,8 @@
 # Checks if a fresh default build passes make check
 # Prints a summary at the end.
 
+set -exuo pipefail
+
 # apptainer forwards env vars to container by default, so unset
 # CHPL_DEVELOPER b/c it can change warning behavior
 unset CHPL_DEVELOPER

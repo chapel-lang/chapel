@@ -694,7 +694,7 @@ Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
     // 2. Other formals. These formals cannot be generic, but they do allow
     //    coercions (e.g., passing 'nil' to 'borrowed C?'). However, since
     //    getInstantiationType returned NULL, even if a coercion is possible,
-    //    it doesn't provide enough type information to isntantiate the formal,
+    //    it doesn't provide enough type information to instantiate the formal,
     //    leaving it generic.
     //
     // We will issue an error for these, but later. That way, if this

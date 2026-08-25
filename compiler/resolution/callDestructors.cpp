@@ -849,7 +849,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         // will need to deep-copy the result in non-'ref' situations
         // e.g., var B = A[2..n-1]; or var B = A.reshape(2..n-1) so
         // will need to autodestroy the result at the end of the scope
-        // and recgonize it as an array view in other situations.  Mark
+        // and recognize it as an array view in other situations.  Mark
         // it as an array view to help with this in later passes.
         //
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));

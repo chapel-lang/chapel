@@ -212,7 +212,7 @@ private:
   AList  errorCond(VarSymbol* errorVar,
                    BlockStmt* thenBlock,
                    BlockStmt* elseBlock = NULL);
-  CallExpr* haltExpr(VarSymbol* error, bool tryBang);
+  void haltExpr(VarSymbol* error, bool tryBang, BlockStmt* body, Symbol* parent);
   void setupForThrowingLoop(Stmt* node,
                             LabelSymbol* handlerLabel,
                             BlockStmt* body);
@@ -356,7 +356,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
-      currHandler->insertAtTail(haltExpr(errorVar, true));
+      haltExpr(errorVar, true, currHandler, tryStmt->parentSymbol);
     } else if (!tryStack.empty()) {
       currHandler->insertAtTail(setOuterErrorAndGotoHandler(errorVar, tryStmt->parentSymbol));
     } else if (outError != NULL) {
@@ -410,9 +410,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       errorVar = info.errorVar;
 
       // (a) an enclosing try/try!
-      errorPolicy->insertAtTail(
-        new CallExpr(PRIM_MOVE, errorVar,
-          new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
+      if (!node->parentSymbol ||
+          !node->parentSymbol->hasFlag(FLAG_COMPILER_GENERATED)) {
+        errorPolicy->insertAtTail(
+          new CallExpr(PRIM_MOVE, errorVar,
+            new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
+      }
       errorPolicy->insertAtTail(gotoHandler());
     } else {
       // without try, need an error variable
@@ -429,7 +432,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         if (node->parentSymbol->hasFlag(FLAG_ITERATOR_FN))
           // (c) coforall or similar in a non-throwing iterator
           // ==> we will propagate the error when the iterator is inlined
-          errorPolicy->insertAtTail(haltExpr(errorVar, false));
+          haltExpr(errorVar, false, errorPolicy, node->parentSymbol);
         else if (node->parentSymbol->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN))
           // (d) coforall/... in a task function in a non-throwing iterator
           // ==> propagate the error through the task function
@@ -437,11 +440,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         else
           // (e) coforall or similar in a non-throwing procedure
           // ==> halt right away
-          errorPolicy->insertAtTail(haltExpr(errorVar, true));
+          haltExpr(errorVar, true, errorPolicy, node->parentSymbol);
       }
       else {
         // (f) a throwing call in a non-throwing function ==> halt right away
-        errorPolicy->insertAtTail(haltExpr(errorVar, true));
+        haltExpr(errorVar, true, errorPolicy, node->parentSymbol);
       }
     }
 
@@ -632,7 +635,7 @@ void ErrorHandlingVisitor::exitForallLoop(Stmt* node) {
   } else if (outError != NULL) {
     handler->insertAtTail(setOutGotoEpilogue(normErr, node->parentSymbol));
   } else {
-    handler->insertAtTail(haltExpr(normErr, false));
+    haltExpr(normErr, false, handler, node->parentSymbol);
   }
   info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
 }
@@ -846,11 +849,14 @@ static AList errorCondHelper(VarSymbol* errorVar,
 // (with try!). If not, the compiler is adding the halt-on-error for one
 // reason or another and later passes should be able to change the halt
 // into other error handling (as with, say, iterator inlining).
-CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar, bool tryBang) {
-  if (tryBang)
-    return new CallExpr(gChplUncaughtError, errorVar);
-
-  return new CallExpr(gChplPropagateError, errorVar);
+void ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar, bool tryBang, BlockStmt* block, Symbol* parent) {
+  auto retFunc = tryBang ? gChplUncaughtError : gChplPropagateError;
+  if (!parent || !parent->hasFlag(FLAG_COMPILER_GENERATED)) {
+    block->insertAtTail(
+      new CallExpr(PRIM_MOVE, errorVar,
+        new CallExpr(gChplErrorPropagateStackInfo, new SymExpr(errorVar))));
+  }
+  block->insertAtTail(new CallExpr(retFunc, errorVar));
 }
 
 

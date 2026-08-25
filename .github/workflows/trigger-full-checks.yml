@@ -35,8 +35,7 @@ jobs:
     uses: ./.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
-    if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
-    # if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
+    if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
     runs-on: ubuntu-slim
     needs:
       - core-checks
@@ -60,17 +59,19 @@ jobs:
       - name: generate email body
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
-          gh api /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs.json
+          gh api --paginate /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs_raw.json
+          # Combine pages of job results into one array
+          jq '.jobs[]' jobs_raw.json | jq --slurp '.' | tee jobs_array.json
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
-          num_jobs=$(jq '.jobs | length' jobs.json)
-          readarray -t failed_job_ids < <(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs.json)
+          num_jobs=$(jq 'length' jobs_array.json)
+          readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs_array.json)
 
           failed_jobs_html=""
           for id in "${failed_job_ids[@]}"; do
             gh api "/repos/chapel-lang/chapel/actions/jobs/$id" > "job_$id.json"
             sleep 0.25
-            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step \(.first_bad_step)</li>"' "job_$id.json")
+            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step: \"\(.first_bad_step)\"</li>"' "job_$id.json")
           done
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
@@ -89,8 +90,8 @@ jobs:
           <p>GitHub Actions run info:</p>
           <ul>
             <li>SHA: <a href="https://github.com/chapel-lang/chapel/commit/${{ github.sha }}">${{ github.sha }}</a></li>
-            <li>Run ID: ${{ github.run_id }}</li>
-            <li>Run attempt: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_attempt }}">${{ github.run_attempt }}</a></li>
+            <li>Run ID: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a></li>
+            <li>Run attempt: ${{ github.run_attempt }}</li>
             <li>Run number: ${{ github.run_number }}</li>
             <li>Triggering event name: ${{ github.event_name }}</li>
           </ul>
@@ -110,6 +111,6 @@ jobs:
            username:  ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
-           to: "anna.rift@hpe.com"
+           to: ${{ secrets.CHAPEL_BUILD_MAIL_ADDRESS }}
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            html_body: file://${{ env.EMAIL_BODY_FILENAME }}

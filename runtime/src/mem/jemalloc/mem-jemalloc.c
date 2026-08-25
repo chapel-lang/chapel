@@ -605,11 +605,11 @@ static void initializeSharedHeap(void) {
 
   useUpMemNotInHeap();
 
-  // printf("trying to do an allocagion\n");
+  // printf("trying to do an allocation\n");
   // void* p = CHPL_JE_MALLOCX(2 * 1024 * 1024, MALLOCX_NO_FLAGS);
   // printf("got %p\n", p);
 
-  // printf("trying to do an allocagion\n");
+  // printf("trying to do an allocation\n");
   // p = CHPL_JE_MALLOCX(57344, MALLOCX_NO_FLAGS);
   // printf("got %p\n", p);
 }

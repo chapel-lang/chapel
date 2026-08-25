@@ -347,7 +347,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
         // make this type generic.
         //
         // Create a new 'visited' for each recursive call here to avoid
-        // polluting subseqeunt fields that oughtn't be marked recursive.
+        // polluting subsequent fields that oughtn't be marked recursive.
         // Only types we've seen "on the path" to the current type should
         // be in the visited set.
         bool foundGenericWithoutInit = false;

@@ -704,7 +704,7 @@ class CallInfo {
   static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
 
   /** Copy and mark the selected actuals as "only having been allowed in
-      in oder to support split-init". */
+      in order to support split-init". */
   static CallInfo copyAndMarkSplitInitActuals(const CallInfo& ci, const std::unordered_set<int>& actualIndices);
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
@@ -1294,7 +1294,7 @@ class TypedFnSignature {
     For initial signatures, returns 'true' if resolving the where clause
     produced an error.
    */
-  bool whereClausePrducedError() const {
+  bool whereClauseProducedError() const {
     if (formalsErrored_.size() == 0) return false;
     return formalsErrored_[numFormals()];
   }

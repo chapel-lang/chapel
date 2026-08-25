@@ -970,7 +970,7 @@ static void genFilenameTable() {
 //    -- If the the Chapel name starts with 'chpl_', then omit that function.
 //    -- If the the C name starts with 'chpl_', then omit that function.
 //    -- A non-extern function can always be renamed.
-//    -- An extern function can be renamed only if there is 1 occurence.
+//    -- An extern function can be renamed only if there is 1 occurrence.
 //
 class UnwindTable {
   // Use an ordered map to sort the table contents in alphabetical order.

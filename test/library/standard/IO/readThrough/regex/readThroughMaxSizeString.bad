@@ -10,4 +10,5 @@ uncaught BadFormatError: bad format (in readThrough(regex(string)) with path "ma
   readThroughMaxSizeString.chpl:30: called from here
   readThroughMaxSizeString.chpl:30: called from here
   readThroughMaxSizeString.chpl:30: called from here
+  readThroughMaxSizeString.chpl:30: called from here
   readThroughMaxSizeString.chpl:30: uncaught here

@@ -360,7 +360,7 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * improved the handling of Chapel breakpoints in LLDB 22+
-* modernized the `c2chapel` testing infastructure
+* modernized the `c2chapel` testing infrastructure
 * rewrote the Mason build system to allow for external dependencies
 * rewrote the Mason build system to work independently of Chapel's
 * rewrote `mason new` and `mason init` to be more robust

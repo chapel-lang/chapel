@@ -639,7 +639,7 @@ struct ConstructObject : public ConstructDIType {
       debugData->getType(CLASS_ID_TYPE)
     );
     EltTys.push_back(cidDITy);
-    // since dtObject has a single field, we can directly assume the size and alignent to
+    // since dtObject has a single field, we can directly assume the size and alignment to
     // be the same as its single field
     llvm::DIType* N = DIB->createStructType(
       defInfo.maybeScope(),
@@ -796,7 +796,7 @@ struct ConstructEnum : public ConstructDIType {
 #if LLVM_VERSION_MAJOR >= 18
     RuntimeLang,
 #endif
-      "", /* UniqueIdentifer */
+      "", /* UniqueIdentifier */
       true /* isScoped */
     );
     enumType->symbol->llvmDIType = N;

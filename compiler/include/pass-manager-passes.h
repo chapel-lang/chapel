@@ -250,7 +250,7 @@ class AdjustSymbolTypes : public PassTU<Symbol*, SymExpr*> {
 
 /**
   This pass adjusts any symbol with a procedure-pointer type so that it is
-  a new, similiar type that has line/file formals appended.
+  a new, similar type that has line/file formals appended.
 
   After this pass the AST will be in an inconsistent state, and the pass
   'InsertLineNumbers' must be run in order to fix it up.
@@ -322,7 +322,7 @@ class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
 
 /**
   This pass adjusts any symbol with a procedure-pointer type so that it is
-  a new, similiar type where all of its widenable components are widened.
+  a new, similar type where all of its widenable components are widened.
   A widenable component is e.g., a 'ref' formal or a 'class' formal.
 
   After this pass the AST will be in an inconsistent state, and the pass

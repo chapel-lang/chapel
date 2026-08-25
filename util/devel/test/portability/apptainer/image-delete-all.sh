@@ -2,6 +2,8 @@
 
 # Deletes the apptainer image in each current subdirectory
 
+set -exuo pipefail
+
 for name in current/*
 do
   if [ -f $name/image.def ]

@@ -27,12 +27,12 @@
 
 /*
   Define a saturating add on signed arithmetic.
-  * res, x, and y should be plain identifers of type __stype
+  * res, x, and y should be plain identifiers of type __stype
   * __utype should be the unsigned version of __stype
   * __smax should be the maximum representable value in __stype
 
   __builtin_elementwise_add_sat is a clang extension, use that if available.
-  Its more efficent to use __builtin_add_overflow (gcc/clang) but if not available
+  Its more efficient to use __builtin_add_overflow (gcc/clang) but if not available
   the fall back is OK.
 
   Note: on clang before 21, __builtin_elementwise_add_sat applied the usual
