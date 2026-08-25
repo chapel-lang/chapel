@@ -848,7 +848,7 @@ index 0fcb0d05f99..e8da63590fe 100644
 @@ -1,2 +1 @@
 -boolWithSize.chpl:3: error: illegal type index expression 'bool(8)'
 -boolWithSize.chpl:3: note: primitive type 'bool' cannot be indexed in this manner
-+boolWithSize.chpl:3: error: the 'bool' type is not generic and only has one width, so it doen't take type constructor arguments
++boolWithSize.chpl:3: error: the 'bool' type is not generic and only has one width, so it doesn't take type constructor arguments
 diff --git a/test/types/bool/bradc/numBitsBytesDefault.good b/test/types/bool/bradc/numBitsBytesDefault.good
 index 9a382c0091f..cee8191b5e0 100644
 --- a/test/types/bool/bradc/numBitsBytesDefault.good
