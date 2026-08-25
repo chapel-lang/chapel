@@ -41,8 +41,6 @@
 extern "C" {
 #endif
 
-extern void* const chpl_global_serialize_table[];
-
 #ifdef __cplusplus
 }
 #endif

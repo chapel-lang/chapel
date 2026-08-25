@@ -374,10 +374,6 @@ void chpl_comm_regMemHeapTouch(void* start, uintptr_t size) {
   }
 }
 
-void* chpl_get_global_serialize_table(int64_t idx) {
-  return chpl_global_serialize_table[idx];
-}
-
 static chpl_bool can_shutdown = false;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;

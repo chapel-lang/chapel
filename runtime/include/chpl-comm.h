@@ -376,6 +376,14 @@ void chpl_rt_comm_register_global_var(chpl_rt_prginfo* prg,
   chpl_globals_registry[idx] = ptr_to_wide_ptr;
 }
 
+// TODO: Move this entirely to module code.
+static inline
+void* chpl_rt_global_serialize_table_entry(chpl_rt_prginfo* prg,
+                                           int64_t idx) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_global_serialize_table);
+  return chpl_global_serialize_table[idx];
+}
+
 //
 // This routine is used by the Chapel runtime to broadcast the locations of
 // module-level ("global") variables within a program to all locales so that
