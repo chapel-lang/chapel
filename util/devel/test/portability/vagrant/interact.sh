@@ -3,6 +3,8 @@
 # Log into VMs to run commands manually
 # Assumes VM is up and leaves it running
 
+set -exuo pipefail
+
 if [ -z "$VM_NAME" ]
 then
   echo "Please set the VM_NAME environment variable to the name of the VM you want to run this on."
