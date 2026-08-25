@@ -60,11 +60,13 @@ jobs:
       - name: generate email body
         run: |
           gh api /repos/chapel-lang/chapel/commits/${{ github.sha }} | tee commit.json
-          gh api /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs.json
+          gh api --paginate /repos/chapel-lang/chapel/actions/runs/${{ github.run_id }}/jobs | tee jobs_raw.json
+          # Combine pages of job results into one array
+          jq '.jobs[]' jobs_raw.json | jq --slurp '.' | tee jobs_array.json
 
           message=$(jq -r '.commit.message' commit.json | head -n 1)
-          num_jobs=$(jq '.jobs | length' jobs.json)
-          readarray -t failed_job_ids < <(jq '.jobs[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs.json)
+          num_jobs=$(jq 'length' jobs_array.json)
+          readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs_array.json)
 
           failed_jobs_html=""
           for id in "${failed_job_ids[@]}"; do
