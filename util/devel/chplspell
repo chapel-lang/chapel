@@ -98,8 +98,11 @@ FILTEROUT="frontend/lib/parsing/bison-chpl-lib.cpp \
            doc/rst/primers                  \
            doc/rst/examples                 \
            modules/packages/HDF5.chpl       \
+           modules/packages/ImageHelper/stb/stb_image.h \
+           modules/packages/ImageHelper/stb/stb_image_write.h \
            modules/packages/LAPACK.chpl     \
-           modules/packages/NetCDF.chpl"
+           modules/packages/NetCDF.chpl     \
+           modules/packages/Zarr.chpl"
 
 
 # Here endeth the configuration options.  The rest of the script
