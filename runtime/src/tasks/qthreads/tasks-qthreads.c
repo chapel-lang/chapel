@@ -1005,6 +1005,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                            int32_t lineno,
                            int32_t filename) {
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_localeModel_sublocToExecutionSubloc);
 
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
@@ -1044,32 +1045,35 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
 static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                                 void *arg, size_t arg_size,
                                 c_sublocid_t full_subloc,
-                                int32_t lineno, int32_t filename)
-{
-    chpl_task_bundle_t *bundle = chpl_argBundleTaskArgBundle(arg);
-    c_sublocid_t execution_subloc =
-      chpl_localeModel_sublocToExecutionSubloc(full_subloc);
+                                int32_t lineno, int32_t filename) {
+  // TODO: Need to pipe in the owning program instead of always using root?
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_localeModel_sublocToExecutionSubloc);
 
-    *bundle = (chpl_task_bundle_t)
-              { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
-                .is_executeOn    = true,
-                .lineno          = lineno,
-                .filename        = filename,
-                .requestedSubloc = full_subloc,
-                .requested_fid   = fid,
-                .requested_fn    = fp,
-                .id              = chpl_nullTaskID,
-                .infoChapel      = bundle->infoChapel, // retain; set by caller
-              };
+  chpl_task_bundle_t *bundle = chpl_argBundleTaskArgBundle(arg);
+  c_sublocid_t execution_subloc =
+    chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
+  *bundle = (chpl_task_bundle_t)
+            { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
+              .is_executeOn    = true,
+              .lineno          = lineno,
+              .filename        = filename,
+              .requestedSubloc = full_subloc,
+              .requested_fid   = fid,
+              .requested_fn    = fp,
+              .id              = chpl_nullTaskID,
+              .infoChapel      = bundle->infoChapel, // retain; set by caller
+            };
 
-    if (execution_subloc < 0) {
-        qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
-    } else {
-        qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
-                                 (qthread_shepherd_id_t) execution_subloc);
-    }
+  wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
+
+  if (execution_subloc < 0) {
+      qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
+  } else {
+      qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
+                               (qthread_shepherd_id_t) execution_subloc);
+  }
 }
 
 void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
