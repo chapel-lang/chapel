@@ -63,7 +63,9 @@ function apply_patch() {
 }
 
 function test_compile() {
-  local kind=$@
+  local kind=$1
+  shift
+  local extra_make=$@
   local make_vars="MOD=$kind NPROCS=0"
   local reset_chpl_stop_after_pass=false
 
@@ -85,6 +87,9 @@ function test_compile() {
 
     echo "[Building $kind in normal mode]"
   fi
+
+  make_vars+=$extra_make
+  echo "[make_vars: $make_vars]"
 
   test_start "make $kind"
   make $version $make_vars 2> $kind.comp.out.tmp
