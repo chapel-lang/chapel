@@ -138,5 +138,5 @@ jobs:
           docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* "$IMAGE_FULL_NAME-x86"
       - name: create multiarch image
         run: |
-          docker manifest create "$IMAGE_FULL_NAME" --amend "$IMAGE_FULL_NAME-arm64" --amend "$IMAGE_FULL_NAME-x86"
+          docker manifest create "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
       # TODO: push to ghcr / dockerhub
