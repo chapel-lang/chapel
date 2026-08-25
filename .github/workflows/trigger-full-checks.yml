@@ -35,8 +35,7 @@ jobs:
     uses: ./.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
-    if: cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')
-    # if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
+    if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
     runs-on: ubuntu-slim
     needs:
       - core-checks
@@ -112,6 +111,6 @@ jobs:
            username:  ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
-           to: "anna.rift@hpe.com"
+           to: ${{ secrets.CHAPEL_BUILD_MAIL_ADDRESS }}
            from:  "Chapel Automaton <chapel_commits@cray.com>"
            html_body: file://${{ env.EMAIL_BODY_FILENAME }}
