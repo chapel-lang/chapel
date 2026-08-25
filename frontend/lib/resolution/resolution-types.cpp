@@ -1475,7 +1475,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
   // initializer, it can have substitution-producing statements such
   // as `this.typeField = int`. Now that we have picked this candidate
   // as most specific, it's safe to resolve the body without worrying about
-  // spurious errors from other andidates.
+  // spurious errors from other candidates.
   if (fn->isInitializer()) {
     auto instantiationPoiScope =
       Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);

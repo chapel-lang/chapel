@@ -452,7 +452,7 @@ Settings
 Some rules may need to be configurable from the command line. For example, a
 ``TabSize`` rule might need to know what the tab size is set to. Rules can
 declare what settings they need with the ``settings`` argument, which is a list
-of setting names. Settings that begin with ``.`` are consided local to the rule,
+of setting names. Settings that begin with ``.`` are considered local to the rule,
 while settings that do not are considered global. For example, the following
 rule declares rule ``TabSize`` with a setting ``Size``:
 

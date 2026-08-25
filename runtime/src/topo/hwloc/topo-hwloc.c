@@ -603,7 +603,7 @@ static void partitionResources(void) {
   if (numColocales > 0) {
     if (numLocalesOnNode <= numColocales) {
       // There are fewer colocales than there should be, probably because the
-      // number of locales isn't evenly divisable by the number of nodes.
+      // number of locales isn't evenly divisible by the number of nodes.
       // Partition resources as if there are the full complement of
       // colocales, but set the number of colocales to the actual number.
       numPartitions = numColocales;
@@ -686,10 +686,10 @@ static void partitionResources(void) {
           logAccSets[i] = s;
         }
 
-        // logAccSets has the cores each parition can use. If they don't have
+        // logAccSets has the cores each partition can use. If they don't have
         // the same number of cores, then we can't proceed with this
         // partitioning scheme.
-        // we also want to avoid the situation where all the paritions
+        // we also want to avoid the situation where all the partitions
         // end up having 0 cores.
         assert(numPartitions > 0);
         int firstSetSize = hwloc_bitmap_weight(logAccSets[0]);
@@ -757,7 +757,7 @@ static void partitionResources(void) {
         if (!chpl_env_rt_get_bool("SILENCE_UNUSED_CORES", false)) {
 
           // TODO: on a hybrid arch like M3 or alderlake with all the
-          // efficency cores in one L2 and all the performance cores in
+          // efficiency cores in one L2 and all the performance cores in
           // another, this can be misleading. For example, currently
           // trying to pin to 'core' on alderlake will report unused cores
           // for all cores, instead of just the ones selected by CHPL_RT_USE_PU_KIND.

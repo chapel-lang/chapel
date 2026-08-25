@@ -294,7 +294,7 @@ Common Slurm Settings
     export CHPL_LAUNCHER_WALLTIME=00:10:00
 
 * If you need to pass more arguments to slurm, you can use the slurm environment
-  variable for the option. Alternatibvey, you can pass extra arguments through
+  variable for the option. Alternatively, you can pass extra arguments through
   the ``--system-launcher-flags`` flag. For example, to pass ``--account=acct`` to
   slurm, you can use:
 

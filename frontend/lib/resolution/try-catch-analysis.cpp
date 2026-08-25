@@ -415,7 +415,7 @@ namespace resolution {
     while (!moduleId.isEmpty()) {
       auto ag = parsing::idToAttributeGroup(context, moduleId);
       if (!ag) {
-        // no attibute group on this module; is there a parent module?
+        // no attribute group on this module; is there a parent module?
       } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
         return ErrorCheckingMode::FATAL;
       } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {

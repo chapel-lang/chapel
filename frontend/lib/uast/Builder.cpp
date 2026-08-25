@@ -382,7 +382,7 @@ void Builder::assignIDs() {
 
   if (topLevelRepeatOffset_) {
     // this is a special way to get a builder that creates a numbered overload
-    // for a particular function when compler-generating AST. Thus,
+    // for a particular function when compiler-generating AST. Thus,
     // ensure we are marked as generated, and that there's only one symbol,
     // whose offset we are now going to adjust.
     CHPL_ASSERT(isGenerated());

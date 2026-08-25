@@ -694,7 +694,7 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     // TODO: we could consider a more general way to signal how a particular
     // call was resolved (like, "hey, this was resolved by a compiler-generated
     // elided cast!") so that we don't have to pattern match. However, there
-    // aren't a lot of different casses like this, so for now I'm leaving
+    // aren't a lot of different cases like this, so for now I'm leaving
     // the special case. - D.F.
     if (auto op = callAst->toOpCall()) {
       if (op->op() == USTR(":")) {
@@ -751,7 +751,7 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
                                actualPromoted, promoCtx);
 
     // for a given actual index, returns:
-    // * nullptr if no promotion ocurred
+    // * nullptr if no promotion occurred
     // * the scalar type of the given actual was used in promotion
     // * the actual type itself if it was not
     // This can be used to signal to handleInFormal() etc. to adjust

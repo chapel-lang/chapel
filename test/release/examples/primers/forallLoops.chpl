@@ -346,7 +346,7 @@ task-private variable is an alias for.
 
 The next example highlights some uses of task-private variables
 and their syntactic differences from explicit task intents for
-shadow varialbes.
+shadow variables.
 */
 
 outerAtomicVariable.write(1);

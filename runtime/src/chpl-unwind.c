@@ -220,7 +220,7 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   if (!chpl_get_command_output(buf, buf, sizeof(buf)))
     return 0;
 
-  // format is '<FN_NAME> (in <REL_EXEC_NAME>) (<FILENAME>:<LINENUME>)
+  // format is '<FN_NAME> (in <REL_EXEC_NAME>) (<FILENAME>:<LINENUM>)
   // search from the end of the string backwards for ':'
   char* bufPtr = buf + strlen(buf) - 1;
   while (bufPtr > buf && *bufPtr != ':') { bufPtr--; }

@@ -3135,7 +3135,7 @@ module ChapelArray {
 
   proc chpl__validateReshape(arr, dom) {
     if dom.size != arr.size then
-      halt("Size mismatch: Can't rehape a ", arr.size,
+      halt("Size mismatch: Can't reshape a ", arr.size,
            "-element array into a ", dom.size, "-element array");
 
     if arr.size > 0 && dom.size > 0 {

@@ -117,7 +117,7 @@ static constexpr RequiredSignedness RS_NONE = 0, RS_SIGNED = 1, RS_UNSIGNED = 2;
 
   To help bridge the gap (fetch enum numeric value, to use it in an initialization
   expression for another enum, before the type of the numeric value is known),
-  this query provides the "intial guess", which is aware only of information
+  this query provides the "initial guess", which is aware only of information
   preceding the given element's declaration.
  */
 std::pair<optional<types::QualifiedType>, RequiredSignedness> const&
@@ -430,10 +430,10 @@ const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
   implementation points for a particular interface.
  */
 const std::vector<const ImplementationPoint*>*
-visibileImplementationPointsForInterface(Context* context,
-                                         const Scope* scope,
-                                         const PoiScope* poiScope,
-                                         ID interfaceId);
+visibleImplementationPointsForInterface(Context* context,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
+                                        ID interfaceId);
 
 /**
   Helper to resolve a concrete function using the above queries.

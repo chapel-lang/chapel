@@ -381,7 +381,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                               snprintf(NULL, 0, "%d", (int)mypid) + 1;
 
     if (filename_size <= 0) {
-      chpl_internal_error("An unexpected error occured while computing \
+      chpl_internal_error("An unexpected error occurred while computing \
                           sbatch filename size");
     }
 
@@ -393,7 +393,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                              baseSBATCHFilename, (int)mypid);
 
     if (ret <= 0) {
-      chpl_internal_error("An unexpected error occured while generating \
+      chpl_internal_error("An unexpected error occurred while generating \
                           sbatch filename");
     }
 

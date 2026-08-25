@@ -32,7 +32,7 @@ namespace resolution {
   Specifically, it tracks whether the program has returned, thrown, invoked 'break',
   or invoked 'continue'. This is used in various program analyses to avoid
   reasoning about code that's unreachable. It is also used in some analyses
-  for other reasons (e.g. if a frame doesn't initialze a split-init'ed variable,
+  for other reasons (e.g. if a frame doesn't initialize a split-init'ed variable,
   but throws, that variable is still eligible for split-init).
  */
 struct ControlFlowInfo {
@@ -236,7 +236,7 @@ struct DefaultFrame : public BaseFrame<DefaultFrame> {
   are intended to perform that work. For other visitors which operates on
   results of the resolution process, these methods are intended to simply
   access that (pre-computed) information. Finally, 'traverseNode' is used
-  when "comitting" to a 'param'-known path.
+  when "committing" to a 'param'-known path.
 
   To call into the conditional/select logic, use 'branchSensitivelyTraverse'.
 
@@ -594,18 +594,18 @@ struct BranchSensitiveVisitor {
     return false;
   }
 
-  /** Overriden by subclasses to determine the value of a when case expression.
+  /** Overridden by subclasses to determine the value of a when case expression.
       This is used for evaluating short-circuited / 'param' known (or not) When statements. */
   virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
-  /** Overriden by subclasses to determine the value of an if condition.
+  /** Overridden by subclasses to determine the value of an if condition.
       This is used for evaluating short-circuited / 'param known' (or not) Conditional statements. */
   virtual const types::Param* determineIfValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
   bool isParamTrue(const types::Param* param) { return param && param->isNonZero(); }
   bool isParamFalse(const types::Param* param) { return param && param->isZero(); }
 
-  /** Overriden by subclasses to traverse a node using their visitor startegy.
+  /** Overridden by subclasses to traverse a node using their visitor strategy.
       This is used for entering bodies of 'param'-known branches. */
   virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
 
