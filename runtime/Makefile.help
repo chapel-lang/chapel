@@ -170,12 +170,12 @@ RUNTIME_LIST_INCLUDESANDDEFINES = $(RUNTIME_DIR)/list-includes-and-defines
 RUNTIME_LIST_LIBRARIES = $(RUNTIME_DIR)/list-libraries
 RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
 
-# Mac linkers use eager linking by default, while Linux linkers use lazy
-# linking (when the symbol is first referenced at runtime) by default.
-# So toggle the below flags to consistently maintain lazy/eager linking
-# for both platforms.
+# Mac linkers use eager lookup (occurs when the library is linked) by default,
+# while Linux linkers use lazy lookup (occurs when a symbol is first
+# referenced at runtime) by default. Toggle the below flags to consistently
+# maintain lazy/eager lookup for both platforms.
 #
-# Right now both platforms use eager linking.
+# Right now both platforms use eager linking so we get errors ASAP.
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
   # Uncomment for the Mac linker to use lazy linking.
   # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
