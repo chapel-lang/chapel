@@ -28,7 +28,6 @@
 #include "chpl-comm.h"
 #include "chpl-error.h"
 #include "chpl-unwind.h"
-#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {

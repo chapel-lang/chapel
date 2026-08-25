@@ -22,7 +22,6 @@
 
 #include "arg.h"
 #include "chplcast.h"
-#include "chplcgfns.h"
 #include "chpl-env.h"
 #include "chplexit.h"
 #include "chplio.h"

@@ -55,7 +55,6 @@
 #define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 0
 #endif
 
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
 #include "chpl-cache.h"

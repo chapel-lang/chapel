@@ -24,7 +24,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpl-env.h"

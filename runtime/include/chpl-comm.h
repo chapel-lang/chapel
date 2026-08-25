@@ -33,7 +33,6 @@
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
 #include "chpl-prginfo.h"
-#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -35,7 +35,6 @@
 
 #include "arg.h"
 #include "chpl-error.h"
-#include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
 #include "chpl-comm.h"
 #include "chpl-env.h"

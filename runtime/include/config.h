@@ -22,7 +22,6 @@
 #define _config_H_
 
 #include "chpltypes.h"
-#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {

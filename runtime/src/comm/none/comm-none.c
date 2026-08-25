@@ -29,7 +29,6 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
 #include "chpl-prginfo.h"

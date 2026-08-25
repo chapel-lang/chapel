@@ -28,7 +28,6 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 #include "chpl-comm-internal.h"
-#include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "chpl-prginfo.h"
 #include "config.h"
