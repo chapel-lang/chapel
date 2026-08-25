@@ -18,7 +18,7 @@ defaults:
 
 env:
   CONFIG: ${{ inputs.config }}
-  REGISTRY: "docker.io"
+  REGISTRY: "localhost:5000"
   NAMESPACE: "chapel"
   TARBALL_NAME_PREFIX: "chapel-image-"
 
@@ -112,7 +112,8 @@ jobs:
           docker run --rm -i "$IMAGE_FULL_NAME" < "$TEST_SCRIPT"
       - name: export image to tarball
         run: |
-          docker image save -o "$IMAGE_TARBALL" "$IMAGE_FULL_NAME"
+          docker tag "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-$ARCH"
+          docker image save -o "$IMAGE_TARBALL" "$IMAGE_FULL_NAME-$ARCH"
       - name: upload image tarball
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -126,6 +127,11 @@ jobs:
     env:
       IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
       IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
     steps:
       - name: download image tarball for each arch
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -134,9 +140,11 @@ jobs:
           merge-multiple: true
       - name: import images into docker
         run: |
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64* "$IMAGE_FULL_NAME-arm64"
-          docker image import "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86* "$IMAGE_FULL_NAME-x86"
+          docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64*
+          docker push "$IMAGE_FULL_NAME-arm64"
+          docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86*
+          docker push "$IMAGE_FULL_NAME-x86"
       - name: create multiarch image
         run: |
-          docker manifest create "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
       # TODO: push to ghcr / dockerhub
