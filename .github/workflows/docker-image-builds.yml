@@ -140,6 +140,8 @@ jobs:
           merge-multiple: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        with:
+          driver-opts: network=host
       - name: import images into docker
         run: |
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64*
