@@ -10,4 +10,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading ent
   day02.chpl:11: called from here
   day02.chpl:11: called from here
   day02.chpl:11: called from here
+  day02.chpl:11: called from here
   day02.chpl:11: uncaught here
