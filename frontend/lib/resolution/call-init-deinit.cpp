@@ -441,7 +441,7 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
       // don't deinit reference variables
       if (!isValue(type.kind())) continue;
 
-      // don't deinit generic variables (asuming error issued elsewhere)
+      // don't deinit generic variables (assuming error issued elsewhere)
       auto g = getTypeGenericity(context, type);
       if (g != Type::CONCRETE) {
         return;
@@ -1049,7 +1049,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
         }
       }
 
-      // 'manage bla as reg x' means to capture the 'enterContext' clal by ref,
+      // 'manage bla as reg x' means to capture the 'enterContext' call by ref,
       // no need to initialize it.
     } else if (parent->isAs()) {
       if (auto grandparent = parsing::parentAst(context, parent)) {

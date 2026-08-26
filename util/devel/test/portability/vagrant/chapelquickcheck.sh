@@ -3,4 +3,6 @@
 # Checks if a Quickstart build passes make check
 # Prints a summary at the end.
 
+set -exuo pipefail
+
 ./tryit.sh 'bash -c '\''cd chapel && source util/quickstart/setchplenv.bash && export GMAKE=`which gmake` && export MAKE=${GMAKE:-make} && $MAKE && $MAKE check'\'

@@ -32,6 +32,7 @@ def cd(d: Optional[Path]):
         if d is not None:
             os.chdir(old_dir)
 
+
 def mason() -> Path:
     sub_dir = chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
     result = sp.check_output(
@@ -118,7 +119,10 @@ class Test:
 
         cmd = [str(executable.absolute())]
         if not os.access(executable, os.X_OK):
-            bashWrapper =  Path(__file__).resolve().absolute().parent / "MasonBashWrapper.bash"
+            bashWrapper = (
+                Path(__file__).resolve().absolute().parent
+                / "MasonBashWrapper.bash"
+            )
             # if the file is not executable, run it with bash with decent defaults
             cmd = [str(bashWrapper)] + cmd
         sys.stdout.write("[Executing program: {}]\n".format(" ".join(cmd)))
@@ -198,8 +202,14 @@ class Test:
 
             if retcode != 0:
                 sys.stdout.write(
-                    "[Error matching output for {} (exited with exit code {})]\n".format(self._nice_output_name(), retcode)
+                    "[Error matching output for {} (exited with exit code {})]\n".format(
+                        self._nice_output_name(), retcode
+                    )
                 )
+                with open(executable_output, "r") as f:
+                    output = f.read()
+                sys.stdout.write("[Executable output]\n")
+                sys.stdout.write(output)
             elif self.good_file is None:
                 self._cleanup(executable_output)
                 sys.stdout.write(
@@ -208,9 +218,7 @@ class Test:
                     )
                 )
             else:
-                if self._compare_output(
-                    executable_output
-                ):
+                if self._compare_output(executable_output):
                     self._cleanup(executable_output)
                     sys.stdout.write(
                         "[Success matching output for {}]\n".format(
@@ -247,12 +255,13 @@ def dirSkipIf(d: Path):
 def main():
     sub_test_util.printStartOfTestMsg(time.localtime())
 
-
-    compiler=sys.argv[1]
+    compiler = sys.argv[1]
     chpl_base = sub_test_util.get_chpl_base(compiler)
     chpl_home_from_chpl = sub_test_util.get_chpl_home(chpl_base)
     if Path(chpl_home_from_chpl).resolve() != chpl_home.resolve():
-        sys.stdout.write(f"[Error: chpl_home from chpl {chpl_home_from_chpl} does not match expected {chpl_home}]\n")
+        sys.stdout.write(
+            f"[Error: chpl_home from chpl {chpl_home_from_chpl} does not match expected {chpl_home}]\n"
+        )
         sys.exit(1)
 
     d = Path(os.path.dirname(os.path.abspath(__file__)))

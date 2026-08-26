@@ -2,6 +2,8 @@
 
 # Deletes the chapel checkout in each image's directory
 
+set -exuo pipefail
+
 for name in current/*
 do
   if [ -f $name/image.def ]

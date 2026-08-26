@@ -535,7 +535,7 @@ bool needCompilerGeneratedBinaryOp(Context* context,
                                    const types::QualifiedType& rhs,
                                    UniqueString name) {
   // check if the regular call (e.g., lhs + rhs) would work, but also allow
-  // for the posibility of promotion (e.g., effectively [lhsScalar in lhs] lhs + rhs).
+  // for the possibility of promotion (e.g., effectively [lhsScalar in lhs] lhs + rhs).
   // This leads to a total of 4 cases.
 
   for (int i : { 0b00, 0b01, 0b10, 0b11 }) {

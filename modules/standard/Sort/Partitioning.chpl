@@ -835,7 +835,7 @@ record bktCount {
      Bucket i consists of elts with
        split.sortedSplitter(i-1) < elts <= split.sortedSplitter(i)
 
-     Bucket nBuckets-1 consits of elt with
+     Bucket nBuckets-1 consists of elt with
        split.sortedSplitter(numBuckets-2) < elts
 
    If equality buckets are in use:
@@ -856,9 +856,9 @@ record bktCount {
      Bucket i, with i being odd, consists of elts with
        elts == split.sortedSplitter((i-1)/2)
 
-     Bucket nBuckets-2 consits of elt with
+     Bucket nBuckets-2 consists of elt with
        elts == split.sortedSplitter((numBuckets-2)/2) < elts
-     Bucket nBuckets-1 consits of elt with
+     Bucket nBuckets-1 consists of elt with
        split.sortedSplitter((numBuckets-2)/2) < elts
 
  */
@@ -2712,7 +2712,7 @@ proc multiWayMerge(Input: [] ?eltType,
   while true {
     //writeln("looping");
     //writeln("InternalNodes ", InternalNodes);
-    //writeln("ExtarnalNodes[InternalNodes] ", ExternalNodes[InternalNodes]);
+    //writeln("ExternalNodes[InternalNodes] ", ExternalNodes[InternalNodes]);
 
     var championAddr = InternalNodes[0]; // index of external node in P..<2*P
     if championAddr == inf {

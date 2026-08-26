@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// this is a convenient wrapper around type-clases-list.h. See that file
+// this is a convenient wrapper around type-classes-list.h. See that file
 // for documentation on how to use it. This file simplifies using the
 // header by auto-defining undefined X-macros to sensible defaults, and
 // by clearing the macro definitions at the end of the file.

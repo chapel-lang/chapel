@@ -44,7 +44,6 @@ module ChapelStandard {
   public use NetworkAtomicTypes;
   public use AtomicsCommon;
   public use ChapelIteratorSupport;
-  public use ChapelThreads;
   public use ChapelTuple;
   public use ChapelRange;
   public use ChapelReduce;

@@ -3592,7 +3592,7 @@ struct CandidateSearchState {
   // so that we can revisit them for error reporting. The lists (
   // visible -> most applicable -> candidates) trickle down into the next.
   // All of them only ever grow, with numVisitedVis and numVisitedMA tracking
-  // the point up to which all candiddates have been moved to the successive list
+  // the point up to which all candidates have been moved to the successive list
   // if they needed to be. The flow is as follows:
   //   1. In each potential scope (call and POI(s)), visible functions get
   //      placed into `visibleFns`.
@@ -3615,7 +3615,7 @@ struct CandidateSearchState {
     INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
   }
 
-  bool tryFindVisibileCandidatesForExplicitFn();
+  bool tryFindVisibleCandidatesForExplicitFn();
   void searchOnePoiLevel();
   void skipOnePoiLevel();
   void findVisibleFunctionsAndCandidates();
@@ -4362,7 +4362,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, Poi
   bool considerNonPoi = (poiMode != PoiSearchMode::POI_ONLY);
   bool considerPoi = (poiMode != PoiSearchMode::NON_POI_ONLY);
 
-  if (searchState.tryFindVisibileCandidatesForExplicitFn()) {
+  if (searchState.tryFindVisibleCandidatesForExplicitFn()) {
     /* the function was explicitly specified via FnSymbol*. Don't search
        for others and don't consider POI */
     poiMode = PoiSearchMode::NON_POI_ONLY;
@@ -4373,7 +4373,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, Poi
   } else {
     /* At this point, the top-level POI level is the regular scope of the call
        (so it's not really POI). This was configured as part of searchState's
-       constructor. So, this brach is the non-POI candidate search, which
+       constructor. So, this branch is the non-POI candidate search, which
        always happens. */
     searchState.searchOnePoiLevel();
   }
@@ -4408,7 +4408,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState, Poi
   // At this point, we have found no non-POI candidates, neither in the
   // original type nor in any fields it forwards. Time to move on to POI.
   if (considerPoi) {
-    // Ok, no forwaring candidates found without POI. Now move on to
+    // Ok, no forwarding candidates found without POI. Now move on to
     // our POI candidates.
     if (candidates.n == 0 && visInfo.currStart != nullptr && scopeUsed != visInfo.currStart) {
       searchState.findVisibleFunctionsAndCandidates();
@@ -5633,7 +5633,7 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
   visInfo.nextPOI = NULL;
 }
 
-bool CandidateSearchState::tryFindVisibileCandidatesForExplicitFn() {
+bool CandidateSearchState::tryFindVisibleCandidatesForExplicitFn() {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
@@ -10167,6 +10167,9 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         if (isRecord(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
                                   toString(manager), toString(type));
+        else if (isUnion(type) && !isManagedPtrType(type))
+          USR_FATAL_CONT(newExpr, "Cannot use 'new %s' with union '%s'",
+                                  toString(manager), toString(type));
         else if (!isClassLikeOrManaged(type))
           USR_FATAL_CONT(newExpr, "cannot use management %s on non-class %s",
                                    toString(manager), toString(type));
@@ -13273,7 +13276,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
           deflt = new SymExpr(defaultTmp);
         }
         stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, deflt));
-      } else if (isRecord(field->type)) {
+      } else if (isRecord(field->type) || isUnion(field->type)) {
         VarSymbol* tmp = newTemp("_init_class_tmp_", field->type);
         stmt->insertBefore(new DefExpr(tmp));
         initializeClass(stmt, tmp);
@@ -14400,7 +14403,7 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 
   resolveCallAndCallee(callInit);
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if ((isRecord(at) || isUnion(at)) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);
@@ -14651,7 +14654,7 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
     USR_PRINT(call, "init resulted in type '%s'", toString(val->type));
   }
 
-  if (at && at->isRecord() && at->hasPostInitializer()) {
+  if (at && (at->isRecord() || at->isUnion()) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);

@@ -47,8 +47,8 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
 
 /**
   Same as getCompilerGeneratedMethod, but for operators. Here, we are more
-  discerning: the other argument to the oeprator is also considered when
-  determing if compiler generation is needed.
+  discerning: the other argument to the operator is also considered when
+  determining if compiler generation is needed.
  */
 bool needCompilerGeneratedBinaryOp(Context* context,
                                    const types::QualifiedType& lhs,

@@ -22,7 +22,7 @@ applied to other CI systems as well.
 Using Containers
 ~~~~~~~~~~~~~~~~
 
-Using the prebuild Chapel Dockerhub images is a very easy way to get started
+Using the prebuilt Chapel Dockerhub images is a very easy way to get started
 with CI testing of Mason packages. A very simple CI workflow using the
 Dockerhub images might look like the following:
 

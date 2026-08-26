@@ -82,7 +82,7 @@ if [ "${CHPL_TARGET_COMPILER}" == "gnu" ] ; then
 fi
 
 # Compile CHAMPS executables
-test_compile icing
+test_compile icing ENABLE_FSI=false
 
 FLOW_SUCCESS=0
 
