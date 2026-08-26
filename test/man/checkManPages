@@ -21,10 +21,15 @@ def main():
     chpldoc = chpl + 'doc'
 
     # Test chpl
+    _msg('Info', 'Checking man page for', chpl)
     results.append( check_man_page(chpl, ['--no-devel']) )
 
-    # Test chpldoc
-    results.append( check_man_page(chpldoc) )
+    # Test chpldoc - only if its exists
+    if os.path.exists(chpldoc):
+        _msg('Info', 'Checking man page for', chpldoc)
+        results.append( check_man_page(chpldoc) )
+    else:
+        _warn('Skipping man page check for', chpldoc, '- chpldoc is not built')
 
     # Exit clean if no errors.
     if not reduce(operator.and_, results):
