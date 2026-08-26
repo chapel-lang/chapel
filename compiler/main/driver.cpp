@@ -2741,7 +2741,6 @@ static void dynoConfigureContext(std::string chpl_module_path) {
                                         fEnableTaskTracking,
                                         CHPL_TASKS,
                                         CHPL_COMM,
-                                        CHPL_RUNTIME_SUBDIR,
                                         CHPL_SYS_MODULES_SUBDIR,
                                         chpl_module_path,
                                         gDynoPrependInternalModulePaths,

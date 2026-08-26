@@ -25,14 +25,6 @@
   E_CALLBACK(name, ret_type, formals)       | Used by runtime or launcher.
 */
 
-#ifndef LAUNCHER
-  #if defined(CHPL_RT_IS_BUILDING_RUNTIME) || \
-      defined(CHPL_RT_DECLARE_RT_BUILD_CONSTANTS)
-    // This is automatically generated and contains runtime build constants.
-    #include "chpl-prginfo-gen-rt-build-constants-macro.h"
-  #endif
-#endif
-
 /** CODE-GENERATED
     Whether or not 'main' can accept arguments.
 */

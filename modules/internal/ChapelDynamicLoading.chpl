@@ -429,77 +429,69 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline proc _lookupBuildConstant(infoPtr, name: string,
-                                     out prgValTup: (bool, string),
-                                     out rtValTup: (bool, string)): bool {
-      extern 'chpl_rt_prginfo_lookup_build_constant'
-        proc lookup(prg         : c_ptr(chpl_rt_prginfo),
-                    var_name    : c_ptrConst(c_char),
-                    out_prg_val : c_ptr(c_ptrConst(c_char)),
-                    out_rt_val  : c_ptr(c_ptrConst(c_char))): bool;
-      var prg_val: c_ptrConst(c_char);
-      var rt_val: c_ptrConst(c_char);
+    inline proc _localLookupProgramBuildConstant(infoPtr, name: string) {
+      var err;
+      param procName = 'chpl_lookupProgramBuildConstant';
+      type procType = proc(name: c_ptrConst(c_char)): c_ptrConst(c_char);
+      const p = this.loadSymbolLocally(procName, procType, err);
 
-      const ret = lookup(infoPtr, name.c_str(),
-                         c_ptrTo(prg_val),
-                         c_ptrTo(rt_val));
+      var ret: (bool, string);
 
-      prgValTup[0] = prg_val != nil;
-      prgValTup[1] = try! string.createBorrowingBuffer(prg_val);
-
-      rtValTup[0] = rt_val != nil;
-      rtValTup[1] = try! string.createBorrowingBuffer(rt_val);
+      if p != nil && err == nil {
+        const ptrPrgVal = p(name.c_str());
+        if ptrPrgVal != nil {
+          const prgValStr = try! string.createBorrowingBuffer(ptrPrgVal);
+          ret = (true, prgValStr);
+        }
+      }
 
       return ret;
     }
 
-    inline proc
-    _tryCheckBuildConstantMatchesRuntime(infoPtr, name: string) throws {
-      var prgValTup, rtValTup: (bool, string);
-      const match = _lookupBuildConstant(infoPtr, name, prgValTup, rtValTup);
+    proc _tryMatchRuntimeBuildConstant(infoPtr, k: string, v: string) throws {
+      assert(!k.isEmpty() && !v.isEmpty());
 
-      const havePrgVal    = prgValTup[0];
-      const haveRtVal     = rtValTup[0];
-      const ref prgVal    = prgValTup[1];
-      const ref rtVal     = rtValTup[1];
+      const prgValTup   = _localLookupProgramBuildConstant(infoPtr, k);
+      const havePrgVal  = prgValTup[0];
+      const ref prgVal  = prgValTup[1];
+      const match       = prgVal == v;
 
-      if havePrgVal && haveRtVal && match then return;
+      if match then return;
 
       var msg: string = 'Cannot load Chapel library because ';
 
-      if havePrgVal && haveRtVal {
+      if havePrgVal {
         msg += 'of a build constant mismatch: ' + name + '=\'' + prgVal +
                '\' versus a runtime value of \'' + rtVal + '\'';
-      } else if havePrgVal || haveRtVal {
-        const missing = if havePrgVal then 'runtime' else 'library';
-        msg += 'the ' + missing + ' does not define the constant: \'' +
-               name + '\'';
       } else {
-        // We're iterating over build constants from somewhere...
-        halt('Should not be possible!');
+        msg += 'it does not define the constant: ' + name;
       }
 
       throw new DynLoadError(msg);
     }
 
-    iter _runtimeBuildConstantNames(): string {
+    iter _runtimeBuildConstants(): (string, string) {
       extern proc chpl_rt_num_build_constants(): c_int;
-      extern proc chpl_rt_build_constant_name(idx: c_int): c_ptrConst(c_char);
+      extern proc chpl_rt_build_constant_by_idx(
+              idx: c_int,
+              out_val: c_ptr(c_ptrConst(c_char))): c_ptrConst(c_char);
 
       const end = chpl_rt_num_build_constants();
       for i in 0..<end {
-        const ptr = chpl_rt_build_constant_name(i);
-        var str = try! string.createBorrowingBuffer(ptr);
-        yield str;
+        var valPtr: c_ptrConst(c_char);
+        const namePtr = chpl_rt_build_constant_name(i, c_ptrTo(valPtr));
+        var k = try! string.createBorrowingBuffer(namePtr);
+        var v = try! string.createBorrowingBuffer(valPtr);
+        yield (k, v);
       }
     }
 
-    inline proc _tryCheckIsBuildCompatibleWithRuntime(infoPtr) throws {
+    inline proc _tryCheckIsProgramCompatibleWithRuntime(infoPtr) throws {
       var err: owned DynLoadError?;
       var failed = false;
 
-      for str in _runtimeBuildConstantNames() do try {
-        _tryCheckBuildConstantMatchesRuntime(infoPtr, str);
+      for (k, v) in _runtimeBuildConstants() do try {
+        _tryMatchRuntimeBuildConstant(infoPtr, k, v);
       } catch e : DynLoadError {
         // TODO: Right now all but the last error is dropped (thus the calls
         //       to 'warning'. How can we collect all of them together?
