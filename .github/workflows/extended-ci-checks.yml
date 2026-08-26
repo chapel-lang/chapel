@@ -172,18 +172,22 @@ jobs:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
     runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
     steps:
-      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
-        timeout-minutes: 10
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
+      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 300
+          retry_wait_seconds: 60
+          command: |
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
 
-          # Work around https://github.com/llvm/llvm-project/issues/62152
-          set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
+            # Work around https://github.com/llvm/llvm-project/issues/62152
+            set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
 
-          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
+            sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
 
-          echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
+            echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
         run: |
           set -exuo pipefail
