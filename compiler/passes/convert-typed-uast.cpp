@@ -470,7 +470,7 @@ struct TConverter final : UastConverter,
   std::vector<const uast::Module*> submodulesEncountered;
 
   // Handles for standard/internal modules (these are not global
-  // variables in case we'd like to remove those somewhow later).
+  // variables in case we'd like to remove those somehow later).
   ModuleSymbol* modChapelBase = nullptr;
   ModuleSymbol* modChapelTuple = nullptr;
   ModuleSymbol* modIO = nullptr;
@@ -2668,7 +2668,7 @@ struct ConvertTypeHelper {
         d = addNilableToDecorator(d);
       }
 
-      ret = at->getDecoratedClass(d); // unamanged / borrowed is just the class type at this point
+      ret = at->getDecoratedClass(d); // unmanaged / borrowed is just the class type at this point
     } else {
       // owned/shared should have had a substitution for chpl_t
       INT_ASSERT(!manager->substitutions().empty());
@@ -4395,7 +4395,7 @@ Expr* TConverter::codegenGetField(const AstNode* recvAst,
 }
 
 // Gets its own little helper for now in the event that finding the implicit
-// this becomes more compilcated down the road, e.g., for nested functions
+// this becomes more complicated down the road, e.g., for nested functions
 Expr* TConverter::codegenImplicitThis(RV& rv) {
   INT_ASSERT(cur.fnSymbol && cur.fnSymbol->isMethod());
   return new SymExpr(cur.fnSymbol->_this);
@@ -4869,7 +4869,7 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
     actualAsts.insert(actualAsts.begin(), fn->thisFormal());
   }
 
-  // No need to resolve assignment betwen types
+  // No need to resolve assignment between types
   if (ci.name() == USTR("=") &&
       (ci.actual(0).type().isType() || ci.actual(0).type().isParam())) {
     return TC_ELIDED(this, node);

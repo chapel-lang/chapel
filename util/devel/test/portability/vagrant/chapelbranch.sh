@@ -6,6 +6,8 @@
 #   ./chapelbranch.sh <github-user-name> <github-branch-name>
 #
 
+set -exuo pipefail
+
 GITHUB_USER=$1
 GITHUB_BRANCH=$2
 

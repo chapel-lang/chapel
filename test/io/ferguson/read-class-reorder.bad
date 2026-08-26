@@ -15,4 +15,5 @@ uncaught BadFormatError: bad format: missing expected literal (while reading str
   read-class-reorder.chpl:31: called from here
   read-class-reorder.chpl:31: called from here
   read-class-reorder.chpl:31: called from here
+  read-class-reorder.chpl:31: called from here
   read-class-reorder.chpl:31: uncaught here

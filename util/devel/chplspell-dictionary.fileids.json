@@ -18,6 +18,9 @@
     "LICENSE",
     "LICENSE.devel"
   ],
+  "231a0deb-9b8e-11f1-a639-80fa5b7ffbc9": [
+    "README.rst"
+  ],
   "07648a72-5b7a-11e8-af7e-10ddb1d4c3d5": [
     "compiler/AST/AggregateType.cpp"
   ],
@@ -59,6 +62,9 @@
   ],
   "f4c93d2c-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/build.cpp"
+  ],
+  "71d14d0b-9b8f-11f1-a912-80fa5b7ffbc9": [
+    "compiler/AST/checkAST.cpp"
   ],
   "7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5": [
     "compiler/AST/expr.cpp"
@@ -108,6 +114,9 @@
   "65cc59e0-f560-11eb-bb15-35b7469d4b43": [
     "compiler/codegen/cg-symbol.cpp"
   ],
+  "2d34752f-9b8f-11f1-a7ee-80fa5b7ffbc9": [
+    "compiler/codegen/cg-type.cpp"
+  ],
   "75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/codegen/codegen.cpp"
   ],
@@ -119,6 +128,12 @@
   ],
   "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
     "compiler/include/ResolutionCandidate.h"
+  ],
+  "52367e48-9b8f-11f1-95b7-80fa5b7ffbc9": [
+    "compiler/include/arg.h"
+  ],
+  "56af4fa2-9b8f-11f1-9624-80fa5b7ffbc9": [
+    "compiler/include/arrayViewElision.h"
   ],
   "01e4fb10-5500-11ee-81ec-fb959b7aa6d7": [
     "compiler/include/astutil.h"
@@ -148,6 +163,12 @@
   ],
   "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
     "compiler/include/llvmDebug.h"
+  ],
+  "49b82b52-9b8f-11f1-87fc-80fa5b7ffbc9": [
+    "compiler/include/llvmTracker.h"
+  ],
+  "5013828b-9b8f-11f1-9705-80fa5b7ffbc9": [
+    "compiler/include/llvmUtil.h"
   ],
   "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/include/llvmVer.h"
@@ -208,6 +229,9 @@
   "a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5": [
     "compiler/main/docsDriver.cpp"
   ],
+  "e4b40849-9b8f-11f1-80ce-80fa5b7ffbc9": [
+    "compiler/optimizations/arrayViewElision.cpp"
+  ],
   "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/copyPropagation.cpp"
   ],
@@ -259,6 +283,12 @@
   "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/cleanup.cpp"
   ],
+  "dbe0602a-9b8f-11f1-a59d-80fa5b7ffbc9": [
+    "compiler/passes/convert-help.cpp"
+  ],
+  "98687fd1-9b8f-11f1-ae56-80fa5b7ffbc9": [
+    "compiler/passes/convert-typed-uast.cpp"
+  ],
   "e818580e-f560-11eb-bb15-35b7469d4b43": [
     "compiler/passes/convert-uast.cpp"
   ],
@@ -276,6 +306,12 @@
   ],
   "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/normalize.cpp"
+  ],
+  "95b625de-9b8f-11f1-8e8a-80fa5b7ffbc9": [
+    "compiler/passes/parseAndConvert.cpp"
+  ],
+  "465462cf-9e9a-11f1-85b3-80fa5b7ffbc9": [
+    "compiler/passes/resolveIntents.cpp"
   ],
   "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/scopeResolve.cpp"
@@ -328,6 +364,9 @@
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
+  "f4dbdf5e-9b8f-11f1-a457-80fa5b7ffbc9": [
+    "compiler/resolution/lowerLoopContexts.cpp"
+  ],
   "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
     "compiler/resolution/nilChecking.cpp"
   ],
@@ -336,6 +375,9 @@
   ],
   "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/preFold.cpp"
+  ],
+  "0c10934d-9b90-11f1-a2f7-80fa5b7ffbc9": [
+    "compiler/resolution/resolveFunction.cpp"
   ],
   "f203530c-8644-11e8-ad82-10ddb1d4c3d5": [
     "compiler/resolution/tuples.cpp"
@@ -373,8 +415,20 @@
   "5118f158-e3ac-11ec-a8be-cd81bce0efc4": [
     "doc/rst/developer/bestPractices/Deprecation.rst"
   ],
+  "cefe4eb2-9b90-11f1-85b0-80fa5b7ffbc9": [
+    "doc/rst/developer/bestPractices/GettingStarted.rst"
+  ],
+  "ca59af57-9b90-11f1-9616-80fa5b7ffbc9": [
+    "doc/rst/developer/bestPractices/MemoryProfiling.rst"
+  ],
+  "cc3bf800-9b90-11f1-b4e2-80fa5b7ffbc9": [
+    "doc/rst/developer/bestPractices/NightlyTesting.rst"
+  ],
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
+  ],
+  "d09d4e6c-9b90-11f1-a78d-80fa5b7ffbc9": [
+    "doc/rst/developer/bestPractices/PythonDeps.rst"
   ],
   "53b60e8e-d6dc-11ea-8acb-843835579daa": [
     "doc/rst/developer/bestPractices/Sanitizers.rst"
@@ -384,6 +438,9 @@
   ],
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
+  ],
+  "c861bba6-9b90-11f1-a0ed-80fa5b7ffbc9": [
+    "doc/rst/developer/bestPractices/Valgrind.rst"
   ],
   "6f3fc5b8-3f87-11ec-81f0-3de99c714400": [
     "doc/rst/developer/bestPractices/buildingdocs.rst"
@@ -449,6 +506,12 @@
   "80a8005e-f563-11eb-bb15-35b7469d4b43": [
     "doc/rst/developer/implementation/compilerOverview/compiler.tex"
   ],
+  "a17a8d36-9b91-11f1-829e-80fa5b7ffbc9": [
+    "doc/rst/index.rst"
+  ],
+  "9f73d3ed-9b91-11f1-b245-80fa5b7ffbc9": [
+    "doc/rst/language/evolution.rst"
+  ],
   "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/language/spec/README"
   ],
@@ -497,14 +560,44 @@
   "e1a9c8a2-12c1-11ed-a8be-cd81bce0efc4": [
     "doc/rst/mason-packages/index.rst"
   ],
+  "b0323332-9b90-11f1-a44b-80fa5b7ffbc9": [
+    "doc/rst/meta/modules/packages.rst"
+  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
+  ],
+  "7c51ffdd-9b90-11f1-aaf4-80fa5b7ffbc9": [
+    "doc/rst/platforms/comm-layers/libfabric.rst"
   ],
   "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/platforms/cray.rst"
   ],
+  "9faa43ec-9b90-11f1-aef4-80fa5b7ffbc9": [
+    "doc/rst/platforms/index.rst"
+  ],
+  "9d001865-9b90-11f1-a1fa-80fa5b7ffbc9": [
+    "doc/rst/platforms/linux.rst"
+  ],
+  "75f01ec6-9b90-11f1-bedf-80fa5b7ffbc9": [
+    "doc/rst/platforms/macosx.rst"
+  ],
+  "adf5d07d-9b90-11f1-b2fb-80fa5b7ffbc9": [
+    "doc/rst/platforms/networks/efa.rst"
+  ],
+  "a0e9d50b-9b90-11f1-97ed-80fa5b7ffbc9": [
+    "doc/rst/platforms/networks/infiniband.rst"
+  ],
+  "ab2d5214-9b90-11f1-a394-80fa5b7ffbc9": [
+    "doc/rst/platforms/networks/omnipath.rst"
+  ],
   "41875858-d463-11ed-ae82-c11fabc62016": [
     "doc/rst/platforms/raspberrypi.rst"
+  ],
+  "8401f280-9b90-11f1-8da5-80fa5b7ffbc9": [
+    "doc/rst/platforms/riscv.rst"
+  ],
+  "77515f7c-9b90-11f1-a34d-80fa5b7ffbc9": [
+    "doc/rst/platforms/windows.rst"
   ],
   "73f04412-d463-11ed-ae82-c11fabc62016": [
     "doc/rst/technotes/attributes.rst"
@@ -533,6 +626,9 @@
   "e8ed417a-624d-11e9-b712-843835579daa": [
     "doc/rst/technotes/lifetimeChecking.rst"
   ],
+  "bd56e013-9b90-11f1-9aec-80fa5b7ffbc9": [
+    "doc/rst/technotes/optimization.rst"
+  ],
   "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
     "doc/rst/technotes/protoGenCodeGuide.rst"
   ],
@@ -542,11 +638,35 @@
   "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/tools/c2chapel/c2chapel.rst"
   ],
+  "4830a2a3-9b91-11f1-80d1-80fa5b7ffbc9": [
+    "doc/rst/tools/chapel-py/chapel-py-api-template.rst"
+  ],
+  "4b0c5cf4-9b91-11f1-bb5b-80fa5b7ffbc9": [
+    "doc/rst/tools/chapel-py/chapel-py.rst"
+  ],
+  "82944f93-9b91-11f1-bcd7-80fa5b7ffbc9": [
+    "doc/rst/tools/chpl-language-server/chpl-language-server.rst"
+  ],
+  "768ef146-9b91-11f1-818f-80fa5b7ffbc9": [
+    "doc/rst/tools/chplcheck/chplcheck.rst"
+  ],
   "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/tools/chpldoc/chpldoc.rst"
   ],
+  "6c7f3578-9b91-11f1-8a76-80fa5b7ffbc9": [
+    "doc/rst/tools/mason/guide/buildingandrunning.rst"
+  ],
+  "6b2a0f39-9b91-11f1-9641-80fa5b7ffbc9": [
+    "doc/rst/tools/mason/guide/ci.rst"
+  ],
   "cba19b84-5a60-11ed-baec-ef9f14c5b529": [
     "doc/rst/tools/mason/guide/externaldependencies.rst"
+  ],
+  "603b7c1f-9b91-11f1-ae59-80fa5b7ffbc9": [
+    "doc/rst/tools/mason/guide/manifestfile.rst"
+  ],
+  "6ee56e38-9b91-11f1-8003-80fa5b7ffbc9": [
+    "doc/rst/tools/mason/guide/prereqs.rst"
   ],
   "e4fe6468-5a60-11ed-baec-ef9f14c5b529": [
     "doc/rst/tools/mason/guide/submitting.rst"
@@ -563,6 +683,42 @@
   "7e15c372-4027-11e6-907f-843835579daa": [
     "doc/rst/users-guide/index.rst"
   ],
+  "e32838e3-9b90-11f1-945c-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/QUICKSTART.rst"
+  ],
+  "d3ed575d-9b90-11f1-8326-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/chplenv.rst"
+  ],
+  "f98a3a39-9b90-11f1-a59e-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/compiling.rst"
+  ],
+  "e8365345-9b90-11f1-bfbf-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/debugging.rst"
+  ],
+  "f01a44b1-9b90-11f1-9271-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/debugging/bkc.rst"
+  ],
+  "f30e8f4d-9b90-11f1-a7c9-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/debugging/sanitizers.rst"
+  ],
+  "ad977776-9e9b-11f1-a592-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/debugging/tasks.rst"
+  ],
+  "e980d890-9b90-11f1-88bb-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/editor-support.rst"
+  ],
+  "0d14b8b9-9b91-11f1-9282-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/editors/emacs.rst"
+  ],
+  "1047d0d9-9b91-11f1-8d3f-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/editors/neovim.rst"
+  ],
+  "18d24626-9b91-11f1-80da-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/editors/vim.rst"
+  ],
+  "3ffeeae7-9b91-11f1-ac3f-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/editors/vscode.rst"
+  ],
   "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/usingchapel/executing.rst"
   ],
@@ -571,6 +727,9 @@
   ],
   "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
     "doc/rst/usingchapel/multilocale.rst"
+  ],
+  "fdc1d72a-9b90-11f1-b6d6-80fa5b7ffbc9": [
+    "doc/rst/usingchapel/prereqs-commands.rst"
   ],
   "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/usingchapel/prereqs.rst"
@@ -608,6 +767,9 @@
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
+  "d6232cf2-9e9b-11f1-ad63-80fa5b7ffbc9": [
+    "frontend/include/chpl/framework/query-impl.h"
+  ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
@@ -623,6 +785,18 @@
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/include/chpl/parsing/parser-stats.h"
   ],
+  "a3599fe1-9b91-11f1-bc24-80fa5b7ffbc9": [
+    "frontend/include/chpl/parsing/parsing-queries.h"
+  ],
+  "ce85acec-9b91-11f1-ba7c-80fa5b7ffbc9": [
+    "frontend/include/chpl/resolution/BranchSensitiveVisitor.h"
+  ],
+  "fc2b67fb-9b91-11f1-9b90-80fa5b7ffbc9": [
+    "frontend/include/chpl/resolution/ResolutionContext.h"
+  ],
+  "f9c93cce-9b91-11f1-96a0-80fa5b7ffbc9": [
+    "frontend/include/chpl/resolution/all-internal-types-list.h"
+  ],
   "5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac": [
     "frontend/include/chpl/resolution/scope-types.h"
   ],
@@ -631,6 +805,9 @@
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/AnyType.h"
+  ],
+  "c3040200-9b91-11f1-b9d9-80fa5b7ffbc9": [
+    "frontend/include/chpl/types/ArrayType.h"
   ],
   "a8a34048-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/BoolType.h"
@@ -647,8 +824,14 @@
   "9ae680c8-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/CompositeType.h"
   ],
+  "c82b7ec5-9b91-11f1-85e7-80fa5b7ffbc9": [
+    "frontend/include/chpl/types/DomainType.h"
+  ],
   "9dba0644-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/ErroneousType.h"
+  ],
+  "be9238a1-9b91-11f1-af35-80fa5b7ffbc9": [
+    "frontend/include/chpl/types/HeapBufferType.h"
   ],
   "7d5a9986-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/ImagType.h"
@@ -992,6 +1175,9 @@
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/immediates/num.cpp"
   ],
+  "1974910d-9b92-11f1-89fc-80fa5b7ffbc9": [
+    "frontend/lib/immediates/num.h"
+  ],
   "ceb6bab6-924f-11ee-8bda-4776592287bc": [
     "frontend/lib/libraries/LibraryFile.cpp"
   ],
@@ -1051,6 +1237,9 @@
   ],
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/resolution-queries.cpp"
+  ],
+  "5c86738d-9b92-11f1-b5d3-80fa5b7ffbc9": [
+    "frontend/lib/resolution/resolution-types.cpp"
   ],
   "12d6fc06-5501-11ee-81ec-fb959b7aa6d7": [
     "frontend/lib/resolution/return-type-inference.cpp"
@@ -1185,8 +1374,14 @@
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
   ],
+  "52f0b933-9ea4-11f1-9872-80fa5b7ffbc9": [
+    "modules/internal/ChapelArrayViewElision.chpl"
+  ],
   "69d46c90-62e3-11eb-a43d-6f93f4244f4b": [
     "modules/internal/ChapelAutoAggregation.chpl"
+  ],
+  "480cad4f-9ea4-11f1-98b6-80fa5b7ffbc9": [
+    "modules/internal/ChapelAutoLocalAccess.chpl"
   ],
   "ce35097e-8645-11e8-ad82-10ddb1d4c3d5": [
     "modules/internal/ChapelBase.chpl"
@@ -1196,6 +1391,9 @@
   ],
   "5bc3089e-62df-11ec-8674-e995e73200ed": [
     "modules/internal/ChapelDomain.chpl"
+  ],
+  "d3d4b70d-9b93-11f1-8d33-80fa5b7ffbc9": [
+    "modules/internal/ChapelDynamicLoading.chpl"
   ],
   "a2a12cd4-5502-11ee-81ec-fb959b7aa6d7": [
     "modules/internal/ChapelGpuSupport.chpl"
@@ -1236,11 +1434,20 @@
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
   ],
+  "ffd4fb63-9f6f-11f1-bebf-80fa5b7ffbc9": [
+    "modules/internal/gen/ChapelSetProgramInfoDataEntries.chpl"
+  ],
+  "1a39f301-9b94-11f1-8c2b-80fa5b7ffbc9": [
+    "modules/internal/localeModels/gpu/ChapelGpuSupport.chpl"
+  ],
   "1234061c-2e9f-11eb-adc5-acbc32c4f96b": [
     "modules/internal/localeModels/gpu/LocaleModel.chpl"
   ],
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
+  ],
+  "5fbe2dca-9b93-11f1-a6ed-80fa5b7ffbc9": [
+    "modules/layouts/CompressedSparseLayout.chpl"
   ],
   "d954a0c6-3f88-11ec-81f0-3de99c714400": [
     "modules/packages/ArgumentParser.chpl"
@@ -1293,6 +1500,15 @@
   "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
     "modules/packages/HDFS.chpl"
   ],
+  "0abf4af1-9ea4-11f1-85ad-80fa5b7ffbc9": [
+    "modules/packages/Image.chpl"
+  ],
+  "1719ff72-9ea4-11f1-a33c-80fa5b7ffbc9": [
+    "modules/packages/ImageHelper/stb/README"
+  ],
+  "1a310b14-9ea4-11f1-8fb3-80fa5b7ffbc9": [
+    "modules/packages/ImageHelper/stb_image_helper.h"
+  ],
   "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebra.chpl"
   ],
@@ -1316,6 +1532,18 @@
   ],
   "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "modules/packages/ProtobufProtocolSupport.chpl"
+  ],
+  "cdd44c3c-9ea3-11f1-b9ff-80fa5b7ffbc9": [
+    "modules/packages/Python.chpl"
+  ],
+  "574f780f-9ea3-11f1-aad3-80fa5b7ffbc9": [
+    "modules/packages/PythonHelper/ArrayTypes.c"
+  ],
+  "c8c54af1-9ea3-11f1-b5f9-80fa5b7ffbc9": [
+    "modules/packages/PythonHelper/ArrayTypes.h"
+  ],
+  "3e148715-9ea3-11f1-b78c-80fa5b7ffbc9": [
+    "modules/packages/PythonHelper/ChapelPythonHelper.h"
   ],
   "9be43b4a-9f6c-11ec-866d-111c8d7a1817": [
     "modules/packages/Socket.chpl"
@@ -1342,6 +1570,9 @@
   ],
   "076e82b2-624e-11e9-b712-843835579daa": [
     "modules/packages/ZMQHelper/zmq_helper.h"
+  ],
+  "fee857a8-9ea2-11f1-b14a-80fa5b7ffbc9": [
+    "modules/standard/Allocators.chpl"
   ],
   "7eb6ec46-e3ac-11ec-a8be-cd81bce0efc4": [
     "modules/standard/AutoMath.chpl"
@@ -1379,8 +1610,14 @@
   "b6f2f694-cac9-11e9-8464-10ddb1d4c3d5": [
     "modules/standard/List.chpl"
   ],
+  "031eb84e-9ea3-11f1-b4cf-80fa5b7ffbc9": [
+    "modules/standard/Map.chpl"
+  ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
+  ],
+  "d48b138f-9ea2-11f1-8ae1-80fa5b7ffbc9": [
+    "modules/standard/MemDiagnostics.chpl"
   ],
   "cb0197c8-d464-11ed-ae82-c11fabc62016": [
     "modules/standard/MemMove.chpl"
@@ -1396,6 +1633,27 @@
   ],
   "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Regex.chpl"
+  ],
+  "01ce816a-9ea3-11f1-b382-80fa5b7ffbc9": [
+    "modules/standard/Set.chpl"
+  ],
+  "04e7528b-9ea3-11f1-a38b-80fa5b7ffbc9": [
+    "modules/standard/Sort.chpl"
+  ],
+  "7769a2a7-9b93-11f1-9200-80fa5b7ffbc9": [
+    "modules/standard/Sort/Partitioning.chpl"
+  ],
+  "6917c5f1-9b93-11f1-8f31-80fa5b7ffbc9": [
+    "modules/standard/Sort/PartitioningUtility.chpl"
+  ],
+  "6f4852ae-9b93-11f1-bee2-80fa5b7ffbc9": [
+    "modules/standard/Sort/QuickSort.chpl"
+  ],
+  "6c0d5b6e-9b93-11f1-95e3-80fa5b7ffbc9": [
+    "modules/standard/Sort/TimSort.chpl"
+  ],
+  "73b17f89-9b93-11f1-a10f-80fa5b7ffbc9": [
+    "modules/standard/Sort/TwoArrayPartitioning.chpl"
   ],
   "796d72aa-3f88-11ec-81f0-3de99c714400": [
     "modules/standard/Subprocess.chpl"
@@ -1421,17 +1679,35 @@
   "af0a00d4-244e-11e9-b712-843835579daa": [
     "runtime/include/chpl-comm-diags.h"
   ],
+  "590da282-9ea4-11f1-8d9e-80fa5b7ffbc9": [
+    "runtime/include/chpl-comm-internal.h"
+  ],
   "ca5cd802-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-comm.h"
   ],
   "9d9ca5ac-9250-11ee-8bda-4776592287bc": [
     "runtime/include/chpl-const-arg-check.h"
   ],
+  "3a514488-9b94-11f1-96cd-80fa5b7ffbc9": [
+    "runtime/include/chpl-dynamic-loading.h"
+  ],
   "57e7dbc4-3010-11ed-b71b-d7492178b4dc": [
     "runtime/include/chpl-gpu-impl.h"
   ],
+  "31f9240c-9b94-11f1-9e99-80fa5b7ffbc9": [
+    "runtime/include/chpl-gpu.h"
+  ],
   "ceec8a70-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-mem-array.h"
+  ],
+  "3c7f3b7f-9b94-11f1-b205-80fa5b7ffbc9": [
+    "runtime/include/chpl-prginfo-detail.h"
+  ],
+  "2b9dc330-9b94-11f1-8d4d-80fa5b7ffbc9": [
+    "runtime/include/chpl-prginfo.h"
+  ],
+  "42844e67-9b94-11f1-a615-80fa5b7ffbc9": [
+    "runtime/include/chpl-rt-math.h"
   ],
   "d484d08e-5502-11ee-81ec-fb959b7aa6d7": [
     "runtime/include/chpl-string-support.h"
@@ -1441,6 +1717,12 @@
   ],
   "df53597c-5502-11ee-81ec-fb959b7aa6d7": [
     "runtime/include/chplio.h"
+  ],
+  "4bf4417c-9b94-11f1-929f-80fa5b7ffbc9": [
+    "runtime/include/chplmath.h"
+  ],
+  "5acaa0f6-9ea4-11f1-97df-80fa5b7ffbc9": [
+    "runtime/include/chplmemtrack.h"
   ],
   "d9c9da26-5502-11ee-81ec-fb959b7aa6d7": [
     "runtime/include/chpltypes.h"
@@ -1454,11 +1736,17 @@
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
+  "277b5dfb-9b94-11f1-99a0-80fa5b7ffbc9": [
+    "runtime/include/gpu/amd/chpl-gpu-dev-reduce.h"
+  ],
   "bc38f4c2-ff50-11ed-8448-7105b32efc83": [
     "runtime/include/gpu/amd/chpl-gpu-gen-includes.h"
   ],
   "2879db88-b57d-11ed-b67e-4d191cd16eac": [
     "runtime/include/gpu/cuda/chpl-gpu-gen-includes.h"
+  ],
+  "2285dc93-9b94-11f1-8de0-80fa5b7ffbc9": [
+    "runtime/include/gpu/nvidia/chpl-gpu-dev-reduce.h"
   ],
   "b3ec2a6e-ff50-11ed-8448-7105b32efc83": [
     "runtime/include/gpu/nvidia/chpl-gpu-gen-includes.h"
@@ -1469,8 +1757,17 @@
   "83d35d38-d6dc-11ea-8acb-843835579daa": [
     "runtime/include/mem/jemalloc/chpl-mem-impl.h"
   ],
+  "38544184-9b94-11f1-a0d7-80fa5b7ffbc9": [
+    "runtime/include/mem/mimalloc/chpl-mem-impl.h"
+  ],
   "12605982-e3ad-11ec-a8be-cd81bce0efc4": [
     "runtime/include/os-module-support/posix.h"
+  ],
+  "3735a7e8-9b94-11f1-a4f7-80fa5b7ffbc9": [
+    "runtime/include/qio/qio.h"
+  ],
+  "5c5e0913-9ea4-11f1-b627-80fa5b7ffbc9": [
+    "runtime/include/qio/qio_regex.h"
   ],
   "77c41520-5503-11ee-81ec-fb959b7aa6d7": [
     "runtime/include/qio/qio_style.h"
@@ -1484,14 +1781,26 @@
   "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-cache.c"
   ],
+  "ac35167c-9b94-11f1-b848-80fa5b7ffbc9": [
+    "runtime/src/chpl-dynamic-loading.c"
+  ],
   "14aecce8-f563-11eb-bb15-35b7469d4b43": [
     "runtime/src/chpl-gpu.c"
   ],
   "9410539a-9317-11e9-a422-10ddb1d4c3d5": [
     "runtime/src/chpl-launcher-common.c"
   ],
+  "d000de23-9b94-11f1-9cc4-80fa5b7ffbc9": [
+    "runtime/src/chpl-prginfo.c"
+  ],
   "8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-timers.c"
+  ],
+  "7d5f3b5c-9b94-11f1-bdfe-80fa5b7ffbc9": [
+    "runtime/src/chpl-unwind.c"
+  ],
+  "5d89159f-9ea4-11f1-a1b0-80fa5b7ffbc9": [
+    "runtime/src/chplmemtrack.c"
   ],
   "726887c4-bc39-11e6-9740-843835579daa": [
     "runtime/src/chplsys.c"
@@ -1577,6 +1886,9 @@
   ],
   "eafb2e70-2405-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/qio_formatted.c"
+  ],
+  "5ededd49-9ea4-11f1-adb0-80fa5b7ffbc9": [
+    "runtime/src/qio/regex/none/fail-regex.c"
   ],
   "74ec0768-2405-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/sys.c"
@@ -1688,6 +2000,9 @@
   ],
   "04789d34-3f89-11ec-81f0-3de99c714400": [
     "test/release/examples/patterns/readcsv.chpl"
+  ],
+  "f6ec7403-9b94-11f1-9401-80fa5b7ffbc9": [
+    "test/release/examples/patterns/recordio.chpl"
   ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/LAPACKlib.chpl"

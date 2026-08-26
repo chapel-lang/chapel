@@ -141,7 +141,7 @@ void InitResolver::resolveImplicitSuperInit() {
     };
 
     // Capture the errors emitted here and defer them until we know we haven't
-    // found a "real" super.init call (which means a different error supercedes
+    // found a "real" super.init call (which means a different error supersedes
     // these).
     auto cAndErrors = ctx_->runAndCaptureErrors([&c](Context* ctx) {
       c.noteResultPrintCandidates(nullptr);
@@ -548,7 +548,7 @@ static const Type* ctFromSubs(ResolutionContext* rc,
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto ctInitial = initialRecvType_->getCompositeType();
 
-  // for the purposes of determing if subs are needed, we want to inspect the
+  // for the purposes of determining if subs are needed, we want to inspect the
   // base type.
   if (auto ctInitialBase = ctInitial->instantiatedFromCompositeType()) {
     ctInitial = ctInitialBase;

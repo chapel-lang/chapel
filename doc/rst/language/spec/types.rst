@@ -420,7 +420,7 @@ include ``imag(32)`` and ``imag(64)``.
 
    The imaginary type is included as a distinct type from ``real`` and
    ``complex`` types for a number of reasons. Primarily, it allows for direct,
-   efficent computation between ``real`` or ``imag`` values. Developers do not
+   efficient computation between ``real`` or ``imag`` values. Developers do not
    need to manually track which floating point values are ``real`` vs.
    ``imag``, nor do they need to promote everything to a ``complex`` value with
    a zero component. This avoids numeric instabilities, maintains more precise

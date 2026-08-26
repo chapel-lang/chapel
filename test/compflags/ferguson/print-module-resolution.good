@@ -66,8 +66,6 @@ AtomicsCommon
   from print-module-resolution.ChapelStandard.AtomicsCommon
 ChapelIteratorSupport
   from print-module-resolution.ChapelStandard.ChapelIteratorSupport
-ChapelThreads
-  from print-module-resolution.ChapelStandard.ChapelThreads
 DSIUtil
   from print-module-resolution.ChapelStandard.ChapelTuple.DSIUtil
 ChapelTuple

@@ -818,8 +818,8 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
       }
     */
     // Return 'false' if the module is not the most immediate parent AST.
-    auto enclosingMutliDecl = parsing::idToContainingMultiDeclId(context, target);
-    auto targetParentAstId = parsing::idToParentId(context, enclosingMutliDecl);
+    auto enclosingMultiDecl = parsing::idToContainingMultiDeclId(context, target);
+    auto targetParentAstId = parsing::idToParentId(context, enclosingMultiDecl);
     return targetParentSymbolId != targetParentAstId;
   }
 
@@ -1791,7 +1791,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* decl,
     } else if (!got.instantiates() || declaredType.type()->isUnknownType()) {
       // use the declared type since no conversion/promotion was needed.
       // alternatively, if declared type is present but unknown, we don't
-      // know what was intended in the declaratiom, so we leave it as unknown.
+      // know what was intended in the declaration, so we leave it as unknown.
       typePtr = declaredType.type();
     } else {
       // instantiation is needed
@@ -2249,7 +2249,7 @@ void Resolver::computeFormalIntent(const uast::NamedDecl *decl,
   qtKind = resolveIntent(formalQt, isThis, isInit);
 }
 
-// Peformance: this re-computes the vector each time it is called.
+// Performance: this re-computes the vector each time it is called.
 // We could make it a query, or try writing an iterator that handles this.
 // In the meantime, though, I'll keep it as is.
 static std::vector<CompilerDiagnostic>
@@ -2452,7 +2452,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     // issued its own error, so we shouldn't emit a general error.
     return !result.speciallyHandled() || needsErrors;
   } else {
-    // mark compiler-geneated tuple casts with an associated action
+    // mark compiler-generated tuple casts with an associated action
     if (result.speciallyHandled() && ci &&
         ci->name() == USTR(":") &&
         ci->numActuals() == 2 && ci->actual(1).type().type()->isTupleType()) {
@@ -4260,7 +4260,7 @@ void Resolver::setToBuiltin(ResolvedExpression& r, UniqueString name) {
     }
   }
   r.setToId(builtinId); // note: circumvents validateAndSetToId since it should
-                        //       not be triggered by builtns.
+                        //       not be triggered by builtins.
   r.setType(type);
 }
 
@@ -4561,7 +4561,7 @@ static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
 
   // If we're referring to variable-ish thing, don't instantiate
   // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
-  // Peformance: finding the AST is pretty expensive. Can we fold
+  // Performance: finding the AST is pretty expensive. Can we fold
   // the knowledge into IdAndFlags?
   if (id && asttags::isVarLikeDecl(parsing::idToTag(rv.context, id))) {
     computeDefaults = false;
@@ -4814,7 +4814,7 @@ bool Resolver::enter(const TypeQuery* tq) {
   if (usePlaceholders) {
     // If we're resolving an interface, create a placeholder for the type
     // query. This way, we get a concrete type for `foo(?x)`, which is
-    // desireable when validating user-provided functions against the
+    // desirable when validating user-provided functions against the
     // interface signature.
     ResolvedExpression& result = byPostorder.byAst(tq);
     result.setType(QualifiedType(QualifiedType::TYPE,
@@ -5169,7 +5169,7 @@ void Resolver::exit(const MultiDecl* decl) {
     }
 
     // even if the last decl doesn't have a type/init, we should
-    // resovle it, because `var x: int, y, z;` means `y` and `z`
+    // resolve it, because `var x: int, y, z;` means `y` and `z`
     // are generic.
     bool isLast = std::next(it) == decl->decls().end();
 
@@ -5627,7 +5627,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
 
   std::vector<CallInfoActual> actuals;
   for (const auto& actual : ci.actuals()) {
-    // If the user explictly specified a tag, we can't re-run with a different tag.
+    // If the user explicitly specified a tag, we can't re-run with a different tag.
     if (actual.byName() == USTR("tag")) {
       return empty;
     }
@@ -6328,7 +6328,7 @@ class IterandComponent {
     bool isUnpack = (opCall = iterand->toOpCall()) && opCall->op() == USTR("...");
 
     // This is an expression in the form (...someTuple). Each element of the
-    // tuple should b ecome its own iterand component. In this case,
+    // tuple should become its own iterand component. In this case,
     // we don't have an exact iterator fn (and thus, we're not a tagged call),
     // since there are several elements to iterate over.
     if (isUnpack) {
@@ -6976,7 +6976,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
     loopControlFlow.resetContinue(forLoop);
 
     // Loop execution has ended somehow (throw, break, return). No need to push
-    // loop resutls for skipped iterations.
+    // loop results for skipped iterations.
     if (loopControlFlow.isDoneExecuting()) break;
 
     ResolutionResultByPostorderID bodyResults;
@@ -7031,7 +7031,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return resolveParamForLoop(rv, forLoop, std::move(iterandInfo));
 }
 
-static bool resolveHeterogenousTupleForLoop(Resolver& rv, const For* forLoop, const TupleType* tupleType) {
+static bool resolveHeterogeneousTupleForLoop(Resolver& rv, const For* forLoop, const TupleType* tupleType) {
   auto tupleInfo = TupleInfo { tupleType };
   return resolveParamForLoop(rv, forLoop, &tupleInfo);
 }
@@ -7046,11 +7046,11 @@ resolveZipExpression(Resolver& rv, const AstNode* anchor, bool requiresParallel,
 
   // Compute iterator components to resolve as part of zippering. This
   // handles unpacking any iterands in the form (...bla) into a flattened
-  // repersentation.
+  // representation.
   for (auto actual : zip->actuals()) {
     if (!IterandComponent::unpackIterand(rv, outIcs, actual, actual)) {
       // Couldn't make sense of the iterand, we can't go on. An error
-      // was already emitted, but contruct an ErroneousType to return.
+      // was already emitted, but construct an ErroneousType to return.
       return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
   }
@@ -7138,7 +7138,7 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 // concrete, like `[1..4] int`, which is a default-rectangular array over
 // a default-rectangular domain, we allow them to capture other types
 // of arrays (e.g., block distributed ones). So, because (1) in typed
-// signautres we might want to build an array type with a generic element type,
+// signatures we might want to build an array type with a generic element type,
 // which would break the buildRuntimeType assumption, and (2) array type expressions
 // in formals are effectively generic, we treat them specially, throw
 // away their _instance field, and allow generic element types. We want to only
@@ -7425,7 +7425,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     }
   }
 
-  // iteration over non-homogenous tuples is handled directly by
+  // iteration over non-homogeneous tuples is handled directly by
   // the compiler, very much like a param loop.
   if (forLoop && !scopeResolveOnly && !iterand->isZip()) {
     auto iterandRe = byPostorder.byAst(iterand);
@@ -7433,7 +7433,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
       if (auto tt = iterandRe.type().type()->toTupleType()) {
         if (!tt->isStarTuple()) {
           enterScope(loop);
-          return resolveHeterogenousTupleForLoop(*this, forLoop, tt);
+          return resolveHeterogeneousTupleForLoop(*this, forLoop, tt);
         }
       }
     }

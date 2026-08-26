@@ -657,7 +657,7 @@ CHPL_NETWORK_ATOMICS
    ``CHPL_COMM``. Note that with ``CHPL_NETWORK_ATOMICS=ofi`` support for
    network atomics is provider-specific, and the provider is selected at
    runtime. If the selected provider does not support network atomics then
-   atomics will be implemeted using active messages and processor atomics.
+   atomics will be implemented using active messages and processor atomics.
 
    Current options are:
 

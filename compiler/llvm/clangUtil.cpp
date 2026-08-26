@@ -2001,7 +2001,7 @@ static llvm::TargetOptions getTargetOptions(
 #if LLVM_VERSION_MAJOR < 22
     // NOTE (Jade 3-18-26): its not clear why LLVM removed "UnsafeFPMath", and
     // what the proper replacement is, if any.
-    // They may have removed it due to it being redudant and so
+    // They may have removed it due to it being redundant and so
     // everything may just work fine
     Options.UnsafeFPMath = 1; // e.g. FSIN instruction
 #endif
@@ -2961,7 +2961,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 
   // add a -iquote. so we can find headers named on command line in same dir
-  // using iquote over I to prevent accidently overriding system headers
+  // using iquote over I to prevent accidentally overriding system headers
   clangCCArgs.push_back("-iquote.");
 
   // add a -I for the generated code directory

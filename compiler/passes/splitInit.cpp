@@ -787,7 +787,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
   if (start == NULL)
     return false;
 
-  // Process defers after we're done with 'start', in reverse order of appearence
+  // Process defers after we're done with 'start', in reverse order of appearance
   llvm::SmallVector<DeferStmt*, 4> defers;
   auto clearDefers = [&]() {
     while (!defers.empty()) {

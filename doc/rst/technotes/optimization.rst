@@ -248,7 +248,7 @@ highest-performing configuration for your system.
 
      * if you are using ``CHPL_LLVM=system``, it's a good idea to match the
        version of LLVM bundled in the Chapel release if possible as this
-       has recieved the most attention and testing (see also
+       has received the most attention and testing (see also
        :ref:`readme-chplenv.CHPL_LLVM`)
 
  * For multi-locale programs, use a high-performance networking configuration
@@ -340,7 +340,7 @@ Network-specific communication settings
       offers a similar capability for InfiniBand
 
 ..
-  comment: cover ``--llvm-wide-opt`` when it becomes less experemental
+  comment: cover ``--llvm-wide-opt`` when it becomes less experimental
 
 Fundamental Issues
 ------------------
@@ -649,7 +649,7 @@ How can load imbalance be identified?
 
 How can load imbalance be addressed?
 
- * There are often ways to improve the algorthim to address load
+ * There are often ways to improve the algorithm to address load
    imbalance. For example, graph partitioners are an important technology
    that can help one balance the storage of a data structure and the
    computation that goes with it. More generally, you might be able to

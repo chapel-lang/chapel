@@ -1605,7 +1605,7 @@ iter walkDirsHelper(path: string, topdown: bool, in depth: int,
 }
 
 // this uses parSafe lists as the stack, which probably
-// makes the parallelism inefficent and pretty useless. This was better
+// makes the parallelism inefficient and pretty useless. This was better
 // when written as a recursive iterator, but recursive iterators are too
 // fragile
 @chpldoc.nodoc
