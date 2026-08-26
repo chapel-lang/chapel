@@ -43,7 +43,7 @@ jobs:
       - full-checks
     env:
       GH_TOKEN: ${{ github.token }}
-      EMAIL_BODY_FILENAME: email.html
+      EMAIL_BODY_FILENAME: email.md
     steps:
       - name: determine date
         id: date
@@ -67,34 +67,30 @@ jobs:
           num_jobs=$(jq 'length' jobs_array.json)
           readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or .conclusion != "success" ) | .id' jobs_array.json)
 
-          failed_jobs_html=""
+          failed_jobs_text=""
           for id in "${failed_job_ids[@]}"; do
             gh api "/repos/chapel-lang/chapel/actions/jobs/$id" > "job_$id.json"
             sleep 0.25
-            failed_jobs_html+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "<li><a href=\"\(.html_url)\">\(.name)</a>, step: \"\(.first_bad_step)\"</li>"' "job_$id.json")
+            failed_jobs_text+=$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
           done
 
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
-          <h3>The following GitHub Actions job$plural failed:</h3>
+          ### The following GitHub Actions job$plural failed:
 
-          <ul>
-          $failed_jobs_html
-          </ul>
+          $failed_jobs_text
 
-          <hr>
+          ***
 
-          <p>Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".</p>
+          Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
 
-          <p>GitHub Actions run info:</p>
-          <ul>
-            <li>SHA: <a href="https://github.com/chapel-lang/chapel/commit/${{ github.sha }}">${{ github.sha }}</a></li>
-            <li>Run ID: <a href="https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_id }}">${{ github.run_id }}</a></li>
-            <li>Run attempt: ${{ github.run_attempt }}</li>
-            <li>Run number: ${{ github.run_number }}</li>
-            <li>Triggering event name: ${{ github.event_name }}</li>
-          </ul>
+          GitHub Actions run info:
+          - SHA: [${{ github.sha }}](https://github.com/chapel-lang/chapel/commit/${{ github.sha }})
+          - Run ID: [${{ github.run_id }}](https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_id }})
+          - Run attempt: ${{ github.run_attempt }}
+          - Run number: ${{ github.run_number }}
+          - Triggering event name: ${{ github.event_name }}
           EOF
       - name: print email body
         if: always()
@@ -113,4 +109,4 @@ jobs:
            subject: "[Chapel GA Tests] ${{ steps.date.outputs.date }}"
            to: ${{ secrets.CHAPEL_BUILD_MAIL_ADDRESS }}
            from:  "Chapel Automaton <chapel_commits@cray.com>"
-           html_body: file://${{ env.EMAIL_BODY_FILENAME }}
+           body: file://${{ env.EMAIL_BODY_FILENAME }}
