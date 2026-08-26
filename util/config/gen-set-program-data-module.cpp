@@ -96,6 +96,7 @@ static void print_setter_proc(std::ofstream& ofs, int indent) {
 static void print_global_decls(std::ofstream& ofs, int indent) {
   ofs << INDENT(indent);
   ofs << "use ChapelProgramRegistration;\n";
+  ofs << "use CTypes;\n";
 }
 
 static void print_lookup_proc_body(std::ofstream& ofs,
@@ -103,7 +104,7 @@ static void print_lookup_proc_body(std::ofstream& ofs,
                                    const build_constant_list& bcl,
                                    int indent) {
   ofs << INDENT(indent);
-  ofs << "const s: string = string.createWithBorrowedBuffer(";
+  ofs << "const s: string = try! string.createBorrowingBuffer(";
   ofs << constant_formal_name << ");\n";
   ofs << "\n";
 
