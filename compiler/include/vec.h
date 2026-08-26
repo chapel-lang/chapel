@@ -455,7 +455,7 @@ Vec<C,S>::addx() {
     return;
   }
   if (v == e) {
-    if (!(0 <= n && n <= S))
+    if (!(0 <= n && n <= VEC_INITIAL_SIZE))
       CHPL_UNREACHABLE();
     v = (C*)malloc(VEC_INITIAL_SIZE * sizeof(C));
     memcpy((void*)v, &e[0], n * sizeof(C));
