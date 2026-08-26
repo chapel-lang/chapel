@@ -239,60 +239,8 @@ int chpl_rt_num_build_constants(void) {
   return CHPL_RT_ENV_LOOKUP_TABLE_SIZE;
 }
 
-const char* chpl_rt_build_constant_name(int idx) {
+const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val) {
   assert(0 <= idx && idx < CHPL_RT_ENV_LOOKUP_TABLE_SIZE);
+  if (out_val) *out_val = lookup_table[idx][1];
   return lookup_table[idx][0];
-}
-
-chpl_bool
-chpl_rt_prginfo_lookup_build_constant(chpl_rt_prginfo* prg,
-                                      const char* var_name,
-                                      const char** out_prg_val,
-                                      const char** out_rt_val) {
-  const char* prg_val = NULL;
-  const char* rt_val = NULL;
-  chpl_bool ret = false;
-
-  // Search for the program value for the constant.
-  do {
-    // Use 'do/while' in order to 'break'. Note that since each field that
-    // is expanded has a different type, we check and then reinterpret the
-    // address of the field as a 'const char**' in order to get the types
-    // to line up.
-    #define E_CONSTANT(name__, type__) { \
-      if (!strcmp(#name__, var_name)) { \
-        const char* t = #type__; \
-        if (!strcmp(t, "const char*") || !strcmp(t, "c_string")) { \
-          void* addr = &(CHPL_RT_PRGINFO_DATA(prg, name__)); \
-          prg_val = *((const char**) addr); \
-          break; \
-        } \
-      } \
-    }
-    #define E_CALLBACK(name__, ret_type__, ...)
-    #include "chpl-prginfo-data-macro-adapter.h"
-  } while (false);
-
-  // Search for the runtime value for the constant. TODO: Binary search.
-  for (int i = 0; i < CHPL_RT_ENV_LOOKUP_TABLE_SIZE; i++) {
-    const char** pair = lookup_table[i];
-    const char* k = pair[0];
-    const char* v = pair[1];
-
-    if (!strcmp(k, var_name)) {
-      rt_val = v;
-      break;
-    }
-  }
-
-  // Set the out pointers for the constants we found.
-  if (out_prg_val) *out_prg_val = prg_val;
-  if (out_rt_val) *out_rt_val = rt_val;
-
-  if (prg_val && rt_val) {
-    // If both constants exist, compare their values for the result.
-    ret = !strcmp(prg_val, rt_val);
-  }
-
-  return ret;
 }
