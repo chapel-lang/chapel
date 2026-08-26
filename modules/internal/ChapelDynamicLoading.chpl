@@ -461,10 +461,10 @@ module ChapelDynamicLoading {
       var msg: string = 'Cannot load Chapel library because ';
 
       if havePrgVal {
-        msg += 'of a build constant mismatch: ' + name + '=\'' + prgVal +
-               '\' versus a runtime value of \'' + rtVal + '\'';
+        msg += 'of a build constant mismatch: ' + k + '=\'' + prgVal +
+               '\' versus a runtime value of \'' + v + '\'';
       } else {
-        msg += 'it does not define the constant: ' + name;
+        msg += 'it does not define the constant: ' + k;
       }
 
       throw new DynLoadError(msg);
