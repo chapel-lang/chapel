@@ -86,6 +86,8 @@ jobs:
               libgcc-$VERSION-dev \
               libstdc++-$VERSION-dev
 
+            sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
+            sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
       - name: Check desired GCC version is default
         run: |
           actual_gcc_version=$(gcc -dumpversion)
