@@ -32,7 +32,6 @@ def cd(d: Optional[Path]):
         if d is not None:
             os.chdir(old_dir)
 
-
 def mason() -> Path:
     sub_dir = chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
     result = sp.check_output(
