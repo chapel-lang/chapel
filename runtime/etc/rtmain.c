@@ -21,9 +21,6 @@
 // This file is used in LLVM backend compiles to compile the header
 // declarations for the Chapel runtime into an LLVM module.
 
-// Otherwise, build constants will not be visible and compilation fails.
-#define CHPL_RT_DECLARE_RT_BUILD_CONSTANTS 1
-
 #include "chpl-prginfo.h"
 
 #include "stdchpl.h"

@@ -68,15 +68,7 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
 int chpl_rt_num_build_constants(void);
 
 /** Get the name of the i'th runtime build constant in alphabetical order. */
-const char* chpl_rt_build_constant_name(int idx);
-
-/** Given a program info and the name of a build constant, look up both the
-    program and runtime's values for that constant. Returns 'true' if the
-    constants match. */
-chpl_bool chpl_rt_prginfo_lookup_build_constant(chpl_rt_prginfo* prg,
-                                                const char* var_name,
-                                                const char** out_prg_val,
-                                                const char** out_rt_val);
+const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val);
 
 #ifdef __cplusplus
 }
