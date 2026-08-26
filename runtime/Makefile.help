@@ -184,14 +184,23 @@ else
   # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
 endif
 
+PRINTCHPLENV_WRAPPER= \
+  CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
+  CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
+  CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
+  CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
+  CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
+  CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
+  $(CHPL_MAKE_HOME)/util/printchplenv
+
 # NOTE: Need to recompute the link arguments since they were inherited from
 #       make/Makefile.base, and it is possible that third-party packages were
 #       not installed when they were computed (and thus they do not show up
 #       in the linking arguments, which breaks the build).
 RUNTIME_SHARED_LIB_BUNDLED_LINK_ARGS= \
-	$(shell $(CHPL_MAKE_HOME)/util/printchplenv --value --only=CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS)
+	$(shell $(PRINTCHPLENV_WRAPPER) --value --only=CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS)
 RUNTIME_SHARED_LIB_SYSTEM_LINK_ARGS= \
-	$(shell $(CHPL_MAKE_HOME)/util/printchplenv --value --only=CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS)
+	$(shell $(PRINTCHPLENV_WRAPPER) --value --only=CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS)
 
 $(RUNTIME_SHARED_LIB): $(SHARED_RUNTIME_OBJS) \
                        $(RUNTIME_DIR_TIMESTAMP) \
@@ -216,13 +225,7 @@ $(RUNTIME_STATIC_LIB): $(STATIC_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
 	$(AR) -rc $@ $(STATIC_RUNTIME_OBJS)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
-	CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
-	CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
-	CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
-	CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
-	CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
-	CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
-	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
+	$(PRINTCHPLENV_WRAPPER) --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
 
 $(RUNTIME_LIST_INCLUDESANDDEFINES): $(COMMON_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(MAKE) -f Makefile.config printincludesanddefines > $(RUNTIME_LIST_INCLUDESANDDEFINES)
