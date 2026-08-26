@@ -337,7 +337,8 @@ jobs:
   check-python-format:
     runs-on: ubuntu-slim
     env:
-      EXTENSIONLESS_PYTHON_FILES: ""
+      EXTENSIONLESS_PYTHON_FILES: |
+        test/mason/MasonBashSubTest
       BLACK_OPTIONS: "--check --verbose --line-length 80"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
