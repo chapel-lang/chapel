@@ -61,11 +61,18 @@ jobs:
       - name: save matrix properties to env
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-      - name: Install GCC
-        timeout-minutes: 10
-        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
+      - name: Install GCC ${{ matrix.gcc_version }} (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          VERSION: ${{ matrix.gcc_version }}
         with:
-          version: ${{ matrix.gcc_version }}
+          max_attempts: 3
+          timeout_seconds: 300
+          retry_wait_seconds: 60
+          command: |
+            sudo add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
+            sudo apt update
+            sudo apt install -y "gcc-$VERSION"
       - name: Check desired GCC version is default
         run: |
           actual_gcc_version=$(gcc -dumpversion)
