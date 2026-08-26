@@ -233,7 +233,7 @@ jobs:
           path: ${{ env.out_dir }}/*
           archive: false
           if-no-files-found: error
-  
+
   paratest-linux64-c-backend:
     name: Chapel paratest on linux64 with C backend
     uses: ./.github/workflows/ga-paratest.yml
