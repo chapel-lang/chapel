@@ -18,7 +18,7 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
-    clang-19 \
+    clang \
     cmake \
     cscope \
     curl \
@@ -27,13 +27,13 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     gcc \
     git \
     jq \
-    libclang-19-dev \
-    libclang-cpp19-dev \
+    libclang-dev \
+    libclang-cpp-dev \
     libedit-dev \
     libprotoc-dev \
-    llvm-19 \
-    llvm-19-dev \
-    llvm-19-tools \
+    llvm \
+    llvm-dev \
+    llvm-tools \
     locales \
     m4 \
     make \
