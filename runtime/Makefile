@@ -29,7 +29,6 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 CHPL_ENV_HEADER_TEMPLATE=$(CHPL_MAKE_HOME)/runtime/etc/chpl-env-gen-template.h
 CHPL_ENV_HEADER_DIR=$(RUNTIME_OBJDIR)/include/
 CHPL_ENV_HEADER=$(CHPL_ENV_HEADER_DIR)/chpl-env-gen.h
-CHPL_PRGINFO_GEN_RT_BUILD_CONSTANTS_MACRO=$(CHPL_ENV_HEADER_DIR)/chpl-prginfo-gen-rt-build-constants-macro.h
 
 all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 
@@ -61,8 +60,7 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv \
 	@echo "Generating $(CHPL_ENV_HEADER)"
 	@$(CHPL_MAKE_HOME)/util/config/gen-chpl-env-header.py \
 		$(CHPL_ENV_HEADER_TEMPLATE) \
-		$(CHPL_ENV_HEADER) \
-		$(CHPL_PRGINFO_GEN_RT_BUILD_CONSTANTS_MACRO)
+		$(CHPL_ENV_HEADER)
 
 THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
