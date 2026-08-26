@@ -98,7 +98,7 @@ jobs:
       - name: import base image from tarball
         if: ${{ env.CONFIG != 'base' }}
         run: |
-          docker image import "$BASE_IMAGE_TARBALL" "$BASE_IMAGE_FULL_NAME"
+          docker image load --input "$BASE_IMAGE_TARBALL"
       - name: build image ${{ env.IMAGE_FULL_NAME }}
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
