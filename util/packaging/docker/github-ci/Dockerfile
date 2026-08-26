@@ -2,7 +2,7 @@
 # tzdata is necessary for util/test/check_annotations.py to function properly (get the right dates)
 # locales is necessary for util/buildRelease/smokeTest docs
 
-FROM ubuntu:latest
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -18,7 +18,7 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
-    clang \
+    clang-19 \
     cmake \
     cscope \
     curl \
@@ -27,13 +27,13 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     gcc \
     git \
     jq \
-    libclang-dev \
-    libclang-cpp-dev \
+    libclang-19-dev \
+    libclang-cpp19-dev \
     libedit-dev \
     libprotoc-dev \
-    llvm \
-    llvm-dev \
-    llvm-tools \
+    llvm-19 \
+    llvm-19-dev \
+    llvm-19-tools \
     locales \
     m4 \
     make \
