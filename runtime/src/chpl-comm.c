@@ -34,6 +34,7 @@
 #include "chpl-linefile-support.h"
 #include "chpl-gpu-diags.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
 #include "chpl-mem.h"
 #include "chpl-prginfo.h"
 #include "chpl-topo.h"
@@ -130,9 +131,8 @@ void chpl_rt_comm_init_unified_private_broadcast_table(void) {
                           chpl_private_broadcast_table);
   CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
                           chpl_private_broadcast_table_len);
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, CHPL_COMM);
 
-  bool is_gasnet = !strcmp(CHPL_COMM, "gasnet");
+  bool is_gasnet = !strcmp(CHPL_COMM_RT, "gasnet");
 
   // Only really changes OFI comm layer, COMM=none shouldn't use this.
   chpl_rt_use_unified_private_broadcast_table = !is_gasnet;
