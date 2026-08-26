@@ -57,6 +57,7 @@ jobs:
 
           TAG="$GITHUB_SHA"
           name_prefix="chapel"
+          BASE_IMAGE_TARBALL="$TARBALL_NAME_PREFIX$name_prefix-$TAG-$ARCH.tar"
           BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
 
           if [[ "$CONFIG" == "base" ]]; then
@@ -80,6 +81,7 @@ jobs:
           IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
 
           {
+            echo "BASE_IMAGE_TARBALL=$BASE_IMAGE_TARBALL"
             echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
             echo "IMAGE_TARBALL=$IMAGE_TARBALL"
             echo "MAKE_THREADS=$MAKE_THREADS"
