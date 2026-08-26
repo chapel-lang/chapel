@@ -147,8 +147,10 @@ jobs:
       - name: load single-arch images from tarball
         run: |
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME"*arm64*
-          docker push "$IMAGE_FULL_NAME-arm64"
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME"*x86*
+      - name: push single-arch images to local registry
+        run: |
+          docker push "$IMAGE_FULL_NAME-arm64"
           docker push "$IMAGE_FULL_NAME-x86"
       - name: create multiarch image
         run: |
