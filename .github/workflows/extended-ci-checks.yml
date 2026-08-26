@@ -72,7 +72,7 @@ jobs:
           command: |
             sudo add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
             sudo apt update
-            sudo apt install -y "gcc-$VERSION"
+            sudo apt install -y "gcc-$VERSION" "g++-$VERSION"
       - name: Check desired GCC version is default
         run: |
           actual_gcc_version=$(gcc -dumpversion)
