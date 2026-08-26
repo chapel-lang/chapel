@@ -77,12 +77,9 @@ jobs:
             sudo apt update
             sudo apt install -y \
               cpp-$VERSION \
-              cpp-$VERSION-x86-64-linux-gnu \
               g++-$VERSION \
-              g++-$VERSION-x86-64-linux-gnu \
               gcc-$VERSION \
               gcc-$VERSION-base \
-              gcc-$VERSION-x86-64-linux-gnu \
               libgcc-$VERSION-dev \
               libstdc++-$VERSION-dev
 
