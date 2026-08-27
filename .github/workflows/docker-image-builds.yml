@@ -81,13 +81,13 @@ jobs:
           IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
 
           {
-            echo "BASE_IMAGE_TARBALL=$BASE_IMAGE_TARBALL"
-            echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
-            echo "IMAGE_TARBALL=$IMAGE_TARBALL"
             echo "MAKE_THREADS=$MAKE_THREADS"
             echo "TAG=$TAG"
+            echo "BASE_IMAGE_TARBALL=$BASE_IMAGE_TARBALL"
+            echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
             echo "DOCKERFILE=$DOCKERFILE"
             echo "TEST_SCRIPT=$TEST_SCRIPT"
+            echo "IMAGE_TARBALL=$IMAGE_TARBALL"
             echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
           } | tee "$GITHUB_ENV" "$GITHUB_OUTPUT"
       - name: download base image tarball
