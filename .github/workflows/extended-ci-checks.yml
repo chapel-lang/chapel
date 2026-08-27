@@ -322,4 +322,4 @@ jobs:
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
       test-dirs: |
-        test/arrays/slices/commCounts
+        test/arrays
