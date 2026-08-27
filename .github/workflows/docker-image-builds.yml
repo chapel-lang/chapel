@@ -85,6 +85,7 @@ jobs:
             echo "TAG=$TAG"
             echo "BASE_IMAGE_TARBALL=$BASE_IMAGE_TARBALL"
             echo "BASE_IMAGE_FULL_NAME=$BASE_IMAGE_FULL_NAME"
+            echo "IMAGE_NAME=$IMAGE_NAME"
             echo "DOCKERFILE=$DOCKERFILE"
             echo "TEST_SCRIPT=$TEST_SCRIPT"
             echo "IMAGE_TARBALL=$IMAGE_TARBALL"
