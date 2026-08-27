@@ -607,10 +607,17 @@ jobs:
       - name: set vars to work from correct branch
         run: |
           echo "GIT_REVISION=$GITHUB_REF" >> "$GITHUB_ENV"
-      - name: bring up and provision VM
-        run: |
-          cd ${{ env.VAGRANT_DIR }}
-          ./up.sh
+      - name: bring up and provision VM (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: 30
+          on_retry_command: |
+            cd ${{ env.VAGRANT_DIR }}
+            ./destroy.sh
+          command: |
+            cd ${{ env.VAGRANT_DIR }}
+            ./up.sh
       - run: ${{ env.VAGRANT_DIR }}/chapelquickcheck.sh
       - run: ${{ env.VAGRANT_DIR }}/chapeldefaultcheck.sh
       - run: ${{ env.VAGRANT_DIR }}/chapelfullcheck.sh
