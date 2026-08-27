@@ -11,6 +11,7 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
+  APT_INSTALL_TIMEOUT_MINS: 5
 
 defaults:
   run:
