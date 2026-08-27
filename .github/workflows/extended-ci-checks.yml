@@ -68,7 +68,7 @@ jobs:
           VERSION: ${{ matrix.gcc_version }}
         with:
           max_attempts: 3
-          timeout_minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
           retry_wait_seconds: 60
           command: |
             sudo update-alternatives --remove-all gcc
@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Python
-        timeout-minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python_version }}
@@ -144,7 +144,7 @@ jobs:
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
-        timeout-minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           sudo apt install \
             clang \
@@ -177,7 +177,7 @@ jobs:
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
-          timeout_minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
           retry_wait_seconds: 60
           command: |
             wget https://apt.llvm.org/llvm.sh

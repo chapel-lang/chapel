@@ -44,7 +44,7 @@ jobs:
       with:
         persist-credentials: false
     - name: install fluid and libfltk-dev
-      timeout-minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+      timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
       run: |
         apt update && apt install -y \
           fluid \
@@ -430,7 +430,7 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
-        timeout-minutes: ${{ env.APT_INSTALL_TIMEOUT_MINS }}
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm
