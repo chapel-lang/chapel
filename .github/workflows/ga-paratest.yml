@@ -11,7 +11,8 @@ on:
         description: Pre-build commands, defaults to nothing
         required: false
         type: string
-        default: ""
+        default: |
+          set -u
       cron-script:
         description: Cron script to source before building and running tests
         required: false
@@ -109,11 +110,9 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {
-            if [[ -n "$PRE_BUILD_STEPS" ]]; then
-              echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-              # shellcheck source=/dev/null
-              source "$RUNNER_TEMP/pre-build-steps.bash"
-            fi
+            echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+            # shellcheck source=/dev/null
+            source "$RUNNER_TEMP/pre-build-steps.bash"
             if [[ -n "$CRON_SCRIPT" ]]; then
               # shellcheck source=/dev/null
               source "$CRON_SCRIPT"
@@ -160,11 +159,9 @@ jobs:
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
         run: |
-          if [[ -n "$PRE_BUILD_STEPS" ]]; then
-            echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-            # shellcheck source=/dev/null
-            source "$RUNNER_TEMP/pre-build-steps.bash"
-          fi
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
           # do pre-build and cron before running start_test
           if [[ -n "$CRON_SCRIPT" ]]; then
             # shellcheck source=/dev/null
@@ -305,11 +302,9 @@ jobs:
           TEST_FLAGS: ${{ matrix.flags }}
           TEST_ID: ${{ matrix.id }}
         run: |
-          if [[ -n "$PRE_BUILD_STEPS" ]]; then
-            echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-            # shellcheck source=/dev/null
-            source "$RUNNER_TEMP/pre-build-steps.bash"
-          fi
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
           if [[ -n "$CRON_SCRIPT" ]]; then
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
