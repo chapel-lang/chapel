@@ -88,7 +88,7 @@ function test_compile() {
     echo "[Building $kind in normal mode]"
   fi
 
-  make_vars+=$extra_make
+  make_vars+=" $extra_make"
   echo "[make_vars: $make_vars]"
 
   test_start "make $kind"
