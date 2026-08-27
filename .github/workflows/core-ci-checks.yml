@@ -358,6 +358,7 @@ jobs:
       - name: Find extensionless Python files in util/
         run: |
           EXTENSIONLESS_PYTHON_FILES+="$(find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)"
+          echo "$EXTENSIONLESS_PYTHON_FILES"
           {
             echo "EXTENSIONLESS_PYTHON_FILES<<EOF"
             echo "$EXTENSIONLESS_PYTHON_FILES"
