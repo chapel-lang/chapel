@@ -589,6 +589,7 @@ jobs:
       VM_NAME: ${{ matrix.vagrant_config }}
     steps:
       - name: install Vagrant and Virtualbox with Homebrew
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           brew install virtualbox
           brew install --cask vagrant
