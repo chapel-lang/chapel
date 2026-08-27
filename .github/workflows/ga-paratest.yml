@@ -158,9 +158,15 @@ jobs:
       - name: determine test directories
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
+          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
           CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
-          # source cron script before running start_test
+          if [[ -n "$PRE_BUILD_STEPS" ]]; then
+            echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+            # shellcheck source=/dev/null
+            source "$RUNNER_TEMP/pre-build-steps.bash"
+          fi
+          # do pre-build and cron before running start_test
           if [[ -n "$CRON_SCRIPT" ]]; then
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
