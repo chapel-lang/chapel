@@ -588,11 +588,15 @@ jobs:
     env:
       VM_NAME: ${{ matrix.vagrant_config }}
     steps:
-      - name: install Vagrant and Virtualbox with Homebrew
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-        run: |
-          brew install virtualbox
-          brew install --cask vagrant
+      - name: install Vagrant and Virtualbox with Homebrew (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+          retry_wait_seconds: 60
+          command: |
+            brew install virtualbox
+            brew install --cask vagrant
       - name: print Vagrant version
         run: |
           vagrant --version
