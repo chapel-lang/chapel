@@ -11,8 +11,7 @@ on:
         description: Pre-build commands, defaults to nothing
         required: false
         type: string
-        default: |
-          set -u
+        default: ""
       cron-script:
         description: Cron script to source before building and running tests
         required: false
@@ -76,6 +75,8 @@ env:
   PARATEST_RESULTS_DIR: paratest-results
   AGGREGATED_RESULTS_DIR: aggregated-results
   CHAPEL_BUILD_FILES_SLUG: chapel-build-files
+  CRON_SCRIPT: ${{ inputs.cron-script }}
+  PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
 
 # note: no -x, its not actually that useful here and there is plenty of other output
 defaults:
@@ -96,9 +97,6 @@ jobs:
     outputs:
       matrix: ${{ steps.test-directories.outputs.matrix }}
       test-count: ${{ steps.test-directories.outputs.test-count }}
-    env:
-      CRON_SCRIPT: ${{ inputs.cron-script }}
-      PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -276,9 +274,6 @@ jobs:
       fail-fast: false
       max-parallel: ${{ inputs.max-parallel }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
-    env:
-      CRON_SCRIPT: ${{ inputs.cron-script }}
-      PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
