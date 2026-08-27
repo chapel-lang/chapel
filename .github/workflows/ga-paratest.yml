@@ -75,6 +75,8 @@ env:
   PARATEST_RESULTS_DIR: paratest-results
   AGGREGATED_RESULTS_DIR: aggregated-results
   CHAPEL_BUILD_FILES_SLUG: chapel-build-files
+  CRON_SCRIPT: ${{ inputs.cron-script }}
+  PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
 
 # note: no -x, its not actually that useful here and there is plenty of other output
 defaults:
@@ -100,21 +102,15 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: run pre-build steps
-        if: ${{ inputs.pre-build-steps != '' }}
-        env:
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
-        run: |
-          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-          # shellcheck source=/dev/null
-          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {
+            echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+            # shellcheck source=/dev/null
+            source "$RUNNER_TEMP/pre-build-steps.bash"
             if [[ -n "$CRON_SCRIPT" ]]; then
               # shellcheck source=/dev/null
               source "$CRON_SCRIPT"
@@ -160,9 +156,11 @@ jobs:
       - name: determine test directories
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
-          # source cron script before running start_test
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
+          # do pre-build and cron before running start_test
           if [[ -n "$CRON_SCRIPT" ]]; then
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
@@ -291,23 +289,17 @@ jobs:
           # Some tests assume git has been properly configured, so configure it here for the test runner.
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-      - name: run pre-build steps
-        if: ${{ inputs.pre-build-steps != '' }}
-        env:
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
-        run: |
-          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
-          # shellcheck source=/dev/null
-          source "$RUNNER_TEMP/pre-build-steps.bash"
       - name: run tests
         env:
           CONFIGURATION: ${{ inputs.configuration }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_DIR: ${{ matrix.dir }}
           TEST_FLAGS: ${{ matrix.flags }}
           TEST_ID: ${{ matrix.id }}
         run: |
+          echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
+          # shellcheck source=/dev/null
+          source "$RUNNER_TEMP/pre-build-steps.bash"
           if [[ -n "$CRON_SCRIPT" ]]; then
             # shellcheck source=/dev/null
             source "$CRON_SCRIPT"
