@@ -46,7 +46,7 @@ else
     git remote add origin "$GIT_REPO_URL"
 
     fetch_cmd="git fetch --filter=blob:none --depth=1 origin $GIT_REVISION:$GIT_REVISION"
-    run_cmd_retrying $fetch_cmd "" 10 10
+    run_cmd_retrying "$fetch_cmd" "" 10 10
 
     git reset --hard "$GIT_REVISION"
   else
