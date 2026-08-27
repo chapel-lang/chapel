@@ -48,70 +48,70 @@ extern "C" {
 
 // create a plugin channel to attach to the qio channel
 static inline
-syserr qio_plugin_setup_plugin_channel(void* file, void** plugin_ch,
-                                       int64_t start,
-                                       int64_t end,
-                                       qio_channel_t* qio_ch) {
+syserr qio_plugin_wrapper_setup_plugin_channel(void* file, void** plugin_ch,
+                                               int64_t start,
+                                               int64_t end,
+                                               qio_channel_t* qio_ch) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_setup_plugin_channel, file, plugin_ch,
                          start, end, qio_ch);
 }
 
 // Reads amt bytes (or more) into the channel buffer
 static inline
-syserr qio_plugin_read_atleast(void* plugin_ch, int64_t amt) {
+syserr qio_plugin_wrapper_read_atleast(void* plugin_ch, int64_t amt) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_read_atleast, plugin_ch, amt);
 }
 
 // Writes amt bytes from the channel buffer
 static inline
-syserr qio_plugin_write(void* plugin_ch, int64_t amt) {
+syserr qio_plugin_wrapper_write(void* plugin_ch, int64_t amt) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_write, plugin_ch, amt);
 }
 
 // close the channel
 static inline
-syserr qio_plugin_channel_close(void* ch) {
+syserr qio_plugin_wrapper_channel_close(void* ch) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_channel_close, ch);
 }
 
 // get the length of a file
 static inline
-syserr qio_plugin_filelength(void* file, int64_t* length) {
+syserr qio_plugin_wrapper_filelength(void* file, int64_t* length) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_filelength, file, length);
 }
 
 // get the path to a file
 static inline
-syserr qio_plugin_getpath(void* file, uint8_t** str, int64_t* len) {
+syserr qio_plugin_wrapper_getpath(void* file, uint8_t** str, int64_t* len) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_getpath, file, str, len);
 }
 
 // sync the file to disk
 static inline
-syserr qio_plugin_fsync(void* file) {
+syserr qio_plugin_wrapper_fsync(void* file) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_fsync, file);
 }
 
 // get the optimal i/o size for the channel
 static inline
-syserr qio_plugin_get_chunk(void* file, int64_t* length) {
+syserr qio_plugin_wrapper_get_chunk(void* file, int64_t* length) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_get_chunk, file, length);
 }
 
 // get the locales for a region
 // localeNamesPtr should be a pointer to an array of char* to set on output
 static inline
-syserr qio_plugin_get_locales_for_region(void* file, int64_t start,
-                                         int64_t end,
-                                         void **localeNamesPtr,
-                                         int64_t* nLocales) {
+syserr qio_plugin_wrapper_get_locales_for_region(void* file, int64_t start,
+                                                 int64_t end,
+                                                 void **localeNamesPtr,
+                                                 int64_t* nLocales) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_get_locales_for_region, file, start, end,
                          localeNamesPtr, nLocales);
 }
 
 // close a file
 static inline
-syserr qio_plugin_file_close(void* file) {
+syserr qio_plugin_wrapper_file_close(void* file) {
   QIO_RETURN_PLUGIN_BODY(chpl_qio_file_close, file);
 }
 
