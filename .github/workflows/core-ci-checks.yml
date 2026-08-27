@@ -342,6 +342,7 @@ jobs:
       # a later step.
       EXTENSIONLESS_PYTHON_FILES: |
         test/mason/MasonBashSubTest
+        test/man/checkManPages
       BLACK_OPTIONS: "--check --verbose --line-length 80"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
