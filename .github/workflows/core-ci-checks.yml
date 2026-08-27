@@ -607,6 +607,10 @@ jobs:
       - name: set vars to work from correct branch
         run: |
           echo "GIT_REVISION=$GITHUB_REF" >> "$GITHUB_ENV"
+      - name: bring up and provision VM
+        run: |
+          cd ${{ env.VAGRANT_DIR }}
+          ./up.sh
       - run: ${{ env.VAGRANT_DIR }}/chapelquickcheck.sh
       - run: ${{ env.VAGRANT_DIR }}/chapeldefaultcheck.sh
       - run: ${{ env.VAGRANT_DIR }}/chapelfullcheck.sh
