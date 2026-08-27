@@ -16,14 +16,17 @@ if not chpl_home.exists():
     sys.exit(1)
 sys.path.insert(0, str(chpl_home / "util" / "test"))
 import sub_test as sub_test_util
+
 sub_test_util.utildir = str(chpl_home / "util")
 
+
 def timeout():
-    default=300
+    default = 300
     return int(os.getenv("CHPL_TEST_TIMEOUT", default))
 
+
 def chpl() -> Path:
-    sub_dir =  chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
+    sub_dir = chpl_home / "util" / "chplenv" / "chpl_bin_subdir.py"
     result = sp.check_output(
         [sys.executable, str(sub_dir), "--host"],
         encoding="utf-8",
@@ -31,8 +34,10 @@ def chpl() -> Path:
     ).strip()
     return chpl_home / "bin" / result / "chpl"
 
+
 def chpl_parallel_dbg() -> Path:
     return chpl_home / "tools" / "chpl-parallel-dbg" / "chpl-parallel-dbg"
+
 
 def FileCheck() -> Path:
     llvm_config_script = chpl_home / "util" / "chplenv" / "chpl_llvm.py"
@@ -58,13 +63,12 @@ def FileCheck() -> Path:
     assert filecheck.exists(), "Could not find FileCheck"
     return filecheck
 
+
 def FileCheckFiles(input_file: Path, pattern: Path) -> int:
     args = ["--input-file", str(input_file), str(pattern)]
-    sys.stdout.write('[Executing FileCheck {}]\n'.format(' '.join(args)))
-    (returncode, myoutput, _) = sub_test_util.run_process(
-        [str(FileCheck())] + args,
-        stdout=sp.PIPE,
-        stderr=sp.STDOUT
+    sys.stdout.write("[Executing FileCheck {}]\n".format(" ".join(args)))
+    returncode, myoutput, _ = sub_test_util.run_process(
+        [str(FileCheck())] + args, stdout=sp.PIPE, stderr=sp.STDOUT
     )
     if returncode != 0:
         sys.stdout.write(sub_test_util.trim_output(myoutput))
@@ -79,6 +83,7 @@ def EXECOPTS(d: Path) -> List[str]:
             execopts.extend(f.read().strip().split())
     return execopts
 
+
 def COMPOPTS(d: Path) -> List[str]:
     compopts_file = d / "COMPOPTS"
     compopts = []
@@ -87,6 +92,7 @@ def COMPOPTS(d: Path) -> List[str]:
             compopts.extend(f.read().strip().split())
     return compopts
 
+
 @dataclass
 class Test:
     """
@@ -94,6 +100,7 @@ class Test:
 
     Currently only supports simple, one line, non-executable compopts/execopts
     """
+
     source_file: Path
     good_file: Path
     dbgcmds_file: Path
@@ -116,10 +123,14 @@ class Test:
         compopts_file = source_file.with_suffix(".compopts")
         execopts_file = source_file.with_suffix(".execopts")
         if not good_file.exists():
-            sys.stdout.write(f"[Warning: missing .good file for {source_file}]\n")
+            sys.stdout.write(
+                f"[Warning: missing .good file for {source_file}]\n"
+            )
             return None
         if not dbgcmds_file.exists():
-            sys.stdout.write(f"[Warning: missing .dbg.cmds file for {source_file}]\n")
+            sys.stdout.write(
+                f"[Warning: missing .dbg.cmds file for {source_file}]\n"
+            )
             return None
         kwargs: Dict[str, Any] = {
             "source_file": source_file,
@@ -148,7 +159,9 @@ class Test:
 
         try:
             cmd = [str(chpl()), str(self.source_file)] + compopts
-            sys.stdout.write('[Executing compiler command: {}]\n'.format(' '.join(cmd)))
+            sys.stdout.write(
+                "[Executing compiler command: {}]\n".format(" ".join(cmd))
+            )
             sys.stdout.flush()
             sp.check_call(cmd)
         except sp.CalledProcessError as e:
@@ -167,7 +180,6 @@ class Test:
                 execopts.extend(f.read().strip().split())
         execopts.append("-nl{}".format(self.numlocales))
 
-
         if not executable.exists():
             sys.stdout.write(f"[Error finding {executable}]\n")
             sys.stdout.flush()
@@ -179,18 +191,34 @@ class Test:
         debugger_fp = open(debugger_output, "w")
 
         cmd = [str(executable.absolute())] + execopts
-        sys.stdout.write('[Executing program: {}]\n'.format(' '.join(cmd)))
+        sys.stdout.write("[Executing program: {}]\n".format(" ".join(cmd)))
         sys.stdout.flush()
         # preexec_fn=os.setsid to allow killing the entire process group later
-        executable_process = sp.Popen(cmd, stdout=executable_fp, stderr=sp.STDOUT, preexec_fn=os.setsid)
+        executable_process = sp.Popen(
+            cmd, stdout=executable_fp, stderr=sp.STDOUT, preexec_fn=os.setsid
+        )
 
         time.sleep(2)
 
-        dbg_cmd = [str(chpl_parallel_dbg()), str(executable), str(self.numlocales), "-o", "settings set interpreter.stop-command-source-on-error false", "-o", "settings set interpreter.prompt-on-quit false"]
-        sys.stdout.write('[Executing debugger: {}]\n'.format(' '.join(dbg_cmd)))
+        dbg_cmd = [
+            str(chpl_parallel_dbg()),
+            str(executable),
+            str(self.numlocales),
+            "-o",
+            "settings set interpreter.stop-command-source-on-error false",
+            "-o",
+            "settings set interpreter.prompt-on-quit false",
+        ]
+        sys.stdout.write("[Executing debugger: {}]\n".format(" ".join(dbg_cmd)))
         sys.stdout.flush()
-        dbg_process = sp.Popen(dbg_cmd, stdout=debugger_fp, stderr=sp.STDOUT, stdin=sp.PIPE, encoding="utf-8")
-        with open (self.dbgcmds_file, "r") as f:
+        dbg_process = sp.Popen(
+            dbg_cmd,
+            stdout=debugger_fp,
+            stderr=sp.STDOUT,
+            stdin=sp.PIPE,
+            encoding="utf-8",
+        )
+        with open(self.dbgcmds_file, "r") as f:
             dbg_commands = f.read()
             for line in dbg_commands.splitlines():
                 if line.strip().startswith("#") or line.strip() == "":
@@ -221,24 +249,44 @@ class Test:
     def _run_prediff(self, prediff: Path, output_file: Path):
         if not prediff.exists():
             return
-        sys.stdout.write(f'[Executing ./{prediff.name}]\n')
+        sys.stdout.write(f"[Executing ./{prediff.name}]\n")
         sys.stdout.flush()
         stdout = sub_test_util.run_process(
-            [str(prediff.absolute()), self.source_file.stem, str(output_file), chpl()],
-            stdout=sp.PIPE, stderr=sp.STDOUT)[1]
+            [
+                str(prediff.absolute()),
+                self.source_file.stem,
+                str(output_file),
+                chpl(),
+            ],
+            stdout=sp.PIPE,
+            stderr=sp.STDOUT,
+        )[1]
         sys.stdout.write(stdout)
         sys.stdout.flush()
 
-    def _compare_output(self, executable_output: Path, debugger_output: Path) -> bool:
+    def _compare_output(
+        self, executable_output: Path, debugger_output: Path
+    ) -> bool:
         # check executable output
-        self._run_prediff(self.source_file.parent / "PREDIFF", executable_output)
-        self._run_prediff(self.source_file.with_suffix(".prediff"), executable_output)
-        if sub_test_util.DiffFiles(str(self.good_file), str(executable_output)) != 0:
-            sys.stdout.write(f"[Error matching executable output for {self.source_file.stem}]\n")
+        self._run_prediff(
+            self.source_file.parent / "PREDIFF", executable_output
+        )
+        self._run_prediff(
+            self.source_file.with_suffix(".prediff"), executable_output
+        )
+        if (
+            sub_test_util.DiffFiles(str(self.good_file), str(executable_output))
+            != 0
+        ):
+            sys.stdout.write(
+                f"[Error matching executable output for {self.source_file.stem}]\n"
+            )
             return False
         # check debugger output with FileCheck
         if FileCheckFiles(debugger_output, self.source_file) != 0:
-            sys.stdout.write(f"[Error matching debugger output for {self.source_file.stem}]\n")
+            sys.stdout.write(
+                f"[Error matching debugger output for {self.source_file.stem}]\n"
+            )
             return False
         return True
 
@@ -263,31 +311,37 @@ class Test:
             else:
                 if self._compare_output(executable_output, debugger_output):
                     self._cleanup(executable_output, debugger_output)
-                    sys.stdout.write("[Success matching output for {}]\n".format(self.source_file.stem))
+                    sys.stdout.write(
+                        "[Success matching output for {}]\n".format(
+                            self.source_file.stem
+                        )
+                    )
         elapsed = time.time() - start_time
         sub_test_util.printEndOfTestMsg(self.source_file, elapsed)
 
+
 def dirSkipIf(d: Path):
     skipif_file = d / "SKIPIF"
-    if skipif_file.exists() and os.getenv('CHPL_TEST_SINGLES')=='0':
-        sys.stdout.write('[Checking SKIPIF]\n')
+    if skipif_file.exists() and os.getenv("CHPL_TEST_SINGLES") == "0":
+        sys.stdout.write("[Checking SKIPIF]\n")
         sys.stdout.flush()
         do_not_test = False
         try:
-            skipme=False
-            skiptest=sub_test_util.runSkipIf(str(skipif_file.name))
+            skipme = False
+            skiptest = sub_test_util.runSkipIf(str(skipif_file.name))
             if skiptest.strip() != "False":
                 skipme = skiptest.strip() == "True" or int(skiptest) == 1
             if skipme:
-                sys.stdout.write('[Skipping test based on SKIPIF]\n')
-                do_not_test=True
+                sys.stdout.write("[Skipping test based on SKIPIF]\n")
+                do_not_test = True
         except (ValueError, RuntimeError) as e:
-            sys.stdout.write(str(e)+'\n')
-            sys.stdout.write('[Error processing SKIPIF file]\n')
-            do_not_test=True
+            sys.stdout.write(str(e) + "\n")
+            sys.stdout.write("[Error processing SKIPIF file]\n")
+            do_not_test = True
         if do_not_test:
             return True
     return False
+
 
 def main():
     sub_test_util.printStartOfTestMsg(time.localtime())

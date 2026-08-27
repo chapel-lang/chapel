@@ -11,7 +11,6 @@ import sys
 import time
 from datetime import datetime
 
-
 # Expected OOM warning message
 oom_message = "warning: A driver phase was killed by signal SIGKILL -- possibly due to running out of memory"
 # Substring of message announcing phase start to search for
@@ -37,6 +36,7 @@ subtest_test_name = '"compflags/oom"'
 
 errored = False
 
+
 def subtest_start():
     global subtest_start_time
     subtest_start_time = datetime.now()
@@ -44,12 +44,16 @@ def subtest_start():
     print(f"[Starting subtest - {datetime.now().strftime('%c')}]")
     print(f"[test: {subtest_test_name}]")
 
+
 def subtest_end():
     subtest_end_time = datetime.now()
     elapsed_time = (subtest_end_time - subtest_start_time).total_seconds()
 
-    print(f"[Elapsed time to compile and execute all versions of {subtest_test_name} - {elapsed_time} seconds]")
+    print(
+        f"[Elapsed time to compile and execute all versions of {subtest_test_name} - {elapsed_time} seconds]"
+    )
     print(f"[Finished subtest {subtest_test_name} - {elapsed_time} seconds]")
+
 
 def subtest_error(msg):
     global errored
@@ -57,6 +61,7 @@ def subtest_error(msg):
     if not errored:
         errored = True
         print(f"[Error running out-of-memory test {subtest_test_name} - {msg}]")
+
 
 ### END sub_test output helper functions ###
 
@@ -82,6 +87,7 @@ def kill_subphase(ppid):
 
     subtest_error("Could not find PID of subphase to kill.")
 
+
 def main():
     subtest_start()
 
@@ -90,7 +96,10 @@ def main():
 
     cmd = [chpl_cmd, "--print-commands", chpl_file]
     process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
     )
 
     encountered_subphase = False
@@ -111,7 +120,9 @@ def main():
     if not killed_subphase:
         subtest_error("Expected subphase was not found in compiler output.")
     elif not oom_message_found:
-        subtest_error("Did not find expected OOM message in output after killing subphase.")
+        subtest_error(
+            "Did not find expected OOM message in output after killing subphase."
+        )
     else:
         print("Found expected OOM warning message after killing subphase.")
 
