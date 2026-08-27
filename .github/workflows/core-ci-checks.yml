@@ -338,6 +338,8 @@ jobs:
   check-python-format:
     runs-on: ubuntu-slim
     env:
+      # Specifically included files for formatting. We will add to this list in
+      # a later step.
       EXTENSIONLESS_PYTHON_FILES: |
         test/mason/MasonBashSubTest
       BLACK_OPTIONS: "--check --verbose --line-length 80"
@@ -355,9 +357,10 @@ jobs:
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
-      - name: Find extensionless Python files in util/ and test/
+      - name: Find extensionless Python files in util/ and Python sub_tests in test/
         run: |
-          EXTENSIONLESS_PYTHON_FILES+="$(find util/ test/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)"
+          EXTENSIONLESS_PYTHON_FILES+="$(find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)"
+          EXTENSIONLESS_PYTHON_FILES+="$(find test/ -type f -name 'sub_test' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)"
           echo "$EXTENSIONLESS_PYTHON_FILES"
           {
             echo "EXTENSIONLESS_PYTHON_FILES<<EOF"
