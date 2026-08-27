@@ -584,9 +584,9 @@ jobs:
       fail-fast: false
       matrix:
         vagrant_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.vagrant_configs) }}
-        check_type: ["quick", "default", "full"]
     env:
       VM_NAME: ${{ matrix.vagrant_config }}
+      VAGRANT_DIR: util/devel/test/portability/vagrant
     steps:
       - name: install Vagrant and Virtualbox with Homebrew (retrying)
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -607,8 +607,6 @@ jobs:
       - name: set vars to work from correct branch
         run: |
           echo "GIT_REVISION=$GITHUB_REF" >> "$GITHUB_ENV"
-      - name: run ${{ matrix.check_type }} check on Vagrant config ${{ matrix.vagrant_config }}
-        run: |
-          cd util/devel/test/portability/vagrant
-
-          ./chapel${{ matrix.check_type }}check.sh
+      - run: ${{ env.VAGRANT_DIR }}/chapelquickcheck.sh
+      - run: ${{ env.VAGRANT_DIR }}/chapeldefaultcheck.sh
+      - run: ${{ env.VAGRANT_DIR }}/chapelfullcheck.sh
