@@ -95,6 +95,9 @@ jobs:
     outputs:
       matrix: ${{ steps.test-directories.outputs.matrix }}
       test-count: ${{ steps.test-directories.outputs.test-count }}
+    env:
+      CRON_SCRIPT: ${{ inputs.cron-script }}
+      PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -103,8 +106,6 @@ jobs:
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {
@@ -158,8 +159,6 @@ jobs:
       - name: determine test directories
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
         run: |
           if [[ -n "$PRE_BUILD_STEPS" ]]; then
             echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
@@ -280,6 +279,9 @@ jobs:
       fail-fast: false
       max-parallel: ${{ inputs.max-parallel }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
+    env:
+      CRON_SCRIPT: ${{ inputs.cron-script }}
+      PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
     steps:
       - name: checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -298,8 +300,6 @@ jobs:
       - name: run tests
         env:
           CONFIGURATION: ${{ inputs.configuration }}
-          CRON_SCRIPT: ${{ inputs.cron-script }}
-          PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_DIR: ${{ matrix.dir }}
           TEST_FLAGS: ${{ matrix.flags }}
