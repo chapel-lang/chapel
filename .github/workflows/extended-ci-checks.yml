@@ -326,6 +326,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -340,8 +341,8 @@ jobs:
         timeout_seconds: 900
         retry_wait_seconds: 30
         command: |
-          apt-get update
-          apt-get install -y openmpi-bin libopenmpi-dev
+          sudo apt-get update
+          sudo apt-get install -y openmpi-bin libopenmpi-dev
     - name: Configure Chapel
       run: |
         {
