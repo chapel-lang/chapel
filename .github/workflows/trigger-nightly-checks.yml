@@ -72,8 +72,6 @@ jobs:
 
           $failed_jobs_text
 
-          ___
-
           Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
 
           GitHub Actions run info:
