@@ -35,7 +35,7 @@ on:
         type: string
         default: ""
       max-parallel:
-        description: Maximum number of test jobs to run concurrently
+        description: Maximum number of test jobs to run concurrently; 0 is unrestricted
         required: false
         type: number
         default: 20
@@ -272,7 +272,7 @@ jobs:
         password: ${{ github.token }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max-parallel }}
+      max-parallel: ${{ inputs.max-parallel || fromJSON(needs.build.outputs.test-count) }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
       - name: checkout
