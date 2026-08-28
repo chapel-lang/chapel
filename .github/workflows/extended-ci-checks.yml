@@ -349,6 +349,7 @@ jobs:
           echo "CHPL_COMM=ofi"
           echo "CHPL_COMM_OFI_OOB=mpi"
           echo "CHPL_LAUNCHER=mpirun4ofi"
+          echo "CHPL_TARGET_CPU=none"
         } >> .chplconfig
     - name: Build Chapel
       run: |
