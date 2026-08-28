@@ -1534,6 +1534,13 @@ def set_up_executables():
         prediff_for_ucx = os.path.join(util_dir, "test", "prediff-for-ucx")
         if prediff_for_ucx not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_ucx)
+    if "mpirun4ofi" == launcher:
+        # With mpirun4ofi-based launcher, auto-run prediff-for-mpirun4ofi.
+        prediff_for_mpirun4ofi = os.path.join(
+            util_dir, "test", "prediff-for-mpirun4ofi"
+        )
+        if prediff_for_mpirun4ofi not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_mpirun4ofi)
 
     # TODO: remove this when
     # https://github.com/chapel-lang/chapel/issues/27262 is resolved
