@@ -1,9 +1,7 @@
-# Kick off the full suite of checks post-merge and nightly.
+# Kick off the full suite of checks nightly.
 name: Run full checks
 
 on:
-  push:
-    branches: [ main ]
   schedule:
     - cron: "30 0 * * *"
       timezone: "America/Vancouver"
