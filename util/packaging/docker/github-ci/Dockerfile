@@ -44,6 +44,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-pip \
     python3-venv \
+    sudo \
     time \
     tzdata \
     wget \
@@ -51,7 +52,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1001 chpl-tester && \
-    useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester
+    useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
+    echo "chpl-tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/chpl-tester && \
+    chmod 0440 /etc/sudoers.d/chpl-tester
 
 
 # Configure locale (taken from primary Chapel Dockerfile)
