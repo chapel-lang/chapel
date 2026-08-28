@@ -68,7 +68,7 @@ def _find_mpi():
 
         return (name, cflags, ldflags)
 
-    mpi_names = ("ompi", "mpi")
+    mpi_names = ("ompi", "mpi", "mpich")
     for name in mpi_names:
         if third_party_utils.pkgconfig_system_has_package(name):
             cflags = third_party_utils.pkgconfig_get_system_compile_args(name)
