@@ -351,12 +351,14 @@ jobs:
     - name: Build Chapel
       run: |
         . ./util/setchplenv.sh
+        printchplenv --all --internal
         num_procs=$(./util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
     - name: Test Chapel
       run: |
         . ./util/setchplenv.sh
+        printchplenv --all --internal
         num_procs=$(./util/buildRelease/chpl-make-cpu_count)
         # TODO: ideally we would test everything, but that likely requires big
         # maintenance effort to get tests in a state to do that
