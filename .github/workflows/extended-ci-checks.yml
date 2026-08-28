@@ -338,7 +338,6 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv chpldoc mason protoc-gen-chpl
-      max-parallel: &GA_PARATEST_MAX_PARALLEL ${{ !inputs.is-merge-queue && 20 || 0 }}
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
     uses: ./.github/workflows/ga-paratest.yml
@@ -350,4 +349,3 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
-      max-parallel: *GA_PARATEST_MAX_PARALLEL

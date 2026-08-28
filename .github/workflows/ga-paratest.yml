@@ -38,7 +38,7 @@ on:
         description: Maximum number of test jobs to run concurrently; 0 is unrestricted
         required: false
         type: number
-        default: 20
+        default: ${{ !github.event.merge_group && 20 || 0 }}
       timeout-minutes:
         description: Maximum number of minutes each job may run
         required: false
