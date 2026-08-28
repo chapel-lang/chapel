@@ -1,5 +1,5 @@
 # Kick off the full suite of checks nightly.
-name: Run full checks
+name: Run nightly checks
 
 on:
   schedule:
