@@ -104,6 +104,14 @@ for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
+    # skip if this isn't a desired VM to run on
+    if [ "$VM_NAME" != "all" ]
+    then
+      if [ "$name" != "current/$VM_NAME" ]
+      then
+        continue
+      fi
+    fi
     echo "${NAME[$i]}:${RESULT[$i]}"
 
     ((i++))
