@@ -361,8 +361,14 @@ jobs:
     - name: Test Chapel
       run: |
         . ./util/setchplenv.sh
+        export CHPL_RT_OVERSUBSCRIBED=1
         printchplenv --all --internal
         num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        # we need to limit the number of parallel testers, too many can
+        # cause too many concurrent Chapel programs running at once
+        # which causes tests to run slower due to heavy oversubscription
+        num_procs=$(($num_procs / 2))
+        num_procs=$(($num_procs > 1 ? $num_procs : 1))
         # TODO: ideally we would test everything, but that likely requires big
         # maintenance effort to get tests in a state to do that
         start_test --parallel "$num_procs" test/release/examples test/runtime/configMatters test/multilocale
