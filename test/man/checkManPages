@@ -18,18 +18,18 @@ import sys
 def main():
     results = []
     chpl = sys.argv[1]
-    chpldoc = chpl + 'doc'
+    chpldoc = chpl + "doc"
 
     # Test chpl
-    _msg('Info', 'Checking man page for', chpl)
-    results.append( check_man_page(chpl, ['--no-devel']) )
+    _msg("Info", "Checking man page for", chpl)
+    results.append(check_man_page(chpl, ["--no-devel"]))
 
     # Test chpldoc - only if its exists
     if os.path.exists(chpldoc):
-        _msg('Info', 'Checking man page for', chpldoc)
-        results.append( check_man_page(chpldoc) )
+        _msg("Info", "Checking man page for", chpldoc)
+        results.append(check_man_page(chpldoc))
     else:
-        _warn('Skipping man page check for', chpldoc, '- chpldoc is not built')
+        _warn("Skipping man page check for", chpldoc, "- chpldoc is not built")
 
     # Exit clean if no errors.
     if not reduce(operator.and_, results):
@@ -55,13 +55,16 @@ def check_man_page(bin_name, additional_args=None):
     help_cmd = [bin_name]
     if additional_args is not None:
         help_cmd.extend(additional_args)
-    help_cmd.append('--help')
+    help_cmd.append("--help")
     helptxt, help_exit = _run_cmd(help_cmd)
 
     if help_exit != 0:
-        _error('failed to get help text with:',
-               ' '.join(help_cmd).replace(chpl_home, '$CHPL_HOME'),
-               'exited with non-zero status code', help_exit)
+        _error(
+            "failed to get help text with:",
+            " ".join(help_cmd).replace(chpl_home, "$CHPL_HOME"),
+            "exited with non-zero status code",
+            help_exit,
+        )
         return False
 
     # Get the man page text
@@ -82,15 +85,17 @@ def check_man_page(bin_name, additional_args=None):
     for hline in [l.strip() for l in helptxt.splitlines() if l.strip()]:
 
         # Line is section
-        if hline[-1] == ':':
-            section = hline.strip(':')
+        if hline[-1] == ":":
+            section = hline.strip(":")
             helpsections[section] = []
             currentsection = section
         # Line is flag
-        elif hline[0] == '-':
+        elif hline[0] == "-":
             if currentsection is None:
                 numerrors += 1
-                _error(sl, 'not in a {0} man page section'.format(short_bin_name))
+                _error(
+                    sl, "not in a {0} man page section".format(short_bin_name)
+                )
                 notFound.append(hline)
                 continue
 
@@ -105,15 +110,19 @@ def check_man_page(bin_name, additional_args=None):
     for mline in [l.strip() for l in manpage if len(l.strip()) > 2]:
 
         # Line is flag
-        if (mline[0:5] == "**\\--" or mline[4:5] == "," or mline[0:3] == "**-") and mline[-2:] == '**' and currentsection:
+        if (
+            (mline[0:5] == "**\\--" or mline[4:5] == "," or mline[0:3] == "**-")
+            and mline[-2:] == "**"
+            and currentsection
+        ):
 
             mflags = _get_flags(mline)
 
             if mflags:
                 mansections[section].append(mflags)
         # Line is section
-        elif mline[0] == '*' and mline[-1] == '*' and mline[1] != '*':
-            section = mline.strip('*')
+        elif mline[0] == "*" and mline[-1] == "*" and mline[1] != "*":
+            section = mline.strip("*")
             mansections[section] = []
             currentsection = section
 
@@ -130,9 +139,9 @@ def check_man_page(bin_name, additional_args=None):
         numerrors += len(helpdiff) + len(mandiff)
 
         if helpdiff:
-            _error('help output has additional sections: {0}'.format(helpdiff))
+            _error("help output has additional sections: {0}".format(helpdiff))
         if mandiff:
-            _error('man page has additional sections: {0}'.format(mandiff))
+            _error("man page has additional sections: {0}".format(mandiff))
 
         # We require same sections to continue, return early
         return numerrors
@@ -148,13 +157,13 @@ def check_man_page(bin_name, additional_args=None):
             if mflag[0] == "\\" or mflag[4] == "\\":
                 continue
             else:
-                numerrors+=1
+                numerrors += 1
                 _error('man section "{0}" has some misformatted flags:\
                         {1}'.format(section, mflag))
 
-        # Removing '\' from manpage flags of this section to match with compiler's flags      
+        # Removing '\' from manpage flags of this section to match with compiler's flags
         for i in range(len(manflags)):
-            manflags[i] = manflags[i].replace("\\", "")   
+            manflags[i] = manflags[i].replace("\\", "")
 
         if helpflags != manflags:
             helpdiff = list(set(helpflags) - set(manflags))
@@ -175,13 +184,17 @@ def check_man_page(bin_name, additional_args=None):
 
 def _get_chpl_home():
     repo_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '../..'))
-    chpl_home = os.environ.get('CHPL_HOME', repo_root)
+        os.path.join(os.path.dirname(__file__), "../..")
+    )
+    chpl_home = os.environ.get("CHPL_HOME", repo_root)
     return chpl_home
 
+
 def _get_man_page(bin_name):
-    man_file = os.path.join(_get_chpl_home(), 'man', os.path.basename(bin_name) + '.rst')
-    with open(man_file, 'r') as fp:
+    man_file = os.path.join(
+        _get_chpl_home(), "man", os.path.basename(bin_name) + ".rst"
+    )
+    with open(man_file, "r") as fp:
         man_rst = fp.readlines()
     return man_rst
 
@@ -189,30 +202,30 @@ def _get_man_page(bin_name):
 def _get_flags(s):
     """Get the flags in a string."""
 
-    rs = ''
+    rs = ""
     # Handle empty lines
     if not s.strip():
         return rs
 
     # Remove rst formatting of **bold text**
-    ls = s.strip('*')
+    ls = s.strip("*")
 
     # Look for all comma separated flags
-    ls = ls.strip().split(',')
+    ls = ls.strip().split(",")
     for f in ls:
         sf = f.strip()
         try:
-            if sf[0] == '-':
+            if sf[0] == "-":
                 # Add flag to the return string
-                rs += sf.split()[0]+','
-            elif sf[0] == '\\':
-                rs += sf.split()[0]+','
+                rs += sf.split()[0] + ","
+            elif sf[0] == "\\":
+                rs += sf.split()[0] + ","
             else:
                 break
         except IndexError:
             continue
     if rs[2] == ",":
-        rs = rs[0:3] + " " + rs[3:len(rs)]
+        rs = rs[0:3] + " " + rs[3 : len(rs)]
     if rs:
         # Remove any trailing text
         return rs.strip()
@@ -228,18 +241,17 @@ def _run_cmd(cmd):
 
 
 def _msg(level, *args):
-    log_msg = ' '.join([str(arg) for arg in args])
-    print('{level}: {msg}'.format(level=level.upper(), msg=log_msg))
+    log_msg = " ".join([str(arg) for arg in args])
+    print("{level}: {msg}".format(level=level.upper(), msg=log_msg))
 
 
 def _warn(*args):
-    _msg('Warning', *args)
+    _msg("Warning", *args)
 
 
 def _error(*args):
-    _msg('Error', *args)
+    _msg("Error", *args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
