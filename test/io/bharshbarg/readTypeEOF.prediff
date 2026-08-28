@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 chpl_sanitize=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py)
+chpl_target_compiler=$($CHPL_HOME/util/chplenv/chpl_compiler.py --target)
 
 if [[ $chpl_sanitize == "undefined" ]]; then
   # UBsan may warn about this. its harmless, in this case the following occurs
@@ -12,7 +13,14 @@ if [[ $chpl_sanitize == "undefined" ]]; then
   # This is harmless and it comes about because of how we lower tuples and errors.
   # its not worth rewriting how we lower errors to be before any values are
   # assigned (even if never used), so just squash
-  sed "0,\|is not a valid value for type '_Bool'|{//d;}" "$2" > "$2.tmp"
-  sed "0,\|is not a valid value for type 'chpl_bool'|{//d;}" "$2" > "$2.tmp"
+  sed "\|is not a valid value for type '_Bool'|{//d;}" "$2" > "$2.tmp"
   mv "$2.tmp" "$2"
+  sed "\|is not a valid value for type 'chpl_bool'|{//d;}" "$2" > "$2.tmp"
+  mv "$2.tmp" "$2"
+  if [[ $chpl_target_compiler == "clang" ]]; then
+    # with clang, there is an extra 'SUMMARY: UndefinedBehaviorSanitizer' message
+    # drop it too
+    sed '\|SUMMARY: UndefinedBehaviorSanitizer|{//d;}' "$2" > "$2.tmp"
+    mv "$2.tmp" "$2"
+  fi
 fi
