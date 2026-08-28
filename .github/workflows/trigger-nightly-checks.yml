@@ -1,20 +1,11 @@
-# Kick off the full suite of checks post-merge and nightly.
-name: Run full checks
+# Kick off the full suite of checks nightly.
+name: Run nightly checks
 
 on:
-  push:
-    branches: [ main ]
   schedule:
     - cron: "30 0 * * *"
       timezone: "America/Vancouver"
   workflow_dispatch:
-
-# Run serially per type of triggering event.
-# Primarily intended to limit (avoid) concurrent runs for multiple PR merges in
-# a row.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}
-  queue: max
 
 permissions:
   contents: read
