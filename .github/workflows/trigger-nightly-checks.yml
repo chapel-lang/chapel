@@ -72,11 +72,9 @@ jobs:
 
           $failed_jobs_text
 
-          ___
-
           Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
 
-          GitHub Actions run info:
+          ##### GitHub Actions run info:
           - SHA: [${{ github.sha }}](https://github.com/chapel-lang/chapel/commit/${{ github.sha }})
           - Run ID: [${{ github.run_id }}](https://github.com/chapel-lang/chapel/actions/runs/${{ github.run_id }})
           - Run attempt: ${{ github.run_attempt }}
