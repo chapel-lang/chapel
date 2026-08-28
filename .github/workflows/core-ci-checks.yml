@@ -619,7 +619,7 @@ jobs:
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
-          timeout_minutes: 30
+          timeout_minutes: 90
           on_retry_command: |
             cd ${{ env.VAGRANT_DIR }}
             ./destroy.sh
