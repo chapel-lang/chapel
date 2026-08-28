@@ -50,35 +50,12 @@
 extern "C" {
 #endif
 
-//
-// TODO: May have to revert if we see another drop in performance.
-//
-#ifdef CHPL_RT_IS_BUILDING_RUNTIME
-  // Within the runtime build, we don't have direct access to this symbol.
-  // So we have to look it up.
-  static inline int chpl_rt_is_cache_remote_on(chpl_rt_prginfo* prg) {
-    CHPL_RT_PRGINFO_DECLARE(prg, CHPL_CACHE_REMOTE);
-    return CHPL_CACHE_REMOTE;
-  }
-#else
-  // Otherwise, assume it is being linked in. This path will be taken in e.g.,
-  // code for compiled Chapel programs.
-  //
-  // It is important to do a direct symbol reference here because it enables
-  // LTO from the LLVM linker. Without this optimization we can see a 10%+
-  // drop in performance in certain programs.
-  static inline int chpl_rt_is_cache_remote_on(chpl_rt_prginfo* prg) {
-    extern const int CHPL_CACHE_REMOTE;
-    return CHPL_CACHE_REMOTE;
-  }
-#endif
+// TODO: Remove reads of me entirely from the runtime side of the code.
+extern const int CHPL_CACHE_REMOTE;
 
 static inline
 void chpl_cache_warn_if_disabled(void) {
-  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
-  int is_cache_remote_on = chpl_rt_is_cache_remote_on(prg);
-
-  if (is_cache_remote_on && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
+  if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_RT_USING_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
                    "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
@@ -91,13 +68,10 @@ void chpl_cache_warn_if_disabled(void) {
 
 static inline
 int chpl_cache_enabled(void) {
-  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
-  int is_cache_remote_on = chpl_rt_is_cache_remote_on(prg);
-
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to
   // correctly fence.
-  return is_cache_remote_on && !CHPL_RT_USING_ASAN &&
+  return CHPL_CACHE_REMOTE && !CHPL_RT_USING_ASAN &&
          !chpl_task_canMigrateThreads();
 }
 

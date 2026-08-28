@@ -174,14 +174,12 @@ RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
 # while Linux linkers use lazy lookup (occurs when a symbol is first
 # referenced at runtime) by default. Toggle the below flags to consistently
 # maintain lazy/eager lookup for both platforms.
-#
-# Right now both platforms use eager linking so we get errors ASAP.
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
   # Uncomment for the Mac linker to use lazy linking.
-  # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
+  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
 else
   # Uncomment for the Linux linker to use eager linking.
-  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
+  # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
 endif
 
 PRINTCHPLENV_WRAPPER= \
