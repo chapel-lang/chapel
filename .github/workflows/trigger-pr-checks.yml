@@ -53,8 +53,6 @@ jobs:
     needs: should-run-extended-checks
     if: needs.should-run-extended-checks.outputs.run-all == 'true'
     uses: ./.github/workflows/extended-ci-checks.yml
-    with:
-      is-merge-queue: ${{ github.event_name == 'merge_group' }}
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.

@@ -4,11 +4,6 @@ name: Extended CI checks
 
 on:
   workflow_call:
-    inputs:
-      is-merge-queue:
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read

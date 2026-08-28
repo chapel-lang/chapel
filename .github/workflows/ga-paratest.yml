@@ -35,7 +35,7 @@ on:
         type: string
         default: ""
       max-parallel:
-        description: Maximum number of test jobs to run concurrently; 0 is unrestricted
+        description: Maximum number of test jobs to run concurrently; 0 is unrestricted. Defaults to 20 for non-merge-queue runs, and 0 for merge queue runs.
         required: false
         type: number
         default: ${{ !github.event.merge_group && 20 || 0 }}
