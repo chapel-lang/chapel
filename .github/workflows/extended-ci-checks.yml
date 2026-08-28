@@ -340,7 +340,7 @@ jobs:
         timeout_seconds: 900
         retry_wait_seconds: 30
         command: |
-          sudo apt install -y openmpi-bin libopenmpi-dev
+          apt-get install -y openmpi-bin libopenmpi-dev
     - name: Configure Chapel
       run: |
         {
