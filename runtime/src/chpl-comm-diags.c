@@ -50,7 +50,7 @@ static void broadcast_print_unstable(void) {
 
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diags_print_unstable);
-  chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
@@ -75,7 +75,7 @@ void chpl_comm_startVerbose(chpl_bool stacktrace,
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm);
   chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm_stacktrace);
-  chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
@@ -92,7 +92,7 @@ void chpl_comm_stopVerbose(int32_t lineno,
 
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm);
-  chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
@@ -141,7 +141,7 @@ void chpl_comm_startDiagnostics(chpl_bool print_unstable,
 
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diagnostics);
-  chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
@@ -159,7 +159,7 @@ void chpl_comm_stopDiagnostics(int32_t lineno, int32_t filename) {
 
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diagnostics);
-  chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
