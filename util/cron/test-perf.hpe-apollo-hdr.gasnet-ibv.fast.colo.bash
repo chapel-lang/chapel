@@ -18,7 +18,10 @@ perf_hpe_apollo_args="-performance-configs gn-ibv-fast:v,gn-ibv-fast-colo:v,gn-i
 
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX="0.90"
+
 export CHPL_RT_LOCALES_PER_NODE=2
+export CHPL_START_TEST_ARGS="--numlocales=32"
+
 export CHPL_GASNET_MORE_CFG_OPTIONS=--enable-pshm
 
 nightly_args="${nightly_args} -no-buildcheck"
