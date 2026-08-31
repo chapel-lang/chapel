@@ -19,3 +19,4 @@ paths:
    ignore:
      - 'unexpected key \"queue\" for \"concurrency\" section' # https://github.com/rhysd/actionlint/issues/657
      - 'invalid activity type "destroyed" for "merge_group" Webhook event' # https://github.com/rhysd/actionlint/issues/726
+     - 'reusable workflow call "\$/.+" at "uses" is not following the format' # https://github.com/rhysd/actionlint/issues/711
