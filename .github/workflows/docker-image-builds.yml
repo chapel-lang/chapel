@@ -19,6 +19,7 @@ defaults:
 env:
   CONFIG: ${{ inputs.config }}
   LOCAL_REGISTRY: "localhost:5000"
+  EXTERNAL_REGISTRY: "docker.io"
   NAMESPACE: "chapel"
   TARBALL_NAME_PREFIX: "chapel-image-"
 
@@ -156,4 +157,18 @@ jobs:
       - name: create multi-arch image
         run: |
           docker buildx imagetools create -t "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
-      # TODO: push to ghcr / dockerhub
+      - name: determine if we should push to Docker Hub
+        id: should_push
+        run: |
+          echo "should_push=${{ github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'schedule')) }}" >> "$GITHUB_OUTPUT"
+      - name: log in to Docker Hub
+        if: steps.should_push.outputs.should_push == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+      - name: push multi-arch image to Docker Hub
+        if: steps.should_push.outputs.should_push == 'true'
+        run: |
+          IMAGE_FULL_NAME_EXTERNAL="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME")"
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
