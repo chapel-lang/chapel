@@ -19,7 +19,7 @@
  */
 
 /*
-Support for dynamic loading in Chapel.
+Support for loading dynamic libraries in Chapel.
 
 .. note::
 
@@ -33,21 +33,21 @@ any locale without compile-time knowledge of their names or locations.
 
 A hypothetical C binary could contain a procedure named ``foo``:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/TestBinary.c
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/TestBinary.c
    :language: c
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
 This binary can be can be loaded in Chapel at runtime as follows:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
    :language: chapel
    :start-after: START_EXAMPLE_0
    :end-before: STOP_EXAMPLE_0
 
 And a procedure named ``foo`` with type ``proc(): void`` can be retrieved:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
    :language: chapel
    :start-after: START_EXAMPLE_1
    :end-before: STOP_EXAMPLE_1
@@ -112,8 +112,8 @@ restriction may be removed in the future.
   If you've built Chapel from source, a workaround is to touch a source
   file in the Chapel runtime and then rebuild it.
 */
-@unstable('Dynamic loading support is experimental and unstable.')
-module DynamicLoading {
+@unstable('Dynamic library support is experimental and unstable.')
+module DynamicLibrary {
 
 // This internal module contains the low-level implementation.
 private use ChapelDynamicLoading;
