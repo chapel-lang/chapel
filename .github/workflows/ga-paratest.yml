@@ -179,8 +179,8 @@ jobs:
           awk -v home="$CHPL_HOME/" '
             BEGIN {
               # these are well-known slow directories that should be split into multiple jobs
-              slow_directories["test/library"] = 1
               slow_directories["test/classes"] = 1
+              slow_directories["test/library"] = 1
               slow_directories["test/types"] = 1
             }
             function relative(path) {
