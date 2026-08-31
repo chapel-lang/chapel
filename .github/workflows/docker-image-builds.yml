@@ -18,7 +18,7 @@ defaults:
 
 env:
   CONFIG: ${{ inputs.config }}
-  REGISTRY: "localhost:5000"
+  LOCAL_REGISTRY: "localhost:5000"
   NAMESPACE: "chapel"
   TARBALL_NAME_PREFIX: "chapel-image-"
 
@@ -58,7 +58,7 @@ jobs:
           TAG="$GITHUB_SHA"
           name_prefix="chapel"
           BASE_IMAGE_TARBALL="$TARBALL_NAME_PREFIX$name_prefix-$TAG-$ARCH.tar"
-          BASE_IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$name_prefix:$TAG"
+          BASE_IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$name_prefix:$TAG"
 
           if [[ "$CONFIG" == "base" ]]; then
             IMAGE_NAME="$name_prefix"
@@ -78,7 +78,7 @@ jobs:
           fi
 
           IMAGE_TARBALL="$TARBALL_NAME_PREFIX$IMAGE_NAME-$TAG-$ARCH.tar"
-          IMAGE_FULL_NAME="$REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
+          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
 
           {
             echo "MAKE_THREADS=$MAKE_THREADS"
