@@ -472,14 +472,13 @@ module ChapelDynamicLoading {
 
     iter _runtimeBuildConstants(): (string, string) {
       extern proc chpl_rt_num_build_constants(): c_int;
-      extern proc chpl_rt_build_constant_by_idx(
-              idx: c_int,
-              out_val: c_ptr(c_ptrConst(c_char))): c_ptrConst(c_char);
+      extern 'chpl_rt_build_constant_by_idx'
+      proc get(idx: c_int, val: c_ptr(c_ptrConst(c_char))): c_ptrConst(c_char);
 
       const end = chpl_rt_num_build_constants();
       for i in 0..<end {
         var valPtr: c_ptrConst(c_char);
-        const namePtr = chpl_rt_build_constant_name(i, c_ptrTo(valPtr));
+        const namePtr = get(i, c_ptrTo(valPtr));
         var k = try! string.createBorrowingBuffer(namePtr);
         var v = try! string.createBorrowingBuffer(valPtr);
         yield (k, v);
@@ -507,7 +506,7 @@ module ChapelDynamicLoading {
     }
 
     // TODO: Check for 'CHPL_CACHE_REMOTE'.
-    inline proc _tryCheckIsBuildCompatibleWithRoot(infoPtr) throws {
+    inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
     }
 
     // Returns 'true' if the binary is properly prepared. Sets the '_kind'.
@@ -536,8 +535,8 @@ module ChapelDynamicLoading {
         throw new DynLoadError(msg);
       }
 
-      _tryCheckIsBuildCompatibleWithRuntime(info);
-      _tryCheckIsBuildCompatibleWithRoot(info);
+      _tryCheckIsProgramCompatibleWithRuntime(info);
+      _tryCheckIsProgramCompatibleWithRoot(info);
 
       var idBuf = new chpl_localBuffer(chpl_rt_prg_id, numLocales);
 
