@@ -323,13 +323,13 @@ jobs:
         ./util/cron/test-c2chapel.bash
 
   base-docker-image:
-    uses: ./.github/workflows/docker-image-builds.yml
+    uses: $/.github/workflows/docker-image-builds.yml
     with:
       config: "base"
 
   gasnet-docker-images:
     needs: base-docker-image
-    uses: ./.github/workflows/docker-image-builds.yml
+    uses: $/.github/workflows/docker-image-builds.yml
     strategy:
       fail-fast: false
       matrix:
