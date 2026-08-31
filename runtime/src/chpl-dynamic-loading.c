@@ -29,7 +29,6 @@
 
 #include "chplrt.h"
 #include "chpl-dynamic-loading.h"
-#include "chplcgfns.h"
 #include "chpl-prginfo.h"
 
 int CHPL_RTLD_LAZY = RTLD_LAZY;

@@ -50,12 +50,11 @@
 extern "C" {
 #endif
 
-static inline
-void chpl_cache_warn_if_disabled(void)
-{
-  // TODO: Stop reading this in runtime code.
-  extern const int CHPL_CACHE_REMOTE;
+// TODO: Remove reads of me entirely from the runtime side of the code.
+extern const int CHPL_CACHE_REMOTE;
 
+static inline
+void chpl_cache_warn_if_disabled(void) {
   if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
     if (CHPL_RT_USING_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
@@ -68,18 +67,7 @@ void chpl_cache_warn_if_disabled(void)
 }
 
 static inline
-int chpl_cache_enabled(void)
-{
-  // TODO: This used to be a 'prginfo' read, but it can't be because that
-  //       prevents LTO (link-time optimization), resulting in a 10%~ drop
-  //       in performance.
-  //
-  // Ultimately, the runtime cache code should not read 'CHPL_CACHE_REMOTE'
-  // at all, and checks about whether or not to use the cache should be
-  // moved into program code in some capacity. This makes LTO safe and also
-  // simplifies the runtime's responsibilities here.
-  extern const int CHPL_CACHE_REMOTE;
-
+int chpl_cache_enabled(void) {
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to
   // correctly fence.

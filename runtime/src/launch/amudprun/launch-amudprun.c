@@ -25,12 +25,9 @@
 #include "chpl-error.h"
 #include "chpl-prginfo.h"
 
-#include "chplcgfns.h"
-
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
-
 
 extern char** environ;
 static void add_env_options(int* argc, char** argv[]) {

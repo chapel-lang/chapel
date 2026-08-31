@@ -33,7 +33,6 @@
 #include "chpl-mem-desc.h"
 #include "chpl-prginfo.h"
 #include "chpl-topo.h"
-#include "chplcgfns.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
 #include "chpl-error.h"

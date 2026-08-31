@@ -30,7 +30,6 @@
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
 #include "chpl-prginfo.h"
-#include "chplcgfns.h"
 
 #include "chpl-unwind.h"
 #include "chpl-env.h"

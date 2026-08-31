@@ -173,4 +173,11 @@ module ChapelRuntimeInterface {
     const ptr = __primitive('cast', c_ptr(void), args);
     chpl_ftableCall(fid, ptr);
   }
+
+  inline proc chpl_globalSerializeTableEntry(idx: int): c_ptr(void) {
+    param cname = 'chpl_rt_global_serialize_table_entry';
+    // TODO: No need to actually call into the runtime to do this.
+    extern cname proc fn(prg: c_ptr(chpl_rt_prginfo), idx: int): c_ptr(void);
+    return fn(ptrToPrgInfoHere, idx);
+  }
 }

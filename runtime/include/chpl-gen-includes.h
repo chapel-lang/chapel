@@ -29,7 +29,6 @@
 //
 
 #include "chpl-comm-compiler-macros.h"
-#include "chplcgfns.h"
 #include "chpl-locale-model.h"
 #include "chpl-prginfo.h"
 #include "chpl-tasks.h"

@@ -26,7 +26,6 @@
 #include "chpl-align.h"
 #include "chpl-env.h"
 #include "chpl-env-gen.h"
-#include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpl-comm.h"

@@ -24,7 +24,6 @@
 
 #include "chplrt.h"
 #include "chpl_rt_utils_static.h"
-#include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
 #include "chpl-atomics.h"
 #include "chpl-comm.h"

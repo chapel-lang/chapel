@@ -33,7 +33,6 @@
 #include "chpl-mem-consistency.h"
 #include "chpl-mem-desc.h"
 #include "chpl-prginfo.h"
-#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -374,6 +373,14 @@ void chpl_rt_comm_register_global_var(chpl_rt_prginfo* prg,
                                       wide_ptr_t* ptr_to_wide_ptr) {
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
   chpl_globals_registry[idx] = ptr_to_wide_ptr;
+}
+
+// TODO: Move this entirely to module code.
+static inline
+void* chpl_rt_global_serialize_table_entry(chpl_rt_prginfo* prg,
+                                           int64_t idx) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_global_serialize_table);
+  return chpl_global_serialize_table[idx];
 }
 
 //

@@ -29,7 +29,6 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-error.h"
-#include "chplcgfns.h"
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
 #include "chpl-env-gen.h"

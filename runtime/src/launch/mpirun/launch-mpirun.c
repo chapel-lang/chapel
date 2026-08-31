@@ -22,7 +22,6 @@
 #include <string.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "chplcgfns.h"
 #include "chpl-error.h"
 #include "chpl-prginfo.h"
 

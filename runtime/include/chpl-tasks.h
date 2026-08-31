@@ -24,7 +24,6 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
-#include "chplcgfns.h"
 #include "chpltypes.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-prginfo.h"
