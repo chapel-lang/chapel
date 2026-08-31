@@ -19,7 +19,7 @@ defaults:
 
 jobs:
   arkouda-release-smoke-test:
-    uses: ./.github/workflows/arkouda-smoke-test.yml
+    uses: $/.github/workflows/arkouda-smoke-test.yml
     with:
       arkouda-version: "release"
 
@@ -339,7 +339,7 @@ jobs:
 
   paratest-linux64:
     name: Chapel paratest on linux64
-    uses: ./.github/workflows/ga-paratest.yml
+    uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64
       cron-script: util/cron/test-linux64.bash
@@ -350,7 +350,7 @@ jobs:
           all test-venv chpldoc mason protoc-gen-chpl
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
-    uses: ./.github/workflows/ga-paratest.yml
+    uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash
