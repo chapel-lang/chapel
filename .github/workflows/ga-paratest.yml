@@ -35,10 +35,10 @@ on:
         type: string
         default: ""
       max-parallel:
-        description: Maximum number of test jobs to run concurrently
+        description: Maximum number of test jobs to run concurrently; 0 is unrestricted. Defaults to 20 for non-merge-queue runs, and 0 for merge queue runs.
         required: false
         type: number
-        default: 20
+        default: ${{ !github.event.merge_group && 20 || 0 }}
       timeout-minutes:
         description: Maximum number of minutes each job may run
         required: false
@@ -272,7 +272,7 @@ jobs:
         password: ${{ github.token }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max-parallel }}
+      max-parallel: ${{ inputs.max-parallel || fromJSON(needs.build.outputs.test-count) }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
       - name: checkout
