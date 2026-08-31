@@ -1,0 +1,6 @@
+
+FAST analysis with r=3, minlen=10, maxlen=13, thr= 20.0
+  found 181 corners
+  123 remain after suppression
+
+Test passed: files match!

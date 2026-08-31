@@ -1,0 +1,15 @@
+
+FAST analysis with r=3, minlen=10, maxlen=13, thr= 10.0
+  found 2770 corners
+  747 remain after suppression
+
+FAST analysis with r=3, minlen=10, maxlen=13, thr= 10.0
+  found 983 corners
+  398 remain after suppression
+
+Matching from fixed mapping
+  x2 =  1.083 x1  +0.625 y1   +150.0
+  y2 = -0.650 x1  +1.126 y1  +1210.0
+  number matching corners  148
+
+Test passed: files match!

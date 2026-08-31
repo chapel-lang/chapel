@@ -1,0 +1,16 @@
+#!/bin/sh
+
+outfile=$2
+
+# TODO: find a way to retrieve command-line file names in order to make this
+# prediff generic
+
+sed -i '/Timing/d; /PNG_read/d; /rgb_convert/d' $outfile
+sed -i '/run_gaborfilter/d; /display_color/d; /PNG_write/d' $outfile
+
+# Use diff to compare the files
+if diff -q "francnotch_gabor.png" "francnotch_gabor.good.png" >/dev/null; then
+    echo "Test passed: files match!" >> $outfile
+else
+    echo "Test failed: files do not match!" >> $outfile
+fi
