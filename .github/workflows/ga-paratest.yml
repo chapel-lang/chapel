@@ -472,7 +472,7 @@ jobs:
         env:
           configuration: ${{ inputs.configuration }}
         run: |
-          gh api /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
+          gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
           jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
 
           readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
