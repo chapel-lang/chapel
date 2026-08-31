@@ -153,7 +153,7 @@ jobs:
         run: |
           docker push "$IMAGE_FULL_NAME-arm64"
           docker push "$IMAGE_FULL_NAME-x86"
-      - name: create multiarch image
+      - name: create multi-arch image
         run: |
           docker buildx imagetools create -t "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
       # TODO: push to ghcr / dockerhub
