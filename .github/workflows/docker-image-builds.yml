@@ -128,6 +128,10 @@ jobs:
   combine-push-multiarch:
     needs: build-test-image-each-arch
     runs-on: ubuntu-latest
+    # Serialize runs on 'main', as they push to external registries.
+    concurrency:
+      group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
+      queue: max
     env:
       IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
       IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
