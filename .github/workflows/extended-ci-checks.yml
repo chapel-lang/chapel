@@ -322,6 +322,21 @@ jobs:
       run: |
         ./util/cron/test-c2chapel.bash
 
+  base-docker-image:
+    uses: ./.github/workflows/docker-image-builds.yml
+    with:
+      config: "base"
+
+  gasnet-docker-images:
+    needs: base-docker-image
+    uses: ./.github/workflows/docker-image-builds.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ["gasnet", "gasnet-smp"]
+    with:
+      config: ${{ matrix.config }}
+
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: ./.github/workflows/ga-paratest.yml
