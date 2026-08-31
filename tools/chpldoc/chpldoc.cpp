@@ -2553,7 +2553,6 @@ int main(int argc, char** argv) {
                          false, //task tracking
                          chplEnv->at("CHPL_TASKS"),
                          chplEnv->at("CHPL_COMM"),
-                         chplEnv->at("CHPL_RUNTIME_SUBDIR"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
                          {}, //prependInternalModulePaths,
