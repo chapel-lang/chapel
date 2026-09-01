@@ -260,6 +260,7 @@ jobs:
           cat "$RUNNER_TEMP/testdirs.csv"
 
   run-tests:
+    if: ${{ !always() }}
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
     needs: build
     runs-on: ${{ inputs.runner }}
