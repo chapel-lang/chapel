@@ -226,7 +226,7 @@ jobs:
               }
             }
           ' "$RUNNER_TEMP/cleanlog.txt" | sort -u \
-            | xargs -I'{}' bash -c 'echo "$(cut -d',' -f1 <<<"{}" | (read p; find $p -type f | wc -l)):{}"' | sort -r | cut -d':' -f2 | tee "$RUNNER_TEMP/testdirs.csv"
+            | xargs -I'{}' bash -c "echo $(cut -d',' -f1 <<<"{}" | (read -r p; find "$p" -type f | wc -l)):{}" | sort -r | cut -d':' -f2 | tee "$RUNNER_TEMP/testdirs.csv"
 
       - name: create testing matrix
         id: test-directories
