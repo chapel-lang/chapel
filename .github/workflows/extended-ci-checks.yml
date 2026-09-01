@@ -340,9 +340,8 @@ jobs:
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --futures
-      pre-build-steps: |
-        make mason-deps
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
+        make -C tools/mason tarball-prep
