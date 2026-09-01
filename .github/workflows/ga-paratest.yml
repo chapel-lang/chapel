@@ -244,15 +244,7 @@ jobs:
           matrix=$(python3 -c '
           import csv, json, os
           path = os.path.join(os.environ["RUNNER_TEMP"], "testdirs.csv")
-          with open(path, mode="r+", encoding="utf-8", newline="") as file:
-            rows = list(csv.reader(file))
-            # Put directories with more files earlier in the list, to prevent
-            # long tails.
-            rows.sort(
-              key=lambda row: sum(len(files) for _,_, files in os.walk(row[0])),
-              reverse=True)
-            file.seek(0)
-            csv.writer(file).writerows(rows)
+          rows = list(csv.reader(open(path, encoding="utf-8", newline="")))
           include = [
             {"id": str(i),
              "dir": row[0],
