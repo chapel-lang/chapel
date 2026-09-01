@@ -551,86 +551,6 @@ if ($python2 == 0) {
 }
 
 
-if ($build == 1) {
-  print "Using $num_procs processes for make\n";
-  print "Making $make_vars_opt compiler\n";
-  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", $exitOnError);
-
-  # Speculatively build a couple third-party libraries. This command should not
-  # fail, even if it fails to build the libraries.
-  print "Making $make_vars_opt third-party-try-opt\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", $exitOnError);
-
-  # if we are using python2 or a deprecated version of python3, we cannot build
-  # the test-venv and/or chpldoc
-  if ($python2 == 0 && $pythonDep == 0) {
-    # Build chpldoc. Do not fail the build if it does not succeed. Do not send
-    # mail either.
-    print "Making $make_vars_opt chpldoc\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", $ignoreErrors);
-
-    # Build test virtualenv. Fail if the build does not succeed as virtualenv is
-    # needed for start_test. Send mail on failure
-    print "Making $make_var_opt test-venv\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", $exitOnError);
-  }
-
-  if ($buildruntime == 0) {
-      print "Built compiler but not runtime, and did not run tests\n";
-      exit 0;
-  }
-
-  if ($c2chapel == 1) {
-      print "Making c2chapel\n";
-      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt c2chapel", "make c2chapel", $exitOnError);
-  }
-
-  if ($chplcheck == 1) {
-      # Build chplcheck if it's requested. If something is wrong with chapel-py,
-      # this can fail. It's not fatal, since it will only throw
-      # off the chplcheck-specific tests. However, we definitely want to send
-      # mail, since this indicates a problem with chplcheck.
-      print "Making chplcheck\n";
-      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chplcheck", "make chplcheck", $emailOnError);
-  }
-
-  print "Making $make_vars_opt runtime\n";
-  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", $exitOnError);
-
-  print "Making modules\n";
-  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", $exitOnError);
-
-  # Build mason
-  if ($mason_build == 1) {
-    print "Making $make_vars_opt mason\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt mason", "making mason", $exitOnError);
-  } else {
-    # if not building mason, just clone the mason deps so certain mason unit tests
-    # that run without building mason can still run without needing to
-    # download dependencies themselves (which they do for paratest)
-    # we only do this in two cases to avoid excessive network requests
-    # * if testdirs is empty, then we're testing everything in
-    #   $CHPL_HOME/test, which includes mason tests so we need the mason deps
-    # * if testdirs is not empty but does contain mason, then mason will be
-    #   tested and we need the mason deps
-    # no matter what, if performance testing is being done, we don't need to
-    # clone the mason deps
-    if (($testdirs eq "" || $testdirs =~ /mason/) &&
-        ($performance == 0 || $compperformance == 0)) {
-      print "Cloning mason dependencies\n";
-      mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "cloning mason dependencies", $exitOnError);
-    } else {
-      print "Skipping cloning mason dependencies since mason is not being tested\n";
-    }
-  }
-
-  # Build the protobuf Chapel plugin
-  if ($protobuf_build == 1) {
-      print "Making the protobuf Chapel plugin\n";
-      mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", $exitOnError);
-  }
-}
-
 #
 # run tests
 #
@@ -782,6 +702,86 @@ if ($junit_xml == 1) {
 if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
     $starttestargs = $ENV{"CHPL_START_TEST_ARGS"};
     $testflags = "$testflags $starttestargs";
+}
+
+if ($build == 1) {
+  print "Using $num_procs processes for make\n";
+  print "Making $make_vars_opt compiler\n";
+  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", $exitOnError);
+
+  # Speculatively build a couple third-party libraries. This command should not
+  # fail, even if it fails to build the libraries.
+  print "Making $make_vars_opt third-party-try-opt\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", $exitOnError);
+
+  # if we are using python2 or a deprecated version of python3, we cannot build
+  # the test-venv and/or chpldoc
+  if ($python2 == 0 && $pythonDep == 0) {
+    # Build chpldoc. Do not fail the build if it does not succeed. Do not send
+    # mail either.
+    print "Making $make_vars_opt chpldoc\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", $ignoreErrors);
+
+    # Build test virtualenv. Fail if the build does not succeed as virtualenv is
+    # needed for start_test. Send mail on failure
+    print "Making $make_var_opt test-venv\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", $exitOnError);
+  }
+
+  if ($buildruntime == 0) {
+      print "Built compiler but not runtime, and did not run tests\n";
+      exit 0;
+  }
+
+  if ($c2chapel == 1) {
+      print "Making c2chapel\n";
+      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt c2chapel", "make c2chapel", $exitOnError);
+  }
+
+  if ($chplcheck == 1) {
+      # Build chplcheck if it's requested. If something is wrong with chapel-py,
+      # this can fail. It's not fatal, since it will only throw
+      # off the chplcheck-specific tests. However, we definitely want to send
+      # mail, since this indicates a problem with chplcheck.
+      print "Making chplcheck\n";
+      mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chplcheck", "make chplcheck", $emailOnError);
+  }
+
+  print "Making $make_vars_opt runtime\n";
+  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", $exitOnError);
+
+  print "Making modules\n";
+  $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", $exitOnError);
+
+  # Build mason
+  if ($mason_build == 1) {
+    print "Making $make_vars_opt mason\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt mason", "making mason", $exitOnError);
+  } else {
+    # if not building mason, just clone the mason deps so certain mason unit tests
+    # that run without building mason can still run without needing to
+    # download dependencies themselves (which they do for paratest)
+    # we only do this in two cases to avoid excessive network requests
+    # * if testdirs is empty, then we're testing everything in
+    #   $CHPL_HOME/test, which includes mason tests so we need the mason deps
+    # * if testdirs is not empty but does contain mason, then mason will be
+    #   tested and we need the mason deps
+    # no matter what, if performance testing is being done, we don't need to
+    # clone the mason deps
+    if (($testdirs eq "" || $testdirs =~ /mason/) &&
+        ($performance == 0 || $compperformance == 0)) {
+      print "Cloning mason dependencies\n";
+      mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "cloning mason dependencies", $exitOnError);
+    } else {
+      print "Skipping cloning mason dependencies since mason is not being tested\n";
+    }
+  }
+
+  # Build the protobuf Chapel plugin
+  if ($protobuf_build == 1) {
+      print "Making the protobuf Chapel plugin\n";
+      mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", $exitOnError);
+  }
 }
 
 if ($chplLanguageServer == 1) {
