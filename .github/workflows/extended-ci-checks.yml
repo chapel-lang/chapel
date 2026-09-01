@@ -340,12 +340,19 @@ jobs:
   push-multiarch-docker-images:
     needs: [base-docker-image, gasnet-docker-images]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_name: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
     concurrency:
-      group: "${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}"
+      group: "${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}-${{ matrix.image_name }}"
       queue: max
     env:
-      IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
-      IMAGE_FULL_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_FULL_NAME }}
+      IMAGE_NAME: ${{ matrix.image_name }}
+      TARBALL_NAME_PREFIX: "chapel-image-"
+      LOCAL_REGISTRY: "localhost:5000"
+      EXTERNAL_REGISTRY: "docker.io"
+      NAMESPACE: "chapel"
     services:
       registry:
         image: registry:3
@@ -365,6 +372,10 @@ jobs:
         run: |
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*arm64*
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*x86*
+      - name: determine IMAGE_FULL_NAME
+        run: |
+          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
+          echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME" >> "$GITHUB_ENV"
       - name: push single-arch images to local registry
         run: |
           docker push "$IMAGE_FULL_NAME-arm64"
