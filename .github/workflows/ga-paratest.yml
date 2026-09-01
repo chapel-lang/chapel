@@ -63,6 +63,7 @@ on:
 permissions:
   contents: read
   packages: read
+  actions: write
 
 concurrency:
   group: paratest-${{ inputs.configuration }}-${{ github.workflow }}-${{ github.ref }}
@@ -344,6 +345,9 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [build, run-tests]
     runs-on: ubuntu-slim
+    permissions:
+      # To delete per-directory result artifacts
+      actions: write
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: checkout
