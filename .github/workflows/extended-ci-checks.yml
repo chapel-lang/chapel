@@ -338,6 +338,7 @@ jobs:
       config: ${{ matrix.config }}
 
   push-multiarch-docker-images:
+    needs: [base-docker-image, gasnet-docker-images]
     runs-on: ubuntu-latest
     concurrency:
       group: "${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}"
