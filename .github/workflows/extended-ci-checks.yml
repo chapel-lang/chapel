@@ -144,15 +144,19 @@ jobs:
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-        run: |
-          sudo apt install \
-            clang \
-            libclang-dev \
-            libclang-cpp-dev \
-            libedit-dev \
-            llvm \
-            llvm-dev
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+          retry_wait_seconds: 60
+          command: |
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
