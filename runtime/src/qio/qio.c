@@ -146,10 +146,6 @@ void qio_unlock(qio_lock_t* x) {
 }
 #endif
 
-#ifdef CHPL_RT_UNIT_TEST
-#include "qio_plugin_api_dummy.c"
-#endif
-
 qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
   ssize_t nread = 0;
@@ -890,7 +886,7 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
   }
 
   if (seekable) {
-    err = chpl_qio_filelength(file_info, &initial_length);
+    err = qio_plugin_wrapper_filelength(file_info, &initial_length);
     // Disregard errors in case it is not seekable (and if we need seek to get the
     // length). If we can't get the length, we'll set initial_pos below anyways.
     if (err) initial_length = 0;
@@ -987,7 +983,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
 
   if (f->file_info) {
     if (f->hints & QIO_HINT_OWNED)  // Should always be true
-      err = chpl_qio_file_close(f->file_info);
+      err = qio_plugin_wrapper_file_close(f->file_info);
     f->hints &= ~QIO_HINT_OWNED;
   }
 
@@ -1034,7 +1030,7 @@ qioerr qio_file_sync(qio_file_t* f)
   } else if( f->fd >= 0 ) {
     err = qio_int_to_err(sys_fsync(f->fd));
   } else if( f->file_info ) {
-    err = chpl_qio_fsync(f->file_info);
+    err = qio_plugin_wrapper_fsync(f->file_info);
   }
 
   return err;
@@ -1310,7 +1306,7 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)
-    return chpl_qio_getpath(f->file_info, (uint8_t**) string_out, &len);
+    return qio_plugin_wrapper_getpath(f->file_info, (uint8_t**) string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
@@ -1333,7 +1329,7 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
     err = qio_int_to_err(sys_fstat(f->fd, &stats));
     *len_out = stats.st_size;
   } else if (f->file_info) {
-    err = chpl_qio_filelength(f->file_info, len_out);
+    err = qio_plugin_wrapper_filelength(f->file_info, len_out);
   } else {
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
   }
@@ -1411,7 +1407,7 @@ qioerr _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_
   // Setup any plugin channel, if necessary
   if (file->file_info != NULL) {
     void* chan_info = NULL;
-    err = chpl_qio_setup_plugin_channel(file->file_info, &chan_info, start, end, ch);
+    err = qio_plugin_wrapper_setup_plugin_channel(file->file_info, &chan_info, start, end, ch);
     if (err) return err;
     ch->chan_info = chan_info;
   }
@@ -1833,7 +1829,7 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
   // Close plugin structure if any
   if (ch->chan_info != NULL)
-    chpl_qio_channel_close(ch->chan_info);
+    qio_plugin_wrapper_channel_close(ch->chan_info);
 
   if( !destroyed_buffer && qbuffer_is_initialized(&ch->buf) ) {
     // Destroy the buffer.
@@ -2272,7 +2268,7 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
   }
 
   if (ch->chan_info) {
-    return chpl_qio_read_atleast(ch->chan_info, amt);
+    return qio_plugin_wrapper_read_atleast(ch->chan_info, amt);
   }
 
   //printf("Allocating bufferspace %lli\n", (long long int) amt);
@@ -2699,7 +2695,7 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
   //debug_print_qbuffer(&ch->buf);
 
   if (ch->chan_info && (ch->flags & QIO_FDFLAG_WRITEABLE)) {
-    return chpl_qio_write(ch->chan_info, nbytes);
+    return qio_plugin_wrapper_write(ch->chan_info, nbytes);
   }
 
   if(ch->hints & QIO_HINT_DIRECT) {
@@ -4687,7 +4683,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   sys_statfs_t s;
 
   if (fl->file_info) {
-    err = chpl_qio_get_chunk(fl->file_info, len_out);
+    err = qio_plugin_wrapper_get_chunk(fl->file_info, len_out);
   } else {
     fd = fl->fd;
     if (fl->fp) fd = fileno(fl->fp);
@@ -4720,7 +4716,7 @@ qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char
   qioerr err = 0;
   if (fl->file_info) {
     void* tmp = NULL;
-    err = chpl_qio_get_locales_for_region(fl->file_info, start, end, &tmp, num_locs_out);
+    err = qio_plugin_wrapper_get_locales_for_region(fl->file_info, start, end, &tmp, num_locs_out);
     *loc_names_out = (const char**) tmp;
     return err;
   } else {

@@ -58,7 +58,7 @@ E_CALLBACK_RT(chpl_task_getCommDiagsTemporarilyDisabled, chpl_bool, void)
 /** MODULE-CODE: ChapelTaskData.chpl
     Set whether or not comm diagnostics is temporarily disabled.
 */
-E_CALLBACK_RT(chpl_task_setCommDiagsTemporarilyDisabled, void, chpl_bool)
+E_CALLBACK_RT(chpl_task_setCommDiagsTemporarilyDisabled, chpl_bool, chpl_bool)
 
 /** CODE-GENERATED
     Table of private broadcast constants.

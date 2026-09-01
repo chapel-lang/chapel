@@ -22,8 +22,8 @@
 #define _stdchplrt_H_
 
 /* This is similar to stdchpl.h, but pared down for the runtime
-   Chapel code -- in particular, things like chplcgfns.h are not
-   needed for the generated runtime code, and cause problems. */
+   Chapel code -- in particular, some headers are not needed for
+   the generated runtime code, and cause problems. */
 
 #ifndef LAUNCHER
   #ifndef CHPL_RT_IS_BUILDING_RUNTIME

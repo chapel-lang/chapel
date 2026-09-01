@@ -26,7 +26,6 @@
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplcast.h"
-#include "chplcgfns.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "chpl-error.h"

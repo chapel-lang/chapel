@@ -23,7 +23,6 @@
 #include "arg.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
-#include "chplcgfns.h"
 #include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chplexit.h"

@@ -28,7 +28,6 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-error.h"
-#include "chplcgfns.h"
 
 #include <assert.h>
 #include <stdbool.h>

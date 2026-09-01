@@ -36,7 +36,6 @@
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "chpl-linefile-support.h"

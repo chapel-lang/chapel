@@ -39,7 +39,6 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "chpl-gpu-diags.h"
 #include "chpl-tasks.h"
 #include "chpl-error.h"
-#include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "chpl-env-gen.h"
 #include "chpl-env.h"

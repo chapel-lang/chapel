@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "arg.h"
-#include "chplcgfns.h"
 #include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"

@@ -22,7 +22,6 @@
 #define _chpl_mem_desc_H_
 
 #include "chpltypes.h"
-#include "chplcgfns.h"
 
 #ifdef __cplusplus
 extern "C" {

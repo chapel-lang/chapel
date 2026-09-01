@@ -37,14 +37,14 @@ extern "C" {
 // This header is a workaround for the fact that the compiler cannot tell
 // the types of certain global compiler-generated symbols such as
 // 'CreateConfigVarTable' or 'mainHasArgs' because it previously relied
-// on them being visible via 'chplcgfns.h'.
+// on them being visible via an old header 'chplcgfns.h'.
 //
-// We are trying to remove 'chplcgfns.h' so that the runtime cannot access
+// We removed the header 'chplcgfns.h' so that the runtime cannot access
 // the symbol declarations in it (because it should not be linking against
 // those symbols at all).
 //
 // This header is a workaround, but eventually we _should remove it too_.
-// It will be easier to remove after 'chplcgfns.h' is gone.
+//
 
 // Manually declare rather than rely on macro-expansion since the signature
 // for some callbacks can differ from machine to machine (e.g., they use
