@@ -173,8 +173,6 @@ jobs:
           "$CHPL_HOME/util/start_test" "${requested_tests[@]}" \
             --clean-only --logfile "$RUNNER_TEMP/cleanlog.txt"
 
-          echo "${requested_tests[@]}"
-
           # clean-only walks the suite without running it.
           # This is more reliable than just using `ls` (it resolves skipifs, notests, etc).
           # Store each matrix job as CSV: directory,start_test flags.
