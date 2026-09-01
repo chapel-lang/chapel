@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     # Serialize runs on 'main', as they push to external registries.
     concurrency:
-      group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
+      group: "${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}"
       queue: max
     env:
       IMAGE_NAME: ${{ needs.build-test-image-each-arch.outputs.IMAGE_NAME }}
