@@ -486,13 +486,15 @@ module ChapelDynamicLoading {
       var err: owned DynLoadError?;
       var failed = false;
 
-      for (k, v) in _runtimeBuildConstants() do try {
-        _tryMatchRuntimeBuildConstant(infoPtr, k, v);
-      } catch e : DynLoadError {
-        // TODO: Right now all but the last error is dropped (thus the calls
-        //       to 'warning'. How can we collect all of them together?
-        warning(e.message());
-        failed = true;
+      for (k, v) in _runtimeBuildConstants() {
+        try {
+          _tryMatchRuntimeBuildConstant(infoPtr, k, v);
+        } catch e : DynLoadError {
+          // TODO: Right now all but the last error is dropped (thus the calls
+          //       to 'warning'. How can we collect all of them together?
+          warning(e.message());
+          failed = true;
+        }
       }
 
       if failed then {
