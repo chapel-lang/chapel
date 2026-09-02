@@ -177,5 +177,5 @@ x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
 x 24.10 "Oracular Oriole"   EOL Jul 2025
 x 25.04 "Plucky Puffin"     EOL Jan 2026
-  25.10 "Questing Quokka"   EOL Jul 2026
+x 25.10 "Questing Quokka"   EOL Jul 2026
   26.10 "Stonking Stingray" (releasing Oct 2026)
