@@ -64,7 +64,9 @@ jobs:
             readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped")) | .id' jobs_array.json)
 
             failed_jobs_text=""
+            echo "failed jobs:"
             for id in "${failed_job_ids[@]}"; do
+              echo "- $id"
               gh api "/repos/${{ github.repository }}/actions/jobs/$id" | jq '.' > "job_$id.json"
               sleep 0.25
               failed_jobs_text+="$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
