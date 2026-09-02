@@ -1,0 +1,5 @@
+matching-test9.chpl:7: In function 'test9':
+matching-test9.chpl:11: error: cannot assign to const variable
+matching-test9.chpl:12: error: cannot assign to const variable
+matching-test9.chpl:19: error: cannot assign to const variable
+matching-test9.chpl:20: error: cannot assign to const variable

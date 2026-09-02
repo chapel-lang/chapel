@@ -1,0 +1,4 @@
+matching-const-modify.chpl:8: In function 'testConst':
+matching-const-modify.chpl:10: error: cannot assign to const variable
+matching-const-modify.chpl:11: error: cannot assign to const variable
+  matching-const-modify.chpl:17: called as testConst(u: U)

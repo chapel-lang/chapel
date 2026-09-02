@@ -1,0 +1,1 @@
+matching-duplicate-ident.chpl:10: error: duplicate case for 'x' in union select
