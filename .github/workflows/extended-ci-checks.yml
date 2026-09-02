@@ -353,6 +353,7 @@ jobs:
       LOCAL_REGISTRY: "localhost:5000"
       EXTERNAL_REGISTRY: "docker.io"
       NAMESPACE: "chapel"
+      TAG: ${{ github.sha }}
     services:
       registry:
         image: registry:3
