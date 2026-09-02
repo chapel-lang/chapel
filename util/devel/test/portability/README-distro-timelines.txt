@@ -24,6 +24,7 @@ x 3.20  EOL 2026-04-01
   3.21  EOL 2026-11-01
   3.22  EOL 2027-05-01
   3.23  EOL 2027-11-01
+  3.24  EOL 2028-06-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
