@@ -42,7 +42,7 @@ class When final : public AstNode {
   static const int8_t caseExprChildNum_ = 0;
   const int numCaseExprs_;
   const BlockStyle blockStyle_;
-  
+
   When(AstList children, int numCaseExprs, BlockStyle blockStyle)
     : AstNode(asttags::When, std::move(children)),
       numCaseExprs_(numCaseExprs),
@@ -66,9 +66,9 @@ class When final : public AstNode {
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    
+
   }
-  
+
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
@@ -95,7 +95,7 @@ class When final : public AstNode {
   BlockStyle blockStyle() const {
     return blockStyle_;
   }
-  
+
   /**
     Returns the i'th case of this when statement.
   */
