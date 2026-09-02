@@ -349,10 +349,10 @@ jobs:
       queue: max
     env:
       IMAGE_NAME: ${{ matrix.image_name }}
-      TARBALL_NAME_PREFIX: "chapel-image-"
       LOCAL_REGISTRY: "localhost:5000"
       EXTERNAL_REGISTRY: "docker.io"
       NAMESPACE: "chapel"
+      TARBALL_NAME_PREFIX: "chapel-image-"
       TAG: ${{ github.sha }}
     services:
       registry:
