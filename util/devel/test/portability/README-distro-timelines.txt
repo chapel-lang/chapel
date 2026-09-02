@@ -30,7 +30,7 @@ Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
        -- No new version of Amazon Linux in 2025/26 (last checked 2025-12-01)
-  2    EOL June 30, 2026
+x 2    EOL June 30, 2026
 x 2022 was renamed to 2023 in March 2023
   2023 EOL June 30, 2029
 
