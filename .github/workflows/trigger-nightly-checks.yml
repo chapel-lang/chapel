@@ -45,7 +45,7 @@ jobs:
           GitHub Actions nightly run failed, and an additional failure was
           encountered in generating a failure mail.
 
-          Run ID: ${{ github.run_id }}
+          Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
       - name: generate email body
         run: |
