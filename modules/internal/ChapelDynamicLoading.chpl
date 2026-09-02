@@ -516,10 +516,10 @@ module ChapelDynamicLoading {
 
       const info = _localPrepareProgramInfo();
 
-      // Nothing else to do.
+      // If no program information was found, this is not a Chapel program.
       if info == nil then return;
 
-      // After this point, we treat the binary as a Chapel library.
+      // Otherwise, we have a Chapel program, so set the kind appropriately.
       _kind = binaryKind.CHAPEL;
 
       // The runtime records if it was compiled as a dynamic library or not,
