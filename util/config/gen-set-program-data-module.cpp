@@ -96,21 +96,23 @@ static void print_setter_proc(std::ofstream& ofs, int indent) {
 static void print_global_decls(std::ofstream& ofs, int indent) {
   ofs << INDENT(indent);
   ofs << "use ChapelProgramRegistration;\n";
+  ofs << INDENT(indent);
   ofs << "use CTypes;\n";
+  ofs << INDENT(indent);
+  ofs << "use ChapelBase;\n";
+  ofs << "\n";
+  ofs << INDENT(indent);
+  ofs << "extern proc strcmp(x: c_ptrConst(c_char), y: x.type): c_int;\n";
 }
 
 static void print_lookup_proc_body(std::ofstream& ofs,
                                    const char* constant_formal_name,
                                    const build_constant_list& bcl,
                                    int indent) {
-  ofs << INDENT(indent);
-  ofs << "const s: string = try! string.createBorrowingBuffer(";
-  ofs << constant_formal_name << ");\n";
-  ofs << "\n";
-
   for (auto& constant : bcl) {
     ofs << INDENT(indent);
-    ofs << "if s == " << "\"" << constant << "\"" << " {\n";
+    ofs << "if 0 == strcmp(" << "\"" << constant << "\"";
+    ofs << ", " << constant_formal_name << ") {\n";
     ofs << INDENT(indent+2);
     ofs << "extern const " << constant << ": c_ptrConst(c_char);\n";
     ofs << INDENT(indent+2);
