@@ -451,17 +451,14 @@ module ChapelDynamicLoading {
     proc _tryMatchRuntimeBuildConstant(infoPtr, k: string, v: string) throws {
       assert(!k.isEmpty() && !v.isEmpty());
 
-      const prgValTup   = _localLookupProgramBuildConstant(infoPtr, k);
-      const havePrgVal  = prgValTup[0];
-      const ref prgVal  = prgValTup[1];
-      const match       = prgVal == v;
+      const (haveVal, val) = _localLookupProgramBuildConstant(infoPtr, k);
 
-      if match then return;
+      if haveVal && val == v then return;
 
       var msg: string = 'Cannot load Chapel library because ';
 
-      if havePrgVal {
-        msg += 'of a build constant mismatch: ' + k + '=\'' + prgVal +
+      if haveVal {
+        msg += 'of a build constant mismatch: ' + k + '=\'' + val +
                '\' versus a runtime value of \'' + v + '\'';
       } else {
         msg += 'it does not define the constant: ' + k;
@@ -594,7 +591,7 @@ module ChapelDynamicLoading {
       } catch e : DynLoadError {
         err = e;
       } catch e {
-        halt('Should not be possible!');
+        halt('An unexpected error occurred when loading: \'' + path + '\'');
       }
 
       return ret;
