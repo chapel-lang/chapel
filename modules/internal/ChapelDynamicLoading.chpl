@@ -509,8 +509,9 @@ module ChapelDynamicLoading {
     inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
     }
 
-    // Returns 'true' if the binary is properly prepared. Sets the '_kind'.
-    // TODO: Propagate warnings out as errors instead.
+    // Determines if this is a Chapel program or not and sets the '_kind'
+    // of this program appropriately. Throws an error if this is a Chapel
+    // program that is malformed or incompatible.
     proc _tryDetermineBinaryKindAndPrepareIfNeeded() throws {
       use ChapelProgramRegistration;
 
