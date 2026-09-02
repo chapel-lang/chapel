@@ -173,7 +173,7 @@ int main(int argc, const char** argv) {
 
   std::string line;
   while (std::getline(std::cin, line)) {
-    size_t pos = line.find('=');
+    auto pos = line.find('=');
     assert(pos != std::string::npos);
     auto constant = line.substr(0, pos);
     bcl.push_back(std::move(constant));
