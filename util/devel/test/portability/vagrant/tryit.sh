@@ -93,7 +93,7 @@ do
     vagrant halt 2>&1 | tee -a "$DIR"/log
     cd "$DIR"
 
-    ((i++))
+    ((++i))
   fi
 done
 
@@ -106,7 +106,7 @@ do
   then
     echo "${NAME[$i]}:${RESULT[$i]}"
 
-    ((i++))
+    ((++i))
   fi
 done
 

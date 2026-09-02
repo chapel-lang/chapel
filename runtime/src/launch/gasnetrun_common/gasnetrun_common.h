@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"

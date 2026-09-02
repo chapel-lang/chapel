@@ -28,7 +28,6 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include "chplcgfns.h"
 #include "chpl-prginfo.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"

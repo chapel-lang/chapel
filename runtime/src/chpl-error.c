@@ -20,7 +20,6 @@
 
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
-#include "chplcgfns.h"
 
 #include "chpl-error.h"
 #include "chplexit.h"

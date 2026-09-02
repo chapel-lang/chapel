@@ -27,7 +27,6 @@
 #include <stdlib.h>
 
 #include "chplrt.h"
-#include "chplcgfns.h"
 #include "chpl-env.h"
 #include "comm-ugni-heap-pages.h"
 #include "chpl-error.h"

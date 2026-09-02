@@ -27,7 +27,6 @@
 #include "chpl-gpu-impl.h"
 #include "chpl-tasks.h"
 #include "chpl-error.h"
-#include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
 #include "gpu/amd/rocm-utils.h"

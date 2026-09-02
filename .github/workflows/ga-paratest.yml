@@ -99,7 +99,7 @@ jobs:
       test-count: ${{ steps.test-directories.outputs.test-count }}
     steps:
       - name: checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: build Chapel
@@ -179,11 +179,9 @@ jobs:
           awk -v home="$CHPL_HOME/" '
             BEGIN {
               # these are well-known slow directories that should be split into multiple jobs
-              # however, this results in a massive amount of GA runners, so
-              # for now dont actually do that
-              # slow_directories["test/functions"] = 1
-              # slow_directories["test/classes"] = 1
-              # slow_directories["test/types"] = 1
+              slow_directories["test/classes"] = 1
+              slow_directories["test/library"] = 1
+              slow_directories["test/types"] = 1
             }
             function relative(path) {
               if (index(path, home) == 1) return substr(path, length(home) + 1)
@@ -276,7 +274,7 @@ jobs:
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
       - name: checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: download Chapel build
@@ -349,7 +347,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           sparse-checkout: util/test/merge_start_test_log_summary

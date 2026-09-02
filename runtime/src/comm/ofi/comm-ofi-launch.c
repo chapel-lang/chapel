@@ -27,7 +27,6 @@
 #include <stdio.h>
 
 #include "chplrt.h"
-#include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
 #include "chpl-prginfo.h"

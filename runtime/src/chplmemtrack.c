@@ -28,7 +28,6 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 #include "chpl-comm-internal.h"
-#include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "chpl-prginfo.h"
 #include "config.h"
@@ -149,6 +148,8 @@ void chpl_setMemFlags(void) {
   // of space the comm layer allocated as a result of our own call to
   // chpl_memTracking_returnConfigVals().
   //
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_memTracking_returnConfigVals);
   chpl_memTracking_returnConfigVals(&local_memTrack,
                                     &memStats,
                                     &memLeaksByType,

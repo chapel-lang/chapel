@@ -21,7 +21,6 @@
 #include "chplrt.h"
 
 #include "arg.h"
-#include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"

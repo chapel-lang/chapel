@@ -43,8 +43,6 @@
 #include <sys/resource.h>
 #include <sys/param.h>
 
-#include "chplcgfns.h"
-
 extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2,
 
 int install_callbacks (void);
