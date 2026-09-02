@@ -346,6 +346,8 @@ jobs:
     needs: [build, run-tests]
     runs-on: ubuntu-slim
     permissions:
+      contents: read
+      packages: read
       # To delete per-directory result artifacts
       actions: write
     timeout-minutes: ${{ inputs.timeout-minutes }}
