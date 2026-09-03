@@ -17,8 +17,7 @@ defaults:
 
 jobs:
   send_email:
-   # run this workflow step only when the PR is merged, only on the chapel-lang/chapel repo.
-    if:  github.event.pull_request.merged == true && github.repository == 'chapel-lang/chapel'
+    if: github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-slim
     steps:
      # This workflow step will parse github env. The parsed env will be used in the email body.
