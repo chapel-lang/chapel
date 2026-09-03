@@ -1,0 +1,350 @@
+# Intermediate-runtime CI checks to be used in an intermediate-length pre-merge
+# feedback loop.
+name: Extended CI checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  NIGHTLY_TEST_SETTINGS: true
+  APT_INSTALL_TIMEOUT_MINS: 5
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  arkouda-release-smoke-test:
+    uses: $/.github/workflows/arkouda-smoke-test.yml
+    with:
+      arkouda-version: "release"
+
+  check_blog:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: build chapel
+      run: |
+        ./util/buildRelease/smokeTest chpl mason
+    - name: build test-venv
+      run: |
+        make test-venv
+    - name: clone blog
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+        repository: chapel-lang/chapel-blog
+        path: chapel-blog
+    - name: check blog
+      run: |
+        . ./util/setchplenv.sh
+        PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
+        start_test --parallel "$PARALLEL" --parallel-sub_test "$PARALLEL" --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
+
+  gcc-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
+    runs-on: ubuntu-latest
+    steps:
+      - name: save matrix properties to env
+        run: |
+          echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+      - name: Install GCC ${{ matrix.gcc_version }} (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          VERSION: ${{ matrix.gcc_version }}
+        with:
+          max_attempts: 3
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+          retry_wait_seconds: 60
+          command: |
+            sudo update-alternatives --remove-all gcc
+            sudo update-alternatives --remove-all g++
+
+            sudo add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
+            sudo apt update
+            sudo apt install -y \
+              cpp-$VERSION \
+              g++-$VERSION \
+              gcc-$VERSION \
+              gcc-$VERSION-base \
+              libgcc-$VERSION-dev \
+              libstdc++-$VERSION-dev
+
+            sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
+            sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+      - name: Check desired GCC version is default
+        run: |
+          actual_gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
+          if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
+            echo "Wrong gcc version"
+            echo "Expected Version: $GCC_VERSION Actual Version: $gcc_major_version"
+            exit 2
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+          # with a different and incompatible version of GCC
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+          unset CHPL_LLVM_CONFIG
+
+          # Set environment variables to nudge cmake towards desired GCC
+          export CHPL_CMAKE_USE_CC_CXX=1
+          CC=$(which gcc)
+          export CC
+          CXX=$(which g++)
+          export CXX
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
+
+          start_test --parallel "$num_procs" test/release/examples
+
+  python-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Python
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python_version }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check desired Python version is default
+        run: |
+          source util/cron/common-python.bash
+          check_python_version "${{ matrix.python_version }}"
+      - name: Install LLVM dependency
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+          retry_wait_seconds: 60
+          command: |
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
+
+          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+
+  llvm-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
+    runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
+    steps:
+      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+          retry_wait_seconds: 60
+          command: |
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+
+            # Work around https://github.com/llvm/llvm-project/issues/62152
+            set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
+
+            sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
+
+            echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
+      - name: Check desired LLVM version is default
+        run: |
+          set -exuo pipefail
+
+          # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
+          llvm_version=$($CHPL_LLVM_CONFIG --version)
+          llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
+          if [ "$llvm_version_major" != "${{ matrix.llvm_version }}" ]; then
+            echo "Wrong LLVM version"
+            echo "Expected Version: ${{ matrix.llvm_version }} Actual Version: $llvm_version"
+            exit 2
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LLVM=system
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs"
+          make -j"$num_procs" test-venv
+          make -j"$num_procs" spectests
+
+          start_test --parallel "$num_procs" test/release/examples test/llvm
+
+  release-tarball-smoke-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: set vars to make tarball from correct branch
+      run: |
+        {
+          echo "CHPL_HOME_REPOSITORY=$PWD"
+          echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
+        } >> "$GITHUB_ENV"
+    - name: create release tarball
+      run: |
+        export CHPL_TEST_RELEASE_NORECURSE=1
+        ./util/cron/test-release.bash
+    - name: upload release tarball as artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        path: ./tar/chapel-test.tar.gz
+        archive: false
+        if-no-files-found: error
+
+  test-homebrew:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: save matrix properties to env
+        run: |
+          echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: run homebrew testing
+        run: |
+          if [[ "$OS" == "macos"* ]] ; then
+            ./util/cron/test-homebrew.bash
+          else
+            ./util/cron/test-homebrew-linux.bash
+          fi
+
+  test-c2chapel:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    env:
+      C2CHAPEL_PYCPARSER_TARBALL_PATH: ${{ github.workspace }}/.cache/pycparser-tarball
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: find pycparser tarball
+      id: find-pycparser-tarball
+      run: |
+        mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
+        # shellcheck disable=SC2016 # This is a Make expression, not a shell expression.
+        tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
+        if [[ -z "$tarball" ]]; then
+          echo "Could not determine the pycparser tarball URL" >&2
+          exit 1
+        fi
+        echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
+        shasum=$(shasum -a 256 <<<"$tarball" | awk '{print $1}')
+        echo "sha256=$shasum" >> "$GITHUB_OUTPUT"
+    - name: cache pycparser tarball
+      id: cache-pycparser-deps
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+      with:
+        path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
+        key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
+    - name: download pycparser tarball (retrying)
+      if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        command: |
+          tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
+          wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
+    - name: configure pycparser tarball for c2chapel
+      run: |
+        path_to_tarball=$(find "$C2CHAPEL_PYCPARSER_TARBALL_PATH" -type f -name '*.tar.gz' -print -quit)
+        if [[ -z "$path_to_tarball" ]]; then
+          echo "No pycparser tarball found in $C2CHAPEL_PYCPARSER_TARBALL_PATH" >&2
+          exit 1
+        fi
+        echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
+    - name: run test-c2chapel.bash
+      run: |
+        ./util/cron/test-c2chapel.bash
+
+  paratest-linux64:
+    name: Chapel paratest on linux64
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64
+      cron-script: util/cron/test-linux64.bash
+      start-test-args: --futures
+      build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv chpldoc mason protoc-gen-chpl
+  paratest-linux64-gasnet-everything:
+    name: Chapel paratest on linux64 with gasnet-everything
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-gasnet-everything
+      cron-script: util/cron/test-gasnet-everything.bash
+      start-test-args: --futures
+      build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv mason-deps
