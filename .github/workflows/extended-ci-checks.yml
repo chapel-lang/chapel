@@ -326,6 +326,90 @@ jobs:
       run: |
         ./util/cron/test-c2chapel.bash
 
+  base-docker-image:
+    uses: $/.github/workflows/docker-image-builds.yml
+    with:
+      config: "base"
+
+  gasnet-docker-images:
+    needs: base-docker-image
+    uses: $/.github/workflows/docker-image-builds.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ["gasnet", "gasnet-smp"]
+    with:
+      config: ${{ matrix.config }}
+
+  push-multiarch-docker-images:
+    needs: [base-docker-image, gasnet-docker-images]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_name: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
+    concurrency:
+      group: "${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}-${{ matrix.image_name }}"
+      queue: max
+    env:
+      IMAGE_NAME: ${{ matrix.image_name }}
+      LOCAL_REGISTRY: "localhost:5000"
+      EXTERNAL_REGISTRY: "docker.io"
+      NAMESPACE: "chapel"
+      TARBALL_NAME_PREFIX: "chapel-image-"
+      SHA_TAG: ${{ github.sha }}
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    steps:
+      - name: download image tarball for each arch
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: ${{ env.TARBALL_NAME_PREFIX }}${{ env.IMAGE_NAME }}${{ env.GITHUB_SHA }}*.tar
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        with:
+          driver-opts: network=host
+      - name: load single-arch images from tarball
+        run: |
+          docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*arm64*
+          docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*x86*
+      - name: determine full image name(s)
+        run: |
+          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$SHA_TAG"
+          IMAGE_FULL_NAME_NIGHTLY="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:nightly"
+          {
+            echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
+            echo "IMAGE_FULL_NAME_NIGHTLY=$IMAGE_FULL_NAME_NIGHTLY"
+          } >> "$GITHUB_ENV"
+      - name: push single-arch images to local registry
+        run: |
+          docker push "$IMAGE_FULL_NAME-arm64"
+          docker push "$IMAGE_FULL_NAME-x86"
+      - name: create multi-arch image
+        run: |
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-arm64" "$IMAGE_FULL_NAME-x86"
+      - name: determine if we should push to Docker Hub
+        id: should_push
+        run: |
+          echo "should_push=${{ github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'schedule')) }}" >> "$GITHUB_OUTPUT"
+      - name: log in to Docker Hub
+        if: steps.should_push.outputs.should_push == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+      - name: push multi-arch image to Docker Hub
+        if: steps.should_push.outputs.should_push == 'true'
+        run: |
+          IMAGE_FULL_NAME_EXTERNAL="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME")"
+          IMAGE_FULL_NAME_EXTERNAL_NIGHTLY="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME_NIGHTLY")"
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL_NIGHTLY" "$IMAGE_FULL_NAME"
+
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
