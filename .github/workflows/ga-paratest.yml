@@ -476,7 +476,7 @@ jobs:
       - name: clean up individual test dir result artifacts
         if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           configuration: ${{ inputs.configuration }}
         run: |
           gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
