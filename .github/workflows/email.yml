@@ -1,10 +1,12 @@
 name: email
 on:
-    # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
-    # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+  # This workflow is intended to run when a PR is merged into main.
+  # Although it is per-PR, triggering on pull_request would not provide access
+  # to the required secret for sending emails, and pull_request_target is
+  # dangerous. Instead, trigger on the push to main, and find the
+  # corresponding PR to gather info from.
+  push:
+    branches: [ main ]
 
 permissions:
   contents: read
