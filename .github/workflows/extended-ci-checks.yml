@@ -330,7 +330,6 @@ jobs:
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
-    secrets: inherit
     permissions:
       contents: read
       packages: read
