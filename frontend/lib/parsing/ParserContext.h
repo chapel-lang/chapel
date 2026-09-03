@@ -743,11 +743,21 @@ struct ParserContext {
                                 YYLTYPE headerLocation,
                                 ParserExprList* caseExprs,
                                 BlockOrDo blockOrDo);
+  CommentsAndStmt buildMatchCaseStmt(YYLTYPE location,
+                                     YYLTYPE headerLocation,
+                                     owned<AstNode> caseExpr,
+                                     BlockOrDo blockOrDo);
+
 
   CommentsAndStmt buildSelectStmt(YYLTYPE location,
                                   YYLTYPE headerLocation,
                                   owned<AstNode> expr,
                                   ParserExprList* whenStmts);
+  CommentsAndStmt buildMatchStmt(YYLTYPE location,
+                                  YYLTYPE headerLocation,
+                                  owned<AstNode> expr,
+                                  ParserExprList* caseStmts,
+                                  owned<AstNode> otherwiseStmt);
 
   CommentsAndStmt
   buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,

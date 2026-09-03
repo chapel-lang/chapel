@@ -1195,6 +1195,93 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 }
 
 
+
+BlockStmt* buildMatchStmt(
+            Expr* cond,
+            const std::vector<std::pair<const char*, BlockStmt*>>& caseStmts,
+            BlockStmt* otherwiseBlock) {
+
+  BlockStmt* block = new BlockStmt();
+  CondStmt* top = NULL;
+  CondStmt* condStmt = NULL;
+
+  FlagSet tmpFlags;
+  tmpFlags.set(FLAG_REF_VAR);
+  // if VarSymbol and declared const, use const ref
+  // if ArgSymbol and declared const/const in/const ref or blank intent, use const ref
+  // if CallExpr, use const ref
+  //    this is technically too strict and prevents field accesses from being ref
+  //    this also doesn't handle if the function returns a ref
+  if (auto se = toSymExpr(cond)) {
+    auto sym = se->symbol();
+    if (isVarSymbol(sym) && sym->qualType().isConst()) {
+      tmpFlags.set(FLAG_CONST);
+    } else if (auto arg = toArgSymbol(sym)) {
+      auto intent = arg->originalIntent;
+      if (intent == INTENT_CONST || intent == INTENT_CONST_REF ||
+          intent == INTENT_CONST_IN || intent == INTENT_BLANK) {
+        tmpFlags.set(FLAG_CONST);
+      }
+    }
+  } else if (isCallExpr(cond)) {
+    tmpFlags.set(FLAG_CONST);
+  }
+
+  VarSymbol* tmp = newTemp("matchTmp");
+  tmp->addFlags(tmpFlags);
+  block->insertAtTail(new DefExpr(tmp, cond));
+  VarSymbol* activeIdx = newTemp("activeIdx");
+  block->insertAtTail(new DefExpr(activeIdx,
+    new CallExpr("getActiveIndex", gMethodToken, new SymExpr(tmp))));
+
+  Expr* checkInsertPoint = activeIdx->defPoint;
+  for (auto& caseStmt: caseStmts) {
+    const char* caseCond = caseStmt.first;
+    BlockStmt* thenStmt = caseStmt.second;
+
+    checkInsertPoint->insertAfter(
+      new CallExpr("chpl_union_checkFieldName",
+                    new SymExpr(tmp), new_StringSymbol(caseCond)));
+    checkInsertPoint = checkInsertPoint->next;
+
+    Expr* condExpr = new CallExpr("==", new SymExpr(activeIdx),
+      new CallExpr("chpl_union_getFieldIndex",
+                    new SymExpr(tmp), new_StringSymbol(caseCond)));
+    // add def to start of thenStmt
+    auto fieldRef = new VarSymbol(caseCond);
+    fieldRef->addFlags(tmpFlags);
+    thenStmt->insertAtHead(new DefExpr(fieldRef,
+      new CallExpr("getFieldRef", gMethodToken,
+                    new SymExpr(tmp), new_StringSymbol(caseCond))));
+    if (!condStmt) {
+      condStmt = new CondStmt(condExpr, thenStmt);
+      top = condStmt;
+    } else {
+      CondStmt* next = new CondStmt(condExpr, thenStmt);
+      condStmt->elseStmt = new BlockStmt(next);
+      condStmt = next;
+    }
+  }
+
+  // TODO: Is it OK to just have an 'otherwise' ?
+  if (!condStmt) {
+    USR_FATAL(cond, "'union select' has no when clauses");
+  }
+  if (otherwiseBlock) {
+    condStmt->elseStmt = otherwiseBlock;
+  } else {
+    // if no otherwise, there should be exactly as many cases as field in the union
+    // TODO: should we require an otherwise for the case where the union is empty?
+    checkInsertPoint->insertAfter(
+      new CallExpr("chpl_union_checkNumberOfFields",
+                    new SymExpr(tmp), new_IntSymbol(caseStmts.size())));
+    checkInsertPoint = checkInsertPoint->next;
+  }
+
+  block->insertAtTail(top);
+  return block;
+}
+
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   BlockStmt* block = new BlockStmt();
   CondStmt* otherwise = NULL;

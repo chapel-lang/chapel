@@ -61,6 +61,8 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
+POSTPARSE_ERROR_CLASS(UnsupportedMatchExpr, const uast::AstNode*)
+POSTPARSE_ERROR_CLASS(DuplicateMatchExpr, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidReturns, const uast::Return*, const uast::Return*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)

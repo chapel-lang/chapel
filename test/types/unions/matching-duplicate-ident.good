@@ -1,0 +1,2 @@
+matching-duplicate-ident.chpl:10: error: duplicate expression in 'union select' statement
+matching-duplicate-ident.chpl:9: note: the same expression was previously used in this 'when' statement

@@ -110,6 +110,43 @@ module ChapelUnion {
     return idx;
   }
 
+  @chpldoc.nodoc
+  proc chpl_union_hasFieldNamed(u, param name: string) param {
+    import Reflection;
+    return Reflection.getFieldIndex(u.type, name) >= 0;
+  }
+  @chpldoc.nodoc
+  proc chpl_union_numberOfFields(u) param {
+    import Reflection;
+    return Reflection.getNumFields(u.type);
+  }
+  @chpldoc.nodoc
+  proc chpl_union_checkNumberOfFields(u, param numCases) param {
+    param numFields = chpl_union_numberOfFields(u);
+    if numFields != numCases then
+      compilerError("union has " + numFields:string + " fields but " +
+                    numCases:string + " cases were provided - add a case for the remaining fields or an 'otherwise' case.");
+  }
+  @chpldoc.nodoc
+  proc chpl_union_checkFieldName(u, param name) param {
+    if !chpl_union_hasFieldNamed(u, name) then
+      compilerError("the 'union select' case '" + name + "' does not match any field in '" + u.type:string + "'");
+  }
+  @chpldoc.nodoc
+  proc chpl_union_getFieldIndex(u, param name) param {
+    return u.type.getFieldIndex(name);
+  }
+
+  pragma "reference to const when const this"
+  @chpldoc.nodoc
+  proc (union).getFieldRef(param name: string) ref {
+    param i = __primitive("field name to num", this.type, name);
+    if i == -1 then
+      compilerError("field ", name, " not found in ", this.type:string);
+    return __primitive("field by num", this, i);
+  }
+
+
   /*
     Calls the function corresponding to the active field in the union, passing
     it the value of that field. The number of functions passed must match the

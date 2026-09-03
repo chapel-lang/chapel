@@ -1099,6 +1099,9 @@ struct TConverter final : UastConverter,
   bool enter(const Select* node, RV& rv);
   void exit(const Select* node, RV& rv);
 
+  bool enter(const Match* node, RV& rv);
+  void exit(const Match* node, RV& rv);
+
   bool enter(const Block* node, RV& rv);
   void exit(const Block* node, RV& rv);
 
@@ -6527,6 +6530,14 @@ bool TConverter::enter(const Select* node, RV& rv) {
 void TConverter::exit(const Select* node, RV& rv) {
   exitScope(node, rv);
   TC_DEBUGF(this, "exit select %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
+bool TConverter::enter(const Match* node, RV& rv) {
+  TC_UNIMPL("Match statements are not yet supported in the typed converter");
+  return false;
+}
+void TConverter::exit(const Match* node, RV& rv) {
+  TC_UNIMPL("Match statements are not yet supported in the typed converter");
 }
 
 bool TConverter::enter(const Block* node, RV& rv) {
