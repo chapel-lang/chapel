@@ -14,8 +14,12 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
+  another_job:
+    runs-on: ubuntu-slim
+    steps:
+      - run: echo "hi"
   send_email:
-    if: ${{ always() }}
+    if:  github.event.pull_request.merged == true && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-slim
     steps:
       - name: print git events
