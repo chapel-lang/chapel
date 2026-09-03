@@ -354,12 +354,12 @@ void ErrorUnsupportedMatchExpr::write(ErrorWriterBase& wr) const {
 void ErrorDuplicateMatchExpr::write(ErrorWriterBase& wr) const {
   auto when = std::get<0>(info_);
   auto expr = std::get<1>(info_);
-  auto prevExpr = std::get<2>(info_);
+  auto prevWhen = std::get<2>(info_);
   wr.heading(kind_, type_, expr, "duplicate expression in 'union select' statement.");
   wr.message("In the following 'when' statement:");
   wr.code(when);
-  wr.note(prevExpr, "the same expression was previously used in this 'when' statement:");
-  wr.code(prevExpr);
+  wr.note(prevWhen, "the same expression was previously used in this 'when' statement:");
+  wr.code(prevWhen);
 }
 
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
