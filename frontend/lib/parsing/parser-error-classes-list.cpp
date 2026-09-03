@@ -358,7 +358,7 @@ void ErrorDuplicateMatchExpr::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, expr, "duplicate expression in 'union select' statement.");
   wr.message("In the following 'when' statement:");
   wr.code(when);
-  wr.note(prevExpr, "the following 'when' statement has the same expression:");
+  wr.note(prevExpr, "the same expression was previously used in this 'when' statement:");
   wr.code(prevExpr);
 }
 
