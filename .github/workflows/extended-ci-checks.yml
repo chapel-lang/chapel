@@ -357,7 +357,7 @@ jobs:
       EXTERNAL_REGISTRY: "docker.io"
       NAMESPACE: "chapel"
       TARBALL_NAME_PREFIX: "chapel-image-"
-      TAG: ${{ github.sha }}
+      SHA_TAG: ${{ github.sha }}
     services:
       registry:
         image: registry:3
@@ -379,7 +379,7 @@ jobs:
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*x86*
       - name: determine full image name(s)
         run: |
-          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
+          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$SHA_TAG"
           IMAGE_FULL_NAME_NIGHTLY="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:nightly"
           {
             echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"

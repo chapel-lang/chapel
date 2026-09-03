@@ -22,7 +22,7 @@ env:
   EXTERNAL_REGISTRY: "docker.io"
   NAMESPACE: "chapel"
   TARBALL_NAME_PREFIX: "chapel-image-"
-  TAG: ${{ github.sha }}
+  SHA_TAG: ${{ github.sha }}
 
 jobs:
   build-test-image-each-arch:
@@ -57,8 +57,8 @@ jobs:
           MAKE_THREADS=$(util/buildRelease/chpl-make-cpu_count)
 
           name_prefix="chapel"
-          BASE_IMAGE_TARBALL="$TARBALL_NAME_PREFIX$name_prefix-$TAG-$ARCH.tar"
-          BASE_IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$name_prefix:$TAG"
+          BASE_IMAGE_TARBALL="$TARBALL_NAME_PREFIX$name_prefix-$SHA_TAG-$ARCH.tar"
+          BASE_IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$name_prefix:$SHA_TAG"
 
           if [[ "$CONFIG" == "base" ]]; then
             IMAGE_NAME="$name_prefix"
@@ -77,8 +77,8 @@ jobs:
           EOF
           fi
 
-          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$IMAGE_NAME-$TAG-$ARCH.tar"
-          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
+          IMAGE_TARBALL="$TARBALL_NAME_PREFIX$IMAGE_NAME-$SHA_TAG-$ARCH.tar"
+          IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$SHA_TAG"
 
           {
             echo "MAKE_THREADS=$MAKE_THREADS"
