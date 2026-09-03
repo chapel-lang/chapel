@@ -1,0 +1,4 @@
+matchUnion.chpl:1: warning: unions are currently unstable and are expected to change in ways that will break their current uses
+matchUnion.chpl:6: In function 'main':
+matchUnion.chpl:8: warning: 'union select' statements are a placeholder syntax for a future 'match' statement and are expected to change
+r: 3.14
