@@ -7,7 +7,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.21, 3.22, 3.23::
+  * Alpine 3.21, 3.22, 3.23, 3.24::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake libunwind-dev coreutils
       sudo apk add llvm-dev clang-dev clang-static llvm-static
@@ -36,13 +36,6 @@
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
-
-
-  * Debian 11 "Bullseye" (but see note `Newer CMake required to build LLVM`_)::
-
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
-      sudo apt-get install llvm-16-dev llvm-16 llvm-16-tools clang-16 libclang-16-dev libclang-cpp16-dev libedit-dev
 
 
   * Debian 12 "Bookworm"::
@@ -96,7 +89,7 @@
       sudo apt-get install llvm-15-dev llvm-15 llvm-15-tools clang-15 libclang-15-dev libclang-cpp15-dev libedit-dev
 
 
-  * Ubuntu 24.04 "Noble Numbat", 25.10 "Questing Quokka", 26.04 "Resolute Raccoon"::
+  * Ubuntu 24.04 "Noble Numbat", 26.04 "Resolute Raccoon"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
@@ -105,17 +98,6 @@
 
 Compatibility Notes
 -------------------
-
-Newer CMake required to build LLVM
-++++++++++++++++++++++++++++++++++
-
-On some systems, the cmake package is not new enough to build the bundled
-LLVM. That can be addressed either by installing CMake from source or by
-installing a system LLVM package using the commands shown above.
-
-Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
-and so installing a system LLVM on these platforms is still important in
-that case.
 
 Outdated FreeBSD testing
 ++++++++++++++++++++++++

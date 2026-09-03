@@ -27,16 +27,6 @@ intention to support FreeBSD as a best effort, so feel free to open bug reports
 for Chapel on FreeBSD versions newer than we test, and/or let us know if this
 lack of testing coverage causes you concern.""",
     ),
-    'Debian 11 "Bullseye"': (
-        "Newer CMake required to build LLVM",
-        """On some systems, the cmake package is not new enough to build the bundled
-LLVM. That can be addressed either by installing CMake from source or by
-installing a system LLVM package using the commands shown above.
-
-Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
-and so installing a system LLVM on these platforms is still important in
-that case.""",
-    ),
 }
 
 

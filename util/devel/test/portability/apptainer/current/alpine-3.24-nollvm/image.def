@@ -1,12 +1,11 @@
 BootStrap: docker
-From: debian:bullseye
+From: alpine:3.24
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apt-get-deps.sh
-    /provision-scripts/apt-get-llvm-16.sh
+    /provision-scripts/apk-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

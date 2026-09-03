@@ -24,12 +24,13 @@ x 3.20  EOL 2026-04-01
   3.21  EOL 2026-11-01
   3.22  EOL 2027-05-01
   3.23  EOL 2027-11-01
+  3.24  EOL 2028-06-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
        -- No new version of Amazon Linux in 2025/26 (last checked 2025-12-01)
-  2    EOL June 30, 2026
+x 2    EOL June 30, 2026
 x 2022 was renamed to 2023 in March 2023
   2023 EOL June 30, 2029
 
@@ -50,7 +51,7 @@ x  7 "wheezy"   long-term support until May 2018
 x  8 "jessie"   long-term support until May 2020
 x  9 "stretch"  long-term support until Jun 2022
 x 10 "buster"   long-term support until Jun 2024
-  11 "bullseye" long-term support until Aug 2026
+x 11 "bullseye" long-term support until Aug 2026
   12 "bookworm" long-term support until Jun 2028
   13 "trixie"   long-term support until Jun 2030
   14 "forky"    expected release ?
@@ -115,8 +116,9 @@ x 13.5 EOL Apr 2026 (still testing as newer don't have boxes)
 x 14.2 EOL Sep 2025
 x 14.3 EOL Jun 2026 (still testing as newer don't have boxes)
   14.4 EOL Dec 2026 (awaiting vagrant box)
-  15.0 EOL Sep 2026 (awaiting vagrant box)
-** As of May 2026, we couldn't find Vagrant boxes for any production releases
+  15.0 EOL Dec 2029 (awaiting vagrant box)
+  15.1 EOL Mar 2027 (awaiting vagrant box)
+** As of Sep 2026, we couldn't find Vagrant boxes for any production releases
    of FreeBSD, and plan to just keep testing 13.5 and 14.3 unless newer boxes
    appear.
 
@@ -175,5 +177,5 @@ x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
 x 24.10 "Oracular Oriole"   EOL Jul 2025
 x 25.04 "Plucky Puffin"     EOL Jan 2026
-  25.10 "Questing Quokka"   EOL Jul 2026
+x 25.10 "Questing Quokka"   EOL Jul 2026
   26.10 "Stonking Stingray" (releasing Oct 2026)
