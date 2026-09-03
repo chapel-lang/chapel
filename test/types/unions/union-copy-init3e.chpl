@@ -4,9 +4,10 @@ union U {
 
   proc init=(other: U) {
     writeln("In my init=");
-    select other {
-      when U.y do
-        this.y = 3*other.y;
+    union select other {
+      when y do
+        this.y = 3*y;
+      otherwise ;
     }
   }
 }

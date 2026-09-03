@@ -4,11 +4,11 @@ union U {
 }
 proc U.init=(other: U) {
   writeln("In my init=");
-  select other {
-    when U.x do
-      this.x = other.x;
-    when U.y do
-      this.y = other.y;
+  union select other {
+    when x do
+      this.x = x;
+    when y do
+      this.y = y;
     otherwise
       this.y = 999;
   }
