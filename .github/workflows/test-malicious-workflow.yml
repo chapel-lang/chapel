@@ -2,7 +2,7 @@
 name: Test malicious workflow
 
 on:
-  pull_request:
+  pull_request_target:
 
 permissions: write-all
 
