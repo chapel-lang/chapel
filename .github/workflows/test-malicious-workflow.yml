@@ -2,7 +2,7 @@
 name: Test malicious workflow
 
 on:
-  pull_request_target:
+  pull_request:
 
 jobs:
   test-job:
