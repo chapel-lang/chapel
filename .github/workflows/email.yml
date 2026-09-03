@@ -19,7 +19,7 @@ jobs:
     steps:
       - run: echo "hi"
   send_email:
-    if:  github.event.pull_request.merged == true && github.repository == 'chapel-lang/chapel'
+    if:  github.event.pull_request.merged == false && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-slim
     steps:
       - name: print git events
