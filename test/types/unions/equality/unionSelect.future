@@ -1,5 +1,0 @@
-unimplemented feature: equality-based select statements for unions
-
-This doesn't work at present because the compiler treats all selects
-on unions as being active field checks, so does "integer == union"
-comparisons.
