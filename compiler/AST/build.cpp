@@ -1216,7 +1216,7 @@ BlockStmt* buildMatchStmt(
     auto sym = se->symbol();
     if (isVarSymbol(sym) && sym->qualType().isConst()) {
       tmpFlags.set(FLAG_CONST);
-    } else if if (auto arg = toArgSymbol(sym)) {
+    } else if (auto arg = toArgSymbol(sym)) {
       auto intent = arg->originalIntent;
       if (intent == INTENT_CONST || intent == INTENT_CONST_REF ||
           intent == INTENT_CONST_IN || intent == INTENT_BLANK) {
