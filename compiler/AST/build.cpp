@@ -1270,6 +1270,7 @@ BlockStmt* buildMatchStmt(
     condStmt->elseStmt = otherwiseBlock;
   } else {
     // if no otherwise, there should be exactly as many cases as field in the union
+    // TODO: should we require an otherwise for the case where the union is empty?
     checkInsertPoint->insertAfter(new CallExpr("chpl_union_checkNumberOfFields", new SymExpr(tmp), new_IntSymbol(casestmts.size())));
     checkInsertPoint = checkInsertPoint->next;
   }
