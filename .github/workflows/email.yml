@@ -15,6 +15,7 @@ defaults:
 
 jobs:
   send_email:
+    if: ${{ always() }}
     runs-on: ubuntu-slim
     steps:
       - name: print git events
