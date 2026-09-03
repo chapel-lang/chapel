@@ -377,10 +377,14 @@ jobs:
         run: |
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*arm64*
           docker image load --input "$TARBALL_NAME_PREFIX$IMAGE_NAME-$GITHUB_SHA"*x86*
-      - name: determine IMAGE_FULL_NAME
+      - name: determine full image name(s)
         run: |
           IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:$TAG"
-          echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME" >> "$GITHUB_ENV"
+          IMAGE_FULL_NAME_NIGHTLY="$LOCAL_REGISTRY/$NAMESPACE/$IMAGE_NAME:nightly"
+          {
+            echo "IMAGE_FULL_NAME=$IMAGE_FULL_NAME"
+            echo "IMAGE_FULL_NAME_NIGHTLY=$IMAGE_FULL_NAME_NIGHTLY"
+          } >> "$GITHUB_ENV"
       - name: push single-arch images to local registry
         run: |
           docker push "$IMAGE_FULL_NAME-arm64"
@@ -402,7 +406,9 @@ jobs:
         if: steps.should_push.outputs.should_push == 'true'
         run: |
           IMAGE_FULL_NAME_EXTERNAL="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME")"
+          IMAGE_FULL_NAME_EXTERNAL_NIGHTLY="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME_NIGHTLY")"
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
+          docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL_NIGHTLY" "$IMAGE_FULL_NAME"
 
   paratest-linux64:
     name: Chapel paratest on linux64
