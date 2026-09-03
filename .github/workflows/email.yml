@@ -20,54 +20,75 @@ jobs:
   send_email:
     if: github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-slim
+    env:
+      EMAIL_BODY_FILENAME: email.md
+      GH_TOKEN: ${{ github.token }}
     steps:
-     # This workflow step will parse github env. The parsed env will be used in the email body.
-      - name: get commits payload
-        id: build-payload
-        env:
-           PR_LINK: ${{github.event.pull_request._links.html.href}}
-           GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN: ${{github.event.pull_request.head.user.login}}
-           GITHUB_EVENT_REPOSITORY_HTML_URL: ${{github.event.repository.html_url}}
+      - name: generate fallback email body
         run: |
-          {
-            echo "LINK=$PR_LINK"
-            echo "AUTHOR=${GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN}"
-            echo "COMPARE_URL=${GITHUB_EVENT_REPOSITORY_HTML_URL}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}"
-            echo "FILES_CHANGED=$PR_LINK/files"
-          } >> "$GITHUB_ENV"
-      - name: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
-        with:
-          fetch-depth: 0
-          allow-unsafe-pr-checkout: true
-          persist-credentials: false
-      # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body.
-      # (2) Get the files changed on the merge commit using the git log --name-status command.
-      - name: Get merge log
-        id: merge-log
-        env:
-           MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          Failure encountered generating PR merge email for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
+
+          Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+      - name: find PR number associated with this push
         run: |
-              merge_log=$(git show -s --format=%B "$MERGE_SHA")
-              echo "$merge_log"
-              {
-                echo 'MERGE<<EOF'
-                echo "$merge_log"
-                echo 'EOF'
-              } >> "$GITHUB_ENV"
+          pr_number=$(gh pr list --search "$GITHUB_SHA" --state merged --json "number" | jq '.[0].number')
+          if [ -n "$pr_number" ]; then
+            echo "Couldn't find PR corresponding to commit $GITHUB_SHA" | tee -a "$EMAIL_BODY_FILENAME"
+            exit 1
+          fi
+          echo "pr_number=$pr_number" >> "$GITHUB_ENV"
+      - name: get info about PR
+        run: |
+          gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee pr.json
 
-              diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
-              # Cut off long diff output after some number of lines
-              diff_max_lines=1000
-              diff=$(echo "$diff" | awk "NR <= $diff_max_lines; NR > $diff_max_lines { print \"(diff output truncated at $diff_max_lines lines)\"; exit }")
+      # - name: get commits payload
+      #   id: build-payload
+      #   env:
+      #      PR_LINK: ${{github.event.pull_request._links.html.href}}
+      #      GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN: ${{github.event.pull_request.head.user.login}}
+      #      GITHUB_EVENT_REPOSITORY_HTML_URL: ${{github.event.repository.html_url}}
+      #   run: |
+      #     {
+      #       echo "LINK=$PR_LINK"
+      #       echo "AUTHOR=${GITHUB_EVENT_PULL_REQUEST_HEAD_USER_LOGIN}"
+      #       echo "COMPARE_URL=${GITHUB_EVENT_REPOSITORY_HTML_URL}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}"
+      #       echo "FILES_CHANGED=$PR_LINK/files"
+      #     } >> "$GITHUB_ENV"
+      # - name: checkout
+      #   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      #   # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+      #   with:
+      #     fetch-depth: 0
+      #     allow-unsafe-pr-checkout: true
+      #     persist-credentials: false
+      # # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body.
+      # # (2) Get the files changed on the merge commit using the git log --name-status command.
+      # - name: Get merge log
+      #   id: merge-log
+      #   env:
+      #      MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
+      #   run: |
+      #         merge_log=$(git show -s --format=%B "$MERGE_SHA")
+      #         echo "$merge_log"
+      #         {
+      #           echo 'MERGE<<EOF'
+      #           echo "$merge_log"
+      #           echo 'EOF'
+      #         } >> "$GITHUB_ENV"
 
-              echo "$diff"
-              {
-                echo 'DIFF<<EOF'
-                echo "$diff"
-                echo 'EOF'
-              } >> "$GITHUB_ENV"
+      #         diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
+      #         # Cut off long diff output after some number of lines
+      #         diff_max_lines=1000
+      #         diff=$(echo "$diff" | awk "NR <= $diff_max_lines; NR > $diff_max_lines { print \"(diff output truncated at $diff_max_lines lines)\"; exit }")
+
+      #         echo "$diff"
+      #         {
+      #           echo 'DIFF<<EOF'
+      #           echo "$diff"
+      #           echo 'EOF'
+      #         } >> "$GITHUB_ENV"
       # - name: Send mail
       #   uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
       #   with:
