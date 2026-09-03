@@ -111,6 +111,11 @@ bool     gCodegenGPU = false;
 
 std::map<std::string, int> commIDMap;
 
+static fileinfo hdrfile    = { NULL, NULL, NULL };
+static fileinfo mainfile   = { NULL, NULL, NULL };
+static fileinfo defnfile   = { NULL, NULL, NULL };
+static fileinfo strconfig  = { NULL, NULL, NULL };
+static fileinfo modulefile = { NULL, NULL, NULL };
 
 // ensure these two produce consistent output
 std::string zlineToString(BaseAST* ast) {
@@ -255,20 +260,27 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   }
 }
 static void
-genGlobalString(const char *cname, const char *value, bool isConstant=true) {
+genGlobalString(const char *cname, const char *value, bool isHeader,
+                bool isConstant=true) {
   GenInfo* info = gGenInfo;
   bool hasValue = value != nullptr;
   FILE* fp = info->cfile;
 
   if (fp) {
     const char* constPart = isConstant ? "const " : "";
-    if (hasValue) {
-      fprintf(fp, "%schar* %s = \"%s\";\n", constPart, cname, value);
+    if (isHeader) {
+      fprintf(fp, "extern %schar* %s;\n", constPart, cname);
+
     } else {
-      fprintf(fp, "%schar* %s = NULL;\n", constPart, cname);
+      if (hasValue) {
+        fprintf(fp, "%schar* %s = \"%s\";\n", constPart, cname, value);
+      } else {
+        fprintf(fp, "%schar* %s = NULL;\n", constPart, cname);
+      }
     }
   } else {
 #ifdef HAVE_LLVM
+    if (isHeader) return;
     if (!gCodegenGPU) {
       auto llvmPtrType = getPointerType(info->module->getContext());
       auto lookup = info->module->getOrInsertGlobal(cname, llvmPtrType);
@@ -1366,51 +1378,17 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
-static void genConfigGlobalsAndAbout() {
-  GenInfo* info = gGenInfo;
+static void genChplProgramAbout(bool isHeader) {
+  auto info = gGenInfo;
 
-  if (info->cfile) {
-    genComment("Compilation Info");
-    fprintf(info->cfile, "\n#include <stdio.h>");
-    fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
-  }
-
-  // if we are running as compiler-driver, retrieve compile command saved to tmp
-  if (!fDriverDoMonolithic) {
-    restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
-      compileCommand = astr(restoredCommand);
-    });
-    restoreDriverTmp(compileEnvsFilename, [](std::string_view restoredEnvs) {
-      compileEnvs = astr(restoredEnvs);
-    });
-  }
-
-  genGlobalString("chpl_compileCommand", compileCommand);
-  genGlobalString("chpl_compileVersion", compileVersion);
-  genGlobalString("chpl_compileDirectory", getCwd());
-  genGlobalString("chpl_executionCommand", nullptr, /**isConstant*/ false);
-
-  if (!saveCDir.empty()) {
-    char *actualPath = realpath(saveCDir.c_str(), NULL);
-    genGlobalString("chpl_saveCDir", actualPath);
-  } else {
-    genGlobalString("chpl_saveCDir", "");
-  }
-
-  genGlobalString("CHPL_HOME", CHPL_HOME.c_str());
-
-  genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
-  genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
-  genGlobalInt("CHPL_INTERLEAVE_MEM", fEnableMemInterleaving, false);
-
-  for (const auto& env: envMap) {
-    if (env.first != "CHPL_HOME") {
-      genGlobalString(env.first.c_str(), env.second);
+  if (isHeader) {
+    if (info->cfile) {
+      fprintf(info->cfile, "\nvoid chpl_program_about(void);\n");
     }
+    return;
   }
 
   if (info->cfile) {
-    fprintf(info->cfile, "\nvoid chpl_program_about(void);\n");
     fprintf(info->cfile, "\nvoid chpl_program_about(void) {\n");
   } else {
 #ifdef HAVE_LLVM
@@ -1460,6 +1438,53 @@ static void genConfigGlobalsAndAbout() {
   }
 }
 
+static void genConfigGlobalsAndAbout(bool isHeader) {
+  GenInfo* info = gGenInfo;
+
+  if (info->cfile && !isHeader) {
+    genComment("Compilation Info");
+    fprintf(info->cfile, "\n#include <stdio.h>");
+    fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
+  }
+
+  // if we are running as compiler-driver, retrieve compile command saved to tmp
+  if (!fDriverDoMonolithic) {
+    restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
+      compileCommand = astr(restoredCommand);
+    });
+    restoreDriverTmp(compileEnvsFilename, [](std::string_view restoredEnvs) {
+      compileEnvs = astr(restoredEnvs);
+    });
+  }
+
+  genGlobalString("chpl_compileCommand", compileCommand, isHeader);
+  genGlobalString("chpl_compileVersion", compileVersion, isHeader);
+  genGlobalString("chpl_compileDirectory", getCwd(), isHeader);
+  genGlobalString("chpl_executionCommand", nullptr, isHeader,
+                  /*isConstant*/ false);
+
+  if (!saveCDir.empty()) {
+    char *actualPath = realpath(saveCDir.c_str(), NULL);
+    genGlobalString("chpl_saveCDir", actualPath, isHeader);
+  } else {
+    genGlobalString("chpl_saveCDir", "", isHeader);
+  }
+
+  genGlobalString("CHPL_HOME", CHPL_HOME.c_str(), isHeader);
+
+  genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, isHeader);
+  genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, isHeader);
+  genGlobalInt("CHPL_INTERLEAVE_MEM", fEnableMemInterleaving, isHeader);
+
+  for (const auto& env: envMap) {
+    if (env.first != "CHPL_HOME") {
+      genGlobalString(env.first.c_str(), env.second, isHeader);
+    }
+  }
+
+  genChplProgramAbout(isHeader);
+}
+
 static void genFunctionTables() {
   genComment("Filename Lookup Table");
   genFilenameTable();
@@ -1489,7 +1514,7 @@ static void codegen_header_compilation_config() {
   if (fLlvmCodegen) {
     info->cfile = NULL;
     if ( gCodegenGPU == false ) {
-      genConfigGlobalsAndAbout();
+      genConfigGlobalsAndAbout(/*isHeader*/ false);
       genFunctionTables();
     }
   }
@@ -1499,8 +1524,12 @@ static void codegen_header_compilation_config() {
     openCFile(&cfgfile, sCfgFname, "c");
     // Follow convention of just not writing to the file if we can't open it
     if (cfgfile.fptr) {
+      info->cfile = hdrfile.fptr;
+      genConfigGlobalsAndAbout(/*isHeader*/ true);
+
       info->cfile = cfgfile.fptr;
-      genConfigGlobalsAndAbout();
+      genConfigGlobalsAndAbout(/*isHeader*/ false);
+
       genFunctionTables();
       closeCFile(&cfgfile);
     }
@@ -2977,13 +3006,6 @@ static void codegenPartOne() {
 
   uniquify_names(cnames, types, functions, globals);
 }
-
-static fileinfo hdrfile    = { NULL, NULL, NULL };
-static fileinfo mainfile   = { NULL, NULL, NULL };
-static fileinfo defnfile   = { NULL, NULL, NULL };
-static fileinfo strconfig  = { NULL, NULL, NULL };
-static fileinfo modulefile = { NULL, NULL, NULL };
-
 
 #ifdef HAVE_LLVM
 static void embedGpuCode() {
