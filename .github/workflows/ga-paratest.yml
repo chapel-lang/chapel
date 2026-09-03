@@ -473,7 +473,8 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: clean up individual test dir result artifacts
-        if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' }}
+        # Skip on pull_request runs, because they don't have permission to delete artifacts.
+        if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' && github.event_name != 'pull_request' }}
         env:
           GH_TOKEN: ${{ github.token }}
           configuration: ${{ inputs.configuration }}
