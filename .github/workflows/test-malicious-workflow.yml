@@ -4,8 +4,6 @@ name: Test malicious workflow
 on:
   pull_request_target:
 
-permissions: write-all
-
 jobs:
   test-job:
     runs-on: ubuntu-latest
