@@ -244,4 +244,4 @@ jobs:
       use-container: false
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
-        brew install llvm
+        brew install llvm@22
