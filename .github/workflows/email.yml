@@ -7,6 +7,7 @@ on:
   # corresponding PR to gather info from.
   push:
     branches: [ main ]
+  pull_request:
 
 permissions:
   contents: read
