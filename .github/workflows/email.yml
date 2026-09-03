@@ -19,12 +19,6 @@ jobs:
     if:  github.event.pull_request.merged == true && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-slim
     steps:
-      - name: print git events
-        run:  cat "$GITHUB_EVENT_PATH"
-      - name: print GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
      # This workflow step will parse github env. The parsed env will be used in the email body.
       - name: get commits payload
         id: build-payload
