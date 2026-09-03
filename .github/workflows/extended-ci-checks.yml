@@ -329,6 +329,10 @@ jobs:
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     with:
       configuration: linux64
       cron-script: util/cron/test-linux64.bash
@@ -340,6 +344,10 @@ jobs:
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     with:
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash

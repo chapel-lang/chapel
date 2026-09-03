@@ -53,6 +53,10 @@ jobs:
     needs: should-run-extended-checks
     if: needs.should-run-extended-checks.outputs.run-all == 'true'
     uses: $/.github/workflows/extended-ci-checks.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
