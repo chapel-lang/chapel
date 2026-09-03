@@ -1198,7 +1198,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 BlockStmt* buildMatchStmt(
             Expr* cond,
-            const std::vector<std::pair<const char*, BlockStmt*>>& casestmts,
+            const std::vector<std::pair<const char*, BlockStmt*>>& caseStmts,
             BlockStmt* otherwiseBlock) {
 
   BlockStmt* block = new BlockStmt();
@@ -1207,18 +1207,19 @@ BlockStmt* buildMatchStmt(
 
   FlagSet tmpFlags;
   tmpFlags.set(FLAG_REF_VAR);
-  // if VarSymbol and decalred const, use const ref
+  // if VarSymbol and declared const, use const ref
   // if ArgSymbol and declared const/const in/const ref or blank intent, use const ref
   // if CallExpr, use const ref
   //    this is technically too strict and prevents field accesses from being ref
   //    this also doesn't handle if the function returns a ref
-  if (isSymExpr(cond)) {
-    auto sym = toSymExpr(cond)->symbol();
+  if (auto se = toSymExpr(cond)) {
+    auto sym = se->symbol();
     if (isVarSymbol(sym) && sym->qualType().isConst()) {
       tmpFlags.set(FLAG_CONST);
-    } else if (isArgSymbol(sym)) {
-      auto intent = toArgSymbol(sym)->originalIntent;
-      if (intent == INTENT_CONST || intent == INTENT_CONST_REF || intent == INTENT_CONST_IN || intent == INTENT_BLANK) {
+    } else if if (auto arg = toArgSymbol(sym)) {
+      auto intent = arg->originalIntent;
+      if (intent == INTENT_CONST || intent == INTENT_CONST_REF ||
+          intent == INTENT_CONST_IN || intent == INTENT_BLANK) {
         tmpFlags.set(FLAG_CONST);
       }
     }
@@ -1234,7 +1235,7 @@ BlockStmt* buildMatchStmt(
     new CallExpr("getActiveIndex", gMethodToken, new SymExpr(tmp))));
 
   Expr* checkInsertPoint = activeIdx->defPoint;
-  for (auto& caseStmt: casestmts) {
+  for (auto& caseStmt: caseStmts) {
     const char* caseCond = caseStmt.first;
     BlockStmt* thenStmt = caseStmt.second;
 
@@ -1271,7 +1272,9 @@ BlockStmt* buildMatchStmt(
   } else {
     // if no otherwise, there should be exactly as many cases as field in the union
     // TODO: should we require an otherwise for the case where the union is empty?
-    checkInsertPoint->insertAfter(new CallExpr("chpl_union_checkNumberOfFields", new SymExpr(tmp), new_IntSymbol(casestmts.size())));
+    checkInsertPoint->insertAfter(
+      new CallExpr("chpl_union_checkNumberOfFields",
+                    new SymExpr(tmp), new_IntSymbol(caseStmts.size())));
     checkInsertPoint = checkInsertPoint->next;
   }
 

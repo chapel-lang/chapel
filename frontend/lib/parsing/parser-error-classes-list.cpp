@@ -351,6 +351,17 @@ void ErrorUnsupportedMatchExpr::write(ErrorWriterBase& wr) const {
   wr.message("Chapel currently only supports plain identifiers as expressions in 'when' statements.");
 }
 
+void ErrorDuplicateMatchExpr::write(ErrorWriterBase& wr) const {
+  auto when = std::get<0>(info_);
+  auto expr = std::get<1>(info_);
+  auto prevExpr = std::get<2>(info_);
+  wr.heading(kind_, type_, expr, "duplicate expression in 'union select' statement.");
+  wr.message("In the following 'when' statement:");
+  wr.code(when);
+  wr.note(prevExpr, "the following 'when' statement has the same expression:");
+  wr.code(prevExpr);
+}
+
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto invalidAst = std::get<0>(info_);
   auto blockingAst = std::get<1>(info_);

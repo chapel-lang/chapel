@@ -225,6 +225,49 @@ static void test6(Parser* parser) {
   guard.clearErrors();
 }
 
+static void test7(Parser* parser) {
+  printf("test7\n");
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
+      "union select foo {\n"
+      "  when x do f1();\n"
+      "  when y do f2();\n"
+      "  when x do f3();\n"
+      "  when y do f4();\n"
+      "}\n");
+  guard.printErrors();
+  assert(guard.numErrors() == 2);
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isMatch());
+  for (int i = 0; i < guard.numErrors(); i++) {
+    assert(guard.error(i)->type() == ErrorType::DuplicateMatchExpr);
+  }
+  guard.clearErrors();
+}
+
+static void test8(Parser* parser) {
+  printf("test8\n");
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl",
+      "union select foo {\n"
+      "  when x do f1();\n"
+      "  when x do f2();\n"
+      "  when x do f3();\n"
+      "}\n");
+  guard.printErrors();
+  assert(guard.numErrors() == 2);
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isMatch());
+  for (int i = 0; i < guard.numErrors(); i++) {
+    assert(guard.error(i)->type() == ErrorType::DuplicateMatchExpr);
+  }
+  guard.clearErrors();
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -239,5 +282,7 @@ int main() {
   test4(p);
   test5(p);
   test6(p);
+  test7(p);
+  test8(p);
   return 0;
 }

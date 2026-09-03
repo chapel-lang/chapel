@@ -649,21 +649,17 @@ struct Converter final : UastConverter {
     // rather than lowering to conditionals like this
     Expr* cond = toExpr(convertAST(node->expr()));
 
-    std::set<const char*> seen;
     std::vector<std::pair<const char*, BlockStmt*>> casePairs;
     for (auto caseStmt: node->caseStmts()) {
-      CHPL_ASSERT(caseStmt->expr()->isIdentifier());
+      INT_ASSERT(caseStmt->expr()->isIdentifier());
       auto caseName = caseStmt->expr()->toIdentifier()->name().astr(context);
-      if (seen.count(caseName) > 0) {
-        USR_FATAL(caseStmt->id(), "duplicate case for '%s' in union select", caseName);
-      }
       auto block = createBlockWithStmts(caseStmt->body()->stmts(), caseStmt->blockStyle());
       casePairs.push_back(std::make_pair(caseName, block));
-      seen.insert(caseName);
     }
     BlockStmt* otherwiseBlock = nullptr;
     if (node->otherwiseStmt()) {
-      otherwiseBlock = createBlockWithStmts(node->otherwiseStmt()->body()->stmts(), node->otherwiseStmt()->blockStyle());
+      otherwiseBlock = createBlockWithStmts(node->otherwiseStmt()->body()->stmts(),
+                                            node->otherwiseStmt()->blockStyle());
     }
 
     return buildMatchStmt(cond, casePairs, otherwiseBlock);

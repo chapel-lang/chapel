@@ -1,1 +1,1 @@
-matching-missing-default.chpl:8: error: union has 4 fields but 2 cases were provided. add a case for the remaining fields or an 'otherwise' case.
+matching-missing-default.chpl:8: error: union has 4 fields but 2 cases were provided - add a case for the remaining fields or an 'otherwise' case.

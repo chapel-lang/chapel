@@ -125,7 +125,7 @@ module ChapelUnion {
     param numFields = chpl_union_numberOfFields(u);
     if numFields != numCases then
       compilerError("union has " + numFields:string + " fields but " +
-                    numCases:string + " cases were provided. add a case for the remaining fields or an 'otherwise' case.");
+                    numCases:string + " cases were provided - add a case for the remaining fields or an 'otherwise' case.");
   }
   @chpldoc.nodoc
   proc chpl_union_checkFieldName(u, param name) param {

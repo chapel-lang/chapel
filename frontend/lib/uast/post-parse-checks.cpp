@@ -2154,10 +2154,18 @@ void Visitor::visit(const Match* node) {
     // big change and unstable is too lightweight imo
     warn(node, "'union select' statements are a placeholder syntax for a future 'match' statement and are expected to change");
   }
+  std::unordered_map<UniqueString, const AstNode*> seenCaseExprs;
   for (auto caseStmt : node->caseStmts()) {
     if (auto expr = caseStmt->expr()) {
       if (!expr->isIdentifier()) {
         CHPL_REPORT(context_, UnsupportedMatchExpr, caseStmt, expr);
+      } else {
+        if (auto it = seenCaseExprs.find(expr->toIdentifier()->name());
+            it != seenCaseExprs.end()) {
+          CHPL_REPORT(context_, DuplicateMatchExpr, caseStmt, expr, it->second);
+        } else {
+          seenCaseExprs.insert({expr->toIdentifier()->name(), caseStmt});
+        }
       }
     }
   }

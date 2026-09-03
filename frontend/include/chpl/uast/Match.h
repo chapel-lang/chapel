@@ -130,10 +130,10 @@ class Match final : public AstNode {
   }
 
   /**
-   Iterate over the case statements (including the otherwise) in this match statement.
+    Iterate over the case statements (including the otherwise) in this match statement.
   */
  AstListIteratorPair<MatchCase> allCaseStmts() const {
-  auto begin = children_.begin() + caseStmtStartChildNum_;
+    auto begin = children_.begin() + caseStmtStartChildNum_;
     auto end = otherwiseStmtChildNum_ >= 0
         ? children_.begin() + otherwiseStmtChildNum_ + 1
         : begin + numCaseStmts_;
