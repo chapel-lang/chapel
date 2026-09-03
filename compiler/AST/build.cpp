@@ -1294,7 +1294,8 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   tmp->addFlag(FLAG_MAYBE_TYPE);
   tmp->addFlag(FLAG_EXPR_TEMP);
 
-  block->insertAtTail(new DefExpr(tmp, selectCond));
+  block->insertAtTail(new DefExpr(tmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
