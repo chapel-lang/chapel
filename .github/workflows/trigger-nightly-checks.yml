@@ -61,7 +61,7 @@ jobs:
 
             message=$(jq -r '.commit.message' commit.json | head -n 1)
             num_jobs=$(jq 'length' jobs_array.json)
-            readarray -t failed_job_ids < <(jq '.[] | select((.status != "completed" and .id != "${{ github.job }}") or (.conclusion != "success" and .conclusion != "skipped")) | .id' jobs_array.json)
+            readarray -t failed_job_ids < <(jq '.[] | select(.id != "${{ github.job }}" and (.status != "completed" or (.conclusion != "success" and .conclusion != "skipped"))) | .id' jobs_array.json)
 
             failed_jobs_text=""
             echo "failed jobs:"
