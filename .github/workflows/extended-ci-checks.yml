@@ -326,6 +326,57 @@ jobs:
       run: |
         ./util/cron/test-c2chapel.bash
 
+  test-ofi-mpi:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Install Open MPI (retrying)
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 3
+        timeout_seconds: 900
+        retry_wait_seconds: 30
+        command: |
+          sudo apt-get update
+          sudo apt-get install -y openmpi-bin libopenmpi-dev
+    - name: Configure Chapel
+      run: |
+        {
+          echo "CHPL_COMM=ofi"
+          echo "CHPL_COMM_OFI_OOB=mpi"
+          echo "CHPL_LAUNCHER=mpirun4ofi"
+          echo "CHPL_TARGET_CPU=none"
+        } >> .chplconfig
+    - name: Build Chapel
+      run: |
+        . ./util/setchplenv.sh
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv
+    - name: Test Chapel
+      run: |
+        . ./util/setchplenv.sh
+        export CHPL_RT_OVERSUBSCRIBED=1
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        # we need to limit the number of parallel testers, too many can
+        # cause too many concurrent Chapel programs running at once
+        # which causes tests to run slower due to heavy oversubscription
+        num_procs=$((num_procs / 2))
+        num_procs=$((num_procs > 1 ? num_procs : 1))
+        # TODO: ideally we would test everything, but that likely requires big
+        # maintenance effort to get tests in a state to do that
+        start_test --parallel "$num_procs" test/release/examples test/runtime/configMatters test/multilocale
+
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
