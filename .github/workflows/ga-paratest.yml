@@ -227,8 +227,6 @@ jobs:
             }
           ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
 
-          echo "test/testsystem," > "$RUNNER_TEMP/testdirs.csv"
-
       - name: create testing matrix
         id: test-directories
         run: |
