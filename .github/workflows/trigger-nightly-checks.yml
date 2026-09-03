@@ -45,43 +45,57 @@ jobs:
           GitHub Actions nightly run failed, and an additional failure was
           encountered in generating a failure mail.
 
-          Run ID: ${{ github.run_id }}
+          Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
-      - name: generate email body
-        run: |
-          gh api /repos/${{ github.repository }}/commits/${{ github.sha }} | jq '.' | tee commit.json
-          gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs | jq '.' | tee jobs_raw.json
-          # Combine pages of job results into one array
-          jq '.jobs[]' jobs_raw.json | jq --slurp '.' | tee jobs_array.json
+      - name: generate email body (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 180
+          retry_wait_seconds: 300
+          command: |
+            gh api /repos/${{ github.repository }}/commits/${{ github.sha }} | jq '.' > commit.json
+            gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs | jq '.' > jobs_raw.json
+            # Combine pages of job results into one array
+            jq '.jobs[]' jobs_raw.json | jq --slurp '.' > jobs_array.json
 
-          message=$(jq -r '.commit.message' commit.json | head -n 1)
-          num_jobs=$(jq 'length' jobs_array.json)
-          readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped")) | .id' jobs_array.json)
+            message=$(jq -r '.commit.message' commit.json | head -n 1)
+            num_jobs=$(jq 'length' jobs_array.json)
+            readarray -t failed_job_ids < <(jq '.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped")) | .id' jobs_array.json)
 
-          failed_jobs_text=""
-          for id in "${failed_job_ids[@]}"; do
-            gh api "/repos/${{ github.repository }}/actions/jobs/$id" | jq '.' | tee "job_$id.json"
-            sleep 0.25
-            failed_jobs_text+="$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
-          "
-          done
+            failed_jobs_text=""
+            echo "failed jobs:"
+            for id in "${failed_job_ids[@]}"; do
+              echo "- $id"
+              gh api "/repos/${{ github.repository }}/actions/jobs/$id" | jq '.' > "job_$id.json"
+              sleep 0.25
+              failed_jobs_text+="$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
+            "
+            done
 
-          [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
+            [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
-          cat << EOF > "$EMAIL_BODY_FILENAME"
-          ### The following GitHub Actions job$plural failed:
+            cat << EOF > "$EMAIL_BODY_FILENAME"
+            ### The following GitHub Actions job$plural failed:
 
-          $failed_jobs_text
+            $failed_jobs_text
 
-          Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
+            Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
 
-          ##### GitHub Actions run info:
-          - SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          - Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - Run attempt: ${{ github.run_attempt }}
-          - Run number: ${{ github.run_number }}
-          - Triggering event name: ${{ github.event_name }}
-          EOF
+            ##### GitHub Actions run info:
+            - SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+            - Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - Run attempt: ${{ github.run_attempt }}
+            - Run number: ${{ github.run_number }}
+            - Triggering event name: ${{ github.event_name }}
+            EOF
+      - name: archive JSON files from run
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: json_files
+          path: ./*.json
+          retention-days: 5
       - name: print email body
         if: always()
         run: |

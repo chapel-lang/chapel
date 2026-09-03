@@ -441,7 +441,7 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
-            brew install llvm
+            brew install llvm@22
           else
             sudo apt install \
               clang \
