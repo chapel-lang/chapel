@@ -97,7 +97,7 @@ iter prereqs(const baseDir = path.cwd()): path throws {
   log.debug("Looking for the prerequisites directory ", prereqsPath);
   if prereqsPath.exists() {
     if prereqsPath.isDir() {
-      log.infof("Prerequisites directory exists (%s)", prereqsPath:string);
+      log.debugf("Prerequisites directory exists (%s)", prereqsPath:string);
 
       // You shouldn't need an array here, but there seems to be a compiler bug
       // See https://github.com/chapel-lang/chapel/issues/27855
@@ -113,7 +113,7 @@ iter prereqs(const baseDir = path.cwd()): path throws {
         }
       }
     } else {
-      log.infof("%s is supposed to be directory with prerequisites " +
+      log.warnf("%s is supposed to be directory with prerequisites " +
                 "but it looks to be a file. It will be ignored.",
                 prereqsDir:string);
     }

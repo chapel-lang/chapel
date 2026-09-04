@@ -33,6 +33,7 @@ use Random;
 use Subprocess;
 use TOML;
 import Path;
+import Registry;
 
 import ThirdParty.Pathlib.path;
 
@@ -140,7 +141,7 @@ proc masonPublish(args: [] string) throws {
                            "when MASON_OFFLINE is set to true or " +
                            '"--no-update" is passed, override with --update');
     else
-      updateRegistry(skipUpdate);
+      Registry.updateRegistry(skipUpdate);
   }
 
   if !isLocal && !doesGitOriginExist() && !dry {
