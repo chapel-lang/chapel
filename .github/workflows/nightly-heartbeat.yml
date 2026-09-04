@@ -1,0 +1,57 @@
+# "Heartbeat" job which ensures nightly jobs are running as expected, and
+# notifies us (independently of the nightly workflow itself) if not.
+name: Nightly jobs heartbeat
+
+on:
+  schedule:
+    - cron: "30 0 * * *"
+      timezone: "America/Vancouver"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 96
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  ensure-recent-nightly-run:
+    runs-on: ubuntu-slim
+    needs:
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EMAIL_BODY_FILENAME: email.md
+    steps:
+      - name: determine date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: check last successful nightly run
+        id: last_success
+        run: |
+          last_successful=$(gh run list -w "Run nightly checks" --event schedule --status success --limit 1 --json "startedAt" --jq ".[0].startedAt" | xargs -I {} date -d {} +%s)
+          current_timestamp=$(date +%s)
+          elapsed_secs=$((current_timestamp - last_successful)
+          acceptable_secs=$((96 * 3600))
+          if (( elapsed_secs > acceptable_secs )); then
+            echo "Warning: Last successful nightly checks run was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
+            exit 1
+          fi
+      - name: send warning mail
+        if: failure()
+        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
+        with:
+           # Required mail server address if not connection_url:
+           server_address: ${{ secrets.SMTP_PROVIDER }}
+           server_port: 465
+           secure: true
+           username:  ${{ secrets.MAIL_USERNAME }}
+           password: ${{ secrets.MAIL_PASSWORD }}
+           subject: "[Chapel GA Tests Heartbeat] ${{ steps.date.outputs.date }}"
+           to: ${{ secrets.CHAPEL_BUILD_MAIL_ADDRESS }}
+           from:  "Chapel Automaton <chapel_commits@cray.com>"
+           body: file://${{ env.EMAIL_BODY_FILENAME }}
