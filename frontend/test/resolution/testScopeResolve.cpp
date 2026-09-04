@@ -1330,6 +1330,92 @@ static void test33() {
   assert(rSubSub.byAst(tSubSub2).toId() == x->id());
 }
 
+static void test34() {
+  printf("test34\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module Program {
+        union U1 {
+          var x: int;
+          var y: real;
+        }
+        var u1: U1;
+        union select u1 {
+          when x do var r1 = x;
+          when y do var r2 = y;
+        }
+
+        union U2 {
+          var xx: int;
+          var yy: real;
+        }
+        var u2: U2;
+        var xx = 2;
+        union select u2 {
+          when xx do var r1 = xx;
+          when yy do var r2 = xx;
+        }
+        union select u2 {
+          when xx {
+            var xx = 3;
+            var r1 = xx;
+          }
+          otherwise ;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  auto vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+
+  {
+    auto match1 = vec[0]->stmt(2)->toMatch();
+    assert(match1);
+    auto x = findVariable(match1, "x");
+    assert(x);
+    auto y = findVariable(match1, "y");
+    assert(y);
+    auto r1 = findVariable(match1, "r1");
+    assert(r1);
+    auto r2 = findVariable(match1, "r2");
+    assert(r2);
+    assert(scopeResolveIt(context, r1->initExpression()).toId() == x->id());
+    assert(scopeResolveIt(context, r2->initExpression()).toId() == y->id());
+  }
+
+  {
+    auto match2 = vec[0]->stmt(6)->toMatch();
+    assert(match2);
+    auto xx = vec[0]->stmt(5)->toVariable();
+    assert(xx);
+    auto xxCase = findVariable(match2, "xx");
+    assert(xxCase);
+    auto r1 = findVariable(match2, "r1");
+    assert(r1);
+    auto r2 = findVariable(match2, "r2");
+    assert(r2);
+    assert(scopeResolveIt(context, r1->initExpression()).toId() == xxCase->id());
+    assert(scopeResolveIt(context, r2->initExpression()).toId() == xx->id());
+  }
+
+  {
+    auto match3 = vec[0]->stmt(7)->toMatch();
+    assert(match3);
+    auto xx = match3->caseStmt(0)->body()->stmt(0)->toVariable();
+    assert(xx);
+    auto r1 = findVariable(match3, "r1");
+    assert(r1);
+    assert(scopeResolveIt(context, r1->initExpression()).toId() == xx->id());
+  }
+
+  assert(guard.realizeErrors() == 0);
+}
+
 
 int main() {
   test1();
@@ -1367,6 +1453,7 @@ int main() {
   test32a();
   test32b();
   test33();
+  test34();
 
   return 0;
 }
