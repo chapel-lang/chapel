@@ -228,6 +228,10 @@ jobs:
   paratest-linux64-c-backend:
     name: Chapel paratest on linux64 with C backend
     uses: $/.github/workflows/ga-paratest.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     with:
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
@@ -238,6 +242,10 @@ jobs:
   paratest-darwin:
     name: Chapel paratest on darwin
     uses: $/.github/workflows/ga-paratest.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     with:
       configuration: darwin
       runner: macos-latest

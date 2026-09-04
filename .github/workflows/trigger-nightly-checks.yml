@@ -27,6 +27,10 @@ jobs:
     uses: $/.github/workflows/extended-ci-checks.yml
 
   full-checks:
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     uses: $/.github/workflows/full-ci-checks.yml
 
   send-failure-mail:
