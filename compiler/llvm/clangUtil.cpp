@@ -2953,6 +2953,7 @@ static void helpComputeClangArgs(std::string& clangCC,
 
     // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
     splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
+
     // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
     expandInstallationPaths(args);
 

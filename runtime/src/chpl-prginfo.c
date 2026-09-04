@@ -29,6 +29,7 @@
 
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-env-gen.h"
 #include "chpl-prginfo.h"
 
 #include <string.h>
@@ -229,4 +230,17 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
   } while (0);
 
   #include "chpl-prginfo-data-macro-adapter.h"
+}
+
+// This is defined as a macro in the 'chpl-env-gen.h' header.
+static const char* lookup_table[][2] = CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR;
+
+int chpl_rt_num_build_constants(void) {
+  return CHPL_RT_ENV_LOOKUP_TABLE_SIZE;
+}
+
+const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val) {
+  assert(0 <= idx && idx < CHPL_RT_ENV_LOOKUP_TABLE_SIZE);
+  if (out_val) *out_val = lookup_table[idx][1];
+  return lookup_table[idx][0];
 }

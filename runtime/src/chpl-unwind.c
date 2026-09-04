@@ -33,6 +33,7 @@
 
 #include "chpl-unwind.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
 #include "chpl-error.h"
 #include "chpl-exec.h"
 #include "chplexit.h"
@@ -398,10 +399,8 @@ void chpl_stack_unwind(FILE* out, char sep) {
     return;
   }
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_UNWIND);
-
   chpl_stack_unwind_helper(CHPL_STACK_UNWIND_MODE_FILE, sep, out);
-  if (!user_set && strcmp(CHPL_UNWIND, "none") != 0) {
+  if (!user_set && strcmp(CHPL_UNWIND_RT, "none") != 0) {
     fprintf(out, "%cDisable full stacktrace by setting 'CHPL_RT_UNWIND=0'%c", sep, sep);
   }
 }

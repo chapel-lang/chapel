@@ -5,3 +5,6 @@ TMPFILE=$OUTFILE.tmp
 
 cat $OUTFILE | grep -v -e "program path" > $TMPFILE
 mv $TMPFILE $OUTFILE
+
+cat $OUTFILE | grep -v -e "program ID" > $TMPFILE
+mv $TMPFILE $OUTFILE

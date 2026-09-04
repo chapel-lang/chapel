@@ -38,6 +38,7 @@
 #include "chpl-arg-bundle.h"
 #include "chpl-comm.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
 #include "chplexit.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
@@ -505,14 +506,11 @@ static void setupAvailableParallelism(int32_t maxThreads) {
           if (chpl_nodeID == 0) {
             char msg[1024];
 
-            CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                    CHPL_COMM);
-
             snprintf(msg, sizeof(msg),
                      "The CHPL_COMM setting is limiting the number of threads "
                      "to %d, rather than the hardware's preference of %d.%s",
                      maxThreads, hwpar,
-                     (strcmp(CHPL_COMM, "gasnet") ? "" :
+                     (strcmp(CHPL_COMM_RT, "gasnet") ? "" :
                       "  To increase this limit, set 'GASNET_MAX_THREADS' to "
                       "a larger value in your environment."));
             chpl_warning(msg, 0, 0);
@@ -527,11 +525,8 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         //
         {
             int numNumaDomains = chpl_topo_getNumNumaDomains();
-            CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                    CHPL_LOCALE_MODEL);
-
             if (hwpar < numNumaDomains
-                && strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
+                && strcmp(CHPL_LOCALE_MODEL_RT, "flat") != 0) {
                 char msg[100];
                 snprintf(msg, sizeof(msg),
                          "%d NUMA domains but only %d Qthreads shepherds; "
@@ -570,7 +565,6 @@ static chpl_bool setupGuardPages(void) {
     chpl_bool guardPagesEnabled = true;
     // default value set by compiler (--[no-]stack-checks)
     chpl_bool defaultVal = CHPL_RT_PRGINFO_DATA(prg, CHPL_STACK_CHECKS) == 1;
-    CHPL_RT_PRGINFO_DECLARE(prg, CHPL_TARGET_CPU);
 
     // Setup guard pages. Default to enabling guard pages, only disabling them
     // under the following conditions (Precedence high-to-low):
@@ -583,7 +577,7 @@ static chpl_bool setupGuardPages(void) {
         guardPagesEnabled = false;
     } else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
         guardPagesEnabled = false;
-    } else if (strncmp(armArch, CHPL_TARGET_CPU, strlen(armArch)) == 0) {
+    } else if (strncmp(armArch, CHPL_TARGET_CPU_RT, strlen(armArch)) == 0) {
         guardPagesEnabled = false;
     } else {
         guardPagesEnabled = chpl_qt_getenv_bool("GUARD_PAGES", defaultVal);
@@ -694,12 +688,10 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          CHPL_TARGET_PLATFORM);
 
   if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
-  } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
+  } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM_RT, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
   }
 }
@@ -1012,8 +1004,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
-        !strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                     CHPL_LOCALE_MODEL), "gpu"));
+           !strcmp(CHPL_LOCALE_MODEL_RT, "gpu"));
 
     PROFILE_INCR(profile_task_addTask,1);
 
