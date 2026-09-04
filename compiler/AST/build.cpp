@@ -1198,7 +1198,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 BlockStmt* buildMatchStmt(
             Expr* cond,
-            const std::vector<std::tuple<const char*, VarSymbol*, BlockStmt*>>& caseStmts,
+            const std::vector<std::pair<VarSymbol*, BlockStmt*>>& caseStmts,
             BlockStmt* otherwiseBlock) {
 
   BlockStmt* block = new BlockStmt();
@@ -1236,24 +1236,24 @@ BlockStmt* buildMatchStmt(
 
   Expr* checkInsertPoint = activeIdx->defPoint;
   for (auto& caseStmt: caseStmts) {
-    const char* caseCond = std::get<0>(caseStmt);
-    VarSymbol* caseVar = std::get<1>(caseStmt);
-    BlockStmt* thenStmt = std::get<2>(caseStmt);
+    VarSymbol* caseVar = caseStmt.first;
+    BlockStmt* thenStmt = caseStmt.second;
 
-    checkInsertPoint->insertAfter(
-      new CallExpr("chpl_union_checkFieldName",
-                    new SymExpr(tmp), new_StringSymbol(caseCond)));
+    auto caseName = new_StringSymbol(caseVar->name);
+
+    checkInsertPoint->insertAfter(new CallExpr("chpl_union_checkFieldName",
+                                                new SymExpr(tmp),
+                                                new SymExpr(caseName)));
     checkInsertPoint = checkInsertPoint->next;
 
     Expr* condExpr = new CallExpr("==", new SymExpr(activeIdx),
       new CallExpr("chpl_union_getFieldIndex",
-                    new SymExpr(tmp), new_StringSymbol(caseCond)));
+                    new SymExpr(tmp), new SymExpr(caseName)));
     // add def to start of new block, then add thenStmt as subBlock
     // this allows local vars inside of the thenStmt to overwrite the caseVar
     caseVar->addFlags(tmpFlags);
-    auto def = new DefExpr(caseVar,
-                  new CallExpr("getFieldRef", gMethodToken,
-                                new SymExpr(tmp), new_StringSymbol(caseCond)));
+    auto def = new DefExpr(caseVar, new CallExpr("getFieldRef", gMethodToken,
+                                        new SymExpr(tmp), new SymExpr(caseName)));
     auto thenBlock = new BlockStmt(BLOCK_SCOPELESS);
     thenBlock->insertAtTail(def);
     thenStmt->blockTag = BLOCK_NORMAL;

@@ -649,14 +649,14 @@ struct Converter final : UastConverter {
     // rather than lowering to conditionals like this
     Expr* cond = toExpr(convertAST(node->expr()));
 
-    std::vector<std::tuple<const char*, VarSymbol*, BlockStmt*>> casePairs;
+    std::vector<std::pair<VarSymbol*, BlockStmt*>> casePairs;
     for (auto caseStmt: node->caseStmts()) {
       INT_ASSERT(caseStmt->expr()->isVariable()); // post-parse should guarantee this
       auto caseName = caseStmt->expr()->toVariable()->name().astr(context);
       auto var = new VarSymbol(caseName);
       noteConvertedSym(caseStmt->expr(), var);
       auto block = createBlockWithStmts(caseStmt->body()->stmts(), caseStmt->blockStyle());
-      casePairs.push_back(std::make_tuple(caseName, var, block));
+      casePairs.push_back(std::make_pair(var, block));
     }
     BlockStmt* otherwiseBlock = nullptr;
     if (node->otherwiseStmt()) {
