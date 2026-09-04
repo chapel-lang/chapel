@@ -151,8 +151,7 @@
   module present and once without it.
  */
 @unstable("The CommDiagnostics module is unstable and may change in the future")
-module CommDiagnostics
-{
+module CommDiagnostics {
   /*
     Print out stack traces for comm events printed after startVerboseComm
    */
@@ -253,32 +252,34 @@ module CommDiagnostics
      */
     var cache_put_misses: uint(64);
     /*
-      Number of prefetches issued to the remote cache at the granularity of cache pages.
-      This counter is specifically triggered via calls to chpl_comm_remote_prefetch
+      Number of prefetches issued to the remote cache at the granularity of
+      cache pages. This counter is specifically triggered via calls to
+      chpl_comm_remote_prefetch
     */
     var cache_num_prefetches : uint(64);
     /*
-      Number of readaheads issued to the remote cache at the granularity of cache pages.
+      Number of readaheads issued to the remote cache at the granularity of
+      cache pages.
     */
     var cache_num_page_readaheads : uint(64);
     /*
-      Number of cache pages that were prefetched but evicted from the cache before being accessed
-      (i.e., the prefetches were too early).
+      Number of cache pages that were prefetched but evicted from the cache
+      before being accessed (i.e., the prefetches were too early).
     */
     var cache_prefetch_unused : uint(64);
     /*
-      Number of cache pages that were prefetched but did not arrive in the cache before being accessed
-      (i.e., the prefetches were too late).
+      Number of cache pages that were prefetched but did not arrive in the
+      cache before being accessed (i.e., the prefetches were too late).
     */
     var cache_prefetch_waited : uint(64);
     /*
-      Number of cache pages that were read ahead but evicted from the cache before being accessed
-      (i.e., the readaheads were too early).
+      Number of cache pages that were read ahead but evicted from the cache
+      before being accessed (i.e., the readaheads were too early).
     */
     var cache_readahead_unused : uint(64);
     /*
-      Number of cache pages that were read ahead but did not arrive in the cache before being accessed
-      (i.e., the readaheads were too late).
+      Number of cache pages that were read ahead but did not arrive in the
+      cache before being accessed (i.e., the readaheads were too late).
     */
     var cache_readahead_waited : uint(64);
 
@@ -308,6 +309,7 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
+  use ChapelIOSerialize;
   commDiagnostics implements writeSerializable;
 
   pragma "insert line file info"
@@ -433,24 +435,52 @@ module CommDiagnostics
     return cd;
   }
 
+  // TODO: can we have a manager for comm diagnostics in general?
+  // see test/library/standard/CommDiagnostics/manager.chpl for an example
+  // putting this in CommDiagnostics causes resolution issues
+  // since this standard module is used by internal modules and the context
+  // manager interface aggressively resolves functions, so we end up with
+  // use-before-def on things like LocaleSpace and Locales.
+
 
   /*
-    Print the current communication counts in a markdown table using a
-    row per locale and a column per operation.  By default, operations
+    A context manager that turns on verbose communication reporting for
+    the duration of the context.  See :proc:`startVerboseComm` and
+    :proc:`stopVerboseComm` for more information.
+  */
+  record verboseCommManager: contextManager {
+    @chpldoc.nodoc
+    proc enterContext() {
+      startVerboseComm();
+    }
+    @chpldoc.nodoc
+    proc exitContext(in e: owned Error?) {
+      stopVerboseComm();
+    }
+  }
+
+
+  /*
+    Print the communication counts in a markdown table using a
+    row per locale and a column per operation. By default, operations
     for which all locales have a count of zero are not displayed in
     the table, though an argument can be used to reverse that
     behavior.
 
+    :arg diagnostics: The diagnostics to print. This should be an array of
+                      :type:`commDiagnostics`, where each element of the array
+                      corresponds to a locale. If not provided,
+                      the diagnostics returned by
+                      :proc:`getCommDiagnostics` will be printed.
+    :type diagnostics: `[] commDiagnostics`
+
     :arg printEmptyColumns: Indicates whether empty columns should be printed (defaults to ``false``)
     :type printEmptyColumns: `bool`
   */
-  proc printCommDiagnosticsTable(printEmptyColumns=false) {
+  proc printCommDiagnosticsTable(diagnostics=getCommDiagnostics(), printEmptyColumns=false) {
     use Reflection, Math;
 
     param unstable = "unstable";
-
-    // grab all comm diagnostics
-    var CommDiags = getCommDiagnostics();
 
     // cache number of fields and store vector of whether field is active
     param nFields = getNumFields(chpl_commDiagnostics);
@@ -473,7 +503,7 @@ module CommDiagnostics
 
       var maxval = 0;
       for locID in LocaleSpace do
-        maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
+        maxval = max(maxval, getField(diagnostics[locID], fieldID).safeCast(int));
 
       if printEmptyColumns || maxval != 0 {
         const width = if commDiagsPrintUnstable == false && name == "amo"
@@ -501,7 +531,7 @@ module CommDiagnostics
       for param fieldID in 0..<nFields {
         var width = fieldWidth[fieldID];
         const count = if width < 0 then unstable
-                                   else getField(CommDiags[locID],
+                                   else getField(diagnostics[locID],
                                                  fieldID):string;
         if width != 0 then
           writef("| %*s ", abs(width), count);
@@ -527,5 +557,4 @@ module CommDiagnostics
     :proc:`getCommDiagnostics` for more information.
    */
   config param printInitCommCounts = false;
-
 }
