@@ -22,12 +22,7 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
-#include "chpl/uast/AstNode.h"
-#include "chpl/uast/Block.h"
-#include "chpl/uast/Variable.h"
-#include "chpl/uast/Match.h"
-#include "chpl/uast/MatchCase.h"
-#include "chpl/uast/Module.h"
+#include "chpl/uast/all-uast.h"
 
 #include <iostream>
 
@@ -53,7 +48,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto match = mod->stmt(1)->toMatch();
 
-  assert(match->expr()->isVariable());
+  assert(match->expr()->isIdentifier());
   assert(match->numCaseStmts() == 3);
   assert(match->hasOtherwise());
 
