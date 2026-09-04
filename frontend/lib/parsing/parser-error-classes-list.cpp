@@ -343,11 +343,10 @@ void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUnsupportedMatchExpr::write(ErrorWriterBase& wr) const {
-  auto when = std::get<0>(info_);
-  auto expr = std::get<1>(info_);
-  wr.heading(kind_, type_, expr, "unsupported expression in 'union select' statement.");
+  auto loc = std::get<0>(info_);
+  wr.heading(kind_, type_, loc, "unsupported expression in 'union select' statement.");
   wr.message("In the following 'when' statement:");
-  wr.code(when);
+  wr.code(loc);
   wr.message("Chapel currently only supports plain identifiers as expressions in 'when' statements.");
 }
 

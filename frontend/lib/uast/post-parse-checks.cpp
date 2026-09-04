@@ -2157,15 +2157,15 @@ void Visitor::visit(const Match* node) {
   std::unordered_map<UniqueString, const AstNode*> seenCaseExprs;
   for (auto caseStmt : node->caseStmts()) {
     if (auto expr = caseStmt->expr()) {
-      if (!expr->isIdentifier()) {
-        CHPL_REPORT(context_, UnsupportedMatchExpr, caseStmt, expr);
+      if (expr->isErroneousExpression()) continue;
+      // as written today, the parser ensures this
+      auto exprVar = expr->toVariable();
+      CHPL_ASSERT(exprVar);
+      if (auto it = seenCaseExprs.find(exprVar->name());
+          it != seenCaseExprs.end()) {
+        CHPL_REPORT(context_, DuplicateMatchExpr, caseStmt, expr, it->second);
       } else {
-        if (auto it = seenCaseExprs.find(expr->toIdentifier()->name());
-            it != seenCaseExprs.end()) {
-          CHPL_REPORT(context_, DuplicateMatchExpr, caseStmt, expr, it->second);
-        } else {
-          seenCaseExprs.insert({expr->toIdentifier()->name(), caseStmt});
-        }
+        seenCaseExprs.insert({exprVar->name(), caseStmt});
       }
     }
   }

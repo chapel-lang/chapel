@@ -2183,7 +2183,7 @@ match_case_stmt_ls:
 match_case_stmt:
   TWHEN expr do_stmt
   {
-    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), toOwned($2), $3);
+    $$ = context->buildMatchCaseStmt(@$, YLOC2(@1, @2), @2, $2, $3);
   }
 ;
 
@@ -2191,12 +2191,12 @@ match_otherwise_stmt:
 TOTHERWISE stmt
   {
     BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
-    $$ = context->buildMatchCaseStmt(@$, @1, nullptr, blockOrDo);
+    $$ = context->buildMatchCaseStmt(@$, @1, @1, nullptr, blockOrDo);
   }
 | TOTHERWISE no_loop_attributes TDO stmt
   {
     BlockOrDo blockOrDo = { .cs=$4, .usesDo=true };
-    $$ = context->buildMatchCaseStmt(@$, @1, nullptr, blockOrDo);
+    $$ = context->buildMatchCaseStmt(@$, @1, @1, nullptr, blockOrDo);
     context->popLoopAttributeGroup();
   }
 ;

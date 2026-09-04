@@ -8048,7 +8048,7 @@ yyreduce:
   case 305: /* match_case_stmt: TWHEN expr do_stmt  */
 #line 2185 "chpl.ypp"
   {
-    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), context->makeSpannedLocation((yylsp[-2]), (yylsp[-1])), toOwned((yyvsp[-1].expr)), (yyvsp[0].blockOrDo));
+    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), YLOC2((yylsp[-2]), (yylsp[-1])), (yylsp[-1]), (yyvsp[-1].expr), (yyvsp[0].blockOrDo));
   }
 #line 8054 "bison-chpl-lib.cpp"
     break;
@@ -8057,7 +8057,7 @@ yyreduce:
 #line 2192 "chpl.ypp"
   {
     BlockOrDo blockOrDo = { .cs=(yyvsp[0].commentsAndStmt), .usesDo=false };
-    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), (yylsp[-1]), nullptr, blockOrDo);
+    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), (yylsp[-1]), (yylsp[-1]), nullptr, blockOrDo);
   }
 #line 8063 "bison-chpl-lib.cpp"
     break;
@@ -8066,7 +8066,7 @@ yyreduce:
 #line 2197 "chpl.ypp"
   {
     BlockOrDo blockOrDo = { .cs=(yyvsp[0].commentsAndStmt), .usesDo=true };
-    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), (yylsp[-3]), nullptr, blockOrDo);
+    (yyval.commentsAndStmt) = context->buildMatchCaseStmt((yyloc), (yylsp[-3]), (yylsp[-3]), nullptr, blockOrDo);
     context->popLoopAttributeGroup();
   }
 #line 8073 "bison-chpl-lib.cpp"

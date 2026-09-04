@@ -150,7 +150,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildMatchStmt(
   Expr* cond,
-  const std::vector<std::pair<const char*, BlockStmt*>>& casestmts,
+  const std::vector<std::pair<VarSymbol*, BlockStmt*>>& casestmts,
   BlockStmt* otherwise);
 
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
