@@ -24,7 +24,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Block.h"
-#include "chpl/uast/Identifier.h"
+#include "chpl/uast/Variable.h"
 #include "chpl/uast/Match.h"
 #include "chpl/uast/MatchCase.h"
 #include "chpl/uast/Module.h"
@@ -53,7 +53,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto match = mod->stmt(1)->toMatch();
 
-  assert(match->expr()->isIdentifier());
+  assert(match->expr()->isVariable());
   assert(match->numCaseStmts() == 3);
   assert(match->hasOtherwise());
 
@@ -78,7 +78,7 @@ static void test0(Parser* parser) {
 
   for (int i = 0; i < match->numCaseStmts(); i++) {
     auto caseStmt = match->caseStmt(i);
-    assert(caseStmt->expr()->isIdentifier());
+    assert(caseStmt->expr()->isVariable());
 
     auto bs = caseStmt->blockStyle();
     if (i == 0) assert(bs == BlockStyle::IMPLICIT);
