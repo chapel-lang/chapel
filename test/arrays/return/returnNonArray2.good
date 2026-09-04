@@ -1,0 +1,2 @@
+returnNonArray2.chpl:1: In function 'doit':
+returnNonArray2.chpl:2: error: expected an array or iterator but got a value of type int(64)

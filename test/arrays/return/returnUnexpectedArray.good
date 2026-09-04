@@ -1,0 +1,2 @@
+returnUnexpectedArray.chpl:1: In function 'doit':
+returnUnexpectedArray.chpl:3: error: cannot initialize return value of type '2*int(64)' from a '([domain(1,int(64),one)] int(64),int(64))'

@@ -351,6 +351,12 @@ module ChapelDomain {
     }
   }
 
+  pragma "last resort"
+  proc chpl__checkDomainsMatch(a, b) {
+    compilerError("expected an array or iterator but got a value of type ",
+                  a.type:string);
+  }
+
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
     for param i in 0..dom.rank-1 do
