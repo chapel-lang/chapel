@@ -2157,14 +2157,14 @@ void Visitor::visit(const Match* node) {
   std::unordered_map<UniqueString, const AstNode*> seenCaseExprs;
   for (auto caseStmt : node->caseStmts()) {
     if (auto expr = caseStmt->expr()) {
-      if (!expr->isIdentifier()) {
+      if (!expr->isVariable()) {
         CHPL_REPORT(context_, UnsupportedMatchExpr, caseStmt, expr);
       } else {
-        if (auto it = seenCaseExprs.find(expr->toIdentifier()->name());
+        if (auto it = seenCaseExprs.find(expr->toVariable()->name());
             it != seenCaseExprs.end()) {
           CHPL_REPORT(context_, DuplicateMatchExpr, caseStmt, expr, it->second);
         } else {
-          seenCaseExprs.insert({expr->toIdentifier()->name(), caseStmt});
+          seenCaseExprs.insert({expr->toVariable()->name(), caseStmt});
         }
       }
     }

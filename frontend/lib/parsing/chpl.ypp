@@ -2181,9 +2181,20 @@ match_case_stmt_ls:
 ;
 
 match_case_stmt:
-  TWHEN expr do_stmt
+  TWHEN ident_def do_stmt
   {
-    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), toOwned($2), $3);
+    auto varDecl = Variable::build(BUILDER, LOC2(@1, @2), LOC(@2),
+                                   /*attributeGroup*/ nullptr,
+                                   Decl::DEFAULT_VISIBILITY,
+                                   Decl::DEFAULT_LINKAGE,
+                                   /*linkageName*/ nullptr,
+                                   /*name*/ $2,
+                                   Variable::REF,
+                                   /*isConfig*/ false,
+                                   context->currentScopeIsAggregate(),
+                                   /*typeExpression*/ nullptr,
+                                   /*initExpression*/ nullptr);
+    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), std::move(varDecl), $3);
   }
 ;
 
