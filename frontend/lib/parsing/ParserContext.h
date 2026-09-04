@@ -745,7 +745,8 @@ struct ParserContext {
                                 BlockOrDo blockOrDo);
   CommentsAndStmt buildMatchCaseStmt(YYLTYPE location,
                                      YYLTYPE headerLocation,
-                                     owned<AstNode> caseExpr,
+                                     YYLTYPE exprLoc,
+                                     AstNode* caseExpr,
                                      BlockOrDo blockOrDo);
 
 

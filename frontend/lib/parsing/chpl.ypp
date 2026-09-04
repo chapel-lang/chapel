@@ -2183,26 +2183,7 @@ match_case_stmt_ls:
 match_case_stmt:
   TWHEN expr do_stmt
   {
-    owned<AstNode> expr;
-    auto ident = $2->toIdentifier();
-    if (!ident) {
-      CHPL_PARSER_REPORT(context, UnsupportedMatchExpr, @2);
-      expr = ErroneousExpression::build(BUILDER, LOC(@2));
-    } else {
-      expr = Variable::build(BUILDER, LOC2(@1, @2), LOC(@2),
-                              /*attributeGroup*/ nullptr,
-                              Decl::DEFAULT_VISIBILITY,
-                              Decl::DEFAULT_LINKAGE,
-                              /*linkageName*/ nullptr,
-                              /*name*/ ident->name(),
-                              Variable::REF,
-                              /*isConfig*/ false,
-                              context->currentScopeIsAggregate(),
-                              /*typeExpression*/ nullptr,
-                              /*initExpression*/ nullptr);
-      delete ident;
-    }
-    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), std::move(expr), $3);
+    $$ = context->buildMatchCaseStmt(@$, YLOC2(@1, @2), @2, $2, $3);
   }
 ;
 
@@ -2210,12 +2191,12 @@ match_otherwise_stmt:
 TOTHERWISE stmt
   {
     BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
-    $$ = context->buildMatchCaseStmt(@$, @1, nullptr, blockOrDo);
+    $$ = context->buildMatchCaseStmt(@$, @1, @1, nullptr, blockOrDo);
   }
 | TOTHERWISE no_loop_attributes TDO stmt
   {
     BlockOrDo blockOrDo = { .cs=$4, .usesDo=true };
-    $$ = context->buildMatchCaseStmt(@$, @1, nullptr, blockOrDo);
+    $$ = context->buildMatchCaseStmt(@$, @1, @1, nullptr, blockOrDo);
     context->popLoopAttributeGroup();
   }
 ;
