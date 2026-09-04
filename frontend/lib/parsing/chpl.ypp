@@ -2181,20 +2181,28 @@ match_case_stmt_ls:
 ;
 
 match_case_stmt:
-  TWHEN ident_def do_stmt
+  TWHEN expr do_stmt
   {
-    auto varDecl = Variable::build(BUILDER, LOC2(@1, @2), LOC(@2),
-                                   /*attributeGroup*/ nullptr,
-                                   Decl::DEFAULT_VISIBILITY,
-                                   Decl::DEFAULT_LINKAGE,
-                                   /*linkageName*/ nullptr,
-                                   /*name*/ $2,
-                                   Variable::REF,
-                                   /*isConfig*/ false,
-                                   context->currentScopeIsAggregate(),
-                                   /*typeExpression*/ nullptr,
-                                   /*initExpression*/ nullptr);
-    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), std::move(varDecl), $3);
+    owned<AstNode> expr;
+    auto ident = $2->toIdentifier();
+    if (!ident) {
+      CHPL_PARSER_REPORT(context, UnsupportedMatchExpr, @2);
+      expr = ErroneousExpression::build(BUILDER, LOC(@2));
+    } else {
+      expr = Variable::build(BUILDER, LOC2(@1, @2), LOC(@2),
+                              /*attributeGroup*/ nullptr,
+                              Decl::DEFAULT_VISIBILITY,
+                              Decl::DEFAULT_LINKAGE,
+                              /*linkageName*/ nullptr,
+                              /*name*/ ident->name(),
+                              Variable::REF,
+                              /*isConfig*/ false,
+                              context->currentScopeIsAggregate(),
+                              /*typeExpression*/ nullptr,
+                              /*initExpression*/ nullptr);
+      delete ident;
+    }
+    $$ = context->buildMatchCaseStmt(@$, context->makeSpannedLocation(@1, @2), std::move(expr), $3);
   }
 ;
 
