@@ -20,6 +20,10 @@ jobs:
     uses: $/.github/workflows/core-ci-checks.yml
 
   extended-checks:
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     uses: $/.github/workflows/extended-ci-checks.yml
 
   full-checks:
