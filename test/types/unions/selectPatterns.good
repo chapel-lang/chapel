@@ -2,6 +2,7 @@
 caught error: union is not currently active
 caught error: union is not currently active
 caught error: union is not currently active
+caught error: union is not currently active
 test getActiveIndex
 0
 1
@@ -28,6 +29,11 @@ y: 3.14
 z: hello
 w: 20
 test super fancy select
+x: 10
+y: 3.14
+z: hello
+w: 20
+test match
 x: 10
 y: 3.14
 z: hello

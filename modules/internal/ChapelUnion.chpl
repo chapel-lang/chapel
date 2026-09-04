@@ -216,9 +216,6 @@ module ChapelUnion {
   }
 
   @chpldoc.nodoc
-  proc _select_test(x: union) do return x.getActiveIndex();
-
-  @chpldoc.nodoc
   operator ==(u1: union, u2: union) {
     if u1.type != u2.type then
       compilerError("Cannot compare unions of type ", u1.type:string, " and ",
