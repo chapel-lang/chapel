@@ -253,3 +253,4 @@ jobs:
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
         brew install llvm@22
+        brew link llvm@22

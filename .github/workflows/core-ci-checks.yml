@@ -442,6 +442,7 @@ jobs:
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm@22
+            brew link llvm@22
           else
             sudo apt install \
               clang \
