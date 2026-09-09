@@ -25,6 +25,9 @@ jobs:
       packages: read
       actions: write
     uses: $/.github/workflows/extended-ci-checks.yml
+    secrets:
+      DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+      DOCKERHUB_PAT: ${{ secrets.DOCKERHUB_PAT }}
 
   full-checks:
     permissions:
@@ -69,7 +72,7 @@ jobs:
 
             message=$(jq -r '.commit.message' commit.json | head -n 1)
             num_jobs=$(jq 'length' jobs_array.json)
-            readarray -t failed_job_ids < <(jq '.[] | select(.id != "${{ github.job }}" and (.status != "completed" or (.conclusion != "success" and .conclusion != "skipped"))) | .id' jobs_array.json)
+            readarray -t failed_job_ids < <(jq '.[] | select(.name != "${{ github.job }}" and (.status != "completed" or (.conclusion != "success" and .conclusion != "skipped"))) | .id' jobs_array.json)
 
             failed_jobs_text=""
             echo "failed jobs:"
