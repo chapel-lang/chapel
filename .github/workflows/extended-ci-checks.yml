@@ -267,6 +267,7 @@ jobs:
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
+            brew update
             ./util/cron/test-homebrew.bash
           else
             ./util/cron/test-homebrew-linux.bash
