@@ -11,6 +11,7 @@ permissions:
 env:
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 5
+  BREW_LLVM_FORMULA: "llvm@22"
 
 defaults:
   run:
@@ -441,8 +442,8 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
-            brew install llvm@22
-            brew link llvm@22
+            brew install "$BREW_LLVM_FORMULA"
+            brew link "$BREW_LLVM_FORMULA"
           else
             sudo apt install \
               clang \

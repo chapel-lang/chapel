@@ -12,6 +12,7 @@ permissions:
 env:
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 5
+  BREW_LLVM_FORMULA: "llvm@22"
 
 defaults:
   run:
@@ -252,5 +253,5 @@ jobs:
       use-container: false
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
-        brew install llvm@22
-        brew link llvm@22
+        brew install "$BREW_LLVM_FORMULA"
+        brew link "$BREW_LLVM_FORMULA"
