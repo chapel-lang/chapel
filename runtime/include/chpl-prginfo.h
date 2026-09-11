@@ -165,7 +165,8 @@ typedef uint64_t chpl_rt_prg_id;
 /** Retrieve a program's info on the current locale given an ID. */
 #define CHPL_RT_PRGINFO_FETCH(id__) (chpl_rt_prginfo_from_id_here(id__))
 
-/** Materialize the value of a program data entry. */
+/** Materialize the value of a program data entry. This macro is guaranteed
+    to materialize a field that you can take the address of if need be. */
 #if !defined(CHPL_RT_DEBUG_PRGINFO_ACCESS) || \
              CHPL_RT_DEBUG_PRGINFO_ACCESS <= 0
   #define CHPL_RT_PRGINFO_DATA(prg__, data_name__) (prg__->data.data_name__)

@@ -23,7 +23,7 @@ def dedup(args):
 # Returns the runtime includes and defines according
 # to the current configuration, for a target (not host) compile.
 # Returns tuple of (bundled_args, system_args)
-def get_runtime_includes_and_defines():
+def get_runtime_includes_and_defines(runtime_subdir):
     bundled = []
     system = []
 
@@ -46,6 +46,7 @@ def get_runtime_includes_and_defines():
     bundled.append("-I" + os.path.join(incl, "atomics", atomics))
     bundled.append("-I" + os.path.join(incl, "mem", mem))
     bundled.append("-I" + os.path.join(third_party, "utf8-decoder"))
+    bundled.append("-I" + os.path.join(incl, "gen", runtime_subdir))
 
     if platform.startswith("cygwin"):
         # w32api is provided by cygwin32-w32api-runtime
@@ -190,7 +191,7 @@ def compute_internal_compile_link_args(runtime_subdir):
     skip_host = os.environ.get("CHPLENV_SKIP_HOST", None)
 
     # add runtime includes and defines
-    extend2(tgt_compile, get_runtime_includes_and_defines())
+    extend2(tgt_compile, get_runtime_includes_and_defines(runtime_subdir))
     extend2(tgt_runtime_link, get_runtime_link_args(runtime_subdir))
 
     # For the program, add visibility into runtime lib folder for linker.

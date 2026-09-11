@@ -282,6 +282,7 @@ module ChapelDynamicLoading {
       }
     }
 
+    // TODO: Make this throw.
     // Try to eagerly load a binary on all locales when given a path.
     proc type _tryToLoadEagerly(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
@@ -390,8 +391,8 @@ module ChapelDynamicLoading {
       return if p != nil && err == nil then p() else nil;
     }
 
-    proc _initializeLoadedModules(out err: owned DynLoadError?): void {
-      var errGuard: chpl_lockGuard(err.type);
+    proc _tryInitializeLoadedModules() throws {
+      var errGuard: chpl_lockGuard(owned DynLoadError?);
       var origin = here;
 
       coforall loc in Locales do on loc {
@@ -414,7 +415,7 @@ module ChapelDynamicLoading {
 
       // Propagate the error if one exists (write to consume the 'owned').
       ref e = errGuard.unsafeAccess();
-      if e != nil then err = e;
+      if e != nil then throw e;
     }
 
     // TODO: If I don't type 'id', its type is inferred as int64 vs uint64?
@@ -428,20 +429,98 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    // TODO: Propagate warnings out as errors instead.
-    proc _inspectAndPrepareIfCompatibleChapelBinary(): binaryKind {
+    inline proc _localLookupProgramBuildConstant(infoPtr, name: string) {
+      var err;
+      param procName = 'chpl_lookupProgramBuildConstant';
+      type procType = proc(name: c_ptrConst(c_char)): c_ptrConst(c_char);
+      const p = this.loadSymbolLocally(procName, procType, err);
+
+      var ret: (bool, string);
+
+      if p != nil && err == nil {
+        const ptrPrgVal = p(name.c_str());
+        if ptrPrgVal != nil {
+          const prgValStr = try! string.createBorrowingBuffer(ptrPrgVal);
+          ret = (true, prgValStr);
+        }
+      }
+
+      return ret;
+    }
+
+    proc _tryMatchRuntimeBuildConstant(infoPtr, k: string, v: string) throws {
+      assert(!k.isEmpty() && !v.isEmpty());
+
+      const (haveVal, val) = _localLookupProgramBuildConstant(infoPtr, k);
+
+      if haveVal && val == v then return;
+
+      var msg: string = 'Cannot load Chapel library because ';
+
+      if haveVal {
+        msg += 'of a build constant mismatch: ' + k + '=\'' + val +
+               '\' versus a runtime value of \'' + v + '\'';
+      } else {
+        msg += 'it does not define the constant: ' + k;
+      }
+
+      throw new DynLoadError(msg);
+    }
+
+    iter _runtimeBuildConstants(): (string, string) {
+      extern proc chpl_rt_num_build_constants(): c_int;
+      extern 'chpl_rt_build_constant_by_idx'
+      proc get(idx: c_int, val: c_ptr(c_ptrConst(c_char))): c_ptrConst(c_char);
+
+      const end = chpl_rt_num_build_constants();
+      for i in 0..<end {
+        var valPtr: c_ptrConst(c_char);
+        const namePtr = get(i, c_ptrTo(valPtr));
+        var k = try! string.createBorrowingBuffer(namePtr);
+        var v = try! string.createBorrowingBuffer(valPtr);
+        yield (k, v);
+      }
+    }
+
+    inline proc _tryCheckIsProgramCompatibleWithRuntime(infoPtr) throws {
+      var err: owned DynLoadError?;
+      var failed = false;
+
+      for (k, v) in _runtimeBuildConstants() {
+        try {
+          _tryMatchRuntimeBuildConstant(infoPtr, k, v);
+        } catch e : DynLoadError {
+          // TODO: Right now all but the last error is dropped (thus the calls
+          //       to 'warning'. How can we collect all of them together?
+          warning(e.message());
+          failed = true;
+        }
+      }
+
+      if failed then {
+        const msg = 'Failed to load Chapel library because one or more ' +
+                    'build constants did not match runtime values';
+        throw new DynLoadError(msg);
+      }
+    }
+
+    // TODO: Check for 'CHPL_CACHE_REMOTE'.
+    inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
+    }
+
+    // Determines if this is a Chapel program or not and sets the '_kind'
+    // of this program appropriately. Throws an error if this is a Chapel
+    // program that is malformed or incompatible.
+    proc _tryDetermineBinaryKindAndPrepareIfNeeded() throws {
       use ChapelProgramRegistration;
 
       const info = _localPrepareProgramInfo();
-      if info == nil then return binaryKind.FOREIGN;
 
-      //
-      // TODO: Confirm that the info is compatible with us. This can be
-      //       generated based on which fields are ABI-sensitive.
-      // TODO: Also, we need to make sure that it's compatible with the
-      //       runtime. To do that, we will need to store the runtime's
-      //       build configuration separately from the program.
-      //
+      // If no program information was found, this is not a Chapel program.
+      if info == nil then return;
+
+      // Otherwise, we have a Chapel program, so set the kind appropriately.
+      _kind = binaryKind.CHAPEL;
 
       // The runtime records if it was compiled as a dynamic library or not,
       // so check that. If it was not, currently we cannot possibly load this
@@ -451,10 +530,13 @@ module ChapelDynamicLoading {
       // to emit some symbol resolution errors for runtime symbols right off
       // the bat (e.g., for 'chpl_std_module_init').
       if !isRuntimeCompiledAsDynamicLibrary {
-        warning('Will not attempt to \'' + _path + '\' as a Chapel binary ' +
-                'because the runtime is not compiled as a dynamic library');
-        return binaryKind.FOREIGN;
+        const msg = 'Cannot load \'' + _path + '\' as a Chapel program ' +
+                    'because the runtime is not a dynamic library';
+        throw new DynLoadError(msg);
       }
+
+      _tryCheckIsProgramCompatibleWithRuntime(info);
+      _tryCheckIsProgramCompatibleWithRoot(info);
 
       var idBuf = new chpl_localBuffer(chpl_rt_prg_id, numLocales);
 
@@ -464,11 +546,11 @@ module ChapelDynamicLoading {
 
       if newPrgId == chpl_programInfo.nullId ||
          newPrgId == chpl_programInfo.rootId {
-        // TODO: Unbind.
-        warning('Failed to set Chapel program ID on locale ' +
-                here.id:string + ' for program loaded at \'' +
-                _path + '\'');
-        return binaryKind.FOREIGN;
+        // TODO: Unbind?
+        const msg = 'Failed to set Chapel program ID on locale ' +
+                    here.id:string + ' for program loaded at \'' +
+                    _path + '\'';
+        throw new DynLoadError(msg);
       }
 
       // Bind the ID of this program on all locales.
@@ -487,32 +569,32 @@ module ChapelDynamicLoading {
 
         const id = idBuf[i];
         if id != newPrgId {
-          // TODO: Unbind.
-          warning('Failed to set Chapel program ID on locale ' +
-                  here.id:string + ' ' + 'for program loaded at \'' +
-                  _path + '\'');
-          return binaryKind.FOREIGN;
+          // TODO: Unbind?
+          const msg = 'Failed to set Chapel program ID on locale ' +
+                      here.id:string + ' ' + 'for program loaded at \'' +
+                      _path + '\'';
+          throw new DynLoadError(msg);
         }
       }
 
       // Set up the module code.
-      var err;
-      _initializeLoadedModules(err);
-
-      // TODO: Propagate me back out.
-      if err != nil then halt(err!.message());
-
-      return binaryKind.CHAPEL;
+      _tryInitializeLoadedModules();
     }
 
     // Load a binary given a path.
     proc type create(path: string, out err: owned DynLoadError?) {
       var ret = _tryToLoadEagerly(path, err);
 
-      if ret == nil || err != nil then return ret;
+      if ret == nil || err != nil then return nil;
 
       // Otherwise, we can inspect things about the loaded binary.
-      ret!._kind = ret!._inspectAndPrepareIfCompatibleChapelBinary();
+      try {
+        ret!._tryDetermineBinaryKindAndPrepareIfNeeded();
+      } catch e : DynLoadError {
+        err = e;
+      } catch e {
+        halt('An unexpected error occurred when loading: \'' + path + '\'');
+      }
 
       return ret;
     }

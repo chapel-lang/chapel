@@ -21,9 +21,6 @@
 module ChapelProgramRegistration {
   use ChapelBase, CTypes;
 
-  // This is a header defined in the runtime.
-  require "chpl-prginfo.h";
-
   // The type of a program ID - this is defined in the runtime header.
   extern type chpl_rt_prg_id = uint(64);
 

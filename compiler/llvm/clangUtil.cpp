@@ -1709,11 +1709,32 @@ void setupClang(GenInfo* info, std::string mainFile)
   // chpl - always compile rt file
   clangInfo->driverArgs.push_back(mainFile.c_str());
 
+  std::string runtimeIncludeGenPath;
+  const auto& args = clangInfo->driverArgs;
+
   if( printSystemCommands && developer ) {
-    for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
-      printf("%s ", clangInfo->driverArgs[i].c_str());
+    for( size_t i = 0; i < args.size(); i++ ) {
+      if (args[i].find("runtime/include/gen") != std::string::npos) {
+        runtimeIncludeGenPath = args[i];
+        assert(runtimeIncludeGenPath[0] == '-');
+        assert(runtimeIncludeGenPath[1] == 'I');
+        runtimeIncludeGenPath.erase(0, 2);
+      }
+      printf("%s ", args[i].c_str());
     }
     printf("\n");
+  }
+
+  if (!runtimeIncludeGenPath.empty()) {
+    const bool targetExists = llvm::sys::fs::exists(runtimeIncludeGenPath);
+
+    if (targetExists) {
+      printf("\nPATH EXISTS: %s\n", runtimeIncludeGenPath.c_str());
+    } else {
+      printf("\nPATH DOES NOT EXIST: %s\n", runtimeIncludeGenPath.c_str());
+    }
+  } else {
+    printf("\nDID NOT FIND -I PATH!\n");
   }
 
   // Initialize LLVM targets so that the clang commands can know if the
@@ -2953,6 +2974,7 @@ static void helpComputeClangArgs(std::string& clangCC,
 
     // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
     splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
+
     // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
     expandInstallationPaths(args);
 
