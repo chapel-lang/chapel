@@ -42,9 +42,14 @@ Updates to Chapel's Release Formats
 
 Syntactic / Naming Changes
 --------------------------
+* renamed the repo that supports GitHub Codespaces to `chapel-codespaces`  
+  (see https://github.com/chapel-lang/chapel-codespaces  
+   and https://chapel-lang.org/tryit/)
 
 New Language Features
 ---------------------
+* added compiler-generated single-field initializers for unions  
+  (see https://chapel-lang.org/docs/2.10/language/spec/unions.html#compiler-generated-initializers)
 
 Language Feature Improvements
 -----------------------------
@@ -120,6 +125,8 @@ Improvements to Compile Times
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error for using `super.init()` in a `union` initializer
+* added an error when trying to allocate a memory-managed `union` value
 
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
@@ -180,6 +187,10 @@ Deprecated / Unstable / Removed Library Features
 
 Bug Fixes
 ---------
+* fixed a bug in which user-defined `init=` methods on unions weren't called
+* fixed a bug in which user-defined `union` initializers led to memory faults
+* fixed a bug in which errors weren't generated for multi-decl `union` fields
+* fixed a bug in which `postinit()` wasn't always being called on unions
 
 Bug Fixes for Libraries
 -----------------------
@@ -192,6 +203,11 @@ Bug Fixes for Mason
 
 Bug Fixes for Other Tools
 -------------------------
+
+Bug Fixes for Documentation
+---------------------------
+* fixed an issue in which `lcm()` hadn't been listed as an edition change  
+  (see https://chapel-lang.org/docs/2.10/technotes/editions.html#changes-in-the-preview-edition)
 
 Bug Fixes for Release Formats
 -----------------------------
@@ -225,6 +241,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* updated the compiler to treat unions with `postinit()` as being non-POD
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
@@ -240,6 +257,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* improved error messages for failed compilations without `.good` files
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
