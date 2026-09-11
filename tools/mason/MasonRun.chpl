@@ -21,15 +21,21 @@
 /**/
 module MasonRun {
 
+import Package;
+import BuildInfo;
+import BuildInfo.MasonPackage;
+import Compilation;
+import Execution;
+
 use ArgumentParser;
-use FileSystem;
 use List;
-use MasonBuild;
-use MasonExample;
+
+import MasonExample;
 use MasonHelp;
-use MasonUtils;
+import MasonEnv;
+import MasonUtils;
+import MasonUtils.{MasonError};
 import MasonLogger;
-use TOML;
 
 private var log = MasonLogger.getLogger("mason run");
 
@@ -57,10 +63,26 @@ proc masonRun(args: [] string) throws {
 
   parser.parseArgs(args);
 
-  const projectType = getProjectType();
-  if !exampleOpts._present && projectType != "application" then
+  const show = showFlag.valueAsBool();
+  const release = releaseFlag.valueAsBool();
+  const force = forceFlag.hasValue() && forceFlag.valueAsBool();
+  const build = buildFlag.valueAsBool();
+  const execopts = new list(passArgs.values());
+  const example = exampleOpts._present; // --example provided w/wo a value
+  var skipUpdate = MasonEnv.MASON_OFFLINE;
+  if updateFlag.hasValue() {
+    if updateFlag.valueAsBool() then skipUpdate = false;
+    else skipUpdate = true;
+  }
+
+  var package = Package.getMasonPackage(skipUpdate, show=show, force=force);
+  if package.pkgType == Package.packageType.light then
+    throw new MasonError("Mason light projects do not " +
+                         "currently support 'mason run'");
+  if !example && package.pkgType != Package.packageType.application then
     throw new MasonError(
-      "Only mason applications can be run, but this is a Mason " + projectType);
+      "Only mason applications can be run, but this is a Mason " +
+      package.pkgType:string);
 
   // don't specify build flags unless we are actually building
   if !buildFlag.valueAsBool() {
@@ -71,131 +93,43 @@ proc masonRun(args: [] string) throws {
       throw new MasonError("The --[no]-update flag is only valid " +
                            "when used with --build");
   }
+  var options = new BuildInfo.buildOptions(releaseMode=release);
 
-  var show = showFlag.valueAsBool();
-  var release = releaseFlag.valueAsBool();
-  var execopts = new list(passArgs.values());
-
-
-  if exampleOpts._present &&
-    (!exampleOpts.hasValue() || exampleOpts.value().startsWith("-")) {
-    // when mason run --example called
-    printAvailableExamples();
-  } else if exampleOpts._present || buildFlag.valueAsBool() {
-    // --example with value or build flag
-    masonBuildRun(args);
-  } else {
-    runProjectBinary(show, release, execopts, nLocales=1);
-  }
-}
-
-proc runProjectBinary(show: bool, release: bool,
-                      execopts: list(string), nLocales: int) throws {
-
-  const cwd = here.cwd();
-  const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-  const tomlFile = parseToml(toParse);
-  const project = tomlFile["brick.name"]!.s;
-
-  // Find the Binary and execute
-  if isDir(joinPath(projectHome, "target")) {
-    var execs = " ".join(execopts.these());
-
-    // decide which binary(release or debug) to run
-    var command: list(string);
-    const subdir = if release then "release" else "debug";
-    const executable: string = joinPath(projectHome, "target", subdir, project);
-    command.pushBack(executable);
-    command.pushBack("-nl" + nLocales:string);
-    command.pushBack(execopts);
-
-
-    var built = false;
-    if isFile(executable) then built = true;
-
-    if show then
-      writef("Executing [%s] target: %s\n",
-            if release then "release" else "debug",
-            " ".join(command.these()));
-
-    // Build if not built, throwing error if Mason.toml doesnt exist
-    if isFile(joinPath(projectHome, "Mason.lock")) && built {
-      // TODO: do we need to expose the error code in some way?
-      const runResult = runWithStatus(command.toArray(), capture=false);
-    } else if isFile(joinPath(projectHome, "Mason.toml")) {
-      const msg = "Mason could not find your Mason.lock.\n";
-      const help = "To build and run your project use: mason run --build";
-      throw new MasonError(msg + help);
-    } else {
-      throw new MasonError("Mason could not find your Mason.toml file");
-    }
-
-    // Close memory
-    toParse.close();
-  } else {
-    throw new owned MasonError("Mason could not find the compiled program");
-  }
-}
-
-
-// FIXME: this function reparses args to then pass calls to `masonBuild`. Why!?
-// We should just restructure `masonBuild` so that it can be callable directly
-// since we already parsed the args
-/* Builds program before running. */
-private proc masonBuildRun(args: [] string) throws {
-
-  var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
-
-  var showFlag = parser.addFlag(name="show", defaultValue=false);
-  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
-  var buildFlag = parser.addFlag(name="build", defaultValue=false);
-
-  // not actually flags for Run, but rather for build
-  var forceFlag = parser.addFlag(name="force", defaultValue=false);
-  var updateFlag = parser.addFlag(name="update", flagInversion=true);
-
-  var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..);
-
-  var passArgs = parser.addPassThrough();
-
-  parser.parseArgs(args);
-
-  var example = false;
-  var show = showFlag.valueAsBool();
-  var release = releaseFlag.valueAsBool();
-  var force = forceFlag.valueAsBool();
-  var exec = false;
-  var buildExample = buildFlag.valueAsBool();
-  var skipUpdate = MASON_OFFLINE;
-  var execopts: list(string);
-
-  if exampleOpts._present then example = true;
-
-  if updateFlag.hasValue() {
-    if updateFlag.valueAsBool() then skipUpdate = false;
-    else skipUpdate = true;
-  }
+  log.debug("Is example? ", example);
 
   if example {
-    var examples = new list(exampleOpts.values());
-    var extraExecopts = new list(passArgs.values());
-    runExamples(show=show, run=true, build=buildExample, release=release,
-                skipUpdate=skipUpdate, force=force,
-                examplesRequested=examples,
-                extraExecopts=extraExecopts, nLocales=1);
+    if !exampleOpts.hasValue() || exampleOpts.value().startsWith("-") {
+      MasonExample.printAvailableExamples(package);
+      return;
+    }
+    const exampleNames = new list(exampleOpts.values());
+    if build {
+      log.debug("Building example before running");
+      Compilation.buildExamples(package, exampleNames, options,
+                                force=force);
+    }
+    for exName in exampleNames {
+      var idx = package.examples.find(exName);
+      if idx == -1 then
+        throw new MasonError("Mason could not find example: " + exName);
+      var example = package.examples[idx];
+      const info = Execution.runInfo.forExample(package, example, execopts);
+      info.run(package.name, show=show,
+                showStr="Executing [%s] target: ".format(if release
+                                                          then "release"
+                                                          else "debug"),
+                rebuildName="mason build --example " + example.name:string);
+    }
   } else {
-    var buildArgs: list(string);
-    buildArgs.pushBack("build");
-    if skipUpdate then buildArgs.pushBack("--no-update");
-                  else buildArgs.pushBack("--update");
-    if release then buildArgs.pushBack("--release");
-    if force then buildArgs.pushBack("--force");
-    if show then buildArgs.pushBack("--show");
-    masonBuild(buildArgs.toArray());
-    for val in passArgs.values() do execopts.pushBack(val);
-    runProjectBinary(show, release, execopts, nLocales=1);
+    const info = Execution.runInfo.forMainTarget(package, options, execopts);
+    if build {
+      log.debug("Building project before running");
+      Compilation.buildProgram(package, options, force=force);
+    }
+    info.run(package.name, show=show,
+             showStr="Executing [%s] target: ".format(if release
+                                                        then "release"
+                                                        else "debug"));
   }
 }
 
