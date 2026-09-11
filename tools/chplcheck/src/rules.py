@@ -269,7 +269,6 @@ def rules(driver: LintDriver):
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(context, node, internal_prefixes)
 
-
     @driver.basic_rule(Module, default=False)
     def UseExplicitModules(_, node: Module):
         """
