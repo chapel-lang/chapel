@@ -1,0 +1,68 @@
+# Assuming there is a SHA-tagged image of the release branch already pushed,
+# re-tag and push it with the release version tag.
+name: re-tag and push Docker images for release
+
+on:
+  workflow_dispatch:
+    inputs:
+      chpl_version:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+env:
+  EXTERNAL_REGISTRY: "docker.io"
+  NAMESPACE: "chapel"
+  SHA_TAG: ${{ github.sha }}
+
+jobs:
+  release-docker:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_name: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
+    env:
+      RELEASE_VERSION: ${{ inputs.chpl_version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        with:
+          driver-opts: network=host
+      - name: check release branch
+        run: |
+          echo "Pushing release-tagged image for version: $RELEASE_VERSION"
+
+          if [[ "${#${RELEASE_VERSION//[^.]}}" -ne 2 ]]; then
+            echo "Expected X.Y.Z version string, got: $RELEASE_VERSION"
+            exit 1
+          fi
+
+          release_ver_no_zero_patch=$RELEASE_VERSION
+          read -r major minor patch < <(echo "$RELEASE_VERSION" | ( IFS=".$IFS" ; read -r a b c && echo "$a" "$b" "$c" ))
+          if [ "$patch" = "0" ]
+          then
+            echo "Truncating patch version '$patch' from release $RELEASE_VERSION to determine branch name"
+            release_ver_no_zero_patch="$major.$minor"
+          fi
+          release_branch="release/$release_ver_no_zero_patch"
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse "$release_branch")" ]
+          then
+            echo "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
+            exit 1
+          fi
+      - name: tag and push image for release ${{ env.RELEASE_VERSION }}
+        run: |
+          IMAGE_NO_TAG="$EXTERNAL_REGISTRY/$NAMESPACE/$IMAGE_NAME"
+          SHA_TAGGED_IMAGE="$IMAGE_NO_TAG:$SHA_TAG"
+          RELEASE_TAGGED_IMAGE="$IMAGE_NO_TAG:$RELEASE_VERSION"
+          docker buildx imagetools create -t "$RELEASE_TAGGED_IMAGE" "$SHA_TAGGED_IMAGE"

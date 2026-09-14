@@ -6,6 +6,7 @@ rules:
       - extended-ci-checks.yml
       - full-ci-checks.yml
       - ga-paratest.yml
+      - package-builds.yml
   dangerous-triggers:
     ignore:
       - email.yml:2
