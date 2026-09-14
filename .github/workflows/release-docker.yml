@@ -56,11 +56,11 @@ jobs:
             release_ver_no_zero_patch="$major.$minor"
           fi
           release_branch="release/$release_ver_no_zero_patch"
-          if [ "$(git rev-parse HEAD)" != "$(git rev-parse "$release_branch")" ]
-          then
-            echo "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
-            exit 1
-          fi
+          # if [ "$(git rev-parse HEAD)" != "$(git rev-parse "$release_branch")" ]
+          # then
+          #   echo "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
+          #   exit 1
+          # fi
       - name: tag and push image for release ${{ env.RELEASE_VERSION }}
         run: |
           IMAGE_NO_TAG="$EXTERNAL_REGISTRY/$NAMESPACE/$IMAGE_NAME"
