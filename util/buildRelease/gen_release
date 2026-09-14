@@ -285,8 +285,9 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
             shutil.copy2("start_test", "../examples/start_test")
 
         log("Creating the chplcheck examples directory...")
-        # with cd("tools/chplcheck"):
-        #     os.unlink("examples")  # remove examples symbolic link
+        with cd("tools/chplcheck"):
+            shutil.rmtree("examples")
+            # os.unlink("examples")  # remove examples symbolic link
         shutil.copytree(
             "test/chplcheck/examples",
             "tools/chplcheck/examples",
