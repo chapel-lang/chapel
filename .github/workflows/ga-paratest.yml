@@ -429,10 +429,8 @@ jobs:
           fi
 
           overall_status=0
-          if [[ "$MATRIX_RESULT" != "success" ]]; then
-            overall_status=1
-          fi
-          if [[ -z "$EXPECTED_TESTS" ||
+          if [[ "$MATRIX_RESULT" != "success" ||
+                -z "$EXPECTED_TESTS" ||
                 "$actual_tests" != "$EXPECTED_TESTS" ||
                 "$summary_count" != "$EXPECTED_TESTS" ||
                 "$failed_tests" != "0" ]]; then
