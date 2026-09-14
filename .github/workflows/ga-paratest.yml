@@ -371,7 +371,6 @@ jobs:
           CONFIGURATION: ${{ inputs.configuration }}
           EXPECTED_TESTS: ${{ needs.build.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
-          SETUP_RESULT: ${{ needs.build.result }}
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
           rm -f "$AGGREGATED_RESULTS_DIR/results.log"
@@ -425,7 +424,7 @@ jobs:
           done
 
           overall_status=0
-          if [[ "$BUILD_RESULT" != "success" || "$SETUP_RESULT" != "success" ||
+          if [[ "$BUILD_RESULT" != "success" ||
                 "$MATRIX_RESULT" != "success" ]]; then
             overall_status=1
           fi
