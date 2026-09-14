@@ -18,6 +18,12 @@ defaults:
 jobs:
   core-checks:
     uses: $/.github/workflows/core-ci-checks.yml
+    secrets:
+      WEBSITE_KEY: ${{ secrets.WEBSITE_KEY }}
+      WEBSITE_KNOWN_HOSTS: ${{ secrets.WEBSITE_KNOWN_HOSTS }}
+      WEBSITE_USER: ${{ secrets.WEBSITE_USER }}
+      WEBSITE_URL: ${{ secrets.WEBSITE_URL }}
+      WEBSITE_PATH: ${{ secrets.WEBSITE_PATH }}
 
   extended-checks:
     permissions:

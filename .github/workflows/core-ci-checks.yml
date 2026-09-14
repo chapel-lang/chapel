@@ -3,6 +3,17 @@ name: Core CI Checks
 
 on:
   workflow_call:
+    secrets:
+      WEBSITE_KEY:
+        required: false
+      WEBSITE_KNOWN_HOSTS:
+        required: false
+      WEBSITE_USER:
+        required: false
+      WEBSITE_URL:
+        required: false
+      WEBSITE_PATH:
+        required: false
 
 permissions:
   contents: read
@@ -289,7 +300,10 @@ jobs:
         ./util/buildRelease/check-release-files.bash
 
   publish-docs:
-    if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
+    if: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+    concurrency:
+      group: ${{ github.job }}
+      queue: single
     runs-on: ubuntu-slim
     needs: make_doc
     steps:

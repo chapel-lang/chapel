@@ -57,45 +57,28 @@ section of :ref:`chapelhome-quickstart` for next steps.
 Multi-locale Execution
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The Homebrew installation of Chapel supports 2 different ways of
+The Homebrew installation of Chapel supports
 :ref:`running multi-locale programs <readme-multilocale>` on your
-shared memory machine:
+shared memory machine. Using the
+:ref:`GASNNet UDP conduit <readme-gasnet-emulating-multilocale>` allows you to
+run multi-locale programs by oversubscribing the machine's resources.
 
-* Using the :ref:`GASNet SMP conduit <readme-gasnet-smp>` allows you to run
-  multi-locale programs by partitioning the machine's resources into multiple
-  locales.
+Compile and run a test program:
 
-  Compile and run a test program:
+.. code-block:: bash
 
-  .. code-block:: bash
+   chpl --comm=gasnet --comm-substrate=udp \
+     `chpl --print-chpl-home`/examples/hello6-taskpar-dist.chpl
+   chplrun-udp ./hello6-taskpar-dist -nl 4
 
-     chpl --comm=gasnet --comm-substrate=smp \\
-       `chpl --print-chpl-home`/examples/hello6-taskpar-dist.chpl
-     ./hello6-taskpar-dist -nl 4
+.. note::
 
-* Using the :ref:`GASNNet UDP conduit <readme-gasnet-emulating-multilocale>`
-  allows you to run multi-locale programs by oversubscribing the machine's
-  resources.
-
-  Compile and run a test program:
-
-  .. code-block:: bash
-
-     chpl --comm=gasnet --comm-substrate=udp \\
-       `chpl --print-chpl-home`/examples/hello6-taskpar-dist.chpl
-     chplrun-udp ./hello6-taskpar-dist -nl 4
-
-  .. note::
-
-     Note the usage of the ``chplrun-udp`` command to run the program. This is a
-     necessary to setup the environment for the UDP conduit to properly launch
-     the program locally through the network stack. You can also forgo the
-     ``chplrun-udp`` command and run the program directly, making sure to properly
-     setup the environment. This will also allow you to launch jobs on
-     multiple nodes across the network. See :ref:`using-udp` for details.
-
-For more information on the differences between these two modes,
-see :ref:`readme-udp-vs-smp`.
+    Note the usage of the ``chplrun-udp`` command to run the program. This is a
+    necessary to setup the environment for the UDP conduit to properly launch
+    the program locally through the network stack. You can also forgo the
+    ``chplrun-udp`` command and run the program directly, making sure to properly
+    setup the environment. This will also allow you to launch jobs on
+    multiple nodes across the network. See :ref:`using-udp` for details.
 
 GPU Execution
 ~~~~~~~~~~~~~

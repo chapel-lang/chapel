@@ -26,7 +26,8 @@ brew install gcc #hide
 
 # install some dependencies in homebrew
 brew install cmake python gmp #unsudo
-brew install llvm #unsudo
+# Pin LLVM 22 since we don't support the latest LLVM yet
+brew install llvm@22 #unsudo
 
 # we could use Homebrew's gcc if that becomes important in the future:
 # # link the homebrew-installed gcc-* to gcc
