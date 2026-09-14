@@ -20,7 +20,7 @@ jobs:
   release-tarball:
     runs-on: ubuntu-latest
     env:
-      CHPL_VERSION: ${{ inputs.chpl_version }}
+      CHPL_VERSION: 2.9
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
