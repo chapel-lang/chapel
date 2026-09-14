@@ -38,8 +38,8 @@ if [ "${CHPL_VERSION}" = "detect" ] ; then
     log_info "Detected CHPL_VERSION to be: ${CHPL_VERSION}"
 fi
 
-short_version=$(get_short_version)
-export CHPL_GEN_RELEASE_BRANCH=release/$short_version
+# short_version=$(get_short_version)
+export CHPL_GEN_RELEASE_BRANCH=release/$CHPL_VERSION
 log_info "Using release branch: ${CHPL_GEN_RELEASE_BRANCH}"
 
 tarball_output="${CHPL_HOME}/tar/chapel-${CHPL_VERSION}.tar.gz"
