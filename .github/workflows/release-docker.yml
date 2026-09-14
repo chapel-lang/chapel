@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "Pushing release-tagged image for version: $RELEASE_VERSION"
 
-          if [[ "${#${RELEASE_VERSION//[^.]}}" -ne 2 ]]; then
+          if [[ "$(tr -dc '.' <<< "$RELEASE_VERSION" | awk '{ print length; }')" -ne 2 ]]; then
             echo "Expected X.Y.Z version string, got: $RELEASE_VERSION"
             exit 1
           fi
