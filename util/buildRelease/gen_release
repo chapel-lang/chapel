@@ -292,8 +292,8 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         #     "tools/chplcheck/examples",
         #     copy_function=shutil.copy2,
         # )
-        with cd("util"):
-            shutil.copy2("start_test", "../tools/chplcheck/examples/start_test")
+        # with cd("util"):
+        #     shutil.copy2("start_test", "../tools/chplcheck/examples/start_test")
 
         # THIS MUST BE DONE AFTER THE CLOBBER
         log("Getting the mason dependencies...")
