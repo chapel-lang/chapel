@@ -302,7 +302,7 @@ jobs:
   publish-docs:
     if: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
     concurrency:
-      group: ${{ github.job }}
+      group: 'publish-docs'
       queue: single
     runs-on: ubuntu-slim
     needs: make_doc
