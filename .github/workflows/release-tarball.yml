@@ -6,6 +6,7 @@ on:
       chpl_version:
         type: string
         required: true
+  pull_request:
 
 permissions:
   contents: read
