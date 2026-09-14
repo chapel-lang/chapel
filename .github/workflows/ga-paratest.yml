@@ -423,9 +423,13 @@ jobs:
             echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
           done
 
+          if [[ "$BUILD_RESULT" != "success" ]]; then
+            echo "Chapel build step failed, no test results to report"
+            exit 1
+          fi
+
           overall_status=0
-          if [[ "$BUILD_RESULT" != "success" ||
-                "$MATRIX_RESULT" != "success" ]]; then
+          if [[ "$MATRIX_RESULT" != "success" ]]; then
             overall_status=1
           fi
           if [[ -z "$EXPECTED_TESTS" ||
