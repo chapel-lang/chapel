@@ -325,6 +325,8 @@ jobs:
           timeout_seconds: 60
           retry_wait_seconds: 30
           command: |
+            set -exuo pipefail
+
             echo "extract docs"
             tar -xvf docs.tar.gz
             echo "Publish module docs to web server"

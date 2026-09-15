@@ -87,6 +87,8 @@ jobs:
           timeout_minutes: 30
           retry_wait_seconds: 60
           command: |
+            set -exuo pipefail
+
             export APPTAINER_IMAGE
             cd "$apptainer_dir"
             ./image-rebuild.sh
