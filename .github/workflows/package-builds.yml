@@ -114,7 +114,7 @@ jobs:
           source util/build_configs/functions.bash
 
           calculated_chpl_version="$(get_src_major_version "$(pwd)").$(get_src_minor_version "$(pwd)").$(get_src_patch_version "$(pwd)")"
-          if [[ -n "$CHPL_VERSION" ]]; then
+          if [[ -z "$CHPL_VERSION" ]]; then
             CHPL_VERSION=$calculated_chpl_version
           elif [[ "$CHPL_VERSION" != "$calculated_chpl_version" ]]; then
             echo "Desired chpl version $CHPL_VERSION does not match source version $calculated_chpl_version"
