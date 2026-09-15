@@ -13,7 +13,7 @@ permissions:
   packages: read
 
 env:
-  RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 96
+  RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 48
 
 defaults:
   run:
