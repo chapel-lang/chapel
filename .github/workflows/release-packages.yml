@@ -27,6 +27,6 @@ jobs:
   release-packages:
     uses: $/.github/workflows/package-builds.yml
     with:
-      chpl_version: ${{ inputs.chpl_version }}
+      chpl_version: 2.9
       tarball_url: "https://github.com/chapel-lang/chapel/actions/runs/35002903204/artifacts/10410991252"
-      package_version: ${{ inputs.package_version }}
+      package_version: 1
