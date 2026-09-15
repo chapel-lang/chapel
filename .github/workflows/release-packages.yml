@@ -31,7 +31,7 @@ jobs:
     outputs:
       fixed_url: ${{ steps.fix_url.outputs.fixed_url }}
     env:
-      tarball_url_or_id: ${{ inputs.tarball_url_or_id }}
+      tarball_url_or_id: 10410991252
     steps:
       - name: adjust URL if from GitHub artifact
         id: fix_url
