@@ -1,8 +1,10 @@
 Active rules:
   BoolComparison               Warn for comparing booleans to 'true' or 'false'.
   BoolLitInCondStmt            Warn for boolean literals like 'true' in a conditional statement.
+  CamelCaseEnums               Warn for enums or enum elements that are not 'camelCase'.
   CamelCaseFunctions           Warn for functions that are not 'camelCase'.
   CamelCaseRecords             Warn for records that are not 'camelCase'.
+  CamelCaseUnions              Warn for unions that are not 'camelCase'.
   CamelOrPascalCaseVariables   Warn for variables that are not 'camelCase' or 'PascalCase'.
   ChplPrefixReserved           Warn for user-defined names that start with the 'chpl_' reserved prefix.
   ComplexLiteralOrder          Warn for complex literals that are not in a consistent order.
