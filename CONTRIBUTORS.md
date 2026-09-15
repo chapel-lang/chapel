@@ -3,20 +3,18 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.9 release
+Contributors to the Chapel 2.10 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
+* Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Daniel Fedorin, [HPE]
-* Rohith Gurram, individual contributor
 * [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
-* [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * David Longnecker, [HPE]
-* Jared Magnusson, individual contributor
-* Ahmad Rezaii, [HPE]
+* Madhav Madhusoodanan, individual contributor
 * Anna Rift, [HPE]
 
 Contributors to previous releases
@@ -44,7 +42,6 @@ Contributors to previous releases
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
 * David Callahan, [Cray Inc.]
-* Paul Cassella, [HPE]
 * Sanket Chaudhari, individual contributor
 * Rui Chen, individual contributor
 * Naman Chikara, individual contributor
@@ -78,6 +75,7 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
+* Rohith Gurram, individual contributor
 * John Hartman, [HPE]
 * Akihiro Hayashi, [Rice University]
 * Guillaume Helbecque, individual contributor
@@ -103,6 +101,7 @@ Contributors to previous releases
 * Engin Kayraklioglu, [HPE]
 * David Keaton, [Cray Inc.]
 * Krishna Keshav, individual contributor
+* [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Sagar Khatri, individual contributor
 * Lee Killough, [HPE]
 * John Koenig, [Cray Inc.]
@@ -119,6 +118,7 @@ Contributors to previous releases
 * Simon Lund, [Københavns Universitet (University of Copenhagen)]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
 * Tom MacDonald, [Cray Inc.]
+* Jared Magnusson, individual contributor
 * Deepak Majeti, individual contributor
 * Prabhanjan Mannari, individual contributor
 * Mohaned Mashaly, individual contributor
@@ -171,6 +171,7 @@ Contributors to previous releases
 * Nikki Rad, [HPE] intern from [Texas A&M University]
 * Venkatavaradan Raghuraman, individual contributor
 * Yash Raj, individual contributor
+* Ahmad Rezaii, [HPE]
 * Thomas Rolinger, individual contributor
 * Brandon Ross, [University at Buffalo]
 * Preston Sahabu, [Cray Inc.]
