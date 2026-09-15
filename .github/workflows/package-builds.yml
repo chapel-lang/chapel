@@ -124,7 +124,7 @@ jobs:
       - name: set CHPL_TARBALL_LOCATION to simulate download from URL
         if: ${{ inputs.tarball_url != '' }}
         run: |
-          echo "CHPL_TARBALL_LOCATION=file://$(find . -name "*.tar.gz")" >> "$GITHUB_ENV"
+          echo "CHPL_TARBALL_LOCATION=file://$(pwd)/$(find . -name "*.tar.gz")" >> "$GITHUB_ENV"
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         timeout-minutes: 120
         run: |
