@@ -46,7 +46,7 @@ jobs:
           last_successful=$(gh run list -w "Run nightly checks" --event schedule --status success --limit 1 --json "startedAt" --jq ".[0].startedAt" | xargs -I {} date -d {} +%s)
           current_timestamp=$(date +%s)
           elapsed_secs=$((current_timestamp - last_successful))
-          acceptable_secs=$((96 * 3600))
+          acceptable_secs=$((RECENT_NIGHTLY_JOBS_EXPECTED_HOURS * 3600))
           if (( elapsed_secs > acceptable_secs )); then
             echo "Warning: Last successful nightly checks run was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
             exit 1
