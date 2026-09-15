@@ -71,6 +71,8 @@ jobs:
           timeout_seconds: 180
           retry_wait_seconds: 300
           command: |
+            set -exuo pipefail
+
             gh api /repos/${{ github.repository }}/commits/${{ github.sha }} | jq '.' > commit.json
             gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs | jq '.' > jobs_raw.json
             # Combine pages of job results into one array

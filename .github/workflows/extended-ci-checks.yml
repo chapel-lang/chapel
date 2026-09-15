@@ -76,8 +76,11 @@ jobs:
           timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
           retry_wait_seconds: 60
           command: |
-            sudo update-alternatives --remove-all gcc
-            sudo update-alternatives --remove-all g++
+            set -exuo pipefail
+
+            # Ignore errors in the case there are no alternatives.
+            sudo update-alternatives --remove-all gcc || true
+            sudo update-alternatives --remove-all g++ || true
 
             sudo add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
             sudo apt update
@@ -155,6 +158,8 @@ jobs:
           timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
           retry_wait_seconds: 60
           command: |
+            set -exuo pipefail
+
             sudo apt install \
               clang \
               libclang-dev \
@@ -189,6 +194,8 @@ jobs:
           timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
           retry_wait_seconds: 60
           command: |
+            set -exuo pipefail
+
             wget https://apt.llvm.org/llvm.sh
             chmod +x llvm.sh
 
@@ -317,6 +324,8 @@ jobs:
         timeout_seconds: 900
         retry_wait_seconds: 30
         command: |
+          set -exuo pipefail
+
           tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
           wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
     - name: configure pycparser tarball for c2chapel

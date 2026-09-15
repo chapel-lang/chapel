@@ -92,9 +92,13 @@ jobs:
         timeout_seconds: 900
         retry_wait_seconds: 30
         on_retry_command: |
+          set -exuo pipefail
+
           cd arkouda
           git clean -dfx
         command: |
+          set -exuo pipefail
+
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
           cd arkouda
           # Download sources serially first before building, as it is flaky and
