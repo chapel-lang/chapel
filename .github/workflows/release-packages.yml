@@ -31,6 +31,7 @@ jobs:
     outputs:
       fixed_url: ${{ steps.fix_url.outputs.fixed_url }}
     env:
+      GH_TOKEN: ${{ github.token }}
       tarball_url_or_id: 10410991252
     steps:
       - name: adjust URL if from GitHub artifact
