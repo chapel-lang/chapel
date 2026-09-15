@@ -81,14 +81,15 @@ jobs:
     runs-on: ubuntu-slim
     env:
       tarball_url: ${{ inputs.tarball_url }}
+      tarball_filename: 'chapel-release-tarball.tar.gz'
     steps:
       - name: download tarball from URL
         run: |
-          wget "$tarball_url"
+          wget -O "$tarball_filename" "$tarball_url"
       - name: upload tarball as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          path: ./*.tar.gz
+          path: ./${{ env.tarball_filename }}
           name: packaging-tarball
           if-no-files-found: error
 
