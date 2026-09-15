@@ -13,6 +13,7 @@ on:
         required: true
         type: number
         default: 1
+  pull_request:
 
 permissions:
   contents: read
