@@ -263,6 +263,22 @@ jobs:
         archive: false
         if-no-files-found: error
 
+  test-release-tarball:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: create release tarball from local clone
+      run: |
+        export CHPL_GEN_RELEASE_NO_CLONE=1
+        ./util/cron/test-release.bash
+
   test-homebrew:
     strategy:
       fail-fast: false
