@@ -119,6 +119,7 @@ public:
   bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
   void               addFlag(Flag flag);
+  void               addFlags(FlagSet flags);
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
@@ -699,6 +700,10 @@ inline bool Symbol::hasFlag(Flag flag) const {
 inline void Symbol::addFlag(Flag flag) {
   CHECK_FLAG(flag);
   flags.set(flag);
+}
+
+inline void Symbol::addFlags(FlagSet newFlags) {
+  flags |= newFlags;
 }
 
 inline void Symbol::copyFlags(const Symbol* other) {

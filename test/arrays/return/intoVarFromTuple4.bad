@@ -1,0 +1,3 @@
+intoVarFromTuple4.chpl:1: warning: return type is a tuple, but return value is not a literal tuple - no return type checking will be performed
+intoVarFromTuple4.chpl:1: note: see issue #29373 for more information on this
+intoVarFromTuple4.chpl:5: error: cannot initialize 'AB' of type '2*[domain(1,int(64),one)] int(64)' from an 'int(64)'

@@ -1,0 +1,1 @@
+returnMismatchedArrayTuple.chpl:1: error: return type is a tuple of size 3, but return value is a tuple of size 2

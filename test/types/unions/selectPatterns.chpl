@@ -38,11 +38,20 @@ proc doFancySelect() throws do
       throw new Error("union is not currently active");
   }
 proc doSuperFancySelect() throws do
-  select u {
+  select u.getActiveIndex() {
     when U.x do writeln("x: ", u.x);
     when U.y do writeln("y: ", u.y);
     when U.z do writeln("z: ", u.z);
     when U.w do writeln("w: ", u.w);
+    otherwise
+      throw new Error("union is not currently active");
+  }
+proc doMatch() throws do
+  union select u {
+    when x do writeln("x: ", x);
+    when y do writeln("y: ", y);
+    when z do writeln("z: ", z);
+    when w do writeln("w: ", w);
     otherwise
       throw new Error("union is not currently active");
   }
@@ -61,6 +70,11 @@ try {
 }
 try {
   doSuperFancySelect();
+} catch e {
+  writeln("caught error: ", e.message());
+}
+try {
+  doMatch();
 } catch e {
   writeln("caught error: ", e.message());
 }
@@ -124,3 +138,13 @@ u.z = "hello";
 doSuperFancySelect();
 u.w = 20;
 doSuperFancySelect();
+
+writeln("test match");
+u.x = 10;
+doMatch();
+u.y = 3.14;
+doMatch();
+u.z = "hello";
+doMatch();
+u.w = 20;
+doMatch();

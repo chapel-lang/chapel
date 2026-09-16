@@ -359,6 +359,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isConditional(tag)
          || asttags::isForwardingDecl(tag)
          || asttags::isSelect(tag)
+         || asttags::isMatch(tag)
+         || asttags::isMatchCase(tag)
          || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)

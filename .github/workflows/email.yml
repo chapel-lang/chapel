@@ -9,6 +9,12 @@ on:
     branches: [ main ]
   pull_request:
 
+# Serialize runs of this workflow to ensure emails are sent in the same order
+# as merges are done.
+concurrency:
+  group: ${{ github.workflow }}
+  queue: max
+
 permissions:
   contents: read
 

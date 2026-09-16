@@ -1179,6 +1179,24 @@ struct ChplSyntaxVisitor {
     interpose(node->whenStmts(), "\n", "{\n", "\n}", ";", true);
   }
 
+  void visit(const Match* node) {
+    ss_ << "union select ";
+    printAst(node->expr());
+    ss_ << " ";
+    interpose(node->allCaseStmts(), "\n", "{\n", "\n}", ";", true);
+  }
+
+  void visit(const MatchCase* node) {
+    if (node->isOtherwise()) {
+      ss_ << "otherwise ";
+    } else {
+      ss_ << "when ";
+      printAst(node->expr());
+      ss_ << " ";
+    }
+    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
+  }
+
   void visit(const Serial* node) {
     ss_ << "serial ";
     if (node->condition()) {

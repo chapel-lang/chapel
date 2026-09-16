@@ -1,0 +1,3 @@
+returnTupArray3-error.chpl:3: In function 'doit':
+returnTupArray3-error.chpl:5: error: cannot initialize return value of type '2*[domain(1,int(64),one)] int(64)' from a '2*int(64)'
+  returnTupArray3-error.chpl:7: called as doit(D: domain(1,int(64),one))

@@ -40,6 +40,7 @@ Overview:
    #. `Submit pull request`_
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
+   #. `Get GitHub Actions tests passing`_
    #. `Before merging`_
    #. `After merging`_
 

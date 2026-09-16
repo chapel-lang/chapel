@@ -1,0 +1,1 @@
+matching-bad-ident.chpl:8: error: the 'union select' case 'unknown' does not match any field in 'U'

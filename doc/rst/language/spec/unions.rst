@@ -48,7 +48,7 @@ The identifier following the ``union`` keyword defines the name of the
 union, while the variable declaration statements define its fields and
 their types.  Procedure and iterator declaration statements define
 methods on the union.
-     
+
 If the ``extern`` keyword appears before the ``union`` keyword, then an
 external union type is declared. An external union is used within Chapel
 for type and field resolution, but no corresponding backend definition
@@ -381,13 +381,13 @@ Union Pattern Matching
 ----------------------
 
 There are two primary ways to perform pattern matching on unions: using a
-``select`` statement or using the :proc:`~ChapelUnion.union.visit` method.
+``union select`` statement or using the :proc:`~ChapelUnion.union.visit` method.
 Pattern matching allows users to decompose a union based on the currently
 active field.
 
-   *Example (patternMatchSelect.chpl)*.
+   *Example (patternMatching.chpl)*.
 
-   Unions can use a ``select`` statement to perform pattern matching on the
+   Unions can use a ``union select`` statement to perform pattern matching on the
    active field of the union.
 
    .. BLOCK-test-chapelpre
@@ -401,12 +401,12 @@ active field.
 
    .. code-block:: chapel
 
-      select u {
-        when U.x {
-          writeln("x is active with value ", u.x);
+      union select u {
+        when x {
+          writeln("x is active with value ", x);
         }
-        when U.y {
-          writeln("y is active with value ", u.y);
+        when y {
+          writeln("y is active with value ", y);
         }
         otherwise {
           writeln("no field is active");

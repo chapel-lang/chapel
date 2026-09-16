@@ -1,0 +1,1 @@
+bug: can't return '2*int' when return type is '2*[]int'

@@ -70,6 +70,8 @@
   AST_NODE(Init)                       //
   AST_NODE(Label)                      //
   AST_NODE(Let)                        //
+  AST_NODE(Match)                      //
+  AST_NODE(MatchCase)                  //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //
   AST_NODE(Require)                    //

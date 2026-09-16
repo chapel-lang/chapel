@@ -643,6 +643,35 @@ struct Converter final : UastConverter {
     return ret;
   }
 
+  BlockStmt* visit(const uast::Match* node) {
+    // this lowering is very focused on match for unions only
+    // if we expand this syntax, we probably should add a proper Ast type for Match
+    // rather than lowering to conditionals like this
+    Expr* cond = toExpr(convertAST(node->expr()));
+
+    std::vector<std::pair<VarSymbol*, BlockStmt*>> casePairs;
+    for (auto caseStmt: node->caseStmts()) {
+      INT_ASSERT(caseStmt->expr()->isVariable()); // post-parse should guarantee this
+      auto caseName = caseStmt->expr()->toVariable()->name().astr(context);
+      auto var = new VarSymbol(caseName);
+      noteConvertedSym(caseStmt->expr(), var);
+      auto block = createBlockWithStmts(caseStmt->body()->stmts(), caseStmt->blockStyle());
+      casePairs.push_back(std::make_pair(var, block));
+    }
+    BlockStmt* otherwiseBlock = nullptr;
+    if (node->otherwiseStmt()) {
+      otherwiseBlock = createBlockWithStmts(node->otherwiseStmt()->body()->stmts(),
+                                            node->otherwiseStmt()->blockStyle());
+    }
+
+    return buildMatchStmt(cond, casePairs, otherwiseBlock);
+  }
+  Expr* visit(const uast::MatchCase* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
+
   BlockStmt* visit(const uast::On* node) {
     Expr* expr = convertAST(node->destination());
     Expr* stmt = createBlockWithStmts(node->stmts(), node->blockStyle());

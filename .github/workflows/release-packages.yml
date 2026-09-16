@@ -1,0 +1,31 @@
+name: build release packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      chpl_version:
+        type: string
+        required: true
+      tarball_url:
+        required: true
+        type: string
+      package_version:
+        required: true
+        type: number
+        default: 1
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  release-packages:
+    uses: $/.github/workflows/package-builds.yml
+    with:
+      chpl_version: ${{ inputs.chpl_version }}
+      tarball_url: ${{ inputs.tarball_url }}
+      package_version: ${{ inputs.package_version }}

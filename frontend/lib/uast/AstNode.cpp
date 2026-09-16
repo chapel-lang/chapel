@@ -169,6 +169,8 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::Conditional:
     case asttags::Implements:
     case asttags::Label: // contains a loop
+    case asttags::Match:
+    case asttags::MatchCase:
     case asttags::Select:
     case asttags::Sync:
     case asttags::Try:
@@ -310,6 +312,8 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::Cobegin:
     case asttags::Implements:
     case asttags::Label: // contains a loop
+    case asttags::Match:
+    case asttags::MatchCase:
     case asttags::Select:
     case asttags::Sync:
     case asttags::START_SimpleBlockLike:

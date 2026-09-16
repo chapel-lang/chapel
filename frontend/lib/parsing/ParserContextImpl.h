@@ -3377,6 +3377,67 @@ ParserContext::buildWhenStmt(YYLTYPE location,
 }
 
 CommentsAndStmt
+ParserContext::buildMatchCaseStmt(YYLTYPE location,
+                                  YYLTYPE headerLocation,
+                                  YYLTYPE exprLoc,
+                                  AstNode* caseExpr,
+                                  BlockOrDo blockOrDo) {
+
+  // No need to gather comments, they'll have been collected here...
+  auto comments = blockOrDo.cs.comments;
+  auto stmt = blockOrDo.cs.stmt;
+
+  BlockStyle blockStyle = blockOrDo.usesDo ? BlockStyle::IMPLICIT
+                                           : BlockStyle::EXPLICIT;
+
+  if (blockOrDo.usesDo && stmt && stmt->isBlock()) {
+    blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+  owned<AstNode> caseVar;
+  if (caseExpr) {
+    auto ident = caseExpr->toIdentifier();
+    if (!ident) {
+      CHPL_PARSER_REPORT(this, UnsupportedMatchExpr, exprLoc);
+      caseVar = ErroneousExpression::build(builder, convertLocation(exprLoc));
+    } else {
+      caseVar = Variable::build(builder,
+                                convertLocation(headerLocation),
+                                convertLocation(exprLoc),
+                                /*attributeGroup*/ nullptr,
+                                Decl::DEFAULT_VISIBILITY,
+                                Decl::DEFAULT_LINKAGE,
+                                /*linkageName*/ nullptr,
+                                /*name*/ ident->name(),
+                                Variable::REF,
+                                /*isConfig*/ false,
+                                this->currentScopeIsAggregate(),
+                                /*typeExpression*/ nullptr,
+                                /*initExpression*/ nullptr);
+      delete ident;
+    }
+  } else {
+    // 'otherwise'
+    caseVar = nullptr;
+  }
+
+  auto stmtExprs = stmt ? makeList(stmt) : makeList();
+  auto stmtList = consumeAndFlattenTopLevelBlocks(stmtExprs);
+
+  auto node = MatchCase::build(builder, convertLocation(location),
+                          std::move(caseVar),
+                          blockStyle,
+                          std::move(stmtList));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
+  if (isValidCurlyBracesLoc(blockOrDo.cs.curlyLoc)) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(blockOrDo.cs.curlyLoc));
+  }
+
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
+
+  return cs;
+}
+
+CommentsAndStmt
 ParserContext::buildSelectStmt(YYLTYPE location,
                                YYLTYPE headerLocation,
                                owned<AstNode> expr,
@@ -3407,6 +3468,30 @@ ParserContext::buildSelectStmt(YYLTYPE location,
   auto node = Select::build(builder, convertLocation(location),
                             std::move(expr),
                             std::move(stmts));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
+
+  CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());
+
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildMatchStmt(YYLTYPE location,
+                                  YYLTYPE headerLocation,
+                                  owned<AstNode> expr,
+                                  ParserExprList* caseStmts,
+                                  owned<AstNode> otherwiseStmt) {
+  auto comments = gatherCommentsFromList(caseStmts, location);
+
+  // Discard all remaining comments.
+  discardCommentsFromList(caseStmts);
+
+  auto stmts = consumeList(caseStmts);
+
+  auto node = Match::build(builder, convertLocation(location),
+                            std::move(expr),
+                            std::move(stmts),
+                            std::move(otherwiseStmt));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
 
   CommentsAndStmt cs = makeCommentsAndStmt(comments, node.release());

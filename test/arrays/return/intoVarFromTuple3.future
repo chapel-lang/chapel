@@ -1,0 +1,1 @@
+bug: tuple return types with generic arrays can't be properly checked

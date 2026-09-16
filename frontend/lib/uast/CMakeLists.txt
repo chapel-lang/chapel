@@ -79,6 +79,8 @@ target_sources(ChplFrontend-obj
                Local.cpp
                Loop.cpp
                Manage.cpp
+               Match.cpp
+               MatchCase.cpp
                Module.cpp
                MultiDecl.cpp
                NamedDecl.cpp
