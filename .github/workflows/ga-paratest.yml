@@ -274,7 +274,7 @@ jobs:
       max-parallel: ${{ inputs.max-parallel || fromJSON(needs.build.outputs.test-count) }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
-      - name: small random sleep
+      - name: random sleep to avoid hitting GitHub APIs simultaneously
         run: sleep $((RANDOM % 60))
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
