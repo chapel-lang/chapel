@@ -121,10 +121,6 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: packaging-tarball
-      - name: set CHPL_TARBALL_LOCATION to simulate download from URL
-        if: ${{ inputs.tarball_url != '' }}
-        run: |
-          echo "CHPL_TARBALL_LOCATION=file://$(pwd)/$(find . -name "*.tar.gz")" >> "$GITHUB_ENV"
       - name: build package ${{ env.DISTRO }} for ${{ env.ARCH }}
         timeout-minutes: 120
         run: |
@@ -150,15 +146,10 @@ jobs:
           export OS=$DISTRO
           echo "OS = $OS"
 
-          if [[ -n "$CHPL_TARBALL_LOCATION" ]]; then
-            echo "Using tarball from $CHPL_TARBALL_LOCATION"
-            export CHPL_TARBALL_LOCATION
-          else
-            CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
-            CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
-            echo "Latest tarball: $CHPL_TARBALL"
-            export CHPL_TARBALL
-          fi
+          CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
+          CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
+          echo "Latest tarball: $CHPL_TARBALL"
+          export CHPL_TARBALL
 
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
           echo "PARALLEL = $PARALLEL"
