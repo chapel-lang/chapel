@@ -150,15 +150,9 @@ jobs:
           export OS=$DISTRO
           echo "OS = $OS"
 
-          if [[ -n "$CHPL_TARBALL_LOCATION" ]]; then
-            echo "Using tarball from $CHPL_TARBALL_LOCATION"
-            export CHPL_TARBALL_LOCATION
-          else
-            CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
-            CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
-            echo "Latest tarball: $CHPL_TARBALL"
-            export CHPL_TARBALL
-          fi
+          CHPL_TARBALL=$(pwd)/$(find . -name "*.tar.gz")
+          echo "Latest tarball: $CHPL_TARBALL"
+          export CHPL_TARBALL
 
           PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
           echo "PARALLEL = $PARALLEL"
