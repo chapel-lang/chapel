@@ -146,8 +146,7 @@ jobs:
           export OS=$DISTRO
           echo "OS = $OS"
 
-          CHPL_RELEASE_TARBALL=$(find . -name "*.tar.gz")
-          CHPL_TARBALL=$(pwd)/$CHPL_RELEASE_TARBALL
+          CHPL_TARBALL=$(pwd)/$(find . -name "*.tar.gz")
           echo "Latest tarball: $CHPL_TARBALL"
           export CHPL_TARBALL
 
