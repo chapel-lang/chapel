@@ -19,6 +19,11 @@ defaults:
 jobs:
   release-tarball:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     env:
       CHPL_VERSION: "2.10"
     steps:
