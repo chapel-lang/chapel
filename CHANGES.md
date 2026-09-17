@@ -2,40 +2,49 @@ Release Changes List
 ====================
 
 TODO:
-o check placement of items into categories
-o sort items within categories
-o check man page and util/chpl-completion.bash for new compiler flags
-o check test/release/examples
-o fulfill TODOs
-o check for changes put too far down in file
-o check for ' vs `
-o '(http:' -> '(see http:'
-o check for docs/2.4/ links
-o remove `.../index.html` in favor of `.../`
-o check forced linebreaks
-o check initial '*'
-o check for initial 'A-Z'
-o check for 'see:'
-o add highlights
-o mason -> Mason when used as noun
-o spellcheck
-o check ordering of categories relative to one another
+* check placement of items into categories
+* sort items within categories
+* check man page and util/chpl-completion.bash for new compiler flags
+* check test/release/examples
+* fulfill TODOs
+* check for changes put too far down in file
+* check for ' vs `
+* '(http:' -> '(see http:'
+* check for docs/2.4/ links
+* remove `.../index.html` in favor of `.../`
+* check forced linebreaks
+* check initial '*'
+* check for initial 'A-Z'
+* check for 'see:'
+* add highlights
+* mason -> Mason when used as noun
+* spellcheck
+* check ordering of categories relative to one another
 o remove empty sections
 o check links
 
 version 2.10
 ============
 
-released September 17, 2026
+released September 24, 2026
 
 Highlights (see the sections that follow for details)
 -----------------------------------------------------
+* significantly improved support for `union` types
+* added support for stack traces on caught and uncaught thrown errors
+* vastly improved the use of CI/GitHub actions to support community developers
+* improved the ergonomics of the `DynamicLoading` module and dynamic runtimes
+* fixed a number of cases in which Chapel was relying on undefined behaviors
+* many other improvements in terms of features, errors, bug fixes, and docs
 
 Updates to Chapel Prerequisites
 -------------------------------
+* removed support for LLVM 14
 
 Configuration / Build Changes
 -----------------------------
+* we now automatically detect `mpich` when using `CHPL_COMM_OFI_OOB=mpi`
+* disabled function pointer type mismatches for `CHPL_SANITIZE=undefined`
 
 Updates to Chapel's Release Formats
 -----------------------------------
@@ -48,23 +57,37 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added a new `union select` pattern-matching syntax for active union fields  
+  (see https://chapel-lang.org/docs/2.10/language/spec/unions.html#union-pattern-matching)
 * added compiler-generated single-field initializers for unions  
   (see https://chapel-lang.org/docs/2.10/language/spec/unions.html#compiler-generated-initializers)
 
 Language Feature Improvements
 -----------------------------
+* added ordered comparison operators (`<`, `<=`, `>`, `>=`) on `imag` values
+* added `*`, `/`, and `**` operators for `param` complex values
+* added stack traces for uncaught thrown Errors
+* made `select` on `union` expressions based on equality, as with other types
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
+* updated the inference of range index types to match the behavior of `+`  
+  (see https://chapel-lang.org/docs/2.10/language/spec/ranges.html#range-literals)
 
 Namespace Changes
 -----------------
 
 New Standard Library Features
 -----------------------------
+* added `.stacktrace()` to inspect the stack trace of a caught `Error`  
+  (see https://chapel-lang.org/docs/2.10/modules/standard/Errors.html#Errors.Error.stacktrace)
+* added `isFinite()`, `isInf()`, and `isNan()` queries for imaginary values  
+  (see https://chapel-lang.org/docs/2.10/modules/standard/Math.html#Math.isFinite)
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
+* added checks to prevent calling `abs(min(int))`  
+  (see https://chapel-lang.org/docs/2.10/modules/standard/Math.html#Math.abs)
 
 New Package Module Features
 ---------------------------
@@ -83,6 +106,10 @@ Name Changes in Libraries
 
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
+* added generic return type inlays like `x.type` for generic functions  
+  (see https://chapel-lang.org/docs/2.10/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
+* expanded common inlays to be displayed in more cases  
+  (see https://chapel-lang.org/docs/2.10/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 
 Linter / `chplcheck` Improvements
 ---------------------------------
@@ -95,6 +122,10 @@ Package Manager / Mason Improvements
 
 `chapel-py` Improvements
 ------------------------
+* added accessors for `ArrayType` and `DomainType` to `chapel-py`  
+  (see https://chapel-lang.org/docs/2.10/tools/chapel-py/chapel-py.html#chapel.ArrayType  
+   and https://chapel-lang.org/docs/2.10/tools/chapel-py/chapel-py.html#chapel.DomainType)
+
 
 Debugging Improvements
 ----------------------
@@ -120,6 +151,8 @@ Compiler Flags
 
 Compiler Improvements
 ---------------------
+* improved `**` on `param int`s for better codegen and to avoid overflow
+* refactored LLVM 15 support to use the newer pass manager and opaque pointers
 
 Improvements to Compile Times
 -----------------------------
@@ -127,36 +160,54 @@ Improvements to Compile Times
 Error Messages / Semantic Checks
 --------------------------------
 * added an error for using `super.init()` in a `union` initializer
-* added an error when trying to allocate a memory-managed `union` value
+* added an error when trying to create a new `union` value w/ memory management
 
 Error Messages / Semantic Checks for Libraries
 ----------------------------------------------
 
 Error Messages for Build Issues
 -------------------------------
+* improved the error messages when `CHPL_LLVM_CONFIG` is set to a bad value
 
 Generated Code Improvements
 ---------------------------
+* improved `**` on `int`s for better code generation and to avoid overflow
+* fixed line number information to use 32-bit integers to match the runtime
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed code generation for aarch64 processors when using newer LLVM versions
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
+* added MI300A to the list of tested AMD GPUs  
+  (see https://chapel-lang.org/docs/2.10/technotes/gpu.html#tested-configurations)
 
 Generated Executable Flags
 --------------------------
+* added information about compile-time environment variables to `--about`
 
 Launchers
 ---------
 
 Documentation Improvements
 --------------------------
-* fixed several broken links in this `CHANGES.md` file
-* mention that `CHPL_COMM=none` is supported in dynamic loading docs
+* added a best practices note for using the undefined behavior sanitizer  
+  (see https://chapel-lang.org/docs/2.10/usingchapel/debugging/sanitizers.html#other-sanitizers)
+* expanded the documented rationale for `imag` types  
+  (see https://chapel-lang.org/docs/2.10/language/spec/types.html#imaginary-types)
+* added documentation for full support of ROCm 7  
+  (see https://chapel-lang.org/docs/2.10/technotes/gpu.html#requirements)
+* added MI300A to the list of tested AMD GPUs  
+  (see https://chapel-lang.org/docs/2.10/technotes/gpu.html#tested-configurations)
+* mentioned that `CHPL_COMM=none` is supported in the dynamic loading docs
+* fixed several broken links in the `CHANGES.md` file
+* fixed various other typographical and grammatical issues
 
 Language Specification Improvements
 -----------------------------------
+* clarified how `union.visitOne()` should be used  
+  (see https://chapel-lang.org/docs/2.10/language/spec/unions.html#ChapelUnion.union.visitOne)
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -169,12 +220,15 @@ Documentation Improvements to the 'man' Pages
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* improved the docs for using multiple locales with Homebrew installs  
+  (see https://chapel-lang.org/docs/2.10/platforms/macosx.html#multi-locale-execution)
 
 Technical Note Improvements
 ---------------------------
 
 Example Codes
 -------------
+* updated a few example codes to avoid relying on undefined behaviors
 
 Runtime Library Improvements
 ----------------------------
@@ -184,32 +238,45 @@ Third-Party Software Changes
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* replaced the special behavior for `select` on unions with `union select`
+* removed support for the old, outdated logic for inferring a range's `idxType`
+* removed the deprecated `numThreadsPerLocale` in favor of `here.maxTaskPar`
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 
 Bug Fixes
 ---------
+* fixed tuple of array return types that caused incorrect compiler errors
+* fixed some cases of generic array return types not being properly checked
 * fixed a bug in which user-defined `init=` methods on unions weren't called
 * fixed a bug in which user-defined `union` initializers led to memory faults
 * fixed a bug in which errors weren't generated for multi-decl `union` fields
 * fixed a bug in which `postinit()` wasn't always being called on unions
+* updated the compiler to treat unions with `postinit()` as being non-POD
+* fixed `bool`s not properly defaulting to `false` in some cases
+* fixed `--optimize` to control back-end LLVM optimizations as intended
+* improved the Dyno resolver to avoid crashes in cases where it is incomplete
+* fixed an off-by-one error in the Dyno error reporter
+* fixed a number of cases that could end up relying on undefined behavior
 
 Bug Fixes for Libraries
 -----------------------
+* patched code used by the `Image` package module to avoid undefined behaviors
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed issues with `--fast` causing functions to be optimized away on AMD
+* fixed data corruptions due to incorrect code generation of AMD GPU kernels
 
-Bug Fixes for Mason
+Bug Fixes for Tools
 -------------------
-
-Bug Fixes for Other Tools
--------------------------
+* prevented CLS crashes when clicking on out-of-date and invalid code lenses
+* fixed the `IncorrectIndentation` rule in `chplcheck` for `when` clauses
 
 Bug Fixes for Documentation
 ---------------------------
-* fixed an issue in which `lcm()` hadn't been listed as an edition change  
+* fixed an oversight in which `lcm()` hadn't been listed as an edition change  
   (see https://chapel-lang.org/docs/2.10/technotes/editions.html#changes-in-the-preview-edition)
 
 Bug Fixes for Release Formats
@@ -217,15 +284,24 @@ Bug Fixes for Release Formats
 
 Bug Fixes for Build Issues
 --------------------------
+* ensured that `CHPL_MAKE` is properly set for sub-`make` invocations
+* fixed linker errors that could occur when building the dynamic runtime
+* fixed a GCC warning building the libfabric runtime when comparing enums
 
 Bug Fixes for the Runtime
 -------------------------
-* fix linker errors that could occur when building the dynamic runtime
+* fixed a number of cases where the runtime was relying on undefined behaviors
 
 Developer-oriented changes: Process
 -----------------------------------
 * added GitHub Actions jobs to cover significant parts of nightly testing  
   (see https://chapel-lang.org/docs/2.10/developer/bestPractices/ContributorInfo.html#get-github-actions-tests-passing)
+* added full runs of the Chapel test suite in the CI for key configurations
+* added a CI configuration to run the Chapel blog's tests
+* unified and automated jobs related to updating the local homebrew formula
+* switched Homebrew testing to be against the latest release rather than `main`
+* improved the check_large_files CI check to only check files
+* expanded the format check CI to cover custom Python `sub_test` files
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -235,49 +311,52 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* removed the no-longer-used `ChapelThreads` internal module
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* enabled `CHPL_DEVELOPER=1 DYNO_ENABLE_ASSERTIONS=0` to disable Dyno asserts
+* fixed a typo in a flag name for `chpl_llvm.py --version`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
-* updated the compiler to treat unions with `postinit()` as being non-POD
-* added an error if `--no-builtin-runtime` with a non-PIC runtime build
+* added an error when using `--no-builtin-runtime` with a non-PIC runtime build
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
 
 Developer-oriented changes: GPU support
 ---------------------------------------
+* updated nightly testing to primarily test CUDA 13
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* remove direct references to almost all program-generated symbols
-* detect whether or not the runtime is a dynamic library at execution time
+* removed direct references to almost all program-generated symbols
+* added checks for whether the runtime is a dynamic library at execution time
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-* improved error messages for failed compilations without `.good` files
-* switched Homebrew testing to be against the latest release rather than `main`
+* improved `start_test` errors for failed compilations without `.good` files
 * fixed a bug causing `test_install.bash` to always use a single build job
-* expanded the format check CI to cover custom Python `sub_test` files
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added support to `start_test` and `sub_test` to run tests in parallel
+* added support to run `chpl-language-server` tests in parallel
 
 Developer-oriented changes: Utilities
 -------------------------------------
 * extended `extract-docs.py` to include portability notes in generated output
-* fixed `util/test/check_annotations.py` missing many merge commits
+* fixed `util/test/check_annotations.py`, which was missing many merge commits
 
 
 version 2.9
