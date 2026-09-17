@@ -152,6 +152,7 @@ Launchers
 
 Documentation Improvements
 --------------------------
+* fixed several broken links in this `CHANGES.md` file
 * mention that `CHPL_COMM=none` is supported in dynamic loading docs
 
 Language Specification Improvements
@@ -223,6 +224,8 @@ Bug Fixes for the Runtime
 
 Developer-oriented changes: Process
 -----------------------------------
+* added GitHub Actions jobs to cover significant parts of nightly testing  
+  (see https://chapel-lang.org/docs/2.10/developer/bestPractices/ContributorInfo.html#get-github-actions-tests-passing)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -264,12 +267,17 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * improved error messages for failed compilations without `.good` files
+* switched Homebrew testing to be against the latest release rather than `main`
+* fixed a bug causing `test_install.bash` to always use a single build job
+* expanded the format check CI to cover custom Python `sub_test` files
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* extended `extract-docs.py` to include portability notes in generated output
+* fixed `util/test/check_annotations.py` missing many merge commits
 
 
 version 2.9
