@@ -31,6 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          sparse-checkout: .
       - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
@@ -71,7 +72,7 @@ jobs:
                 break
               fi
               gh run view "$id" --json jobs > "jobs_$id.json"
-              email_job_conclusion=$(jq -r '.jobs[] | select(.name == '"$FAILURE_MAIL_JOB_NAME"') | .conclusion' "jobs_$id.json")
+              email_job_conclusion=$(jq -r '.jobs[] | select(.name == "'"$FAILURE_MAIL_JOB_NAME"'") | .conclusion' "jobs_$id.json")
               if [[ "$email_job_conclusion" == "success" ]]; then
                 echo "Recent email sent"
                 ok=true
