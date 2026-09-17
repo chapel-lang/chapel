@@ -14,6 +14,8 @@ permissions:
 
 env:
   RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 48
+  NIGHTLY_WORKFLOW_NAME: "Run nightly checks"
+  FAILURE_MAIL_JOB_NAME: "send-failure-mail"
 
 defaults:
   run:
@@ -51,7 +53,7 @@ jobs:
 
             current_timestamp=$(date +%s)
             acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
-            readarray -t last_run_ids < <(gh run list -w "Run nightly checks" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
+            readarray -t last_run_ids < <(gh run list -w "$NIGHTLY_WORKFLOW_NAME" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
             ok=false
             for id in "${last_run_ids[@]}"; do
               echo "- $id"
@@ -69,7 +71,7 @@ jobs:
                 break
               fi
               gh run view "$id" --json jobs > "jobs_$id.json"
-              email_job_conclusion=$(jq -r '.jobs[] | select(.name == "send-failure-mail") | .conclusion' "jobs_$id.json")
+              email_job_conclusion=$(jq -r '.jobs[] | select(.name == '"$FAILURE_MAIL_JOB_NAME"') | .conclusion' "jobs_$id.json")
               if [[ "$email_job_conclusion" == "success" ]]; then
                 echo "Recent email sent"
                 ok=true
