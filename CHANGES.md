@@ -1,28 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* check placement of items into categories
-* sort items within categories
-* check man page and util/chpl-completion.bash for new compiler flags
-* check test/release/examples
-* fulfill TODOs
-* check for changes put too far down in file
-* check for ' vs `
-* '(http:' -> '(see http:'
-* check for docs/2.4/ links
-* remove `.../index.html` in favor of `.../`
-* check forced linebreaks
-* check initial '*'
-* check for initial 'A-Z'
-* check for 'see:'
-* add highlights
-* mason -> Mason when used as noun
-* spellcheck
-* check ordering of categories relative to one another
-o remove empty sections
-o check links
-
 version 2.10
 ============
 
@@ -45,9 +23,6 @@ Configuration / Build Changes
 -----------------------------
 * we now automatically detect `mpich` when using `CHPL_COMM_OFI_OOB=mpi`
 * disabled function pointer type mismatches for `CHPL_SANITIZE=undefined`
-
-Updates to Chapel's Release Formats
------------------------------------
 
 Syntactic / Naming Changes
 --------------------------
@@ -74,9 +49,6 @@ Semantic Changes / Changes to the Language Definition
 * updated the inference of range index types to match the behavior of `+`  
   (see https://chapel-lang.org/docs/2.10/language/spec/ranges.html#range-literals)
 
-Namespace Changes
------------------
-
 New Standard Library Features
 -----------------------------
 * added `.stacktrace()` to inspect the stack trace of a caught `Error`  
@@ -89,21 +61,6 @@ Changes / Feature Improvements in Standard Libraries
 * added checks to prevent calling `abs(min(int))`  
   (see https://chapel-lang.org/docs/2.10/modules/standard/Math.html#Math.abs)
 
-New Package Module Features
----------------------------
-
-Changes / Feature Improvements in Package Modules
--------------------------------------------------
-
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
-
 `chpl-language-server` (CLS) / VSCode / Editor Improvements
 -----------------------------------------------------------
 * added generic return type inlays like `x.type` for generic functions  
@@ -111,59 +68,25 @@ Name Changes in Libraries
 * expanded common inlays to be displayed in more cases  
   (see https://chapel-lang.org/docs/2.10/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 
-Linter / `chplcheck` Improvements
----------------------------------
-
-Package Manager / Mason Improvements
-------------------------------------
-
-`chpldoc` Improvements
-----------------------
-
 `chapel-py` Improvements
 ------------------------
 * added accessors for `ArrayType` and `DomainType` to `chapel-py`  
   (see https://chapel-lang.org/docs/2.10/tools/chapel-py/chapel-py.html#chapel.ArrayType  
    and https://chapel-lang.org/docs/2.10/tools/chapel-py/chapel-py.html#chapel.DomainType)
 
-
-Debugging Improvements
-----------------------
-
-Syntax Highlighters
--------------------
-
-Other Tool Improvements
------------------------
-
 Performance Optimizations / Improvements
 ----------------------------------------
 * restored performance for programs that rely heavily on `CHPL_CACHE_REMOTE`
-
-Memory Improvements
--------------------
-
-GPU Computing
--------------
-
-Compiler Flags
---------------
 
 Compiler Improvements
 ---------------------
 * improved `**` on `param int`s for better codegen and to avoid overflow
 * refactored LLVM 15 support to use the newer pass manager and opaque pointers
 
-Improvements to Compile Times
------------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * added an error for using `super.init()` in a `union` initializer
 * added an error when trying to create a new `union` value w/ memory management
-
-Error Messages / Semantic Checks for Libraries
-----------------------------------------------
 
 Error Messages for Build Issues
 -------------------------------
@@ -187,9 +110,6 @@ Generated Executable Flags
 --------------------------
 * added information about compile-time environment variables to `--about`
 
-Launchers
----------
-
 Documentation Improvements
 --------------------------
 * added a best practices note for using the undefined behavior sanitizer  
@@ -209,41 +129,20 @@ Language Specification Improvements
 * clarified how `union.visitOne()` should be used  
   (see https://chapel-lang.org/docs/2.10/language/spec/unions.html#ChapelUnion.union.visitOne)
 
-Documentation Improvements for Libraries
-----------------------------------------
-
-Documentation Improvements for Tools
-------------------------------------
-
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * improved the docs for using multiple locales with Homebrew installs  
   (see https://chapel-lang.org/docs/2.10/platforms/macosx.html#multi-locale-execution)
 
-Technical Note Improvements
----------------------------
-
 Example Codes
 -------------
 * updated a few example codes to avoid relying on undefined behaviors
-
-Runtime Library Improvements
-----------------------------
-
-Third-Party Software Changes
-----------------------------
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * replaced the special behavior for `select` on unions with `union select`
 * removed support for the old, outdated logic for inferring a range's `idxType`
 * removed the deprecated `numThreadsPerLocale` in favor of `here.maxTaskPar`
-
-Deprecated / Unstable / Removed Library Features
-------------------------------------------------
 
 Bug Fixes
 ---------
@@ -279,9 +178,6 @@ Bug Fixes for Documentation
 * fixed an oversight in which `lcm()` hadn't been listed as an edition change  
   (see https://chapel-lang.org/docs/2.10/technotes/editions.html#changes-in-the-preview-edition)
 
-Bug Fixes for Release Formats
------------------------------
-
 Bug Fixes for Build Issues
 --------------------------
 * ensured that `CHPL_MAKE` is properly set for sub-`make` invocations
@@ -303,33 +199,18 @@ Developer-oriented changes: Process
 * improved the check_large_files CI check to only check files
 * expanded the format check CI to cover custom Python `sub_test` files
 
-Developer-oriented changes: Documentation
------------------------------------------
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * removed the no-longer-used `ChapelThreads` internal module
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * enabled `CHPL_DEVELOPER=1 DYNO_ENABLE_ASSERTIONS=0` to disable Dyno asserts
 * fixed a typo in a flag name for `chpl_llvm.py --version`
 
-Developer-oriented changes: Compiler Flags
-------------------------------------------
-
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * added an error when using `--no-builtin-runtime` with a non-PIC runtime build
-
-Developer-oriented changes: Dyno Compiler improvements / changes
-----------------------------------------------------------------
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -339,9 +220,6 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * removed direct references to almost all program-generated symbols
 * added checks for whether the runtime is a dynamic library at execution time
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
