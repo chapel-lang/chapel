@@ -6,7 +6,8 @@ on:
       chpl_version:
         type: string
         required: true
-      tarball_url:
+      # Tarball download URL, or artifact ID if using a GitHub artifact
+      tarball_url_or_id:
         required: true
         type: string
       package_version:
@@ -23,9 +24,40 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
+  # Hack to make GitHub artifact URL downloadable
+  fixup-github-url:
+    runs-on: ubuntu-slim
+    outputs:
+      fixed_url: ${{ steps.fix_url.outputs.fixed_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      tarball_url_or_id: ${{ inputs.tarball_url_or_id }}
+    steps:
+      - name: adjust URL if from GitHub artifact
+        id: fix_url
+        run: |
+          fixed_url=$tarball_url_or_id
+          if [[ -z ${tarball_url_or_id//[0-9]} ]]; then
+            gh api -X HEAD --verbose "/repos/${{ github.repository }}/actions/artifacts/$tarball_url_or_id/zip" | tee response.txt
+            fixed_url=$(grep 'Location:' response.txt | rev | cut -d' ' -f1 | rev)
+            echo "Using download URL for GitHub artifact $tarball_url_or_id: $fixed_url"
+          fi
+          echo "fixed_url=$fixed_url" | tee "$GITHUB_ENV" "$GITHUB_OUTPUT"
+      - name: test hitting URL
+        run: |
+          if ! curl -I "$fixed_url"; then
+            echo "Accessing tarball URL $fixed_url failed"
+            echo "If you provided a GitHub artifact URL, please instead provide the artifact ID"
+            if [[ "$fixed_url" != "$tarball_url_or_id" ]]; then
+              echo "Note: this URL was determined by GitHub API call using provided artifact ID $tarball_url_or_id"
+            fi
+            exit 1
+          fi
+
   release-packages:
+    needs: fixup-github-url
     uses: $/.github/workflows/package-builds.yml
     with:
       chpl_version: ${{ inputs.chpl_version }}
-      tarball_url: ${{ inputs.tarball_url }}
+      tarball_url: ${{ needs.fixup-github-url.outputs.fixed_url }}
       package_version: ${{ inputs.package_version }}
