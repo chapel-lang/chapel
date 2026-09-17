@@ -44,7 +44,7 @@ jobs:
         id: last_success
         run: |
           current_timestamp=$(date +%s)
-          acceptable_secs=$((RECENT_NIGHTLY_JOBS_EXPECTED_HOURS * 3600))
+          acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
           readarray -t last_run_ids < <(gh run list -w "Run nightly checks" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
           ok=false
           for id in "${last_run_ids[@]}"; do
