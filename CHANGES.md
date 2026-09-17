@@ -107,6 +107,7 @@ Other Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* restored performance for programs that rely heavily on `CHPL_CACHE_REMOTE`
 
 Memory Improvements
 -------------------
@@ -151,6 +152,7 @@ Launchers
 
 Documentation Improvements
 --------------------------
+* mention that `CHPL_COMM=none` is supported in dynamic loading docs
 
 Language Specification Improvements
 -----------------------------------
@@ -217,6 +219,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
+* fix linker errors that could occur when building the dynamic runtime
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -242,6 +245,7 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * updated the compiler to treat unions with `postinit()` as being non-POD
+* added an error if `--no-builtin-runtime` with a non-PIC runtime build
 
 Developer-oriented changes: Dyno Compiler improvements / changes
 ----------------------------------------------------------------
@@ -251,6 +255,8 @@ Developer-oriented changes: GPU support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* remove direct references to almost all program-generated symbols
+* detect whether or not the runtime is a dynamic library at execution time
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
