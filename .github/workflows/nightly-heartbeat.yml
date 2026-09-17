@@ -72,7 +72,7 @@ jobs:
                 break
               fi
               gh run view "$id" --json jobs > "jobs_$id.json"
-              email_job_conclusion=$(jq -r '.jobs[] | select(.name == '"$FAILURE_MAIL_JOB_NAME"') | .conclusion' "jobs_$id.json")
+              email_job_conclusion=$(jq -r '.jobs[] | select(.name == "'"$FAILURE_MAIL_JOB_NAME"'") | .conclusion' "jobs_$id.json")
               if [[ "$email_job_conclusion" == "success" ]]; then
                 echo "Recent email sent"
                 ok=true
