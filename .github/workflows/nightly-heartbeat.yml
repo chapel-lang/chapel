@@ -42,38 +42,43 @@ jobs:
           EOF
       - name: check last successful nightly run
         id: last_success
-        run: |
-          current_timestamp=$(date +%s)
-          acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
-          readarray -t last_run_ids < <(gh run list -w "Run nightly checks" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
-          ok=false
-          for id in "${last_run_ids[@]}"; do
-            echo "- $id"
-            gh api "/repos/${{ github.repository }}/actions/runs/$id" | jq '.' | tee "run_$id.json"
-            run_timestamp=$(jq '.run_started_at | fromdate' "run_$id.json")
-            if (( run_timestamp < current_timestamp - acceptable_secs )); then
-              echo "Too old"
-              continue
-            fi
-            run_conclusion=$(jq -r '.conclusion' "run_$id.json")
-            if [[ "$run_conclusion" == "success" ]]; then
-              echo "Recent success"
-              ok=true
-              break
-            fi
-            gh run view "$id" --json jobs > "jobs_$id.json"
-            email_job_conclusion=$(jq -r '.jobs[] | select(.name == "send-failure-mail") | .conclusion' "jobs_$id.json")
-            if [[ "$email_job_conclusion" == "success" ]]; then
-              echo "Recent email sent"
-              ok=true
-              break
-            fi
-          done
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 300
+          retry_wait_seconds: 300
+          command: |
+            current_timestamp=$(date +%s)
+            acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
+            readarray -t last_run_ids < <(gh run list -w "Run nightly checks" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
+            ok=false
+            for id in "${last_run_ids[@]}"; do
+              echo "- $id"
+              gh api "/repos/${{ github.repository }}/actions/runs/$id" | jq '.' | tee "run_$id.json"
+              run_timestamp=$(jq '.run_started_at | fromdate' "run_$id.json")
+              if (( run_timestamp < current_timestamp - acceptable_secs )); then
+                echo "Too old"
+                continue
+              fi
+              run_conclusion=$(jq -r '.conclusion' "run_$id.json")
+              if [[ "$run_conclusion" == "success" ]]; then
+                echo "Recent success"
+                ok=true
+                break
+              fi
+              gh run view "$id" --json jobs > "jobs_$id.json"
+              email_job_conclusion=$(jq -r '.jobs[] | select(.name == "send-failure-mail") | .conclusion' "jobs_$id.json")
+              if [[ "$email_job_conclusion" == "success" ]]; then
+                echo "Recent email sent"
+                ok=true
+                break
+              fi
+            done
 
-          if ! $ok; then
-            echo "Warning: Last nightly checks success, or failure mail send, was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
-            exit 1
-          fi
+            if ! $ok; then
+              echo "Warning: Last nightly checks success, or failure mail send, was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
+              exit 1
+            fi
       - name: send warning mail
         if: failure()
         uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
