@@ -80,7 +80,7 @@ jobs:
             done
 
             if ! $ok; then
-              echo "Warning: Last nightly checks success, or failure mail send, was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
+              echo "Warning: Last success of nightly checks workflow '$NIGHTLY_WORKFLOW_NAME', or failure mail sent from 'FAILURE_MAIL_JOB_NAME', was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
               exit 1
             fi
       - name: send warning mail
