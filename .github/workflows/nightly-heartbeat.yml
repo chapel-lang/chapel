@@ -48,6 +48,8 @@ jobs:
           timeout_seconds: 300
           retry_wait_seconds: 300
           command: |
+            set -exuo pipefail
+
             current_timestamp=$(date +%s)
             acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
             readarray -t last_run_ids < <(gh run list -w "Run nightly checks" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
