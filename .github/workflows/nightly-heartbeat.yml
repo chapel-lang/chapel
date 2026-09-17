@@ -55,14 +55,14 @@ jobs:
               echo "Too old"
               continue
             fi
-            run_conclusion=$(jq '.conclusion' "run_$id.json")
+            run_conclusion=$(jq -r '.conclusion' "run_$id.json")
             if [[ "$run_conclusion" == "success" ]]; then
               echo "Recent success"
               ok=true
               break
             fi
             gh run view "$id" --json jobs > "jobs_$id.json"
-            email_job_conclusion=$(jq '.jobs[] | select(.name == "send-failure-mail") | .conclusion' "jobs_$id.json")
+            email_job_conclusion=$(jq -r '.jobs[] | select(.name == "send-failure-mail") | .conclusion' "jobs_$id.json")
             if [[ "$email_job_conclusion" == "success" ]]; then
               echo "Recent email sent"
               ok=true
