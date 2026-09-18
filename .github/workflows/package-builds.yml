@@ -137,6 +137,7 @@ jobs:
             CHPL_VERSION=$calculated_chpl_version
           elif [[ "$CHPL_VERSION" != "$calculated_chpl_version" ]]; then
             echo "Desired chpl version $CHPL_VERSION does not match source version $calculated_chpl_version"
+            exit 1
           fi
           export CHPL_VERSION
           echo "Chapel Version = $CHPL_VERSION"
