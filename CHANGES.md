@@ -24,12 +24,6 @@ Configuration / Build Changes
 * we now automatically detect `mpich` when using `CHPL_COMM_OFI_OOB=mpi`
 * disabled function pointer type mismatches for `CHPL_SANITIZE=undefined`
 
-Syntactic / Naming Changes
---------------------------
-* renamed the repo that supports GitHub Codespaces to `chapel-codespaces`  
-  (see https://github.com/chapel-lang/chapel-codespaces  
-   and https://chapel-lang.org/tryit/)
-
 New Language Features
 ---------------------
 * added a new `union select` pattern-matching syntax for active union fields  
@@ -40,7 +34,7 @@ New Language Features
 Language Feature Improvements
 -----------------------------
 * added ordered comparison operators (`<`, `<=`, `>`, `>=`) on `imag` values
-* added `*`, `/`, and `**` operators for `param` complex values
+* added `*`, `/`, and `**` operators for `param complex` values
 * added stack traces for uncaught thrown Errors
 * made `select` on `union` expressions based on equality, as with other types
 
@@ -114,12 +108,12 @@ Documentation Improvements
 --------------------------
 * added a best practices note for using the undefined behavior sanitizer  
   (see https://chapel-lang.org/docs/2.10/usingchapel/debugging/sanitizers.html#other-sanitizers)
+* updated the docs to reflect the renamed `chapel-codespaces` GitHub repo  
+  (see https://chapel-lang.org/docs/2.10/usingchapel/QUICKSTART.html#github-codespaces)
 * expanded the documented rationale for `imag` types  
   (see https://chapel-lang.org/docs/2.10/language/spec/types.html#imaginary-types)
 * added documentation for full support of ROCm 7  
   (see https://chapel-lang.org/docs/2.10/technotes/gpu.html#requirements)
-* added MI300A to the list of tested AMD GPUs  
-  (see https://chapel-lang.org/docs/2.10/technotes/gpu.html#tested-configurations)
 * mentioned that `CHPL_COMM=none` is supported in the dynamic loading docs
 * fixed several broken links in the `CHANGES.md` file
 * fixed various other typographical and grammatical issues
@@ -140,7 +134,6 @@ Example Codes
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* replaced the special behavior for `select` on unions with `union select`
 * removed support for the old, outdated logic for inferring a range's `idxType`
 * removed the deprecated `numThreadsPerLocale` in favor of `here.maxTaskPar`
 
