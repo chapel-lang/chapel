@@ -1,0 +1,8 @@
+issue-21289-1b.chpl:10: In module 'Main':
+issue-21289-1b.chpl:14: internal error: PAS-NOR-IZE-2328 chpl version 1.30.0 pre-release (9acad415d0)
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
