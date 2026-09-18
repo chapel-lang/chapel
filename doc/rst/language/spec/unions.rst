@@ -89,14 +89,14 @@ set.
 
    .. code-block:: chapel
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      var u: U;
-      u.x = 3; // sets field x
-      writeln(u.x);
-      writeln(u.y); // runtime error: field y is not set
+      var myU: u;
+      myU.x = 3; // sets field x
+      writeln(myU.x);
+      writeln(myU.y); // runtime error: field y is not set
 
    .. BLOCK-test-chapeloutput
 
@@ -116,17 +116,17 @@ not yet explicitly initialized, then
 
    .. BLOCK-test-chapelpre
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      var u: U;
+      var myU: u;
 
    .. code-block:: chapel
 
-      writeln(u.getActiveIndex()); // prints -1
-      u.y = 3.0; // sets field y
-      writeln(u.getActiveIndex()); // prints 1
+      writeln(myU.getActiveIndex()); // prints -1
+      myU.y = 3.0; // sets field y
+      writeln(myU.getActiveIndex()); // prints 1
 
    .. BLOCK-test-chapeloutput
 
@@ -140,12 +140,12 @@ the field name as a member of the union type.
 
     .. code-block:: chapel
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      writeln(U.x); // prints 0
-      writeln(U.y); // prints 1
+      writeln(u.x); // prints 0
+      writeln(u.y); // prints 1
 
    .. BLOCK-test-chapeloutput
 
@@ -392,16 +392,16 @@ active field.
 
    .. BLOCK-test-chapelpre
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      var u: U;
-      u.x = 3;
+      var myU: u;
+      myU.x = 3;
 
    .. code-block:: chapel
 
-      union select u {
+      union select myU {
         when x {
           writeln("x is active with value ", x);
         }
@@ -424,17 +424,17 @@ active field.
 
    .. BLOCK-test-chapelpre
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      var u: U;
-      u.x = 3;
+      var myU: u;
+      myU.x = 3;
 
    .. code-block:: chapel
 
-      u.visit(proc(x: int) { writeln("x is active with value ", x); },
-              proc(y: real) { writeln("y is active with value ", y); });
+      myU.visit(proc(x: int) { writeln("x is active with value ", x); },
+                proc(y: real) { writeln("y is active with value ", y); });
 
    .. BLOCK-test-chapeloutput
 
@@ -447,19 +447,19 @@ conditionals.
 
    .. BLOCK-test-chapelpre
 
-      union U {
+      union u {
         var x: int;
         var y: real;
       }
-      var u: U;
-      u.x = 3;
+      var myU: u;
+      myU.x = 3;
 
    .. code-block:: chapel
 
-      if u.getActiveIndex() == U.x {
-        writeln("x is active with value ", u.x);
-      } else if u.getActiveIndex() == U.y {
-        writeln("y is active with value ", u.y);
+      if myU.getActiveIndex() == u.x {
+        writeln("x is active with value ", myU.x);
+      } else if myU.getActiveIndex() == u.y {
+        writeln("y is active with value ", myU.y);
       } else {
         writeln("no field is active");
       }
