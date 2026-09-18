@@ -60,4 +60,4 @@ jobs:
     with:
       chpl_version: ${{ inputs.chpl_version }}
       tarball_url: ${{ needs.fixup-github-url.outputs.fixed_url }}
-      package_version: ${{ inputs.package_version }}
+      package_version: ${{ fromJSON(inputs.package_version) }}
