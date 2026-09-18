@@ -59,6 +59,6 @@ jobs:
     needs: fixup-github-url
     uses: $/.github/workflows/package-builds.yml
     with:
-      chpl_version: "2.10"
+      chpl_version: "2.10.0"
       tarball_url: ${{ needs.fixup-github-url.outputs.fixed_url }}
       package_version: 1
