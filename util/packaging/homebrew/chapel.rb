@@ -3,6 +3,7 @@ class Chapel < Formula
 
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
+  # TODO: Try building on macOS 27 in a future release
   url "https://github.com/chapel-lang/chapel/releases/download/2.9.0/chapel-2.9.0.tar.gz"
   sha256 "d91ececfc070f0e94c979dd08cdd3f6da84db4ee48fe06f3187ad259ea9553e7"
   license "Apache-2.0"
@@ -27,6 +28,11 @@ class Chapel < Formula
   depends_on "llvm@22"
   depends_on "pkgconf"
   depends_on "python@3.14"
+
+  on_macos do
+    # FIXME: chpl hits an internal error when building mason on macOS 27
+    depends_on maximum_macos: [:tahoe, :build]
+  end
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
