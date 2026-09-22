@@ -158,7 +158,7 @@ gpu_cpu_config = {
     "CHPL_COMM": "none",
     "CHPL_TASKS": "qthreads",
     "CHPL_UNWIND": "system",
-    "CHPL_HOST_MEM": "cstdlib",
+    "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
     "CHPL_GMP": "system",
