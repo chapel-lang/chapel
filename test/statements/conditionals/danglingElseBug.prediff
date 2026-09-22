@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# while the correctness check in the test should be sufficent, we can also double check the generated code
+grep -rn 'else chpl_gen_comm_get' gen >> $2
