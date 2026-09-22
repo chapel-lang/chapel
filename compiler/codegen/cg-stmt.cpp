@@ -242,7 +242,23 @@ CondStmt::codegen() {
       //
       Expr* firstStmt = elseStmt->body.head;
       if (elseStmt->length() == 1 && isCondStmt(firstStmt)) {
+        size_t mark = info->cStatements.size();
         firstStmt->codegen();
+
+        // Evaluating the nested condition may have emitted statements
+        // ahead of its 'if (', which would leave the 'else' dangling.
+        // Only comments may precede it; otherwise wrap in braces after
+        // the fact.
+        bool needBraces = false;
+        for (size_t i = mark; i < info->cStatements.size(); i++) {
+          const std::string& s = info->cStatements[i];
+          if (s.compare(0, 4, "if (") == 0) break;
+          if (s.compare(0, 2, "/*") != 0) { needBraces = true; break; }
+        }
+        if (needBraces) {
+          info->cStatements.insert(info->cStatements.begin() + mark, "{\n");
+          info->cStatements.push_back("}\n");
+        }
       } else {
         elseStmt->codegen();
       }
