@@ -41,7 +41,7 @@ proc install(baseDir: path, p: path) throws {
     // TODO: I would love to use p.pushChdir(), but I don't trust
     // error handling + context managers enough
     // TODO check for errors
-    MasonUtils.runCommand(["make", "MASON_PACKAGE_HOME=" + baseDir:string]);
+    MasonUtils.runCommand(["make", "CHPL_HOME=" + MasonUtils.CHPL_HOME, "MASON_PACKAGE_HOME=" + baseDir:string]);
   } catch e {
     oldDir.chdir();
     throw e;
