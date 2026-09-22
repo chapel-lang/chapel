@@ -177,10 +177,13 @@ def generate_configs(
     incompatibilities = [
         lambda cfg: cfg.get("CHPL_TARGET_MEM") == "jemalloc"
         and cfg.get("CHPL_SANITIZE_EXE") != "none",
+        lambda cfg: cfg.get("CHPL_TARGET_MEM") == "cstdlib"
+        and cfg.get("CHPL_SANITIZE_EXE") == "none",
         lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "gnu",
         lambda cfg: cfg.get("CHPL_COMM_SUBSTRATE") == "smp"
         and cfg.get("CHPL_GASNET_SEGMENT") == "everything",
-        lambda cfg: cfg.get("CHPL_GASNET_SEGMENT") != "everything"
+        lambda cfg: cfg.get("CHPL_COMM") == "gasnet"
+        and cfg.get("CHPL_GASNET_SEGMENT") != "everything"
         and cfg.get("CHPL_TARGET_MEM") == "cstdlib",
         lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm"
         and cfg.get("CHPL_SANITIZE_EXE") != "none"
