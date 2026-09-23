@@ -20,10 +20,7 @@ fi
 cd c-blosc
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd)/../install -DCMAKE_INSTALL_LIBDIR=lib
 make -j4
+make install
 cd ../..
-cp c-blosc/build/blosc/*.so* .
-cp c-blosc/build/blosc/*.dylib* .
-cp c-blosc/build/blosc/*.dll* .
-
