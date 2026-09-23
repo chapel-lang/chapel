@@ -86,7 +86,7 @@ jobs:
             fi
       - name: send warning mail
         if: ${{ github.event_name == 'schedule' && failure() }}
-        uses: dawidd6/action-send-mail@d35571df1982970871070b5e02f01d3b6095cb74 # v19
+        uses: dawidd6/action-send-mail@ca8dbb4d4f91ca7f75e7f2feea5339e76ce70c90 # v20
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER }}
