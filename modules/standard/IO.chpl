@@ -9369,7 +9369,7 @@ proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
 /* Returns ``true`` if a fileReader has reached end-of-file, ``false`` if not.
   Throws an error if there was an error doing the read.
 
-   Inherently racy for channels, hence no doc.
+   Inherently racy, hence no doc.
  */
 @chpldoc.nodoc
 proc fileReader.atEOF(): bool throws {
