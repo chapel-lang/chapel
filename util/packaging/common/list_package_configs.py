@@ -24,6 +24,7 @@ BASE_CONFIGS = [
 
 PACKAGING_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NON_OS_DIRS = {"build", "common", "test"}
+PKG_TYPES = ("apt", "rpm")
 OS_COL = "OS compatibility"
 
 OS_PREFIXES = {
@@ -54,22 +55,17 @@ SORT_KEYS = [
 
 
 def discover_os_names() -> List[str]:
-    names = []
-    for pkg_type in ("apt", "rpm"):
-        d = os.path.join(PACKAGING_DIR, pkg_type)
-        if not os.path.isdir(d):
-            continue
-        for entry in sorted(os.listdir(d)):
-            if entry in NON_OS_DIRS or not os.path.isdir(
-                os.path.join(d, entry)
-            ):
-                continue
-            names.append(entry)
+    names: List[str] = []
+    for pkg_type in PKG_TYPES:
+        _, dirnames, _ = next(
+            os.walk(os.path.join(PACKAGING_DIR, pkg_type)), ("", [], [])
+        )
+        names += sorted(d for d in dirnames if d not in NON_OS_DIRS)
     return names
 
 
 def collect_rows(os_names: List[str]) -> List[Dict[str, str]]:
-    """One row per unique config, with a column listing OSes where it is NOT built."""
+    """One row per unique config, with a column listing OSes where it is not built."""
     rows: Dict[tuple, Dict[str, str]] = {}
     for group, base in BASE_CONFIGS:
         for osname in os_names:
@@ -115,15 +111,20 @@ def join_and(items: List[str]) -> str:
     return ", ".join(items[:-1]) + f", and {items[-1]}"
 
 
+def all_config_keys() -> List[str]:
+    """Every key across BASE_CONFIGS, in first-appearance order."""
+    keys: List[str] = []
+    for _, base in BASE_CONFIGS:
+        keys += [k for k in base if k not in keys]
+    return keys
+
+
 def column_order(
     rows: List[Dict[str, str]], hide_constant: bool, with_group: bool = True
 ) -> List[str]:
     keys: List[str] = ["GROUP"] if with_group else []
     keys += SORT_KEYS
-    for _, base in BASE_CONFIGS:
-        for k in base:
-            if k not in keys:
-                keys.append(k)
+    keys += [k for k in all_config_keys() if k not in keys]
     if hide_constant:
         keys = [k for k in keys if len({fmt(r.get(k)) for r in rows}) > 1]
     keys.append(OS_COL)
@@ -132,13 +133,8 @@ def column_order(
 
 def common_settings(rows: List[Dict[str, str]]) -> List[str]:
     """KEY=value pairs set identically in every row and differing from the default config."""
-    keys: List[str] = []
-    for _, base in BASE_CONFIGS:
-        for k in base:
-            if k not in keys:
-                keys.append(k)
     result = []
-    for k in keys:
+    for k in all_config_keys():
         values = {r.get(k) for r in rows}
         if len(values) != 1:
             continue
@@ -160,6 +156,7 @@ def print_markdown(rows, cols):
     print("|" + "|".join("---" for _ in cols) + "|")
     for r in rows:
         print("| " + " | ".join(fmt(r.get(c)) for c in cols) + " |")
+    print()
 
 
 def print_csv(rows, cols):
@@ -182,6 +179,25 @@ def print_rst(rows, cols):
                 print(prefix.rstrip())
                 continue
             print(prefix + cell)
+    print()
+
+
+# format -> (group heading, common-settings header, settings bullet, table printer)
+FORMATS = {
+    "markdown": (
+        lambda g: f"## {g}\n",
+        "Common settings:\n",
+        "- `{}`",
+        print_markdown,
+    ),
+    "rst": (
+        lambda g: f"{g}\n{'-' * len(g)}\n",
+        "Common settings:\n",
+        "* ``{}``",
+        print_rst,
+    ),
+    "csv": (lambda g: f"# {g}", None, "# {}", print_csv),
+}
 
 
 def main():
@@ -192,9 +208,7 @@ def main():
         metavar="OSNAME",
         help="OS names to consider (default: discovered from apt/ and rpm/)",
     )
-    p.add_argument(
-        "--format", choices=["markdown", "csv", "rst"], default="markdown"
-    )
+    p.add_argument("--format", choices=list(FORMATS.keys()), default="markdown")
     p.add_argument(
         "--all-columns",
         action="store_true",
@@ -224,41 +238,22 @@ def main():
     else:
         tables = [(None, rows)]
 
+    heading, settings_header, bullet, print_table = FORMATS[args.format]
     for i, (group, table_rows) in enumerate(tables):
         cols = column_order(table_rows, hide_constant, with_group=group is None)
-        show_table = group is None or len(table_rows) > 1
-        common = common_settings(table_rows) if args.common_settings else []
+        settings = common_settings(table_rows) if args.common_settings else []
         if i > 0:
             print()
-        if args.format == "csv":
-            if group is not None:
-                print(f"# {group}")
-            for s in common:
-                print(f"# {s}")
-            if show_table:
-                print_csv(table_rows, cols)
-        elif args.format == "rst":
-            if group is not None:
-                print(f"{group}\n{'-' * len(group)}\n")
-            if common:
-                print("Common settings:\n")
-                for s in common:
-                    print(f"* ``{s}``")
-                print()
-            if show_table:
-                print_rst(table_rows, cols)
-                print()
-        else:
-            if group is not None:
-                print(f"## {group}\n")
-            if common:
-                print("Common settings:\n")
-                for s in common:
-                    print(f"- `{s}`")
-                print()
-            if show_table:
-                print_markdown(table_rows, cols)
-                print()
+        if group is not None:
+            print(heading(group))
+        if settings and settings_header:
+            print(settings_header)
+        for s in settings:
+            print(bullet.format(s))
+        if settings and settings_header:
+            print()
+        if group is None or len(table_rows) > 1:
+            print_table(table_rows, cols)
 
 
 if __name__ == "__main__":
