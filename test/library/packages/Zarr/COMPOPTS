@@ -1,2 +1,2 @@
--I./c-blosc/blosc -L. --ldflags -Wl,-rpath,.
+-I./c-blosc/install/include -L./c-blosc/install/lib --ldflags -Wl,-rpath,./c-blosc/install/lib
 
