@@ -21,11 +21,11 @@ The comm layer can use three different kinds of libfabric operations for
 its various transactions.  It uses the RMA (read/write, or alternatively
 GET/PUT) interface for direct transfers between local and remote memory.
 It uses the atomics interface for native atomic operations on networks
-that support those.  And, it uses the message (send/receive, or
+that support them.  And, it uses the message (send/receive, or
 alternatively SEND/RECV)) interface for Active Messages (AMs) for
 executeOn transactions for on-statement bodies, memory transfers to or
-from unregistered memory, atomic operations which cannot be done
-natively, and certain internal operations which don't have MCM
+from unregistered memory, atomic operations that cannot be done
+natively, and certain internal operations that don't have MCM
 implications.
 
 The comm layer has two libfabric tools it can use to determine when
@@ -43,7 +43,7 @@ respect to other operations:
 
 A default completion level can be set for the entire libfabric domain,
 that is, the overarching interface to the network, and one can also
-specify completion levels individually for network operations.  Message
+specify completion levels for individual network operations.  Message
 ordering settings can be specified both for the entire domain and for
 individual transmit or receive contexts (but not endpoints).  Currently
 the comm layer specifies completion levels on both the domain and some
@@ -52,8 +52,8 @@ the domain.
 
 #### Completion Levels
 
-Libfabric's completion level specifies what state an operation has to
-reach before an event is delivered to indicate that it has done so.  (By
+Libfabric's completion level specifies what state an operation must
+reach before a "completion" event is delivered.  (By
 "delivered" here we mean either that a completion counter associated
 with the transmit endpoint has been updated or that an event has been
 placed in the completion queue associated with the endpoint, as
@@ -64,7 +64,7 @@ default completion level, which in our experience seems to be
 `FI_TRANSMIT_COMPLETE` (aka *transmit-complete*) or something closely
 related to it.
 
-Delivery-complete says that the operation has arrived at the remote node
+Delivery-complete means that the operation has arrived at the remote node
 and is no longer dependent on initiator-side resources or the network
 fabric.  Whether its effects such as memory updates are visible is a
 little unclear.  For message (SEND/RECV) traffic for AMs, because the
@@ -125,17 +125,17 @@ layer uses delivery-complete as its default completion level, it doesn't
 have to do much more than just that in order to achieve Chapel MCM
 conformance.  However, because it requires a full network round trip
 before delivering a completion for an operation, delivery-complete is
-the slowest completion level.  There is also at least one provider which
-advertises it can provide delivery-complete but doesn't actually do so;
+the slowest completion level.  There is also at least one provider that
+advertises that it can provide delivery-complete but doesn't actually do so;
 see the
 [libfabric Bug issue](https://github.com/ofiwg/libfabric/issues/5601)
 or more info.
 The comm layer only uses delivery-complete as a last resort, therefore.
 
-When it uses some other completion level as its domain default, whether
-because the provider doesn't support delivery-complete or because a
+When it doesn't use delivery-complete as its domain default, whether
+because the provider doesn't support it or because a
 different completion level will yield better performance, the comm layer
-has to do additional things to ensure MCM conformance and the visibility
+must take additional steps to ensure MCM conformance and the visibility
 of memory effects.
 
 #### Message Ordering
@@ -168,7 +168,7 @@ differing pairs of transmitting and targeted endpoints.
 
 Because message ordering is confined to endpoint pairs, its usefulness
 to the comm layer depends on the tasking implementation and whether or
-not a task is using a "bound" endpoint.  If the tasking implementation
+not a task uses a "bound" endpoint.  If the tasking implementation
 has a fixed number of threads, doesn't switch tasks across threads, and
 the comm layer can bind a given transmit endpoint to the task's thread
 for the duration of the task (or actually in practice, for the duration
@@ -210,7 +210,7 @@ state isn't known.  Here we refer to them as _dangling stores_.
 
 ##### AM-Mediated Non-fetching Atomics
 
-The comm layer defines a number of AM types, but there are only MCM
+The comm layer defines several AM types, but there are only MCM
 implications for those that implement executeOn (on-statement bodies),
 RMA where the remote address is unregistered, and atomic operations when
 we're using a provider that can't do those natively.  AMs can either be
@@ -222,7 +222,7 @@ Chapel on-statements are blocking, with a few exceptions for internal
 special cases that needn't concern us here.
 
 AMs for fetching atomic operations are blocking, obviously, since we
-have to wait for the result to arrive.  But AMs for non-fetching atomic
+must wait for the result to arrive.  But AMs for non-fetching atomic
 operations are a little special.  First, we assume that any non-fetching
 atomic operation that follows a call to `chpl_comm_impl_task_end()`,
 which is called at the end of the user code for each task, must be doing
@@ -234,9 +234,9 @@ theory be done using a nonblocking AM, but then the effect on the target
 variable would be a dangling store, because the initiator would have no
 way to tell when it had been completed.  We therefore use a blocking AM
 so that the initiator does not proceed until the effect of the atomic
-operation is visible.  However, to minimize delays we put off waiting
-for the corresponding 'done' indicator until the task performs some
-other action that has MCM implications.
+operation is visible.  However, to minimize delays we defer waiting
+for the corresponding 'done' indicator until the task performs an
+action that has MCM implications.
 
 ##### Dangling Regular Stores
 
@@ -307,7 +307,7 @@ operations*.
   code) to call `chpl_comm_task_create()` when parent tasks create
   local child tasks, so that the parent's prior operations can be
   fenced.  There is a related requirement to fence prior operations
-  before a task does an on-stmt to a remote node, but the comm layer can
+  before a task does an on-statement to a remote node, but the comm layer can
   handle that itself.
 
 - The program `t = begin{Y}; waitFor(t); Z;` implies _Y <<sub>p</sub>
@@ -318,7 +318,7 @@ operations*.
   The compiler arranges (currently via `_downEndCount()` in the module
   code) to call `chpl_comm_task_end()` when tasks are ending, so that
   their prior operations can be fenced.  There is a related need to
-  fence prior operations at the end of an on-stmt to a remote node, but
+  fence prior operations at the end of an on-statement to a remote node, but
   the comm layer can handle that itself.
 
 - _X <<sub>p</sub> Y_ and _Y <<sub>p</sub> Z_ imply _X <<sub>p</sub>
@@ -407,7 +407,7 @@ store before it to the same address in the total order _<<sub>m</sub>_:
 
   **_Note (Bug):_** We currently use RMA GETs to enforce order on prior
     native atomic operations.  This is probably a bug, however, because
-    with provider(s) which can do native atomic operations we don't
+    with provider(s) that can do native atomic operations we don't
     assert RMA read after atomic message ordering.  We haven't seen any
     problems with this, but for strict correctness we instead may need
     to something that generates a remote completion, such as a blocking
@@ -555,7 +555,7 @@ of prior RMA writes and native atomic operations to be visible, when
 that is needed.  As with memory-order-fence mode, with a bound transmit
 context we can wait to do this on an as-needed basis across the same
 transmit-receive endpoint pair, but in any other case we have to do it
-immediately after the operation that may create the dangling store.
+immediately after an operation that would otherwise create a dangling store.
 
 #### Delivery-complete MCM Mode
 
