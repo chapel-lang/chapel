@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+rm -rf c-blosc
+# retry the clone a few times before giving up due to network flakiness
+ATTEMPTS=5
+for i in {1..$ATTEMPTS}; do
+  if git clone https://github.com/Blosc/c-blosc.git --depth 1 --branch main; then
+    break
+  fi
+  echo "git clone failed (attempt $i), retrying..." >&2
+  rm -rf c-blosc
+  sleep 10
+done
+
+if [ ! -d c-blosc ]; then
+  echo "failed to clone c-blosc after $ATTEMPTS attempts" >&2
+  exit 1
+fi
+
+cd c-blosc
+mkdir build
+cd build
+cmake ..
+make -j4
+cd ../..
+cp c-blosc/build/blosc/*.so* .
+cp c-blosc/build/blosc/*.dylib* .
+cp c-blosc/build/blosc/*.dll* .
+
