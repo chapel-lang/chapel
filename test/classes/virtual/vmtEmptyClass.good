@@ -1,0 +1,30 @@
+object 0
+Base.who
+  Leaf? false Quiet? false Loud? false Louder? false
+object 1
+Base.who
+  Leaf? true Quiet? false Loud? false Louder? false
+object 2
+Base.who
+  Leaf? false Quiet? true Loud? false Louder? false
+object 3
+Loud.who
+  Leaf? false Quiet? true Loud? true Louder? false
+Loud.shout
+object 4
+Loud.who
+  Leaf? false Quiet? true Loud? true Louder? true
+Louder.shout
+nomethods object 0
+  Child? false Grandchild? false Great? false
+nomethods object 1
+  Child? true Grandchild? false Great? false
+nomethods object 2
+  Child? true Grandchild? true Great? false
+NoMethodsGrandchild.hello
+nomethods object 3
+  Child? true Grandchild? true Great? true
+NoMethodsGreat.hello
+caught Error: plain
+caught MyError: my message
+caught MyDeeperError: my deeper message
