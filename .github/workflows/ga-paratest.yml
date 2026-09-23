@@ -494,10 +494,6 @@ jobs:
             readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
             for artifact_id in "${config_dir_results_artifacts[@]}"; do
               echo "Deleting artifact $artifact_id"
-              if gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id"; then
-                :
-              else
-                echo "Failed to delete artifact $artifact_id" >&2
-              fi
+              gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id" >&2
               sleep 0.25
             done
