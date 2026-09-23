@@ -472,19 +472,32 @@ jobs:
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
-      - name: clean up individual test dir result artifacts
+      - name: clean up individual test dir result artifacts (retrying)
         # Skip on pull_request runs, because they don't have permission to delete artifacts.
         if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' && github.event_name != 'pull_request' }}
+        # if this step fails, don't fail the job
+        continue-on-error: true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           GH_TOKEN: ${{ github.token }}
           configuration: ${{ inputs.configuration }}
-        run: |
-          gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
-          jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
+        with:
+          max_attempts: 3
+          timeout_seconds: 360
+          retry_wait_seconds: 30
+          command: |
+            set -exuo pipefail
 
-          readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
-          for artifact_id in "${config_dir_results_artifacts[@]}"; do
-            echo "Deleting artifact $artifact_id"
-            gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id"
-            sleep 0.25
-          done
+            gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
+            jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
+
+            readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
+            for artifact_id in "${config_dir_results_artifacts[@]}"; do
+              echo "Deleting artifact $artifact_id"
+              if gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id"; then
+                :
+              else
+                echo "Failed to delete artifact $artifact_id" >&2
+              fi
+              sleep 0.25
+            done
