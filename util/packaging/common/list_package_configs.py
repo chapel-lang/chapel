@@ -100,6 +100,7 @@ def value_rank(key: str, value) -> int:
 
 
 def row_sort_key(row: Dict[str, str]) -> tuple:
+    """Sort rows by SORT_KEYS, ordering each value as the templates list it."""
     return tuple(value_rank(k, row.get(k)) for k in SORT_KEYS)
 
 
@@ -122,6 +123,7 @@ def all_config_keys() -> List[str]:
 def column_order(
     rows: List[Dict[str, str]], hide_constant: bool, with_group: bool = True
 ) -> List[str]:
+    """Column names in display order, optionally dropping columns whose value never varies."""
     keys: List[str] = ["GROUP"] if with_group else []
     keys += SORT_KEYS
     keys += [k for k in all_config_keys() if k not in keys]
