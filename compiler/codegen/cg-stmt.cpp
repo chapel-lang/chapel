@@ -246,7 +246,8 @@ CondStmt::codegen() {
         firstStmt->codegen();
 
         // Evaluating the nested condition may have emitted statements
-        // ahead of its 'if (', which would leave the 'else' dangling.
+        // ahead of its 'if (', which would cause the body of the 'else' to be
+        // the statement emitted ahead of the 'if', which is incorrect.
         // Only comments may precede it; otherwise wrap in braces after
         // the fact.
         bool needBraces = false;
