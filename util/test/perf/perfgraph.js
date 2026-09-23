@@ -203,6 +203,10 @@ var branchInfo = [
                     "releaseDate": "2026-06-18",
                     "branchDate" : "2026-06-12",
                     "revision": -1},
+                  { "release": "2.10.0",
+                    "releaseDate": "2026-09-24",
+                    "branchDate" : "2026-09-18",
+                    "revision": -1},
                   ];
 
 var indexMap = {};
