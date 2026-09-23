@@ -18,11 +18,6 @@
 //     inlined (the array-producing for-expression in the body does this);
 //   * an if/else-if chain whose else-if conditions are single comparisons.
 //
-// Compile:  chpl --no-local --no-infer-local-fields --savec gen3 foo2.chpl
-// Inspect:  grep -n '} else chpl_gen_comm_get' gen3/foo2.c
-// Expected output on every locale: (2, 0, 0, 1)
-//   kinds 0 and 2 -> twos, kind 6 with objType 3 -> others, nothing -> fours
-// Buggy output: fours != 0 (kind 6/objType 3 also falls through the chain)
 use CTypes;
 
 config const n = 10;
