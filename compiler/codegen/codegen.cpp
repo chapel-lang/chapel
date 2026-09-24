@@ -56,6 +56,8 @@
 
 #include "global-ast-vecs.h"
 
+#include "llvm/ADT/SmallString.h"
+
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/Bitcode/BitcodeWriter.h"
@@ -83,6 +85,7 @@
 #include <inttypes.h>
 
 #include <algorithm>
+#include <charconv>
 #include <cctype>
 
 #include <cmath>
@@ -92,6 +95,28 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+
+template <unsigned InlineCapacity = 256>
+class TableRowFormatter {
+  llvm::SmallString<InlineCapacity> buffer;
+
+  void append(const char* text) { buffer.append(text, text + strlen(text)); }
+
+  void append(int value) {
+    char digits[32];
+    auto result = std::to_chars(digits, digits + sizeof(digits), value);
+    INT_ASSERT(result.ec == std::errc());
+    buffer.append(digits, result.ptr);
+  }
+
+public:
+  template <typename... Parts>
+  std::string format(Parts... parts) {
+    buffer.clear();
+    (append(parts), ...);
+    return std::string(buffer.begin(), buffer.end());
+  }
+};
 
 namespace {
   int getFilenameTableIndex(const std::string& str) {
@@ -744,21 +769,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   std::vector<GenRet> finfo;
   finfo.reserve(fSymbols.size());
 
-  // buf for creating C structures
-  char* buf = NULL;
-  int buf_len = 0;
-
-  if (info->cfile) {
-    // compute the maximum file name length
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      int len = strlen(fn->cname);
-      if (len > buf_len)
-        buf_len = len;
-    }
-    // and then add 100 for two integers and punctuation
-    buf_len += 100;
-    buf = (char*) malloc(buf_len);
-  }
+  TableRowFormatter formatter;
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->name;
@@ -768,10 +779,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     GenRet gen;
 
     if (info->cfile) {
-      int rc = snprintf(buf, buf_len,
-                        "{\"%s\", %d, %d}", fn_name, fileno, lineno);
-      INT_ASSERT( rc < buf_len ); // assert output not truncated
-      gen.c = buf;
+      gen.c = formatter.format("{\"", fn_name, "\", ", fileno, ", ", lineno, "}");
     } else {
 #ifdef HAVE_LLVM
       llvm::Constant* fields[3];
@@ -786,9 +794,6 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 
     finfo.push_back(gen);
   }
-
-  // Free the buffer for C conversions.
-  if (buf) free(buf);
 
   // make sure the table always contains at trailing NULL element
   {
@@ -809,12 +814,8 @@ static const char* vmtName(TypeSymbol* ts) {
   return astr("chpl_vmt_", ts->cname);
 }
 
-// Emits chpl_vmt_<cname>[] for every class with a non-empty virtual method
-// table entry. One slot per entry; slots whose function isn't codegen'd for
-// the current (CPU/GPU) target get a typed NULL so indices agree across
-// targets.
 static void
-genPerClassVtables(std::vector<TypeSymbol*>& types, bool isHeader) {
+genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* eltType = "chpl_fn_p";
 
@@ -845,7 +846,7 @@ genPerClassVtables(std::vector<TypeSymbol*>& types, bool isHeader) {
 
     INT_ASSERT(ct->classId > 0);
 
-    std::vector<GenRet> slots;
+    llvm::SmallVector<GenRet> slots;
     slots.reserve(vfns->n);
 
     forv_Vec(FnSymbol, vfn, *vfns) {
@@ -879,9 +880,14 @@ genPerClassVtables(std::vector<TypeSymbol*>& types, bool isHeader) {
   }
 }
 
-// Emits chpl_classInfo[], indexed by class id, holding each class's vtable
-// pointer, its Schubert-numbering subclass bound, and its name.
-// Must run after genPerClassVtables so the chpl_vmt_* symbols exist.
+// emits chpl_classInfo[], indexed by class id
+// {vtable, Schubert number, vtable length, class name}
+// Must run after genVirtualMethodTables so the chpl_vmt_* symbols exist.
+// This uses Schubert Numbering but we could use Cohen's Display,
+// which can be computed more incrementally.
+// See
+// "Implementing statically typed object-oriented programming languages",
+// by Roland Ducournau
 static void
 genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -898,31 +904,19 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenRet structType = codegenTypeByName(eltType);
 
   // Schubert numbering: n2[cid] is the largest cid in cid's subtree.
-  std::vector<int> n2;
+  std::SmallVector<int> n2;
   computeMaxSubclass(dtObject->symbol, n2);
+  // make sure n2 always contains at least 1 element
   if ((int) n2.size() < gMaxClassId + 1)
     n2.resize(gMaxClassId + 1, 0);
 
   std::vector<GenRet> rows(gMaxClassId + 1);
 
-  // buf for creating C structures
-  char* buf = NULL;
-  int buf_len = 0;
-
-  if (info->cfile) {
-    forv_Vec(TypeSymbol, ts, types) {
-      int len = strlen(ts->cname) + strlen(ts->name);
-      if (len > buf_len)
-        buf_len = len;
-    }
-    // room for the vmt symbol prefix, two integers and punctuation
-    buf_len += 100;
-    buf = (char*) malloc(buf_len);
-  }
+  TableRowFormatter<> formatter;
 
 #ifdef HAVE_LLVM
-  llvm::StructType* st = NULL;
-  llvm::Type* int32Ty = NULL;
+  llvm::StructType* st = nullptr;
+  llvm::Type* int32Ty = nullptr;
   if (!info->cfile) {
     INT_ASSERT(structType.type);
     st = llvm::cast<llvm::StructType>(structType.type);
@@ -944,15 +938,13 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     GenRet row;
 
     if (info->cfile) {
-      int rc = snprintf(buf, buf_len, "{%s, %d, %d, \"%s\"}",
-                        vmtLen > 0 ? vmtName(ts) : "NULL",
-                        n2[id], vmtLen, ts->name);
-      INT_ASSERT( rc < buf_len ); // assert output not truncated
-      row.c = buf;
+      row.c = formatter.format("{", vmtLen > 0 ? vmtName(ts) : "NULL",
+                               ", ", n2[id], ", ", vmtLen, ", \"", ts->name,
+                               "\"}");
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* vmtPtrTy = st->getElementType(0);
-      llvm::Constant* vmtPtr = NULL;
+      llvm::Constant* vmtPtr = nullptr;
       if (vmtLen > 0) {
         GenRet vmtGlobal = info->lvt->getValue(vmtName(ts));
         INT_ASSERT(vmtGlobal.val);
@@ -975,8 +967,6 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 
     rows[id] = row;
   }
-
-  if (buf) free(buf);
 
   // cid 0 and generic classes (which have cids but no vtable) get null rows
   for (size_t i = 0; i < rows.size(); i++) {
@@ -1813,7 +1803,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   genClassIDs(types, false);
 
   genComment("Virtual Method Tables");
-  genPerClassVtables(types, false);
+  genVirtualMethodTables(types, false);
   genClassInfoTable(types, false);
 
   genComment("Function Pointer Table");
@@ -2209,7 +2199,7 @@ static void codegen_header(std::set<const char*> & cnames,
 
   assignClassIds();
   genClassIDs(types, true);
-  genPerClassVtables(types, true);
+  genVirtualMethodTables(types, true);
   genClassInfoTable(types, true);
 
   // Generate root class first to satisfy assumptions made elsewhere
