@@ -142,7 +142,7 @@ jobs:
       actions: write
     with:
       configuration: darwin
-      runner: macos-latest
+      runner: macos-26
       use-container: false
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |

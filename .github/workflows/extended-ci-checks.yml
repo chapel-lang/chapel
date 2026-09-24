@@ -267,7 +267,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-latest]
+        os: [ubuntu-24.04, macos-26]
     runs-on: ${{ matrix.os }}
     steps:
       - name: save matrix properties to env

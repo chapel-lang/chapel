@@ -439,10 +439,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26]
         config: [gasnet, none]
         exclude:
-          - os: macos-latest
+          - os: macos-26
             config: gasnet
     runs-on: ${{ matrix.os }}
     steps:
