@@ -2677,9 +2677,11 @@ static const char* classInfoFieldName(ClassInfoField field) {
   INT_FATAL("unknown chpl_class_info field");
   return NULL;
 }
+#ifdef HAVE_LLVM
 static unsigned classInfoFieldIndex(ClassInfoField field) {
   return static_cast<unsigned>(field);
 }
+#endif
 static Type* classInfoFieldType(ClassInfoField field) {
   switch (field) {
 #define CLASS_INFO_FIELD_TYPE(name, idx, type) case ClassInfoField::name: return type;
