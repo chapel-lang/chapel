@@ -28,7 +28,7 @@ jobs:
   build-test-image-each-arch:
     strategy:
       matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read

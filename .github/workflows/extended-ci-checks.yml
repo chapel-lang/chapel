@@ -29,7 +29,7 @@ jobs:
       arkouda-version: "release"
 
   check_blog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
       credentials:
@@ -62,7 +62,7 @@ jobs:
       fail-fast: false
       matrix:
         gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: save matrix properties to env
         run: |
@@ -137,7 +137,7 @@ jobs:
       fail-fast: false
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Install Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
@@ -185,7 +185,7 @@ jobs:
       fail-fast: false
       matrix:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
-    runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
+    runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-24.04' || 'ubuntu-22.04' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script (retrying)
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -236,7 +236,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
       credentials:
@@ -267,7 +267,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: save matrix properties to env
@@ -285,7 +285,7 @@ jobs:
           fi
 
   test-c2chapel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
       credentials:
@@ -357,7 +357,7 @@ jobs:
 
   push-multiarch-docker-images:
     needs: [base-docker-image, gasnet-docker-images]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
