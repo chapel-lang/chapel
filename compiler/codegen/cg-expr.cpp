@@ -6457,7 +6457,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet vmt = codegenClassInfoField(cid, "vmt");
 
     if (gGenInfo->cfile){
-      fnPtr.c = vmt.c + "[" + idx.c + "]";
+      fnPtr.c = vmt.c + "[" + idx.c + "/*" + fn->name + "*/" + "]";
     } else {
 #ifdef HAVE_LLVM
       GenRet fnPtrT = codegenTypeByName("chpl_fn_p");
