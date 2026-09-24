@@ -2656,41 +2656,57 @@ GenRet codegenIsNotZero(GenRet x)
   return ret;
 }
 
-// The *value* of chpl_classInfo[cid].<field> (a GEN_VAL, already loaded).
-// Field names/indices must match chpl_class_info in runtime/include/chpltypes.h.
+#define CLASS_INFO_FIELDS(V) \
+  V(vmt, 0, NULL) \
+  V(maxSubclassId, 1, CLASS_ID_TYPE) \
+  V(numVirtualMethods, 2, dtInt[INT_SIZE_32]) \
+  V(name, 3, dtStringC)
+
+enum class ClassInfoField {
+#define CLASS_INFO_FIELD_ENUM(field, idx, type) field = idx,
+  CLASS_INFO_FIELDS(CLASS_INFO_FIELD_ENUM)
+#undef CLASS_INFO_FIELD_ENUM
+};
+
+static const char* classInfoFieldName(ClassInfoField field) {
+  switch (field) {
+#define CLASS_INFO_FIELD_NAME(name, idx, type) case ClassInfoField::name: return #name;
+    CLASS_INFO_FIELDS(CLASS_INFO_FIELD_NAME)
+#undef CLASS_INFO_FIELD_NAME
+  }
+  INT_FATAL("unknown chpl_class_info field");
+  return NULL;
+}
+static unsigned classInfoFieldIndex(ClassInfoField field) {
+  return static_cast<unsigned>(field);
+}
+static Type* classInfoFieldType(ClassInfoField field) {
+  switch (field) {
+#define CLASS_INFO_FIELD_TYPE(name, idx, type) case ClassInfoField::name: return type;
+    CLASS_INFO_FIELDS(CLASS_INFO_FIELD_TYPE)
+#undef CLASS_INFO_FIELD_TYPE
+  }
+  INT_FATAL("unknown chpl_class_info field");
+  return NULL;
+}
+#undef CLASS_INFO_FIELDS
+
 static
-GenRet codegenClassInfoField(GenRet cid, const char* field)
+GenRet codegenClassInfoField(GenRet cid, ClassInfoField field)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
 
-  unsigned fieldIdx = 0;
-  Type* chplType = NULL;
-  if (0 == strcmp(field, "vmt")) {
-    fieldIdx = 0;
-  } else if (0 == strcmp(field, "maxSubclassId")) {
-    fieldIdx = 1;
-    chplType = CLASS_ID_TYPE;
-  } else if (0 == strcmp(field, "numVirtualMethods")) {
-    fieldIdx = 2;
-    chplType = dtInt[INT_SIZE_32];
-  } else if (0 == strcmp(field, "name")) {
-    fieldIdx = 3;
-    chplType = dtStringC;
-  } else {
-    INT_FATAL("unknown chpl_class_info field %s", field);
-  }
-
   ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplType;
-
+  ret.chplType = classInfoFieldType(field);
   if (info->cfile) {
     ret.c = "chpl_classInfo[";
     ret.c += cid.c;
     ret.c += "].";
-    ret.c += field;
+    ret.c += classInfoFieldName(field);
   } else {
 #ifdef HAVE_LLVM
+    unsigned fieldIdx = classInfoFieldIndex(field);
     GenRet table = info->lvt->getValue("chpl_classInfo");
 
     INT_ASSERT(table.val);
@@ -2707,16 +2723,19 @@ GenRet codegenClassInfoField(GenRet cid, const char* field)
         llvm::IntegerType::getInt64Ty(info->module->getContext()));
     GEPLocs[1] = extendToPointerSize(cid, 0);
 
-    llvm::Value* rowPtr;
-    rowPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
+    auto rowPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
 
-    llvm::Value* fieldPtr = info->irBuilder->CreateStructGEP(st, rowPtr,
-                                                             fieldIdx);
+    auto fieldPtr = info->irBuilder->CreateStructGEP(st, rowPtr, fieldIdx);
     trackLLVMValue(fieldPtr);
 
-    llvm::Instruction* fieldVal =
+    auto fieldVal =
       info->irBuilder->CreateLoad(st->getElementType(fieldIdx), fieldPtr);
     trackLLVMValue(fieldVal);
+
+    // I don't think it matters, but we could provide TBAA metadata
+    // here to indicate global constant variable loads are constant...
+    // I'd expect LLVM to figure that out because the table loaded is
+    // constant.
 
     ret.val = fieldVal;
 #endif
@@ -2746,7 +2765,7 @@ GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
   // Since we use n1_Td twice, put it into a temp var
   // other than that, n1_Td is cid_Td.
   GenRet n1_Td = createTempVarWith(cid_Td);
-  GenRet n2_C  = codegenClassInfoField(cid_C, "maxSubclassId");
+  GenRet n2_C  = codegenClassInfoField(cid_C, ClassInfoField::maxSubclassId);
 
   GenRet part1 = codegenLessEquals(n1_C, n1_Td);
   GenRet part2 = codegenLessEquals(n1_Td, n2_C);
@@ -4614,8 +4633,7 @@ DEFINE_PRIM(REF_TO_STRING) {
 
 DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
-    ret = codegenClassInfoField(cid, "name");
-    ret.chplType = dtStringC;
+    ret = codegenClassInfoField(cid, ClassInfoField::name);
 }
 
 DEFINE_PRIM(RETURN) {
@@ -6453,8 +6471,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet  idx  = new_IntSymbol(fnId, INT_SIZE_64);
 
     // fnPtr = chpl_classInfo[cid].vmt[fnId]
-    // Both loads stay at the call site: the vmt pointer is locale-local.
-    GenRet vmt = codegenClassInfoField(cid, "vmt");
+    GenRet vmt = codegenClassInfoField(cid, ClassInfoField::vmt);
 
     if (gGenInfo->cfile){
       fnPtr.c = vmt.c + "[" + idx.c + "/*" + fn->name + "*/" + "]";
