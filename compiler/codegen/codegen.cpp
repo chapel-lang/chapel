@@ -525,7 +525,7 @@ static void assignClassIds() {
 // Computes a maximum ID of subclasses and stores that in n2.
 // Returns the maximum ID of a subclass.
 // This helps with Schubert numbering
-static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
+static int computeMaxSubclass(TypeSymbol* ts, llvm::SmallVector<int>& n2) {
   int retval = 0;
 
   if (ts != NULL) {
@@ -557,26 +557,25 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
 }
 
 
-static void codegenGlobalConstArray(const char*          name,
-                                    const char*          eltType,
-                                    std::vector<GenRet>* vals,
-                                    bool                 isHeader) {
+// codegen for global constant array headers
+static void codegenGlobalConstArray(const char* name, const char* eltType) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+    fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
+  }
+}
+// codegen for global constant arrays
+template <typename Container>
+static void codegenGlobalConstArray(const char* name, const char* eltType,
+                                    const Container& array) {
   GenInfo* info = gGenInfo;
 
-  if(isHeader) {
-    if( info->cfile ) {
-      FILE* hdrfile = info->cfile;
-      fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
-    }
-    return;
-  }
-
   // Now generate arrays
-  if( info->cfile ) {
+  if (info->cfile) {
     FILE* f = info->cfile;
     fprintf(f, "const %s %s[] = {\n", eltType, name);
     bool first = true;
-    std::vector<GenRet> & array = *vals;
     int n = array.size();
     for(int i = 0; i < n; i++ ) {
       if (!first)
@@ -594,7 +593,6 @@ static void codegenGlobalConstArray(const char*          name,
 
   std::vector<llvm::Constant *> table;
 
-  std::vector<GenRet> & array = *vals;
   int n = array.size();
   table.resize(n);
   for(int i = 0; i < n; i++ ) {
@@ -698,8 +696,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* name = ftableName;
 
   if (isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalConstArray(name, eltType);
     codegenGlobalInt64(ftableSizeName, 0, true);
     return;
   }
@@ -735,7 +732,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   ftable.push_back(nullFn);
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &ftable, false);
+  codegenGlobalConstArray(name, eltType, ftable);
 
   // Now emit the size
   codegenGlobalInt64(ftableSizeName, ftable.size(), false);
@@ -749,8 +746,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* name = "chpl_finfo";
 
   if(isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalConstArray(name, eltType);
     return;
   }
 
@@ -807,7 +803,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &finfo, false);
+  codegenGlobalConstArray(name, eltType, finfo);
 }
 
 static const char* vmtName(TypeSymbol* ts) {
@@ -840,7 +836,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
     const char* name = vmtName(ts);
 
     if (isHeader) {
-      codegenGlobalConstArray(name, eltType, NULL, true);
+      codegenGlobalConstArray(name, eltType);
       continue;
     }
 
@@ -876,7 +872,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
       slots.push_back(fnAddress);
     }
 
-    codegenGlobalConstArray(name, eltType, &slots, false);
+    codegenGlobalConstArray(name, eltType, slots);
   }
 }
 
@@ -895,7 +891,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   const char* name = "chpl_classInfo";
 
   if (isHeader) {
-    codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalConstArray(name, eltType);
     return;
   }
 
@@ -904,7 +900,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenRet structType = codegenTypeByName(eltType);
 
   // Schubert numbering: n2[cid] is the largest cid in cid's subtree.
-  std::SmallVector<int> n2;
+  llvm::SmallVector<int> n2;
   computeMaxSubclass(dtObject->symbol, n2);
   // make sure n2 always contains at least 1 element
   if ((int) n2.size() < gMaxClassId + 1)
@@ -979,7 +975,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     }
   }
 
-  codegenGlobalConstArray(name, eltType, &rows, false);
+  codegenGlobalConstArray(name, eltType, rows);
 }
 
 static void genFilenameTable() {
@@ -1011,7 +1007,7 @@ static void genFilenameTable() {
   }
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &table, false);
+  codegenGlobalConstArray(name, eltType, table);
 
   // Now emit the size
   genGlobalInt32(sizeName, InsertLineNumbers::getFilenameTable().size());
@@ -1162,7 +1158,7 @@ static void genUnwindSymbolTable(){
     auto table = unwindTable.buildNameTable();
 
     // Now emit the global array declaration
-    codegenGlobalConstArray(name, eltType, &table, false);
+    codegenGlobalConstArray(name, eltType, table);
   }
 
   // Generate the filename index, linenum table
@@ -1176,7 +1172,7 @@ static void genUnwindSymbolTable(){
     auto table = unwindTable.buildFileLineTable();
 
     // Now emit the global array declaration
-    codegenGlobalConstArray(name, eltType, &table, false);
+    codegenGlobalConstArray(name, eltType, table);
   }
 
   // Now emit the size of the symbol table
