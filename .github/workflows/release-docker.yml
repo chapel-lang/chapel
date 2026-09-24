@@ -66,9 +66,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PAT }}
-      - name: tag and push image for release ${{ env.RELEASE_VERSION }}
+      - name: tag and push image for release as '${{ env.RELEASE_VERSION }}' and 'latest'
         run: |
           IMAGE_NO_TAG="$EXTERNAL_REGISTRY/$NAMESPACE/$IMAGE_NAME"
           SHA_TAGGED_IMAGE="$IMAGE_NO_TAG:$SHA_TAG"
           RELEASE_TAGGED_IMAGE="$IMAGE_NO_TAG:$RELEASE_VERSION"
+          LATEST_TAGGED_IMAGE="$IMAGE_NO_TAG:latest"
           docker buildx imagetools create -t "$RELEASE_TAGGED_IMAGE" "$SHA_TAGGED_IMAGE"
+          docker buildx imagetools create -t "$LATEST_TAGGED_IMAGE" "$SHA_TAGGED_IMAGE"
