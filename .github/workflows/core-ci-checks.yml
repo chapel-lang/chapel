@@ -501,16 +501,19 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
-  prereqs-docs-compare:
+  docs-checks:
     runs-on: ubuntu-slim
     env:
       PREREQS_COMMANDS_FILE: "doc/rst/usingchapel/prereqs-commands.rst"
       PORTABILITY_TEST_DIR: "util/devel/test/portability"
+      PACKAGING_TABLE_FILE: "doc/rst/platforms/linux-pkg-table.rst"
+      PACKAGING_DIR: "util/packaging"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             ${{ env.PORTABILITY_TEST_DIR }}
+            ${{ env.PACKAGING_DIR }}
             doc
           persist-credentials: false
       - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
@@ -519,3 +522,9 @@ jobs:
       - name: compare against checked-in file
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
+      - name: generate ${{ env.PACKAGING_TABLE_FILE }}
+        run: |
+          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py --format rst --split --common-settings > "$PACKAGING_TABLE_FILE"
+      - name: compare against checked-in file
+        run: |
+          git diff --exit-code "$PACKAGING_TABLE_FILE"
