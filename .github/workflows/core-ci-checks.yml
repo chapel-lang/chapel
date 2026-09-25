@@ -501,6 +501,26 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
+  which-llvm-config:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: check for llvm-config
+        run: |
+          set +e
+          which llvm-config
+          which llvm-config-15
+          which llvm-config-16
+          which llvm-config-17
+          which llvm-config-18
+          which llvm-config-19
+          which llvm-config-20
+          which llvm-config-21
+          which llvm-config-22
+
   prereqs-docs-compare:
     runs-on: ubuntu-slim
     env:
