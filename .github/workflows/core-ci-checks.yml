@@ -54,4 +54,39 @@ jobs:
         with:
           name: homebrew-log
           path: /Users/runner/Library/Logs/Homebrew/chapel/*
+  chapel-code-smoke-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, xcode-27]
+        config: [none]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: save matrix properties to env
+        run: |
+          echo "OS=${{ matrix.os }}" >> "$GITHUB_ENV"
+          echo "CONFIG=${{ matrix.config }}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: install deps
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+        run: |
+          brew install llvm@22
+      - name: setup env and run ./util/buildRelease/smokeTest
+        run: |
+          source ./util/cron/common.bash
 
+          source ./util/cron/common-darwin.bash
+          
+
+          if [[ "$CONFIG" == "gasnet" ]] ; then
+            source ./util/cron/common-gasnet.bash
+            # Silence warnings about not using ibv despite ibv hardware presence
+            export GASNET_QUIET=yes
+          fi
+
+          export NIGHTLY_TEST_SETTINGS=true
+          export CHPL_SMOKE_SKIP_MAKE_MASON=true
+
+          ./util/buildRelease/smokeTest
