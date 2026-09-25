@@ -18,7 +18,7 @@ single-node (CHPL_COMM=none)
      -
      - cstdlib
      - address
-     - not supported on Debian 12, Ubuntu 22, and Amazon Linux 2023
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - llvm
      - slurm-srun
      - jemalloc
@@ -28,7 +28,7 @@ single-node (CHPL_COMM=none)
      - slurm-srun
      - cstdlib
      - address
-     - not supported on Debian 12, Ubuntu 22, and Amazon Linux 2023
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - clang
      -
      - jemalloc
@@ -78,7 +78,7 @@ Common settings:
      - everything
      - cstdlib
      - address
-     - not supported on Debian 12, Ubuntu 22, and Amazon Linux 2023
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - llvm
      - udp
      - fast
