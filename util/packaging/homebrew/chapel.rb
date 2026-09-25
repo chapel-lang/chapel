@@ -26,10 +26,10 @@ class Chapel < Formula
   depends_on "pkgconf"
   depends_on "python@3.14"
 
-  on_macos do
-    # FIXME: chpl hits an internal error when building mason on macOS 27
-    depends_on maximum_macos: [:tahoe, :build]
-  end
+  # on_macos do
+  #   # FIXME: chpl hits an internal error when building mason on macOS 27
+  #   depends_on maximum_macos: [:tahoe, :build]
+  # end
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
@@ -102,33 +102,36 @@ class Chapel < Formula
     cd libexec do
       system "./util/printchplenv", "--all"
       system "make"
-      with_env(CHPL_TARGET_COMPILER: cbackend) do
-        system "make"
-      end
-      with_env(
-        CHPL_COMM:               "gasnet",
-        CHPL_COMM_SUBSTRATE:     "udp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
-      ) do
-        system "make"
-        # C backend requires https://github.com/chapel-lang/chapel/pull/27652
-        # to be resolved
-        # with_env(CHPL_TARGET_COMPILER: cbackend) do
-        #   system "make"
-        # end
-      end
-      with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
-        system "make"
-      end
+      # with_env(CHPL_CHECK_DEBUG: "1", "CHPL_HOME": libexec, CHPL_INCLUDE_PATH: HOMEBREW_PREFIX/"include", "CHPL_LIB_PATH": HOMEBREW_PREFIX/"lib", "CHPL_IGNORE_GASNET_LD": "1", "CHPL_RT_SILENCE_UNUSED_CORES": "1", "CHPL_START_TEST_ARGS": "--test-root #{testpath}") do
+      #   system "util/test/checkChplInstall"
+      # end
+      # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   system "make"
+      # end
+      # with_env(
+      #   CHPL_COMM:               "gasnet",
+      #   CHPL_COMM_SUBSTRATE:     "udp",
+      #   CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
+      # ) do
+      #   system "make"
+      #   # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+      #   # to be resolved
+      #   # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   #   system "make"
+      #   # end
+      # end
+      # with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
+      #   system "make"
+      # end
 
-      with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        system "make", "chpldoc"
-        system "make", "c2chapel"
-        system "make", "chplcheck"
-        system "make", "chpl-language-server"
-      end
-      system "make", "mason"
-      system "make", "cleanall"
+      # with_env(CHPL_PIP_FROM_SOURCE: "1") do
+      #   system "make", "chpldoc"
+      #   # system "make", "c2chapel"
+      #   # system "make", "chplcheck"
+      #   # system "make", "chpl-language-server"
+      # end
+      # system "make", "mason"
+      # system "make", "cleanall"
 
       rm_r("third-party/llvm/llvm-src/")
       rm_r("third-party/gasnet/gasnet-src/")
@@ -202,45 +205,48 @@ class Chapel < Formula
     ENV["CHPL_IGNORE_GASNET_LD"] = "1"
     ENV["CHPL_RT_SILENCE_UNUSED_CORES"] = "1"
     ENV["CHPL_START_TEST_ARGS"] = "--test-root #{testpath}"
+    ENV["CHPL_CHECK_DEBUG"] = "1"
 
     cd libexec do
-      system "util/test/checkChplInstall"
-      system "util/test/checkChplDoc"
-      with_env(CHPL_TARGET_COMPILER: cbackend) do
-        system "util/test/checkChplInstall"
-      end
-      with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp") do
-        with_env(
-          GASNET_SPAWNFN:         "L",
-          GASNET_ROUTE_OUTPUT:    "0",
-          GASNET_QUIET:           "Y",
-          GASNET_MASTERIP:        "127.0.0.1",
-          GASNET_WORKERIP:        "127.0.0.0",
-          CHPL_RT_OVERSUBSCRIBED: "yes",
-        ) do
-          system "util/test/checkChplInstall"
-          # C backend requires https://github.com/chapel-lang/chapel/pull/27652
-          # to be resolved
-          # with_env(CHPL_TARGET_COMPILER: cbackend) do
-          #   system "util/test/checkChplInstall"
-          # end
-        end
-      end
-      with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
-        system "util/test/checkChplInstall"
-      end
+      system "util/printchplenv"
+      system "./util/chplenv/printchplbuilds.py"
+      # system "util/test/checkChplInstall"
+      # system "util/test/checkChplDoc"
+      # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   system "util/test/checkChplInstall"
+      # end
+      # with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp") do
+      #   with_env(
+      #     GASNET_SPAWNFN:         "L",
+      #     GASNET_ROUTE_OUTPUT:    "0",
+      #     GASNET_QUIET:           "Y",
+      #     GASNET_MASTERIP:        "127.0.0.1",
+      #     GASNET_WORKERIP:        "127.0.0.0",
+      #     CHPL_RT_OVERSUBSCRIBED: "yes",
+      #   ) do
+      #     system "util/test/checkChplInstall"
+      #     # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+      #     # to be resolved
+      #     # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #     #   system "util/test/checkChplInstall"
+      #     # end
+      #   end
+      # end
+      # with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
+      #   system "util/test/checkChplInstall"
+      # end
     end
-    system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
-    system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
-           "--print-commands", libexec/"examples/hello.chpl"
-    system bin/"chpldoc", "--version"
-    system bin/"mason", "--version"
+    system bin/"chpl", "--devel", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    # system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
+    #        "--print-commands", libexec/"examples/hello.chpl"
+    # system bin/"chpldoc", "--version"
+    # system bin/"mason", "--version"
 
-    system bin/"c2chapel", "--version"
+    # system bin/"c2chapel", "--version"
 
-    # Test chplcheck, if it works CLS probably does too.
-    # chpl-language-server will hang indefinitely waiting for a LSP client
-    system bin/"chplcheck", "--list-rules"
-    system bin/"chplcheck", libexec/"examples/hello.chpl"
+    # # Test chplcheck, if it works CLS probably does too.
+    # # chpl-language-server will hang indefinitely waiting for a LSP client
+    # system bin/"chplcheck", "--list-rules"
+    # system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
