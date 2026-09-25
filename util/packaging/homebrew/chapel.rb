@@ -29,10 +29,10 @@ class Chapel < Formula
   depends_on "pkgconf"
   depends_on "python@3.14"
 
-  on_macos do
-    # FIXME: chpl hits an internal error when building mason on macOS 27
-    depends_on maximum_macos: [:tahoe, :build]
-  end
+  # on_macos do
+  #   # FIXME: chpl hits an internal error when building mason on macOS 27
+  #   depends_on maximum_macos: [:tahoe, :build]
+  # end
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
