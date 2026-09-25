@@ -320,15 +320,20 @@ def find_system_llvm_config():
     errs = []
 
     for command in paths:
+        print(f"testing command: {command}")
         version, config_err = check_llvm_config(command)
         if not config_err:
+            print(f"accepted command: {command}")
             by_version[version].append(command)
         else:
+            print(f"rejected command: {command}")
+            print(f"with err: {config_err}")
             errs.append((command, config_err))
 
     for version in llvm_versions():
         commands = by_version[version]
         if commands:
+            print(f"returning command: {commands[0]}")
             return commands[0]
 
     return ""
