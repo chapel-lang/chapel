@@ -50,7 +50,7 @@ jobs:
           # fi
       - name: upload homebrew log
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: homebrew-log
           path: /Users/runner/Library/Logs/Homebrew/chapel/*
