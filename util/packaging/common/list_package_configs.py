@@ -28,7 +28,7 @@ PKG_TYPES = ("apt", "rpm")
 OS_COL = "OS compatibility"
 
 OS_PREFIXES = {
-    "amzn": "Amazon Linux {}",
+    "amzn": "AL{}",
     "debian": "Debian {}",
     "el": "RHEL {}",
     "fc": "Fedora {}",
