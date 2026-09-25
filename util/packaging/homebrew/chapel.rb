@@ -208,8 +208,11 @@ class Chapel < Formula
     ENV["CHPL_IGNORE_GASNET_LD"] = "1"
     ENV["CHPL_RT_SILENCE_UNUSED_CORES"] = "1"
     ENV["CHPL_START_TEST_ARGS"] = "--test-root #{testpath}"
+    ENV["CHPL_CHECK_DEBUG"] = "1"
 
     cd libexec do
+      system "util/printchplenv"
+      system "./util/chplenv/printchplbuilds.py"
       system "util/test/checkChplInstall"
       # system "util/test/checkChplDoc"
       # with_env(CHPL_TARGET_COMPILER: cbackend) do
