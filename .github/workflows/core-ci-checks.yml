@@ -458,6 +458,14 @@ jobs:
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm@22
+          else
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
           fi
       - name: check for llvm-config
         continue-on-error: true
