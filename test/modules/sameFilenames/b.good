@@ -1,0 +1,1 @@
+subdir2/a.chpl:1: error: Redefinition of module 'a' (the original was defined in 'b.chpl')

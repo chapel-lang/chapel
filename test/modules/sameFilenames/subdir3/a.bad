@@ -1,0 +1,4 @@
+<command line>: warning: ambiguous module source file -- using a.chpl over ../subdir2/a.chpl
+a.chpl:1: error: In use/imported file, module name M does not match file name a.chpl
+a.chpl:1: In module 'M':
+a.chpl:2: error: cannot find module or enum named 'a'
