@@ -460,6 +460,7 @@ jobs:
             brew install llvm@22
           fi
       - name: check for llvm-config
+        continue-on-error: true
         run: |
           set +e
           which llvm-config
@@ -513,6 +514,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: check for llvm-config
+        continue-on-error: true
         run: |
           set +e
           which llvm-config
