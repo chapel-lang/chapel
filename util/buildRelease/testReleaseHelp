@@ -12,7 +12,7 @@ unset CHPLDEVTMP
 mymake="$1"
 
 # Number of logical processes on current system. Will be used as number of jobs
-# when calling make with parallel execution.
+# when calling make with parallel execution, and in parallel start_test.
 num_procs=$($(dirname "$0")/chpl-make-cpu_count)
 
 #
@@ -121,7 +121,7 @@ if [[ $tmpstatus != 0 ]]; then
     exit $tmpstatus
 fi
 
-start_test_flags=''
+start_test_flags="--parallel $num_procs"
 if [[ -n "${CHPL_TEST_RELEASE_NORECURSE:-}" ]]; then
     start_test_flags="${start_test_flags} --norecurse"
 fi
