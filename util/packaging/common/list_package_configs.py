@@ -81,7 +81,7 @@ def collect_rows(os_names: List[str]) -> List[Dict[str, str]]:
         supported = row.pop("_os")
         unsupported = [pretty_os(o) for o in os_names if o not in supported]
         row[OS_COL] = (
-            "not supported on " + join_and(unsupported) if unsupported else "-"
+            "unsupported on " + join_and(unsupported) if unsupported else "-"
         )
         result.append(row)
     result.sort(key=row_sort_key)
@@ -129,7 +129,8 @@ def column_order(
     keys += [k for k in all_config_keys() if k not in keys]
     if hide_constant:
         keys = [k for k in keys if len({fmt(r.get(k)) for r in rows}) > 1]
-    keys.append(OS_COL)
+    if any(r.get(OS_COL) != "-" for r in rows):
+        keys.append(OS_COL)
     return keys
 
 
