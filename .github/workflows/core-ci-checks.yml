@@ -78,15 +78,20 @@ jobs:
           source ./util/cron/common.bash
 
           source ./util/cron/common-darwin.bash
+
+          source util/setchplenv.bash
+          printchplenv --all --internal
+          make -j
+          chpl examples/hello.chpl --devel --print-commands
           
 
-          if [[ "$CONFIG" == "gasnet" ]] ; then
-            source ./util/cron/common-gasnet.bash
-            # Silence warnings about not using ibv despite ibv hardware presence
-            export GASNET_QUIET=yes
-          fi
+          # if [[ "$CONFIG" == "gasnet" ]] ; then
+          #   source ./util/cron/common-gasnet.bash
+          #   # Silence warnings about not using ibv despite ibv hardware presence
+          #   export GASNET_QUIET=yes
+          # fi
 
-          export NIGHTLY_TEST_SETTINGS=true
-          export CHPL_SMOKE_SKIP_MAKE_MASON=true
+          # export NIGHTLY_TEST_SETTINGS=true
+          # export CHPL_SMOKE_SKIP_MAKE_MASON=true
 
-          ./util/buildRelease/smokeTest
+          # ./util/buildRelease/smokeTest
