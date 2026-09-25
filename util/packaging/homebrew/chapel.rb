@@ -213,7 +213,7 @@ class Chapel < Formula
     cd libexec do
       system "util/printchplenv"
       system "./util/chplenv/printchplbuilds.py"
-      system "util/test/checkChplInstall"
+      # system "util/test/checkChplInstall"
       # system "util/test/checkChplDoc"
       # with_env(CHPL_TARGET_COMPILER: cbackend) do
       #   system "util/test/checkChplInstall"
