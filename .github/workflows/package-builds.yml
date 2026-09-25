@@ -54,7 +54,7 @@ jobs:
 
   build-packaging-tarball:
     if: ${{ inputs.tarball_url == '' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
       credentials:
@@ -103,7 +103,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: ${{ fromJSON(needs.define-linux-package-configs.outputs.distro_configs) }}
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
+        runner: [ubuntu-26.04, ubuntu-24.04-arm]
     env:
       DISTRO: ${{ matrix.distro }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
