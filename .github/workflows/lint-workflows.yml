@@ -16,25 +16,13 @@ defaults:
 
 jobs:
   actionlint:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
           persist-credentials: false
-      - name: Download actionlint
-        id: get_actionlint
-        run: |
-          wget https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json
-          echo "::add-matcher::./actionlint-matcher.json"
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-        shell: bash
-      - name: Check workflow files
-        run: |
-          ${STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE} -color
-        shell: bash
-        env:
-          STEPS_GET_ACTIONLINT_OUTPUTS_EXECUTABLE: ${{ steps.get_actionlint.outputs.executable }}
+      - uses: kjanat/actionlint@08bb2c4f0d039744455b87aef1c647fb8b66d37b # v1.17.0
 
   zizmor:
     runs-on: ubuntu-latest
