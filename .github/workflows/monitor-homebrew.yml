@@ -151,6 +151,6 @@ jobs:
         -B main
         -H "update-chapel-homebrew-release-${HASH_SUBSTRING}"
         --title "Update our copy of the released Homebrew formula"
-        --body "Homebrew formula commit is ${UPSTREAM_COMMIT} and file hash is ${FILE_HASH}. Created by GitHub Actions"
+        --body "Homebrew formula commit is [${UPSTREAM_COMMIT}](${GITHUB_SERVER_URL}/Homebrew/homebrew-core/commit/${UPSTREAM_COMMIT}) and file hash is ${FILE_HASH}. Created by GitHub Actions"
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

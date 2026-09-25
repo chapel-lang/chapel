@@ -18,6 +18,11 @@ defaults:
 jobs:
   release-tarball:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     env:
       CHPL_VERSION: ${{ inputs.chpl_version }}
     steps:
@@ -31,4 +36,5 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: ./tar/chapel-${{ env.CHPL_VERSION }}.tar.gz
+          archive: false
           if-no-files-found: error

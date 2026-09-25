@@ -13,7 +13,9 @@ permissions:
   packages: read
 
 env:
-  RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 96
+  RECENT_NIGHTLY_JOB_EXPECTED_HOURS: 48
+  NIGHTLY_WORKFLOW_NAME: "Run nightly checks"
+  FAILURE_MAIL_JOB_NAME: "send-failure-mail"
 
 defaults:
   run:
@@ -29,6 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          sparse-checkout: .
       - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
@@ -41,19 +44,49 @@ jobs:
           Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
       - name: check last successful nightly run
-        id: last_success
-        run: |
-          last_successful=$(gh run list -w "Run nightly checks" --event schedule --status success --limit 1 --json "startedAt" --jq ".[0].startedAt" | xargs -I {} date -d {} +%s)
-          current_timestamp=$(date +%s)
-          elapsed_secs=$((current_timestamp - last_successful))
-          acceptable_secs=$((96 * 3600))
-          if (( elapsed_secs > acceptable_secs )); then
-            echo "Warning: Last successful nightly checks run was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
-            exit 1
-          fi
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 300
+          retry_wait_seconds: 300
+          command: |
+            set -exuo pipefail
+
+            current_timestamp=$(date +%s)
+            acceptable_secs=$((RECENT_NIGHTLY_JOB_EXPECTED_HOURS * 3600))
+            readarray -t last_run_ids < <(gh run list -w "$NIGHTLY_WORKFLOW_NAME" --event schedule --limit 10 --json databaseId --jq '.[].databaseId')
+            ok=false
+            for id in "${last_run_ids[@]}"; do
+              echo "- $id"
+              sleep 1
+              gh api "/repos/${{ github.repository }}/actions/runs/$id" | jq '.' | tee "run_$id.json"
+              run_timestamp=$(jq '.run_started_at | fromdate' "run_$id.json")
+              if (( run_timestamp < current_timestamp - acceptable_secs )); then
+                echo "Too old"
+                continue
+              fi
+              run_conclusion=$(jq -r '.conclusion' "run_$id.json")
+              if [[ "$run_conclusion" == "success" ]]; then
+                echo "Recent success"
+                ok=true
+                break
+              fi
+              gh run view "$id" --json jobs > "jobs_$id.json"
+              email_job_conclusion=$(jq -r '.jobs[] | select(.name == "'"$FAILURE_MAIL_JOB_NAME"'") | .conclusion' "jobs_$id.json")
+              if [[ "$email_job_conclusion" == "success" ]]; then
+                echo "Recent email sent"
+                ok=true
+                break
+              fi
+            done
+
+            if ! $ok; then
+              echo "Warning: Last success of nightly checks workflow '$NIGHTLY_WORKFLOW_NAME', or failure mail sent from 'FAILURE_MAIL_JOB_NAME', was more than $RECENT_NIGHTLY_JOB_EXPECTED_HOURS hours ago" | tee "$EMAIL_BODY_FILENAME"
+              exit 1
+            fi
       - name: send warning mail
-        if: failure()
-        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
+        if: ${{ github.event_name == 'schedule' && failure() }}
+        uses: dawidd6/action-send-mail@ca8dbb4d4f91ca7f75e7f2feea5339e76ce70c90 # v20
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER }}
