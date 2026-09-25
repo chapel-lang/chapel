@@ -19,7 +19,7 @@
  */
 
 /*
-Support for dynamic loading in Chapel.
+Support for loading dynamic libraries in Chapel.
 
 .. note::
 
@@ -27,40 +27,40 @@ Support for dynamic loading in Chapel.
   and executing code from Chapel programs at runtime. See the section
   :ref:`Loading_Chapel_Programs_at_Runtime` below.
 
-This module provides the ability to load a binary at runtime. Procedures
-contained in a dynamically loaded binary can be retrieved and called on
+This module provides the ability to load a library at runtime. Procedures
+contained in a dynamically loaded library can be retrieved and called on
 any locale without compile-time knowledge of their names or locations.
 
-A hypothetical C binary could contain a procedure named ``foo``:
+A hypothetical C library could contain a procedure named ``foo``:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/TestBinary.c
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/TestBinary.c
    :language: c
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
-This binary can be can be loaded in Chapel at runtime as follows:
+This library can be can be loaded in Chapel at runtime as follows:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
    :language: chapel
    :start-after: START_EXAMPLE_0
    :end-before: STOP_EXAMPLE_0
 
 And a procedure named ``foo`` with type ``proc(): void`` can be retrieved:
 
-.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
    :language: chapel
    :start-after: START_EXAMPLE_1
    :end-before: STOP_EXAMPLE_1
 
-When a procedure is retrieved from a loaded binary, the returned procedure
-value is callable on any locale despite :proc:`binary.retrieve()` only
+When a procedure is retrieved from a loaded library, the returned procedure
+value is callable on any locale despite :proc:`dynamicLibrary.retrieve()` only
 being called on a single locale. The returned procedure is considered to
 be ``extern`` and this is reflected in its type.
 
 .. note::
 
-  Currently, only procedures can be retrieved from loaded binaries.
-  Support for retrieving references to data stored in a binary could
+  Currently, only procedures can be retrieved from loaded libraries.
+  Support for retrieving references to data stored in a library could
   be added in the future.
 
 .. _Loading_Chapel_Programs_at_Runtime:
@@ -112,8 +112,8 @@ restriction may be removed in the future.
   If you've built Chapel from source, a workaround is to touch a source
   file in the Chapel runtime and then rebuild it.
 */
-@unstable('Dynamic loading support is experimental and unstable.')
-module DynamicLoading {
+@unstable('Dynamic library support is experimental and unstable.')
+module DynamicLibrary {
 
 // This internal module contains the low-level implementation.
 private use ChapelDynamicLoading;
@@ -128,10 +128,50 @@ if !useProcedurePointers {
                 '\'true\' when compiling to activate it');
 }
 
+private proc type libName(basename: string, directory: string="") {
+  import Path;
+
+  const fileName = 'lib' + basename + '.' + library.libSuffix;
+  const ret = Path.normPath(Path.joinPath(directory, fileName));
+  return ret;
+}
+
 /*
-  A wrapper around a dynamically loaded binary.
+  Create a record representing a dynamically loaded library using a string
+  that stores the path to a library file. The file may be any natively
+  executable program, though a "shared library" or "dynamic library" is by
+  far the most common and well supported.
+
+  The implementation will attempt to load the library on all locales. If
+  loading should fail on any locale then the entire process will be
+  aborted and an error will be thrown.
+
+  Dynamic loading can fail for a variety of reasons. It can fail if the
+  library could not be loaded on any locale. It can fail if no file was
+  found at ``path`` or if a file was found but it did not have a suitable
+  representation (e.g., the file format was not natively executable, or
+  it was not marked as executable).
+
+  :arg path: The path to the library file to dynamically load
+  :type path: `string`
+
+  :throws DynLoadError: if dynamic loading fails
 */
-record binary {
+proc loadFromPath(path: string) throws {
+  var err: owned DynLoadError?;
+  const bin = chpl_BinaryInfo.create(path, err);
+  if err then throw err;
+
+  // Should hold by construction.
+  assert(bin != nil);
+
+  return new dynamicLibrary(bin!);
+}
+
+/*
+  A wrapper around a dynamically loaded library.
+*/
+record dynamicLibrary {
   @chpldoc.nodoc
   var _bin: unmanaged chpl_BinaryInfo;
 
@@ -140,8 +180,8 @@ record binary {
     this._bin = bin;
   }
 
-  /* The initialized binary refers to the same binary stored in ``rhs``. */
-  proc init=(rhs: binary) {
+  /* The initialized library refers to the same library stored in ``rhs``. */
+  proc init=(rhs: dynamicLibrary) {
     this._bin = rhs._bin;
   }
 
@@ -149,58 +189,36 @@ record binary {
   proc postinit() do _bin.bumpRefCount();
 
   proc deinit() {
-    // TODO: Could mark symbols for GC or reclaim the binary on drop.
+    // TODO: Could mark symbols for GC or reclaim the library on drop.
     _bin.dropRefCount();
   }
 
   /*
-    After assignment, ``lhs`` will refer to the same binary stored in ``rhs``.
+    After assignment, ``lhs`` will refer to the same library stored in ``rhs``.
   */
-  operator=(ref lhs: binary, rhs: binary) {
+  operator=(ref lhs: dynamicLibrary, rhs: dynamicLibrary) {
     rhs._bin.bumpRefCount();
     lhs._bin.dropRefCount();
     lhs._bin = rhs._bin;
   }
 
   /*
-    Create a record representing a dynamically loaded binary using a string
-    that stores the path to a binary file. The file may be any executable
-    binary, though a "shared library" or "dynamic library" is by far the
-    most common and well supported.
-
-    The implementation will attempt to load a binary on all locales. If
-    loading should fail on any locale then the entire process will be
-    aborted and an error will be thrown.
-
-    Dynamic loading can fail for a variety of reasons. It can fail if the
-    binary could not be loaded on any locale. It can fail if no file was
-    found at ``path`` or if a file was found but it did not have a suitable
-    representation (e.g., the file format was not natively executable, or
-    it was not marked as executable).
-
-    :arg path: The path to the binary file to dynamically load
-    :type path: `string`
-
-    :throws DynLoadError: if dynamic loading fails
+    Return the expected dynamic library file extension for the current
+    platform. The file extension does not include a prefix ``.``.
   */
-  proc type load(path: string) throws {
-    var err: owned DynLoadError?;
-    const bin = chpl_BinaryInfo.create(path, err);
-    if err then throw err;
-
-    // Should hold by construction.
-    assert(bin != nil);
-
-    return new binary(bin!);
+  proc type libSuffix param {
+    use ChplConfig;
+    if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
+    return 'so';
   }
 
   /*
-    Fetch a procedure from a dynamically loaded binary. Throws an error if
+    Fetch a procedure from a dynamically loaded library. Throws an error if
     no procedure could be found.
 
     .. warning::
 
-      The procedure type ``t`` provided when calling :proc:`binary.retrieve()`
+      The procedure type ``t`` provided when calling :proc:`library.retrieve()`
       is used verbatim and is not checked against the type of the underlying
       symbol in any way. If the type provided does not match the actual type
       of the underlying procedure, then the resulting behavior when the
