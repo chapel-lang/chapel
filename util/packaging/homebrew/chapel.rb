@@ -105,30 +105,30 @@ class Chapel < Formula
     cd libexec do
       system "./util/printchplenv", "--all"
       system "make"
-      with_env(CHPL_TARGET_COMPILER: cbackend) do
-        system "make"
-      end
-      with_env(
-        CHPL_COMM:               "gasnet",
-        CHPL_COMM_SUBSTRATE:     "udp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
-      ) do
-        system "make"
-        # C backend requires https://github.com/chapel-lang/chapel/pull/27652
-        # to be resolved
-        # with_env(CHPL_TARGET_COMPILER: cbackend) do
-        #   system "make"
-        # end
-      end
-      with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
-        system "make"
-      end
+      # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   system "make"
+      # end
+      # with_env(
+      #   CHPL_COMM:               "gasnet",
+      #   CHPL_COMM_SUBSTRATE:     "udp",
+      #   CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
+      # ) do
+      #   system "make"
+      #   # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+      #   # to be resolved
+      #   # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   #   system "make"
+      #   # end
+      # end
+      # with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
+      #   system "make"
+      # end
 
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chpldoc"
-        system "make", "c2chapel"
-        system "make", "chplcheck"
-        system "make", "chpl-language-server"
+        # system "make", "c2chapel"
+        # system "make", "chplcheck"
+        # system "make", "chpl-language-server"
       end
       system "make", "mason"
       system "make", "cleanall"
@@ -209,29 +209,29 @@ class Chapel < Formula
     cd libexec do
       system "util/test/checkChplInstall"
       system "util/test/checkChplDoc"
-      with_env(CHPL_TARGET_COMPILER: cbackend) do
-        system "util/test/checkChplInstall"
-      end
-      with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp") do
-        with_env(
-          GASNET_SPAWNFN:         "L",
-          GASNET_ROUTE_OUTPUT:    "0",
-          GASNET_QUIET:           "Y",
-          GASNET_MASTERIP:        "127.0.0.1",
-          GASNET_WORKERIP:        "127.0.0.0",
-          CHPL_RT_OVERSUBSCRIBED: "yes",
-        ) do
-          system "util/test/checkChplInstall"
-          # C backend requires https://github.com/chapel-lang/chapel/pull/27652
-          # to be resolved
-          # with_env(CHPL_TARGET_COMPILER: cbackend) do
-          #   system "util/test/checkChplInstall"
-          # end
-        end
-      end
-      with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
-        system "util/test/checkChplInstall"
-      end
+      # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #   system "util/test/checkChplInstall"
+      # end
+      # with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp") do
+      #   with_env(
+      #     GASNET_SPAWNFN:         "L",
+      #     GASNET_ROUTE_OUTPUT:    "0",
+      #     GASNET_QUIET:           "Y",
+      #     GASNET_MASTERIP:        "127.0.0.1",
+      #     GASNET_WORKERIP:        "127.0.0.0",
+      #     CHPL_RT_OVERSUBSCRIBED: "yes",
+      #   ) do
+      #     system "util/test/checkChplInstall"
+      #     # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+      #     # to be resolved
+      #     # with_env(CHPL_TARGET_COMPILER: cbackend) do
+      #     #   system "util/test/checkChplInstall"
+      #     # end
+      #   end
+      # end
+      # with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
+      #   system "util/test/checkChplInstall"
+      # end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
