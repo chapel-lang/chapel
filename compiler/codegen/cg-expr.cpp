@@ -2656,48 +2656,90 @@ GenRet codegenIsNotZero(GenRet x)
   return ret;
 }
 
+#define CLASS_INFO_FIELDS(V) \
+  V(vmt, 0, NULL) \
+  V(maxSubclassId, 1, CLASS_ID_TYPE) \
+  V(numVirtualMethods, 2, dtInt[INT_SIZE_32]) \
+  V(name, 3, dtStringC)
+
+enum class ClassInfoField {
+#define CLASS_INFO_FIELD_ENUM(field, idx, type) field = idx,
+  CLASS_INFO_FIELDS(CLASS_INFO_FIELD_ENUM)
+#undef CLASS_INFO_FIELD_ENUM
+};
+
+static const char* classInfoFieldName(ClassInfoField field) {
+  switch (field) {
+#define CLASS_INFO_FIELD_NAME(name, idx, type) case ClassInfoField::name: return #name;
+    CLASS_INFO_FIELDS(CLASS_INFO_FIELD_NAME)
+#undef CLASS_INFO_FIELD_NAME
+  }
+  INT_FATAL("unknown chpl_class_info field");
+  return NULL;
+}
+#ifdef HAVE_LLVM
+static unsigned classInfoFieldIndex(ClassInfoField field) {
+  return static_cast<unsigned>(field);
+}
+#endif
+static Type* classInfoFieldType(ClassInfoField field) {
+  switch (field) {
+#define CLASS_INFO_FIELD_TYPE(name, idx, type) case ClassInfoField::name: return type;
+    CLASS_INFO_FIELDS(CLASS_INFO_FIELD_TYPE)
+#undef CLASS_INFO_FIELD_TYPE
+  }
+  INT_FATAL("unknown chpl_class_info field");
+  return NULL;
+}
+#undef CLASS_INFO_FIELDS
+
 static
-GenRet codegenGlobalArrayElement(const char* table_name,
-                                 const char* eltTypeName,
-                                 GenRet elt)
+GenRet codegenClassInfoField(GenRet cid, ClassInfoField field)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = classInfoFieldType(field);
   if (info->cfile) {
-    ret.c = table_name;
-    ret.c += "[";
-    ret.c += elt.c;
-    ret.c += "]";
+    ret.c = "chpl_classInfo[";
+    ret.c += cid.c;
+    ret.c += "].";
+    ret.c += classInfoFieldName(field);
   } else {
 #ifdef HAVE_LLVM
-    GenRet       table = info->lvt->getValue(table_name);
+    unsigned fieldIdx = classInfoFieldIndex(field);
+    GenRet table = info->lvt->getValue("chpl_classInfo");
 
     INT_ASSERT(table.val);
-    INT_ASSERT(elt.val);
+    INT_ASSERT(cid.val);
 
     auto global = llvm::cast<llvm::GlobalVariable>(table.val);
     INT_ASSERT(global);
-    GenRet eltTy = codegenTypeByName(eltTypeName);
-    INT_ASSERT(eltTy.type);
+    GenRet structTy = codegenTypeByName("chpl_class_info");
+    INT_ASSERT(structTy.type);
+    auto st = llvm::cast<llvm::StructType>(structTy.type);
 
     llvm::Value* GEPLocs[2];
     GEPLocs[0] = llvm::Constant::getNullValue(
         llvm::IntegerType::getInt64Ty(info->module->getContext()));
-    GEPLocs[1] = extendToPointerSize(elt, 0);
+    GEPLocs[1] = extendToPointerSize(cid, 0);
 
-    llvm::Value* elementPtr;
-    elementPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
+    auto rowPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
 
-    llvm::Instruction* element =
-      info->irBuilder->CreateLoad(eltTy.type, elementPtr);
-    trackLLVMValue(element);
+    auto fieldPtr = info->irBuilder->CreateStructGEP(st, rowPtr, fieldIdx);
+    trackLLVMValue(fieldPtr);
+
+    auto fieldVal =
+      info->irBuilder->CreateLoad(st->getElementType(fieldIdx), fieldPtr);
+    trackLLVMValue(fieldVal);
 
     // I don't think it matters, but we could provide TBAA metadata
     // here to indicate global constant variable loads are constant...
     // I'd expect LLVM to figure that out because the table loaded is
     // constant.
 
-    ret.val = element;
+    ret.val = fieldVal;
 #endif
   }
   return ret;
@@ -2708,7 +2750,7 @@ GenRet codegenGlobalArrayElement(const char* table_name,
 static
 GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
 {
-  // see genSubclassArrays in codegen.cpp
+  // see genClassInfoTable in codegen.cpp
   // currently using Schubert Numbering method
   //
   // Td is a subclass of C (or a C) iff
@@ -2725,8 +2767,7 @@ GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
   // Since we use n1_Td twice, put it into a temp var
   // other than that, n1_Td is cid_Td.
   GenRet n1_Td = createTempVarWith(cid_Td);
-  GenRet n2_C  = codegenGlobalArrayElement("chpl_subclass_max_id",
-                                           "chpl__class_id", cid_C);
+  GenRet n2_C  = codegenClassInfoField(cid_C, ClassInfoField::maxSubclassId);
 
   GenRet part1 = codegenLessEquals(n1_C, n1_Td);
   GenRet part2 = codegenLessEquals(n1_Td, n2_C);
@@ -4594,8 +4635,7 @@ DEFINE_PRIM(REF_TO_STRING) {
 
 DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
-    const char* eltType = dtStringC->symbol->cname;
-    ret = codegenGlobalArrayElement("chpl_classNames", eltType, cid);
+    ret = codegenClassInfoField(cid, ClassInfoField::name);
 }
 
 DEFINE_PRIM(RETURN) {
@@ -6420,7 +6460,6 @@ DEFINE_PRIM(FTABLE_CALL) {
 }
 DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
-    GenRet    index;
     FnSymbol* fn        = NULL;
     int       startArgs = 3;    // Where actual arguments begin.
     SymExpr*  se        = toSymExpr(call->get(1));  // the function symbol
@@ -6429,33 +6468,22 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     fn = toFnSymbol(se->symbol());
     INT_ASSERT(fn);
 
-    {
-      GenRet  i          = codegenValue(call->get(2));    // the cid
-      int64_t fnId       = virtualMethodMap.get(fn);
-      GenRet j           = new_IntSymbol(fnId,    INT_SIZE_64);
-      GenRet maxVMTConst = new_IntSymbol(gMaxVMT, INT_SIZE_64);
+    GenRet  cid  = codegenValue(call->get(2));
+    int64_t fnId = virtualMethodMap.get(fn);
+    GenRet  idx  = new_IntSymbol(fnId, INT_SIZE_64);
 
-      INT_ASSERT(gMaxVMT >= 0);
-
-      // indexExpr = maxVMT * classId + fnId
-      index = codegenAdd(codegenMul(maxVMTConst, i), j);
-    }
+    // fnPtr = chpl_classInfo[cid].vmt[fnId]
+    GenRet vmt = codegenClassInfoField(cid, ClassInfoField::vmt);
 
     if (gGenInfo->cfile){
-      fnPtr.c = std::string("chpl_vmtable") + "[" + index.c + "]" + "/*" + fn->name + "*/";
+      fnPtr.c = vmt.c + "[" + idx.c + "/*" + fn->name + "*/" + "]";
     } else {
 #ifdef HAVE_LLVM
-      GenRet       table = gGenInfo->lvt->getValue("chpl_vmtable");
-      auto global = llvm::cast<llvm::GlobalVariable>(table.val);
-      llvm::Value* fnPtrPtr;
       GenRet fnPtrT = codegenTypeByName("chpl_fn_p");
       llvm::Type*  genericFnPtr = fnPtrT.type;
       INT_ASSERT(genericFnPtr);
-      llvm::Value* GEPLocs[2];
-      GEPLocs[0] = llvm::Constant::getNullValue(
-          llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
-      GEPLocs[1] = index.val;
-      fnPtrPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
+      INT_ASSERT(vmt.val);
+      llvm::Value* fnPtrPtr = createInBoundsGEP(genericFnPtr, vmt.val, idx.val);
       llvm::Instruction* fnPtrV =
         gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
       trackLLVMValue(fnPtrV);

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+srcname="myClassesLib.chpl"
+
+echo "Building dynamic Chapel library..."
+$chpl --library --dynamic --no-builtin-runtime $srcname
