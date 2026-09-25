@@ -19,10 +19,6 @@ export CHPL_GEN_RELEASE_NO_CLONE=true
 # skip docs build for a faster tarball
 export CHPL_GEN_RELEASE_SKIP_DOCS=true
 
-export CHPL_LLVM=none
-# $UTIL_CRON_DIR/common.bash sets this to none, but Homebrew builds with native
-export CHPL_TARGET_CPU=native
-
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
@@ -102,6 +98,8 @@ chpl --print-chpl-home
 chpl --print-chpl-settings
 $(chpl --print-chpl-home)/util/printchplenv --all --internal
 $(chpl --print-chpl-home)/util/chplenv/printchplbuilds.py
+
+brew test chapel
 
 # Run pidigits and see if it works
 cd ${CHPL_HOME}/examples/benchmarks/shootout
