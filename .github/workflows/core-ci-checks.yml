@@ -524,7 +524,7 @@ jobs:
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
       - name: generate ${{ env.PACKAGING_TABLE_FILE }}
         run: |
-          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py --format rst --split > "$PACKAGING_TABLE_FILE"
+          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py --format rst --split --common-settings > "$PACKAGING_TABLE_FILE"
       - name: compare against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
