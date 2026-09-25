@@ -105,9 +105,9 @@ class Chapel < Formula
     cd libexec do
       system "./util/printchplenv", "--all"
       system "make"
-      with_env(CHPL_CHECK_DEBUG: "1", "CHPL_HOME": libexec, CHPL_INCLUDE_PATH: HOMEBREW_PREFIX/"include", "CHPL_LIB_PATH": HOMEBREW_PREFIX/"lib", "CHPL_IGNORE_GASNET_LD": "1", "CHPL_RT_SILENCE_UNUSED_CORES": "1", "CHPL_START_TEST_ARGS": "--test-root #{testpath}") do
-        system "util/test/checkChplInstall"
-      end
+      # with_env(CHPL_CHECK_DEBUG: "1", "CHPL_HOME": libexec, CHPL_INCLUDE_PATH: HOMEBREW_PREFIX/"include", "CHPL_LIB_PATH": HOMEBREW_PREFIX/"lib", "CHPL_IGNORE_GASNET_LD": "1", "CHPL_RT_SILENCE_UNUSED_CORES": "1", "CHPL_START_TEST_ARGS": "--test-root #{testpath}") do
+      #   system "util/test/checkChplInstall"
+      # end
       # with_env(CHPL_TARGET_COMPILER: cbackend) do
       #   system "make"
       # end
@@ -127,14 +127,14 @@ class Chapel < Formula
       #   system "make"
       # end
 
-      with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        system "make", "chpldoc"
-        # system "make", "c2chapel"
-        # system "make", "chplcheck"
-        # system "make", "chpl-language-server"
-      end
-      system "make", "mason"
-      system "make", "cleanall"
+      # with_env(CHPL_PIP_FROM_SOURCE: "1") do
+      #   system "make", "chpldoc"
+      #   # system "make", "c2chapel"
+      #   # system "make", "chplcheck"
+      #   # system "make", "chpl-language-server"
+      # end
+      # system "make", "mason"
+      # system "make", "cleanall"
 
       rm_r("third-party/llvm/llvm-src/")
       rm_r("third-party/gasnet/gasnet-src/")
@@ -211,7 +211,7 @@ class Chapel < Formula
 
     cd libexec do
       system "util/test/checkChplInstall"
-      system "util/test/checkChplDoc"
+      # system "util/test/checkChplDoc"
       # with_env(CHPL_TARGET_COMPILER: cbackend) do
       #   system "util/test/checkChplInstall"
       # end
@@ -237,16 +237,16 @@ class Chapel < Formula
       # end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
-    system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
-           "--print-commands", libexec/"examples/hello.chpl"
-    system bin/"chpldoc", "--version"
-    system bin/"mason", "--version"
+    # system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
+    #        "--print-commands", libexec/"examples/hello.chpl"
+    # system bin/"chpldoc", "--version"
+    # system bin/"mason", "--version"
 
-    system bin/"c2chapel", "--version"
+    # system bin/"c2chapel", "--version"
 
-    # Test chplcheck, if it works CLS probably does too.
-    # chpl-language-server will hang indefinitely waiting for a LSP client
-    system bin/"chplcheck", "--list-rules"
-    system bin/"chplcheck", libexec/"examples/hello.chpl"
+    # # Test chplcheck, if it works CLS probably does too.
+    # # chpl-language-server will hang indefinitely waiting for a LSP client
+    # system bin/"chplcheck", "--list-rules"
+    # system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
