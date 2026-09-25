@@ -53,7 +53,7 @@ on:
         description: The runner to use for the workflow
         required: false
         type: string
-        default: ubuntu-latest
+        default: ubuntu-26.04
       use-container:
         description: Run build and test jobs in the Chapel CI container
         required: false
