@@ -43,11 +43,11 @@ jobs:
           persist-credentials: false
       - name: run homebrew testing
         run: |
-          if [[ "$OS" == "macos"* ]] ; then
+          # if [[ "$OS" == "macos"* ]] ; then
             ./util/cron/test-homebrew.bash
-          else
-            ./util/cron/test-homebrew-linux.bash
-          fi
+          # else
+            # ./util/cron/test-homebrew-linux.bash
+          # fi
       # - name: upload homebrew log
       #   if: always()
       #   uses: actions/upload-artifact@v3
