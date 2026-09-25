@@ -239,7 +239,7 @@ class Chapel < Formula
       #   system "util/test/checkChplInstall"
       # end
     end
-    system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpl", "--devel", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
     # system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
     #        "--print-commands", libexec/"examples/hello.chpl"
     # system bin/"chpldoc", "--version"
