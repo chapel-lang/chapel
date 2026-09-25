@@ -98,6 +98,11 @@ HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
     | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
 chpl --version
 
+chpl --print-chpl-home
+chpl --print-chpl-settings
+$(chpl --print-chpl-home)/util/printchplenv --all --internal
+$(chpl --print-chpl-home)/util/chplenv/printchplbuilds.py
+
 # Run pidigits and see if it works
 cd ${CHPL_HOME}/examples/benchmarks/shootout
 chpl pidigits.chpl
