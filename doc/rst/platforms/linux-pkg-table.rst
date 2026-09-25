@@ -132,19 +132,14 @@ Common settings:
 
    * - CHPL_TARGET_COMPILER
      - CHPL_LAUNCHER
-     - OS compatibility
    * - llvm
-     -
      -
    * - llvm
      - slurm-srun
-     -
    * - clang
-     -
      -
    * - clang
      - slurm-srun
-     -
 
 
 single-node emulated GPU
