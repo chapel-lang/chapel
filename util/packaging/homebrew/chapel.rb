@@ -105,7 +105,7 @@ class Chapel < Formula
     cd libexec do
       system "./util/printchplenv", "--all"
       system "make"
-      with_env(CHPL_CHECK_DEBUG: "1") do
+      with_env(CHPL_CHECK_DEBUG: "1", "CHPL_HOME": libexec, CHPL_INCLUDE_PATH: HOMEBREW_PREFIX/"include", "CHPL_LIB_PATH": HOMEBREW_PREFIX/"lib", "CHPL_IGNORE_GASNET_LD": "1", "CHPL_RT_SILENCE_UNUSED_CORES": "1", "CHPL_START_TEST_ARGS": "--test-root #{testpath}") do
         system "util/test/checkChplInstall"
       end
       # with_env(CHPL_TARGET_COMPILER: cbackend) do
