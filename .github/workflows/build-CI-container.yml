@@ -40,7 +40,7 @@ defaults:
 
 jobs:
   build-ci-container:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       packages: write
