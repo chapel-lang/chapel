@@ -99,7 +99,7 @@ chpl --print-chpl-settings
 $(chpl --print-chpl-home)/util/printchplenv --all --internal
 $(chpl --print-chpl-home)/util/chplenv/printchplbuilds.py
 
-brew test chapel
+brew test chapel -v
 
 # Run pidigits and see if it works
 cd ${CHPL_HOME}/examples/benchmarks/shootout
