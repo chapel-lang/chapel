@@ -210,7 +210,8 @@ run-compiler-linters: compiler-linters
 	  echo error: run-compiler-linters requires CHPL_HOST_COMPILER=clang ; \
 	  exit 1 ; \
 	fi
-	$(COMPILER_BUILD)/compiler/util/linters/astIdLess -p $(COMPILER_BUILD)
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-j=\2/p'` ; \
+	  $(COMPILER_BUILD)/compiler/util/linters/astIdLess -p $(COMPILER_BUILD) $$JOBSFLAG
 
 parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
