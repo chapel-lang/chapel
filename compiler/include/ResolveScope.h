@@ -41,6 +41,7 @@ class TypeSymbol;
 class UnresolvedSymExpr;
 class UseStmt;
 class VisibilityStmt;
+struct AstIdLess;
 
 enum importUseProgress {
   IUP_NOT_STARTED, // We haven't started resolving use or import statements
@@ -100,8 +101,8 @@ public:
   Symbol*
   lookupPublicUnqualAccessSyms(const char* name,
                                BaseAST *context,
-                               std::map<Symbol *, astlocT *>& renameLocs,
-                               std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                               std::map<Symbol *, astlocT *, AstIdLess>& renameLocs,
+                               std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                                bool followUses = false);
 
   // Support for UseStmt with only/except
@@ -123,7 +124,7 @@ private:
   typedef std::set<const ResolveScope*>  ScopeSet;
 
   typedef std::map<const char*, Symbol*> Bindings;
-  typedef std::map<Symbol*, UseImportList> UseImportMap;
+  typedef std::map<Symbol*, UseImportList, AstIdLess> UseImportMap;
 
                         ResolveScope();
 

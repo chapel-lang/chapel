@@ -44,7 +44,7 @@
 // symbol being sought in isDefinedAllPaths.
 // We assume that if the ref is being used then it is valid (resolution should
 // ensure this).
-typedef std::set<Symbol*> RefSet;
+typedef std::set<Symbol*, AstIdLess> RefSet;
 
 static void checkConstLoops();
 static int isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs);
@@ -413,7 +413,7 @@ returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
 // It returns the number of Exprs added to sources.
 static int findOriginalArrays(FnSymbol*        fn,
                               Symbol*          sym,
-                              std::set<Expr*>& sources) {
+                              std::set<Expr*, AstIdLess>& sources) {
   int ret = 0;
 
   for_SymbolSymExprs(se, sym) {
@@ -516,7 +516,7 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
   // returned array. We need to go in to chains of
   // array slicing or aliasing as well as call_tmp copies.
 
-  std::set<Expr*> sources;
+  std::set<Expr*, AstIdLess> sources;
   if (retVar->typeInfo()->symbol->hasFlag(FLAG_ARRAY)) {
     findOriginalArrays(fn, retVar, sources);
 

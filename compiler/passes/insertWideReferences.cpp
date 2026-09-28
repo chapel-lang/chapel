@@ -240,21 +240,21 @@ static void debug(BaseAST* base, const char* format, ...) {
 
 Timer debugTimer;
 
-static std::set<Symbol*> _todo_set;
+static std::set<Symbol*, AstIdLess> _todo_set;
 static std::queue<Symbol*> _todo_queue;
 
 static Map<Symbol*,Vec<SymExpr*>*> defMap;
 static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
 // Used to convert between wide and narrow ref types
-static std::map<Type*, Type*> narrowToWideVal;
+static std::map<Type*, Type*, AstIdLess> narrowToWideVal;
 
-static std::map<FnSymbol*, bool> downstreamFromOn;
+static std::map<FnSymbol*, bool, AstIdLess> downstreamFromOn;
 
-static std::set<Symbol*> fieldsToMakeWide;
+static std::set<Symbol*, AstIdLess> fieldsToMakeWide;
 
 // A map from a symbol to the BaseASTs that caused it to be wide
-static std::map<Symbol*, std::set<BaseAST*> > causes;
+static std::map<Symbol*, std::set<BaseAST*, AstIdLess>, AstIdLess> causes;
 
 // Various mini-passes to manipulate the AST into something functional
 static void convertNilToObject();
@@ -524,7 +524,7 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   sym->qual = qt.getQual();
 }
 
-static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited) {
+static void cause_helper(BaseAST* target, int level, std::set<Symbol*, AstIdLess>& visited) {
 #ifdef PRINT_WIDE_ANALYSIS
   for (int i = 0; i < level; i++) {
     DEBUG_PRINTF(" ");
@@ -537,7 +537,7 @@ static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited)
       sym = toSymExpr(target)->symbol();
     }
 
-    std::set<BaseAST*> parents = causes[sym];
+    auto parents = causes[sym];
     if (parents.size() == 0) {
       DEBUG_PRINTF("ROOT: ");
     }
@@ -588,7 +588,7 @@ static void printCauses(Symbol* sym) {
 
   DEBUG_PRINTF("Printing causes for %s (%d)\n", sym->cname, sym->id);
 
-  std::set<Symbol*> visited;
+  std::set<Symbol*, AstIdLess> visited;
   cause_helper(sym, 0, visited);
 }
 
@@ -2563,7 +2563,7 @@ insertWideReferences(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
-        std::set<FnSymbol*> downstream;
+        std::set<FnSymbol*, AstIdLess> downstream;
         collectUsedFnSymbols(call, downstream);
         for_set(FnSymbol, on, downstream) {
           downstreamFromOn[on] = true;

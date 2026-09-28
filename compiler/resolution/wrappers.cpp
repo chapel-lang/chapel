@@ -125,7 +125,7 @@ typedef struct DefaultExprFnEntry_s {
   std::vector<std::pair<ArgSymbol*,ArgSymbol*> > usedFormals;
 } DefaultExprFnEntry;
 
-typedef std::map<ArgSymbol*, DefaultExprFnEntry> formalToDefaultExprEntryMap;
+typedef std::map<ArgSymbol*, DefaultExprFnEntry, AstIdLess> formalToDefaultExprEntryMap;
 formalToDefaultExprEntryMap formalToDefaultExprEntry;
 
 //
@@ -809,9 +809,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 // returns a defaultExprFn for the passed formal, or NULL if none was created
 FnSymbol* findExistingDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal) {
   DefaultExprFnEntry* entry = nullptr;
-  formalToDefaultExprEntryMap::iterator it;
 
-  it = formalToDefaultExprEntry.find(formal);
+  auto it = formalToDefaultExprEntry.find(formal);
   if (it != formalToDefaultExprEntry.end()) {
     // Use the existing entry
     entry = &it->second;
@@ -827,9 +826,8 @@ static DefaultExprFnEntry* getOrCreateDefaultedActualFnEntry(FnSymbol*  fn,
                                                              ArgSymbol* formal)
 {
   DefaultExprFnEntry* entry = nullptr;
-  formalToDefaultExprEntryMap::iterator it;
 
-  it = formalToDefaultExprEntry.find(formal);
+  auto it = formalToDefaultExprEntry.find(formal);
   if (it != formalToDefaultExprEntry.end()) {
     // Use the existing entry
     entry = &it->second;
@@ -2229,7 +2227,7 @@ static bool       haveLeaderAndFollowers(PromotionInfo& promotion,
 static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion);
 
 static void       collectPromotionFormals(PromotionInfo& promotion,
-                                          std::set<ArgSymbol*>& formals);
+                                          std::set<ArgSymbol*, AstIdLess>& formals);
 
 static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
@@ -2315,7 +2313,7 @@ static CallExpr* getMoveToIRtemp(CallExpr* call, bool &isNestedCall) {
 // Returns true if we should not be setting this IR's shape.
 // See the comment on getMoveToIRtemp().
 static bool isDuplicateSetIteratorShape(Symbol* irTemp, bool isNestedCall) {
-  static std::set<Symbol*> outIRtemps;
+  static std::set<Symbol*, AstIdLess> outIRtemps;
   auto it = outIRtemps.find(irTemp);
 
   if (it != outIRtemps.end()) {
@@ -2600,7 +2598,7 @@ static void insertAndSaveWrapCall(PromotionInfo& promotion, BlockStmt* block,
 }
 
 // The info needed to call buildFastFollowerChecksIfNeeded() later.
-static std::map<FnSymbol*, std::set<ArgSymbol*> > promotionFormalsMap;
+static std::map<FnSymbol*, std::set<ArgSymbol*, AstIdLess>, AstIdLess> promotionFormalsMap;
 
 static std::vector<Symbol*>
 addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
@@ -2673,7 +2671,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall, outerToFormals);
 
   if (fNoFastFollowers == false && fastFollowerChecks == true) {
-    std::set<ArgSymbol*> requiresPromotion;
+    std::set<ArgSymbol*, AstIdLess> requiresPromotion;
 
     collectPromotionFormals(promotion, requiresPromotion);
 
@@ -3035,7 +3033,7 @@ static Expr* getIterator(PromotionInfo& promotion) {
 }
 
 
-static std::set<Symbol*> haveLeaderSymbolStack;
+static std::set<Symbol*, AstIdLess> haveLeaderSymbolStack;
 
 static FnSymbol* leaderForSymbol(Expr* anchor, Symbol* leadingSym) {
   Type* leadingType = leadingSym->getValType();
@@ -3193,7 +3191,7 @@ static CallExpr* createPromotedCallForWrapper(PromotionInfo& promotion) {
 }
 
 static void collectPromotionFormals(PromotionInfo& promotion,
-                                    std::set<ArgSymbol*>& formals) {
+                                    std::set<ArgSymbol*, AstIdLess>& formals) {
 
   int numFormals = promotion.fn->numFormals();
   for (int i = 0; i < numFormals; i++) {
@@ -3316,7 +3314,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
                                    bool                  addLead,
                                    FnSymbol*             wrapper,
                                    Type*                 IRtype,
-                                   std::set<ArgSymbol*>& requiresPromotion) {
+                                   std::set<ArgSymbol*, AstIdLess>& requiresPromotion) {
   const char* fnName     = NULL;
   FnSymbol*   checkFn    = NULL;
 
@@ -3414,7 +3412,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
     // create fast follower checks, ex. for a chpl__loopexpr_iter.
     return;
 
-  std::set<ArgSymbol*>& requiresPromotion = promotionFormalsMap[wrapFn];
+  std::set<ArgSymbol*, AstIdLess>& requiresPromotion = promotionFormalsMap[wrapFn];
   SET_LINENO(wrapFn);
 
   // Build "canHaveFastFollowers" check functions -- these don't call DSI

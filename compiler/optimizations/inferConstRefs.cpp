@@ -229,8 +229,7 @@ bool ConstInfo::hasMore() {
   return curTodo < todo.size();
 }
 
-std::map<Symbol*, ConstInfo*> infoMap;
-typedef std::map<Symbol*, ConstInfo*>::iterator ConstInfoIter;
+std::map<Symbol*, ConstInfo*, AstIdLess> infoMap;
 
 static bool inferConstRef(Symbol*);
 
@@ -790,7 +789,7 @@ void inferConstRefs() {
     if (!se->isRef() && isClass(se->typeInfo())) continue;
 
     ConstInfo* info = NULL;
-    ConstInfoIter it = infoMap.find(se->symbol());
+    auto it = infoMap.find(se->symbol());
     if (it == infoMap.end()) {
       info = new ConstInfo(se->symbol());
       infoMap[se->symbol()] = info;
@@ -801,7 +800,7 @@ void inferConstRefs() {
     info->todo.push_back(se);
   }
 
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     Symbol* sym = it->first;
     if (sym->isRef()) {
       inferConstRef(sym);
@@ -810,7 +809,7 @@ void inferConstRefs() {
     }
   }
 
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     if (it->first->isRef()) {
       inferRefToConst(it->first);
     }
@@ -818,7 +817,7 @@ void inferConstRefs() {
 
   // Free the ConstInfo maps and clear the infoMap in case this function is
   // called again.
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     delete it->second; // Free our ConstInfo class
   }
   infoMap.clear();

@@ -215,21 +215,21 @@ static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool markYields
 }
 
 static bool isCallVectorHazard(CallExpr* call,
-                               std::map<FnSymbol*, bool> &fnHasVectorHazard);
+                               std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard);
 
 namespace {
   class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
-      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
+      VectorHazardVisitor (std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard);
 
       bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;
-      std::map<FnSymbol*, bool> &fnHasVectorHazard;
+      std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard;
   };
 
-  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
+  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool, AstIdLess>
       &fnHasVectorHazard) : hazard(false), reason(NULL), fnHasVectorHazard(fnHasVectorHazard)
   {
   }
@@ -244,7 +244,7 @@ namespace {
 };
 
 static bool doesFnHaveVectorHazard(FnSymbol* fn,
-                                   std::map<FnSymbol*, bool> &fnHasVectorHazard)
+                                   std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard)
 {
   if (fnHasVectorHazard.count(fn) != 0)
     return fnHasVectorHazard[fn];
@@ -315,7 +315,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
 }
 
 static bool isCallVectorHazard(CallExpr* call,
-                               std::map<FnSymbol*, bool> &fnHasVectorHazard)
+                               std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard)
 {
   bool hazard = false;
   if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
@@ -330,7 +330,7 @@ static bool isCallVectorHazard(CallExpr* call,
 
 static void markVectorizableForallLoops()
 {
-  std::map<FnSymbol*, bool> fnHasVectorHazard;
+  std::map<FnSymbol*, bool, AstIdLess> fnHasVectorHazard;
 
   // The --force-vectorize flag exists mainly for testing and
   // disables this logic. Instead of disabling vectorization for

@@ -933,7 +933,7 @@ static void printDispatchInfo() {
 ************************************** | *************************************/
 
 // Remove from 'toTrim' the FnSymbols not in 'fns_in_vmt'.
-static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
+static void trimVirtualMap(std::set<FnSymbol*, AstIdLess>& fns_in_vmt,
                            Map<FnSymbol*, Vec<FnSymbol*>*>& toTrim)
 {
   form_Map(VirtualMapElem, el, toTrim) {
@@ -970,7 +970,7 @@ static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
 static void filterVirtualChildren() {
   typedef MapElem<Type*,     Vec<FnSymbol*>*> VmtMapElem;
 
-  std::set<FnSymbol*> fns_in_vmt;
+  std::set<FnSymbol*, AstIdLess> fns_in_vmt;
 
   form_Map(VmtMapElem, el,  virtualMethodTable) {
     if (el->value) {
@@ -994,7 +994,7 @@ static void filterVirtualChildren() {
 
 // map from this type -> name -> fns
 typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
-typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
+typedef std::map<AggregateType*, NameToFns, AstIdLess> TypeToNameToFns;
 
 // Returns the receiver's canonical class type for a method on a class;
 // excludes methods on owned/shared records as they are not subject to
@@ -1076,7 +1076,7 @@ static void checkMethodsOverride() {
 
   TypeToNameToFns map;
 
-  std::set<FnSymbol*> erroredFunctions;
+  std::set<FnSymbol*, AstIdLess> erroredFunctions;
 
   // Populate the map with potential override candidates.
   forv_Vec(FnSymbol, aFn, gFnSymbols) {

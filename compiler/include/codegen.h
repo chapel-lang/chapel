@@ -160,9 +160,9 @@ struct GenInfo {
 
   // Information for no-alias metadata generation
   llvm::MDNode* noAliasDomain;
-  std::map<Symbol*, llvm::MDNode*> noAliasScopes;
-  std::map<Symbol*, llvm::MDNode*> noAliasScopeLists;
-  std::map<Symbol*, llvm::MDNode*> noAliasLists;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasScopes;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasScopeLists;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasLists;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate

@@ -2438,7 +2438,7 @@ const char* toString(Symbol* sym, bool withType) {
 struct SymbolPairComparator {
   bool operator()(SymbolMapKeyValue lhs, SymbolMapKeyValue rhs) {
     // use the same logic as other set/map ordering
-    std::less<Symbol*> lessSym;
+    AstIdLess lessSym;
 
     return lessSym(lhs.key, rhs.key);
   }

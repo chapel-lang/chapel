@@ -122,6 +122,9 @@ run-frontend-linters: FORCE
 
 run-dyno-linters: run-frontend-linters FORCE
 
+run-compiler-linters: FORCE
+	@cd compiler && $(MAKE) run-compiler-linters
+
 chpl-completion: FORCE
 	CHPL_HOME=$(CHPL_MAKE_HOME) ./util/devel/gen-chpl-bash-completion > util/chpl-completion.bash
 

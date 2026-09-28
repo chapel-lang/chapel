@@ -1470,7 +1470,7 @@ class CCodeGenConsumer final : public ASTConsumer {
 
       if (Diags->hasErrorOccurred()) return true;
 
-      for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
+      for (auto I = DG.begin(), E = DG.end(); I != E; ++I) {
         doHandleDecl(*I);
       }
 
@@ -2770,7 +2770,7 @@ struct ExternBlockInfo {
  ~ExternBlockInfo() = default;
 };
 
-typedef std::set<ModuleSymbol*> module_set_t;
+typedef std::set<ModuleSymbol*, AstIdLess> module_set_t;
 typedef module_set_t::iterator module_set_iterator_t;
 
 module_set_t gModulesWithExternBlocks;
