@@ -439,7 +439,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        os: [ubuntu-latest, ubuntu-26.04-arm, macos-latest]
         config: [gasnet, none]
         exclude:
           - os: macos-latest
