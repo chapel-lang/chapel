@@ -101,7 +101,7 @@ class ClosureEnv {
  private:
   FnSymbol* owner_ = nullptr;
   std::vector<Symbol*> outerVariables_;
-  std::map<Symbol*, std::vector<SymExpr*>> outerVariableToMentions_;
+  std::map<Symbol*, std::vector<SymExpr*>, AstIdLess> outerVariableToMentions_;
   std::vector<FnSymbol*> childFunctions_;
 
  public:

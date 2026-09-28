@@ -1236,7 +1236,7 @@ GenRet ArgSymbol::codegen() {
 }
 
 static std::string getFortranTypeName(Type* type, Symbol* sym) {
-  static std::set<Symbol*> warnedSymbols;
+  static std::set<Symbol*, AstIdLess> warnedSymbols;
   std::string typeName = fortranTypeNames[type->symbol];
 
   if (typeName.empty()) {
@@ -1253,7 +1253,7 @@ static std::string getFortranTypeName(Type* type, Symbol* sym) {
 }
 
 static std::string getFortranKindName(Type* type, Symbol* sym) {
-  static std::set<Symbol*> warnedSymbols;
+  static std::set<Symbol*, AstIdLess> warnedSymbols;
   std::string kindName = fortranKindNames[type->symbol];
 
   if (kindName.empty()) {
@@ -3499,7 +3499,7 @@ void FnSymbol::codegenFortran(int indent) {
          uniqueKindNames.count("_ref_CFI_cdesc_t_chpl") == 0)) {
       fprintf(outfile, "%*simport ", indent, "");
       first = true;
-      for (std::set<std::string>::iterator kindName = uniqueKindNames.begin();
+      for (auto kindName = uniqueKindNames.begin();
            kindName != uniqueKindNames.end(); ++kindName) {
         if (!strcmp(kindName->c_str(), "_ref_CFI_cdesc_t_chpl")) continue;
         if (!first) {

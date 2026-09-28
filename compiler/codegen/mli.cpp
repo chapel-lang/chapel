@@ -72,7 +72,7 @@ private:
   bool debugPrint;
   std::vector<FnSymbol*> exps;
   std::vector<FnSymbol*> throws;
-  std::map<Type*, int64_t> typeMap;
+  std::map<Type*, int64_t, AstIdLess> typeMap;
   fileinfo fiMarshalling;
   fileinfo fiClientBundle;
   fileinfo fiServerBundle;
@@ -292,7 +292,6 @@ void MLIContext::emitServerPrelude(void) {
 }
 
 void MLIContext::emitMarshalRoutines(void) {
-  std::map<Type*, int64_t>::iterator i;
   std::string gen;
 
   gen += this->debugPrint ? this->genDefine("CHPL_MLI_DEBUG_PRINT") : "";
@@ -307,7 +306,7 @@ void MLIContext::emitMarshalRoutines(void) {
   gen += this->genHeaderInc(astr("mli/", mliCommonRuntimeSource));
   gen += "\n";
 
-  for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
+  for (auto i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
     if (this->debugPrint) {
       std::string tpn = this->genTypeName(i->first);
       gen += this->genComment(tpn.c_str());

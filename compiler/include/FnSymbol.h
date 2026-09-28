@@ -86,7 +86,7 @@ public:
 
   // "interim instantiation" copies of CG functions invoked from this function
   // for those calls that rely on this function's interfaceConstraints
-  std::set<FnSymbol*> invokedCGfns;
+  std::set<FnSymbol*, AstIdLess> invokedCGfns;
 };
 
 class FnSymbol final : public Symbol {
@@ -319,7 +319,7 @@ extern FnSymbol*                gGenericTupleDestroy;
 
 extern const char*              ftableName;
 extern const char*              ftableSizeName;
-extern std::map<FnSymbol*, int> ftableMap;
+extern std::map<FnSymbol*, int, AstIdLess> ftableMap;
 extern std::vector<FnSymbol*>   ftableVec;
 
 

@@ -41,7 +41,7 @@ void checkForDuplicateUses()
   // appears in more than one function.
   // So, scan the list of functions, cache their arguments, and barf if a
   // duplicate is encountered.
-  std::set<ArgSymbol*> args_seen;
+  std::set<ArgSymbol*, AstIdLess> args_seen;
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     for_formals(formal, fn)

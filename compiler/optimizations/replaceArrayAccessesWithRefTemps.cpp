@@ -122,7 +122,7 @@ void replaceArrayAccessesWithRefTemps() {
     if (ForLoop* forLoop = toForLoop(block)) {
       std::vector<ContextCallExpr*>                     allContextCalls;
       std::vector<BaseAST*>                             asts;
-      std::map<Symbol*, std::vector<ContextCallExpr*> > arrayAccessMap;
+      std::map<Symbol*, std::vector<ContextCallExpr*>, AstIdLess> arrayAccessMap;
 
       SymExpr*  loopIdx   = forLoop->indexGet();
       CallExpr* indexMove = NULL;
@@ -210,7 +210,7 @@ void replaceArrayAccessesWithRefTemps() {
         }
       }
 
-      for (std::map<Symbol*, std::vector<ContextCallExpr*> >::iterator it = arrayAccessMap.begin(); it != arrayAccessMap.end(); ++it) {
+      for (auto it = arrayAccessMap.begin(); it != arrayAccessMap.end(); ++it) {
         int              vecSize   = it->second.size();
         ContextCallExpr* firstCall = it->second.front();
 
@@ -260,9 +260,7 @@ void replaceArrayAccessesWithRefTemps() {
 
           // then replace all of the indexing context calls in the vector
           // with uses of that 'ref'
-          for (std::vector<ContextCallExpr*>::iterator calls = it->second.begin();
-               calls != it->second.end();
-               ++calls) {
+          for (auto calls = it->second.begin(); calls != it->second.end(); ++calls) {
 
             ContextCallExpr* call = *calls;
 

@@ -444,68 +444,15 @@ def_to_ast(ParamForLoop);
 
 #undef def_to_ast
 
-#define def_less_ast(SomeType) \
-  namespace std { \
-    template<> struct less<SomeType*> { \
-      bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
-        if (lhs == NULL && rhs != NULL) return true; \
-        if (lhs != NULL && rhs == NULL) return false; \
-        if (lhs == NULL && rhs == NULL) return false; \
-        return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id; \
-      } \
-    }; \
+struct AstIdLess {
+  template <typename SomeType>
+  bool operator()(const SomeType* lhs, const SomeType* rhs) const {
+    if (lhs == NULL && rhs != NULL) return true;
+    if (lhs != NULL && rhs == NULL) return false;
+    if (lhs == NULL && rhs == NULL) return false;
+    return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id;
   }
-
-def_less_ast(TemporaryConversionThunk)
-def_less_ast(SymExpr)
-def_less_ast(UnresolvedSymExpr)
-def_less_ast(DefExpr)
-def_less_ast(ContextCallExpr)
-def_less_ast(LoopExpr)
-def_less_ast(NamedExpr)
-def_less_ast(IfcConstraint)
-def_less_ast(IfExpr)
-def_less_ast(UseStmt)
-def_less_ast(ImportStmt)
-def_less_ast(BlockStmt)
-def_less_ast(CondStmt)
-def_less_ast(GotoStmt)
-def_less_ast(DeferStmt)
-def_less_ast(ForallStmt)
-def_less_ast(TryStmt)
-def_less_ast(ForwardingStmt)
-def_less_ast(CatchStmt)
-def_less_ast(ImplementsStmt)
-def_less_ast(ExternBlockStmt)
-def_less_ast(Expr)
-def_less_ast(ModuleSymbol)
-def_less_ast(VarSymbol)
-def_less_ast(ArgSymbol)
-def_less_ast(ShadowVarSymbol)
-def_less_ast(TypeSymbol)
-def_less_ast(FnSymbol)
-def_less_ast(InterfaceSymbol)
-def_less_ast(EnumSymbol)
-def_less_ast(LabelSymbol)
-def_less_ast(TemporaryConversionSymbol)
-def_less_ast(Symbol)
-def_less_ast(PrimitiveType)
-def_less_ast(ConstrainedType)
-def_less_ast(EnumType)
-def_less_ast(AggregateType)
-def_less_ast(TemporaryConversionType)
-def_less_ast(DecoratedClassType)
-def_less_ast(Type)
-
-def_less_ast(LoopStmt);
-def_less_ast(WhileStmt);
-def_less_ast(WhileDoStmt);
-def_less_ast(DoWhileStmt);
-def_less_ast(ForLoop);
-def_less_ast(CForLoop);
-def_less_ast(ParamForLoop);
-
-#undef def_less_ast
+};
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
@@ -557,7 +504,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 
 // Do not use for_vector to avoid #include astutil.h
 #define AST_CALL_STDVEC(_vec, _t, call, ...)                                 \
-  for (std::vector<_t*>::iterator it = _vec.begin(); it != _vec.end(); it++) \
+  for (auto it = _vec.begin(); it != _vec.end(); it++) \
     { if (*it) call(*it, __VA_ARGS__); }
 
 #define AST_CHILDREN_CALL(_a, call, ...)                                \

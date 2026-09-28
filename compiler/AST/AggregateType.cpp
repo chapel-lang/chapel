@@ -302,13 +302,13 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
 
 static bool doFieldIsGeneric(Symbol* field,
                              bool &hasDefault,
-                             std::set<AggregateType*>& visited);
+                             std::set<AggregateType*, AstIdLess>& visited);
 
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
 static bool isFieldTypeExprGeneric(Expr* typeExpr,
-                                   std::set<AggregateType*>& visited) {
+                                   std::set<AggregateType*, AstIdLess>& visited) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
 
@@ -371,7 +371,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
 
 static bool doFieldIsGeneric(Symbol* field,
                              bool &hasDefault,
-                             std::set<AggregateType*>& visited) {
+                             std::set<AggregateType*, AstIdLess>& visited) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -409,7 +409,7 @@ static bool doFieldIsGeneric(Symbol* field,
 }
 
 bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
-  std::set<AggregateType*> visited;
+  std::set<AggregateType*, AstIdLess> visited;
 
   return doFieldIsGeneric(field, hasDefault, visited);
 }
@@ -1089,7 +1089,7 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
 static void checkValidPartial(Expr* expr, Expr* errExpr, const char* errTypeString) {
   std::vector<SymExpr*> ses;
   collectSymExprs(expr, ses);
-  std::set<Symbol*> syms;
+  std::set<Symbol*, AstIdLess> syms;
   for_vector(SymExpr, se, ses) {
     syms.insert(se->symbol());
   }
@@ -2196,7 +2196,7 @@ void AggregateType::processGenericFields() {
   for_fields(field, this) {
     if (field->hasFlag(FLAG_SUPER_CLASS)) continue;
 
-    std::set<AggregateType*> visited;
+    std::set<AggregateType*, AstIdLess> visited;
 
     if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE)) {
       if (isTypeSymbol(field) == false) {
@@ -2376,7 +2376,7 @@ void AggregateType::buildDefaultInitializer() {
 static bool hasFullyGenericField(AggregateType* at) {
 
   for_fields(field, at) {
-    std::set<AggregateType*> visited;
+    std::set<AggregateType*, AstIdLess> visited;
     DefExpr* defExpr = field->defPoint;
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM) &&
         !field->hasFlag(FLAG_SUPER_CLASS)) {
@@ -2948,7 +2948,7 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
 ************************************** | *************************************/
 
 void AggregateType::addClassToHierarchy() {
-  std::set<AggregateType*> localSeen; // classes in potential cycle
+  std::set<AggregateType*, AstIdLess> localSeen; // classes in potential cycle
 
   addClassToHierarchy(localSeen);
 }
@@ -2968,9 +2968,9 @@ static BlockStmt* getEnclosingBlockForImplements(Symbol* sym) {
   }
 }
 
-void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
+void AggregateType::addClassToHierarchy(std::set<AggregateType*, AstIdLess>& localSeen) {
   // classes already in hierarchy
-  static std::set<AggregateType*> globalSeen;
+  static std::set<AggregateType*, AstIdLess> globalSeen;
 
   if (localSeen.find(this)  != localSeen.end())  {
     USR_FATAL(this, "Class hierarchy is cyclic");

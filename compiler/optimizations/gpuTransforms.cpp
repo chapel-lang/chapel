@@ -207,7 +207,7 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
  * safely assume we're 'on' a GPU sublocale.
  **/
 class CreateGpuFunctionSpecializations {
-  std::map<FnSymbol *, FnSymbol *> specMap_; // Map original functions to GPU specialized clones
+  std::map<FnSymbol *, FnSymbol *, AstIdLess> specMap_; // Map original functions to GPU specialized clones
 
   FnSymbol* getGpuSpecializationOfFcn(FnSymbol *nonGpuFunction) const;
   FnSymbol* createGpuSpecializationOfFn(FnSymbol* fn);
@@ -569,8 +569,8 @@ private:
   bool extractUpperBound();
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
-                                   std::set<FnSymbol*>& okFns,
-                                   std::set<FnSymbol*>& visitedFns);
+                                   std::set<FnSymbol*, AstIdLess>& okFns,
+                                   std::set<FnSymbol*, AstIdLess>& visitedFns);
 
   FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
@@ -848,14 +848,14 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {
-  std::set<FnSymbol*> okFns;
-  std::set<FnSymbol*> visitedFns;
+  std::set<FnSymbol*, AstIdLess> okFns;
+  std::set<FnSymbol*, AstIdLess> visitedFns;
   return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
-                                                std::set<FnSymbol*>& okFns,
-                                           std::set<FnSymbol*>& visitedFns) {
+                                                std::set<FnSymbol*, AstIdLess>& okFns,
+                                           std::set<FnSymbol*, AstIdLess>& visitedFns) {
   FnSymbol* parentFn = blk->getFunction();
   if (debugPrintGPUChecks) {
     printf("%*s%s: %s[%d]\n", indentGPUChecksLevel, "",
@@ -1837,7 +1837,7 @@ bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call) {
 }
 
 void GpuKernel::populateBody() {
-  std::set<Symbol*> handledSymbols;
+  std::set<Symbol*, AstIdLess> handledSymbols;
 
   CForLoop* loopForBody = gpuLoop.loop();
 

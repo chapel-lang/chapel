@@ -42,7 +42,7 @@ static void collapseTrivialMoves();
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
-typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
+typedef std::map<SymExpr*, DefCastPair, AstIdLess> UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
@@ -56,12 +56,12 @@ bool isDenormalizable(Symbol* sym,
     Type** castTo, SafeExprAnalysis& analysisData);
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates,
     SafeExprAnalysis& analysisData);
-void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*, AstIdLess> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData);
 void denormalize(void);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    std::set<Symbol*>& deferredSyms);
+    std::set<Symbol*, AstIdLess>& deferredSyms);
 
 int maxDenormalizesPerFunction = 1000;
 
@@ -85,7 +85,7 @@ int maxDenormalizesPerFunction = 1000;
 void denormalize(void) {
 
   UseDefCastMap candidates;
-  std::set<Symbol*> deferredSyms;
+  std::set<Symbol*, AstIdLess> deferredSyms;
   SafeExprAnalysis analysisData;
 
   if (fDenormalize) {
@@ -172,10 +172,9 @@ void denormalize(void) {
  *   denormalize(void)
  */
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    std::set<Symbol*>& deferredSyms) {
+    std::set<Symbol*, AstIdLess>& deferredSyms) {
 
-  for(UseDefCastMap::iterator it = candidates.begin() ;
-      it != candidates.end() ; ++it) {
+  for(auto it = candidates.begin(); it != candidates.end(); ++it) {
     // unpack the bundle
     DefCastPair defCastPair = it->second;
     SymExpr* use = it->first;
@@ -190,7 +189,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
   }
 }
 
-void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*, AstIdLess> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData) {
 
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
@@ -270,7 +269,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
-  std::set<Symbol*> symSet;
+  std::set<Symbol*, AstIdLess> symSet;
 
   collectSymbolSet(fn, symSet);
 

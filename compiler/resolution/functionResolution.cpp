@@ -109,9 +109,9 @@ SymbolMap                          paramMap;
 
 Vec<CallExpr*>                     callStack;
 
-std::map<Type*,     FnSymbol*>     autoCopyMap;
-std::map<Type*,     FnSymbol*>     initCopyMap;
-std::map<Type*,     Serializers>   serializeMap;
+std::map<Type*,     FnSymbol*, AstIdLess>     autoCopyMap;
+std::map<Type*,     FnSymbol*, AstIdLess>     initCopyMap;
+std::map<Type*,     Serializers, AstIdLess>   serializeMap;
 
 Map<Type*,          FnSymbol*>     autoDestroyMap;
 Map<FnSymbol*,      FnSymbol*>     coerceMoveFromCopyMap;
@@ -126,11 +126,11 @@ static ModuleSymbol*               explainCallModule;
 
 static Map<Type*,     Type*>       runtimeTypeMap;
 
-static std::map<FnSymbol*, const char*> innerCompilerWarningMap;
-static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
+static std::map<FnSymbol*, const char*, AstIdLess> innerCompilerWarningMap;
+static std::map<FnSymbol*, const char*, AstIdLess> outerCompilerWarningMap;
 
-static std::map<FnSymbol*, const char*> innerCompilerErrorMap;
-static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
+static std::map<FnSymbol*, const char*, AstIdLess> innerCompilerErrorMap;
+static std::map<FnSymbol*, const char*, AstIdLess> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
@@ -150,7 +150,7 @@ typedef enum {
 static int inTryResolve;
 static std::vector<check_state_t> tryResolveStates;
 static std::vector<FnSymbol*> tryResolveFunctions;
-typedef std::map<FnSymbol*,std::pair<BaseAST*,const char*> > try_resolve_map_t;
+typedef std::map<FnSymbol*, std::pair<BaseAST*, const char*>, AstIdLess> try_resolve_map_t;
 try_resolve_map_t tryResolveErrors;
 
 //#
@@ -202,7 +202,7 @@ static void replaceRuntimeTypeVariableTypes();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
-                           std::set<FnSymbol*>* alreadyCalled = NULL);
+                           std::set<FnSymbol*, AstIdLess>* alreadyCalled = NULL);
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
@@ -390,7 +390,7 @@ hasUserAssign(Type* type) {
 ************************************** | *************************************/
 
 bool hasAutoCopyForType(Type* type) {
-  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+  auto it = autoCopyMap.find(type);
 
   return it != autoCopyMap.end() && it->second != NULL;
 }
@@ -398,7 +398,7 @@ bool hasAutoCopyForType(Type* type) {
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+  auto it = autoCopyMap.find(type);
 
   if (it == autoCopyMap.end() || it->second == NULL) {
     INT_FATAL(type,
@@ -410,7 +410,7 @@ FnSymbol* getAutoCopyForType(Type* type) {
 }
 
 FnSymbol* getAutoCopy(Type* type) {
-  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+  auto it = autoCopyMap.find(type);
 
   if (it == autoCopyMap.end())
     return NULL;
@@ -419,9 +419,7 @@ FnSymbol* getAutoCopy(Type* type) {
 }
 
 void getAutoCopyTypeKeys(Vec<Type*>& keys) {
-  std::map<Type*, FnSymbol*>::iterator it;
-
-  for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
+  for (auto it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
     keys.add(it->first);
   }
 }
@@ -492,7 +490,7 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
 }
 
 FnSymbol* getInitCopyDuringResolution(Type* type) {
-  std::map<Type*, FnSymbol*>::iterator it = initCopyMap.find(type);
+  auto it = initCopyMap.find(type);
 
   FnSymbol* fn = NULL;
   if (it != initCopyMap.end())
@@ -515,8 +513,7 @@ FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn) {
 }
 
 const char* getErroneousCopyError(FnSymbol* fn) {
-  try_resolve_map_t::iterator it;
-  it = tryResolveErrors.find(fn);
+  auto it = tryResolveErrors.find(fn);
   if (it != tryResolveErrors.end()) {
     const char* err = it->second.second;
     return err;
@@ -2667,7 +2664,7 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
   return ret;
 }
 
-static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
+static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*, AstIdLess>& nestedRecords) {
 
   // no need to check for extern records, since the extern compiler checks that
   // and we will never reach this point in compilation with an extern record
@@ -2729,7 +2726,7 @@ static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& 
 
 // Convenience wrapper
 static void checkForInfiniteRecord(AggregateType* at) {
-  std::set<AggregateType*> nestedRecords;
+  std::set<AggregateType*, AstIdLess> nestedRecords;
   nestedRecords.insert(at);
   checkForInfiniteRecord(at, nestedRecords);
 }
@@ -4130,8 +4127,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState, PoiSearchM
     // Also check for errors in tryResolveErrors
     // in case this is the 2nd time we attempted to resolve it.
     if (FnSymbol* fn = call->resolvedFunction()) {
-      try_resolve_map_t::iterator it;
-      it = tryResolveErrors.find(fn);
+      auto it = tryResolveErrors.find(fn);
       if (it != tryResolveErrors.end()) {
         state = CHECK_FAILED;
       }
@@ -4868,14 +4864,13 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
 
 // Reissue compiler warning or error messages
 static void reissueMsgs(FnSymbol* resolvedFn,
-                        std::map<FnSymbol*, const char*>& innerMap,
-                        std::map<FnSymbol*, const char*>& outerMap,
+                        std::map<FnSymbol*, const char*, AstIdLess>& innerMap,
+                        std::map<FnSymbol*, const char*, AstIdLess>& outerMap,
                         bool err) {
-  std::map<FnSymbol*, const char*>::iterator it;
   CallExpr *from1 = NULL, *from2 = NULL;
   const char *str1 = NULL, *str2 = NULL;
 
-  it = innerMap.find(resolvedFn);
+  auto it = innerMap.find(resolvedFn);
   if (it != innerMap.end()) {
     str1 = it->second;
     from1 = reissueCompilerWarning(it->second, 2, err);
@@ -4911,8 +4906,7 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
   reissueMsgs(resolvedFn, innerCompilerErrorMap, outerCompilerErrorMap, true);
   reissueMsgs(resolvedFn, innerCompilerWarningMap, outerCompilerWarningMap, false);
 
-  try_resolve_map_t::iterator it;
-  it = tryResolveErrors.find(resolvedFn);
+  auto it = tryResolveErrors.find(resolvedFn);
   if (it != tryResolveErrors.end()) {
     if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
       FnSymbol* fn = tryResolveFunctions.back();
@@ -12197,9 +12191,7 @@ void resolve() {
 
   visibleFunctionsClear();
 
-  std::map<int, SymbolMap*>::iterator it;
-
-  for (it = capturedValues.begin(); it != capturedValues.end(); ++it) {
+  for (auto it = capturedValues.begin(); it != capturedValues.end(); ++it) {
     delete it->second;
   }
 
@@ -12258,7 +12250,7 @@ static void unmarkDefaultedGenerics() {
 *                                                                             *
 ************************************** | *************************************/
 
-static std::set<ModuleSymbol*> moduleInitResolved;
+static std::set<ModuleSymbol*, AstIdLess> moduleInitResolved;
 
 static void resolveUsesAndModule(ModuleSymbol* mod, const char* path) {
   if (moduleInitResolved.count(mod) == 0) {
@@ -12842,7 +12834,7 @@ static void resolveSerializers() {
 }
 
 static void resolveDestructors() {
-  std::set<Type*> wellknown = getWellKnownTypesSet();
+  std::set<Type*, AstIdLess> wellknown = getWellKnownTypesSet();
 
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
@@ -13322,7 +13314,7 @@ static void printUnusedFunctions() {
 #endif
   // map from generic functions to instantiated versions
   // a generic function is 'used' if it is instantiated.
-  std::map<FnSymbol*, std::vector<FnSymbol*> > instantiations;
+  std::map<FnSymbol*, std::vector<FnSymbol*>, AstIdLess> instantiations;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (FnSymbol* instantiatedFrom = fn->instantiatedFrom) {
@@ -13400,10 +13392,10 @@ static bool shouldProcessForCallGraph(CallExpr* call, FnSymbol* fn) {
 // of a function to be the same by tracking them using the function they
 // were instantiated from before they are removed as unused.
 //
-static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>* alreadyCalled) {
+static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*, AstIdLess>* alreadyCalled) {
 
   std::vector<BaseAST*> asts;
-  std::set<FnSymbol*> alreadySeenLocally;
+  std::set<FnSymbol*, AstIdLess> alreadySeenLocally;
   bool freeAlreadyCalledSet = false;
   const bool printLocalMultiples = false;
 
@@ -13412,7 +13404,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   }
 
   if (alreadyCalled == NULL) {
-    alreadyCalled = new std::set<FnSymbol*>();
+    alreadyCalled = new std::set<FnSymbol*, AstIdLess>();
     freeAlreadyCalledSet = true;
   }
 
@@ -13477,7 +13469,7 @@ void removeCopyFns(Type* t) {
     autoDestroy->defPoint->remove();
   }
 
-  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(t);
+  auto it = autoCopyMap.find(t);
   if (it != autoCopyMap.end()) {
     FnSymbol* autoCopy = it->second;
     autoCopyMap.erase(it);
@@ -14735,8 +14727,8 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
-std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
-std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
+std::set<Symbol*, AstIdLess> gAlreadyWarnedSurprisingGenericSyms;
+std::set<Symbol*, AstIdLess> gAlreadyWarnedSurprisingGenericManagementSyms;
 
 static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
   // is it a field? check to see if it's a temp within an initializer

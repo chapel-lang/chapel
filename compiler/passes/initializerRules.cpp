@@ -1511,7 +1511,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   return ret;
 }
 
-static std::set<AggregateType*> postinitCache;
+static std::set<AggregateType*, AstIdLess> postinitCache;
 
 //
 // Inserts postinit methods and calls to super.postinit as needed.

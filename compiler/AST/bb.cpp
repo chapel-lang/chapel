@@ -333,31 +333,24 @@ void BasicBlock::remove() {
     BasicBlockVector& pred_outs = pred->outs;
 
     // Look for this block in the list of successors of this predecessor.
-    BasicBlockVector::iterator i;
-
-    for (i = pred_outs.begin(); i != pred_outs.end(); ++i) {
-      if (*i == this)
+    for (auto i = pred_outs.begin(); i != pred_outs.end(); ++i) {
+      if (*i == this) {
+        pred_outs.erase(i);
         break;
+      }
     }
-
-    // This block is in the list, right?
-    INT_ASSERT(i != pred_outs.end());
-
-    pred_outs.erase(i);
   }
 
   for_vector(BasicBlock, succ, this->outs) {
-    BasicBlockVector&          succ_ins = succ->ins;
-    BasicBlockVector::iterator i;
+    BasicBlockVector& succ_ins = succ->ins;
 
     // Look for this block in the list of predecessors of this successor.
-    for (i = succ_ins.begin(); i != succ_ins.end(); ++i)
-      if (*i == this)
+    for (auto i = succ_ins.begin(); i != succ_ins.end(); ++i) {
+      if (*i == this) {
+        succ_ins.erase(i);
         break;
-
-    INT_ASSERT(i != succ_ins.end());
-
-    succ_ins.erase(i);
+      }
+    }
   }
 }
 
