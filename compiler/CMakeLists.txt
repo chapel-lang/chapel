@@ -88,6 +88,11 @@ add_custom_command(
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 
+add_custom_target(chpl-generated-sources
+  DEPENDS ${SRC_DIR}/main/LICENSE
+          ${SRC_DIR}/main/COPYRIGHT
+          ${SRC_DIR}/codegen/reservedSymbolNames.h)
+
 add_executable(chpl)
 # need many of the outputs from printchplenv for the following values
 # note that headers for dyno are included by target_link_libraries(chpl PRIVATE ChplFrontend)

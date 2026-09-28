@@ -126,6 +126,24 @@ jobs:
       run: |
         CHPL_HOST_COMPILER=clang make run-dyno-linters
 
+  check_compiler_linters:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
+    - name: run compiler linters
+      run: |
+        CHPL_HOST_COMPILER=clang make run-compiler-linters
+
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
     container:
