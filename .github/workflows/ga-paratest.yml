@@ -176,12 +176,19 @@ jobs:
           # clean-only walks the suite without running it.
           # This is more reliable than just using `ls` (it resolves skipifs, notests, etc).
           # Store each matrix job as CSV: directory,start_test flags.
-          awk -v home="$CHPL_HOME/" '
+          awk -v home="$CHPL_HOME/" -v requested_dirs="$TEST_DIRS" '
             BEGIN {
               # these are well-known slow directories that should be split into multiple jobs
               slow_directories["test/classes"] = 1
               slow_directories["test/library"] = 1
               slow_directories["test/types"] = 1
+              # explicitly requested directories are always their own jobs
+              n = split(requested_dirs, req)
+              for (i = 1; i <= n; i++) {
+                d = relative(req[i])
+                sub(/\/+$/, "", d)
+                requested[d] = 1
+              }
             }
             function relative(path) {
               if (index(path, home) == 1) return substr(path, length(home) + 1)
@@ -202,7 +209,7 @@ jobs:
               visited[dir] = 1
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
-              if (dir ~ "^test/[^/]+$") {
+              if (dir ~ "^test/[^/]+$" || dir in requested) {
                 flags = (dir in slow_directories) ? "--no-recurse" : ""
                 testdirs[dir] = flags
               } else {
