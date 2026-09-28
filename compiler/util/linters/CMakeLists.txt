@@ -17,7 +17,14 @@
 
 add_executable(astIdLess EXCLUDE_FROM_ALL "astIdLess.cpp")
 set_target_properties(astIdLess PROPERTIES RUNTIME_OUTPUT_DIRECTORY . )
-target_link_libraries(astIdLess clang-cpp ${CHPL_LLVM_LINK_ARGS})
+
+# don't link the allocator; it may not be built
+set(LINTER_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
+string(REPLACE "-ljemalloc" "" LINTER_LINK_ARGS "${LINTER_LINK_ARGS}")
+string(REPLACE "-lmimalloc" "" LINTER_LINK_ARGS "${LINTER_LINK_ARGS}")
+string(STRIP "${LINTER_LINK_ARGS}" LINTER_LINK_ARGS)
+
+target_link_libraries(astIdLess clang-cpp ${LINTER_LINK_ARGS})
 target_compile_options(astIdLess PRIVATE SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 target_compile_definitions(astIdLess PRIVATE
