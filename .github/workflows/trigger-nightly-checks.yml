@@ -122,7 +122,7 @@ jobs:
           cat "$EMAIL_BODY_FILENAME"
       - name: send mail
         if: always()
-        uses: dawidd6/action-send-mail@ca8dbb4d4f91ca7f75e7f2feea5339e76ce70c90 # v20
+        uses: dawidd6/action-send-mail@03a02a49409134de07636216fb379a026c52991e # v21
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER }}
