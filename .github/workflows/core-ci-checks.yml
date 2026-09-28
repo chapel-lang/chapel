@@ -628,6 +628,10 @@ jobs:
     with:
       configuration: quickstart
       cron-script: util/cron/test-quickstart.bash
+      build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
     uses: $/.github/workflows/ga-paratest.yml
