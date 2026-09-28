@@ -142,7 +142,7 @@ jobs:
         echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
     - name: run compiler linters
       run: |
-        CHPL_HOST_COMPILER=clang make run-compiler-linters
+        CHPL_HOST_COMPILER=clang make run-compiler-linters -j"$(util/buildRelease/chpl-make-cpu_count)"
 
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
