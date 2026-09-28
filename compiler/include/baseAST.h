@@ -36,6 +36,9 @@
 
 #include <ostream>
 #include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 #include "astlocs.h"
 #include "map.h"
@@ -444,6 +447,15 @@ def_to_ast(ParamForLoop);
 
 #undef def_to_ast
 
+template <typename T> struct isPairOrTuple : std::false_type {};
+template <typename A, typename B>
+struct isPairOrTuple<std::pair<A, B>> : std::true_type {};
+template <typename... Ts>
+struct isPairOrTuple<std::tuple<Ts...>> : std::true_type {};
+
+// Orders AST pointers by id (null first) for deterministic container order.
+// std::pair/std::tuple keys are compared element-wise: AST pointers by id,
+// everything else with '<'.
 struct AstIdLess {
   template <typename SomeType>
   bool operator()(const SomeType* lhs, const SomeType* rhs) const {
@@ -451,6 +463,45 @@ struct AstIdLess {
     if (lhs != NULL && rhs == NULL) return false;
     if (lhs == NULL && rhs == NULL) return false;
     return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id;
+  }
+
+  template <typename A, typename B>
+  bool operator()(const std::pair<A, B>& lhs,
+                  const std::pair<A, B>& rhs) const {
+    if (elementLess(lhs.first, rhs.first)) return true;
+    if (elementLess(rhs.first, lhs.first)) return false;
+    return elementLess(lhs.second, rhs.second);
+  }
+
+  template <typename... Ts>
+  bool operator()(const std::tuple<Ts...>& lhs,
+                  const std::tuple<Ts...>& rhs) const {
+    return tupleLess<0>(lhs, rhs);
+  }
+
+ private:
+  template <typename T>
+  bool elementLess(const T& lhs, const T& rhs) const {
+    if constexpr ((std::is_pointer_v<T> &&
+                   std::is_base_of_v<BaseAST,
+                                     std::remove_cv_t<
+                                       std::remove_pointer_t<T>>>) ||
+                  isPairOrTuple<T>::value) {
+      return (*this)(lhs, rhs);
+    } else {
+      return lhs < rhs;
+    }
+  }
+
+  template <size_t I, typename Tuple>
+  bool tupleLess(const Tuple& lhs, const Tuple& rhs) const {
+    if constexpr (I == std::tuple_size_v<Tuple>) {
+      return false;
+    } else {
+      if (elementLess(std::get<I>(lhs), std::get<I>(rhs))) return true;
+      if (elementLess(std::get<I>(rhs), std::get<I>(lhs))) return false;
+      return tupleLess<I + 1>(lhs, rhs);
+    }
   }
 };
 
