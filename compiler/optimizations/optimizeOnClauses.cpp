@@ -583,7 +583,7 @@ static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
 static void addRunningTaskModifiers(void) {
   compute_call_sites();
 
-  std::set<CallExpr*> visited;
+  std::set<CallExpr*, AstIdLess> visited;
   forv_Vec(CallExpr, taskMigrationCall, gCallExprs) {
     FnSymbol* fn = taskMigrationCall->resolvedFunction();
     if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {

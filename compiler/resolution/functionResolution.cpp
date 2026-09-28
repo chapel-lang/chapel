@@ -11872,7 +11872,8 @@ struct SpeciallyNamedMethodInfo {
 };
 
 using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
-using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
+using SpecialMethodMap =
+  std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo, AstIdLess>;
 
 static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
   AggregateType* toReturn = toAggregateType(ts);

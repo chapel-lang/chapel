@@ -64,7 +64,8 @@ struct ConversionsTableValue {
 };
 
 typedef std::pair<Type*,Type*> ConversionsTableKey;
-typedef std::map<ConversionsTableKey, ConversionsTableValue> ConversionsTable;
+typedef std::map<ConversionsTableKey, ConversionsTableValue, AstIdLess>
+  ConversionsTable;
 
 static ConversionsTable conversionsTable;
 

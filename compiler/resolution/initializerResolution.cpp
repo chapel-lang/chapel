@@ -137,17 +137,12 @@ static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
   }
 }
 
-struct NewWrapperMapComparator {
-  template <typename SomeType>
-  bool operator()(const SomeType lhs, const SomeType rhs) const {
-    return lhs.first < rhs.first || (lhs.first == rhs.first && lhs.second < rhs.second);
-  }
-};
 // This is a map from the original initializer to the new wrapper
 // The map is keyed by the FnSymbol of the original initializer and the expr of
 //   the allocator (if any)
 // The value is the '_new' wrapped initializer
-static std::map<std::pair<FnSymbol*, Expr*>, FnSymbol*> newWrapperMap;
+static std::map<std::pair<FnSymbol*, Expr*>, FnSymbol*, AstIdLess>
+  newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
