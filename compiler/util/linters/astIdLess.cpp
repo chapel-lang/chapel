@@ -21,6 +21,8 @@
 // subclasses), including the implicit std::less in std::set<Symbol*>,
 // std::map<FnSymbol*, V>, etc. Such containers must use AstIdLess instead so
 // that their iteration order is deterministic (by AST id, not by address).
+// Keys that are std::pair/std::tuple containing AST pointers are also flagged.
+// Custom structs whose operator< compares AST pointers are not caught.
 //
 // Usage: astIdLess -p <build dir> [-j N] [files...]
 // With no files, every compiler source in the compilation database is checked.
@@ -69,21 +71,45 @@ static const ClassTemplateSpecializationDecl* asSpecialization(QualType t) {
       t.getCanonicalType()->getAsCXXRecordDecl());
 }
 
-static bool isStdLessOfAstPointer(QualType t) {
+static bool containsAstPointer(QualType t);
+
+static bool anyArgContainsAstPointer(ArrayRef<TemplateArgument> args) {
+  for (const TemplateArgument& arg : args) {
+    if (arg.getKind() == TemplateArgument::Pack) {
+      if (anyArgContainsAstPointer(arg.pack_elements())) return true;
+    } else if (arg.getKind() == TemplateArgument::Type &&
+               containsAstPointer(arg.getAsType())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// std::pair and std::tuple compare their elements with the built-in '<'
+static bool containsAstPointer(QualType t) {
+  if (isAstPointer(t)) return true;
+  const auto* spec = asSpecialization(t);
+  if (!spec || !spec->isInStdNamespace() ||
+      (spec->getName() != "pair" && spec->getName() != "tuple"))
+    return false;
+  return anyArgContainsAstPointer(spec->getTemplateArgs().asArray());
+}
+
+static bool isStdLessOfAstKey(QualType t) {
   const auto* spec = asSpecialization(t);
   if (!spec || !spec->isInStdNamespace() || spec->getName() != "less")
     return false;
   const TemplateArgumentList& args = spec->getTemplateArgs();
   return args.size() == 1 && args[0].getKind() == TemplateArgument::Type &&
-         isAstPointer(args[0].getAsType());
+         containsAstPointer(args[0].getAsType());
 }
 
-static bool hasStdLessOfAstPointerArg(QualType t) {
+static bool hasStdLessOfAstKeyArg(QualType t) {
   const auto* spec = asSpecialization(t);
   if (!spec) return false;
   for (const TemplateArgument& arg : spec->getTemplateArgs().asArray()) {
     if (arg.getKind() == TemplateArgument::Type &&
-        isStdLessOfAstPointer(arg.getAsType()))
+        isStdLessOfAstKey(arg.getAsType()))
       return true;
   }
   return false;
@@ -111,11 +137,12 @@ class StdLessCallback : public MatchFinder::MatchCallback {
     QualType t = tl->getType();
 
     const char* problem = nullptr;
-    if (isStdLessOfAstPointer(t)) {
-      problem = "uses std::less on an AST pointer; use AstIdLess instead";
-    } else if (hasStdLessOfAstPointerArg(t)) {
-      problem = "compares AST pointers with std::less; "
-                "pass AstIdLess as the comparator";
+    if (isStdLessOfAstKey(t)) {
+      problem = "orders AST pointers by address; "
+                "use an id-based comparator such as AstIdLess";
+    } else if (hasStdLessOfAstKeyArg(t)) {
+      problem = "orders AST pointers by address via std::less; "
+                "pass an id-based comparator such as AstIdLess";
     } else {
       return;
     }
