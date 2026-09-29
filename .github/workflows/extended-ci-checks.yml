@@ -29,7 +29,11 @@ jobs:
       arkouda-version: "release"
 
   check_blog:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.runner }}
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
       credentials:
