@@ -48,7 +48,7 @@ jobs:
       - name: Output that we should${{ env.SHOULD_BUILD && ' ' || ' not '}}build the image
         id: should-build
         env:
-          SHOULD_BUILD: ${{ steps.changes.outputs.docker-sources }} == 'true' }}
+          SHOULD_BUILD: ${{ steps.changes.outputs.docker-sources }} == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
         run: |
           echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
 
