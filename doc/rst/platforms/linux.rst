@@ -31,7 +31,7 @@ See the full list of supported packages `here
 packages, there is also a Chapel `AUR
 <https://aur.archlinux.org/packages/chapel>`__.
 
-The following lists all the configurations that exist in the package builds
+The following lists all the configurations that exist in the package builds:
 
 ..
 
