@@ -10,12 +10,12 @@ single-node (CHPL_COMM=none)
      - CHPL_SANITIZE_EXE
      - OS compatibility
    * - llvm
-     -
+     - none
      - jemalloc
      - none
      -
    * - llvm
-     -
+     - none
      - cstdlib
      - address
      - unsupported on Debian 12, Ubuntu 22, and AL2023
@@ -30,12 +30,12 @@ single-node (CHPL_COMM=none)
      - address
      - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - clang
-     -
+     - none
      - jemalloc
      - none
      -
    * - clang
-     -
+     - none
      - cstdlib
      - address
      -
@@ -133,11 +133,11 @@ Common settings:
    * - CHPL_TARGET_COMPILER
      - CHPL_LAUNCHER
    * - llvm
-     -
+     - none
    * - llvm
      - slurm-srun
    * - clang
-     -
+     - none
    * - clang
      - slurm-srun
 

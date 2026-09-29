@@ -76,9 +76,8 @@ def collect_rows(os_names: List[str]) -> List[Dict[str, str]]:
     for row in rows.values():
         supported = row.pop("_os")
         unsupported = [pretty_os(o) for o in os_names if o not in supported]
-        row[OS_COL] = (
-            "unsupported on " + join_and(unsupported) if unsupported else "-"
-        )
+        if unsupported:
+            row[OS_COL] = "unsupported on " + join_and(unsupported)
         result.append(row)
     result.sort(key=row_sort_key)
     return result
@@ -119,8 +118,8 @@ def all_config_keys() -> List[str]:
 def column_order(rows: List[Dict[str, str]]) -> List[str]:
     """Column names in display order, dropping columns whose value never varies."""
     keys = SORT_KEYS + [k for k in all_config_keys() if k not in SORT_KEYS]
-    keys = [k for k in keys if len({fmt(r.get(k)) for r in rows}) > 1]
-    if any(r.get(OS_COL) != "-" for r in rows):
+    keys = [k for k in keys if len({fmt(r, k) for r in rows}) > 1]
+    if any(OS_COL in r for r in rows):
         keys.append(OS_COL)
     return keys
 
@@ -141,23 +140,21 @@ def common_settings(rows: List[Dict[str, str]]) -> List[str]:
     return result
 
 
-def fmt(value) -> str:
-    return "-" if value is None else str(value)
+def fmt(row: Dict[str, str], key: str) -> str:
+    value = row.get(key)
+    if value is None:
+        return "none" if key == "CHPL_LAUNCHER" else ""
+    return str(value)
 
 
 def print_rst(rows, cols):
     print(".. list-table::")
     print("   :header-rows: 1")
     print()
-    for i, row in enumerate(
-        [cols] + [[fmt(r.get(c)) for c in cols] for r in rows]
-    ):
+    for row in [cols] + [[fmt(r, c) for c in cols] for r in rows]:
         for j, cell in enumerate(row):
-            prefix = "   * - " if j == 0 else "     - "
-            if i > 0 and cell == "-":
-                print(prefix.rstrip())
-                continue
-            print(prefix + cell)
+            prefix = "   * -" if j == 0 else "     -"
+            print(f"{prefix} {cell}".rstrip())
     print()
 
 
