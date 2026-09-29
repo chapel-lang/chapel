@@ -33,9 +33,13 @@ jobs:
       arkouda-version: "release"
 
   check_blog:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.runner }}
     container:
-      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      image: ${{ startsWith(matrix.runner, 'ubuntu') && inputs.CHAPEL_CI_IMAGE || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}

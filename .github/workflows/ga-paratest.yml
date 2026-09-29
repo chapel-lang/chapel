@@ -38,10 +38,9 @@ on:
         type: string
         default: ""
       max-parallel:
-        description: Maximum number of test jobs to run concurrently; 0 is unrestricted. Defaults to 20 for non-merge-queue runs, and 0 for merge queue runs.
+        description: Maximum number of test jobs to run concurrently; 0 is unrestricted. If unset, defaults to 20 for non-merge-queue runs, and unrestricted for merge queue runs.
         required: false
         type: number
-        default: ${{ !github.event.merge_group && 20 || 0 }}
       timeout-minutes:
         description: Maximum number of minutes each job may run
         required: false
@@ -100,6 +99,7 @@ jobs:
     outputs:
       matrix: ${{ steps.test-directories.outputs.matrix }}
       test-count: ${{ steps.test-directories.outputs.test-count }}
+      max-parallel: ${{ steps.max-parallel.outputs.max-parallel }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -260,6 +260,26 @@ jobs:
           echo "test-count=$test_count" >> "$GITHUB_OUTPUT"
           echo "Created $test_count test jobs:"
           cat "$RUNNER_TEMP/testdirs.csv"
+      - name: determine max parallel jobs
+        id: max-parallel
+        env:
+          # Use a lower number of parallel jobs for macOS.
+          DEFAULT_PARALLEL: ${{ startsWith(inputs.runner, 'ubuntu') && 20 || 5 }}
+          INPUT_PARALLEL: ${{ inputs.max-parallel }}
+          IS_MERGE_QUEUE: ${{ github.event.merge_group != null }}
+          TEST_COUNT: ${{ steps.test-directories.outputs.test-count }}
+        run: |
+          if [[ -n "$INPUT_PARALLEL" ]]; then
+            max_parallel=$INPUT_PARALLEL
+          elif [[ "$IS_MERGE_QUEUE" == "true" ]]; then
+            max_parallel=0
+          else
+            max_parallel=$DEFAULT_PARALLEL
+          fi
+          if [[ "$max_parallel" == "0" ]]; then
+            max_parallel=$TEST_COUNT
+          fi
+          echo "max-parallel=$max_parallel" >> "$GITHUB_OUTPUT"
 
   run-tests:
     name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
@@ -274,7 +294,7 @@ jobs:
         password: ${{ github.token }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max-parallel || fromJSON(needs.build.outputs.test-count) }}
+      max-parallel: ${{ fromJSON(needs.build.outputs.max-parallel) }}
       matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
     steps:
       - name: random sleep to avoid hitting GitHub APIs simultaneously
