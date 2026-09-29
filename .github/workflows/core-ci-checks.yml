@@ -590,7 +590,7 @@ jobs:
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
 
-  paratest-quickstart.darwin:
+  paratest-quickstart_darwin:
     name: Chapel paratest on darwin quickstart configuration, examples only
     uses: $/.github/workflows/ga-paratest.yml
     permissions:
@@ -602,7 +602,7 @@ jobs:
       runner: macos-latest
       use-container: false
       cron-script: util/cron/test-quickstart.darwin.bash
-  paratest-gasnet.darwin:
+  paratest-gasnet_darwin:
     name: Chapel paratest on darwin mulitilocale test with gasnet (segment everything)
     uses: $/.github/workflows/ga-paratest.yml
     permissions:
@@ -616,7 +616,7 @@ jobs:
       cron-script: util/cron/test-gasnet.darwin.bash
       pre-build-steps: |
         brew install llvm@22
-  paratest-gasnet.fast.darwin:
+  paratest-gasnet_fast_darwin:
     name: Chapel paratest on darwin mulitilocale test with gasnet (segment fast)
     uses: $/.github/workflows/ga-paratest.yml
     permissions:
