@@ -89,7 +89,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      image: ${{ inputs.use-container && vars.CHAPEL_CI_IMAGE || '' }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
@@ -264,7 +264,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      image: ${{ inputs.use-container && vars.CHAPEL_CI_IMAGE || '' }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
