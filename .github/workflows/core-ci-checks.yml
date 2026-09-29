@@ -563,6 +563,8 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv mason-deps
+  # SEGMENT=fast does not work well oversubscribed in GA
+  # error: Out of memory allocating "tasking layer unspecified data"
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
     uses: $/.github/workflows/ga-paratest.yml
@@ -573,6 +575,7 @@ jobs:
     with:
       configuration: gasnet-fast
       cron-script: util/cron/test-gasnet-fast.bash
+      container-options: --shm-size=8g
       start-test-args: -multilocale-only
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
