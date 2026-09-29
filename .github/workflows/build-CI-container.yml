@@ -16,9 +16,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-  # Adds a "manual run" option in the GH UI
   workflow_dispatch:
-  # Also rebuild weekly
   schedule:
     - cron: '0 0 * * 2'
 
