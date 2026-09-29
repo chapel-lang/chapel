@@ -12,6 +12,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
   queue: max
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
