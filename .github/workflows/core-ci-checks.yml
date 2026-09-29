@@ -519,12 +519,12 @@ jobs:
       - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
         run: |
           ${{ env.PORTABILITY_TEST_DIR }}/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILE"
-      - name: compare against checked-in file
+      - name: comparing ${{ env.PREREQS_COMMANDS_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
       - name: generate ${{ env.PACKAGING_TABLE_FILE }}
         run: |
-          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py --format rst --split --common-settings > "$PACKAGING_TABLE_FILE"
-      - name: compare against checked-in file
+          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py > "$PACKAGING_TABLE_FILE"
+      - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
