@@ -648,8 +648,9 @@ jobs:
       cron-script: util/cron/test-ubsan.clang.bash
       # provides the clang UBSan runtime libraries
       pre-build-steps: |
+        clang_version=$($(CHPL_HOST_COMPILER=clang ./util/chplenv/chpl_compiler.py --host --cc --compiler-only) -dumpversion | cut -d. -f1)
         sudo apt-get update
-        sudo apt-get install -y libclang-rt-dev
+        sudo apt-get install -y "libclang-rt-${clang_version}-dev"
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
