@@ -45,7 +45,7 @@ jobs:
             docker-sources:
               - ${{ env.DOCKERFILE }}
               - '.github/workflows/build-CI-container.yml'
-      - name: Output that we should${{ env.SHOULD_BUILD && '' || ' not'}} build the image
+      - name: Output that we should${{ env.SHOULD_BUILD && ' ' || ' not '}}build the image
         id: should-build
         env:
           SHOULD_BUILD: ${{ steps.changes.outputs.docker-sources }} == 'true' }}
