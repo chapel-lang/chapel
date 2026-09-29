@@ -556,7 +556,7 @@ jobs:
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc
   paratest-gasnet_darwin:
-    name: Chapel paratest on darwin mulitilocale test with gasnet (segment everything)
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment everything)
     uses: $/.github/workflows/ga-paratest.yml
     permissions:
       contents: read
@@ -569,11 +569,12 @@ jobs:
       cron-script: util/cron/test-gasnet.darwin.bash
       pre-build-steps: |
         brew install llvm@22
+        export CHPL_TEST_MULTILOCALE_ONLY=true
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc
   paratest-gasnet_fast_darwin:
-    name: Chapel paratest on darwin mulitilocale test with gasnet (segment fast)
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
     uses: $/.github/workflows/ga-paratest.yml
     permissions:
       contents: read
@@ -586,6 +587,7 @@ jobs:
       cron-script: util/cron/test-gasnet.fast.darwin.bash
       pre-build-steps: |
         brew install llvm@22
+        export CHPL_TEST_MULTILOCALE_ONLY=true
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc
