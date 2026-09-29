@@ -5,14 +5,10 @@ Generate a table of every CHPL_* configuration built into the Linux packages.
 The set of configurations comes from fill_docker_template_common.py
 """
 
-import argparse
-import csv
 import os
 import re
-import sys
 from typing import Dict, List
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fill_docker_template_common as common
 
 BASE_CONFIGS = [
@@ -120,15 +116,10 @@ def all_config_keys() -> List[str]:
     return keys
 
 
-def column_order(
-    rows: List[Dict[str, str]], hide_constant: bool, with_group: bool = True
-) -> List[str]:
-    """Column names in display order, optionally dropping columns whose value never varies."""
-    keys: List[str] = ["GROUP"] if with_group else []
-    keys += SORT_KEYS
-    keys += [k for k in all_config_keys() if k not in keys]
-    if hide_constant:
-        keys = [k for k in keys if len({fmt(r.get(k)) for r in rows}) > 1]
+def column_order(rows: List[Dict[str, str]]) -> List[str]:
+    """Column names in display order, dropping columns whose value never varies."""
+    keys = SORT_KEYS + [k for k in all_config_keys() if k not in SORT_KEYS]
+    keys = [k for k in keys if len({fmt(r.get(k)) for r in rows}) > 1]
     if any(r.get(OS_COL) != "-" for r in rows):
         keys.append(OS_COL)
     return keys
@@ -154,21 +145,6 @@ def fmt(value) -> str:
     return "-" if value is None else str(value)
 
 
-def print_markdown(rows, cols):
-    print("| " + " | ".join(cols) + " |")
-    print("|" + "|".join("---" for _ in cols) + "|")
-    for r in rows:
-        print("| " + " | ".join(fmt(r.get(c)) for c in cols) + " |")
-    print()
-
-
-def print_csv(rows, cols):
-    w = csv.writer(sys.stdout)
-    w.writerow(cols)
-    for r in rows:
-        w.writerow(fmt(r.get(c)) for c in cols)
-
-
 def print_rst(rows, cols):
     print(".. list-table::")
     print("   :header-rows: 1")
@@ -185,78 +161,21 @@ def print_rst(rows, cols):
     print()
 
 
-# format -> (group heading, common-settings header, settings bullet, table printer)
-FORMATS = {
-    "markdown": (
-        lambda g: f"## {g}\n",
-        "Common settings:\n",
-        "- `{}`",
-        print_markdown,
-    ),
-    "rst": (
-        lambda g: f"{g}\n{'-' * len(g)}\n",
-        "Common settings:\n",
-        "* ``{}``",
-        print_rst,
-    ),
-    "csv": (lambda g: f"# {g}", None, "# {}", print_csv),
-}
-
-
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument(
-        "--os",
-        nargs="+",
-        metavar="OSNAME",
-        help="OS names to consider (default: discovered from apt/ and rpm/)",
-    )
-    p.add_argument("--format", choices=list(FORMATS.keys()), default="markdown")
-    p.add_argument(
-        "--all-columns",
-        action="store_true",
-        help="include columns whose value is the same in every config",
-    )
-    p.add_argument(
-        "--split",
-        action="store_true",
-        help="emit a separate table for each base config",
-    )
-    p.add_argument(
-        "--common-settings",
-        action="store_true",
-        help="list the settings shared by every config before each table",
-    )
-    args = p.parse_args()
-
-    os_names = args.os or discover_os_names()
-    rows = collect_rows(os_names)
-    hide_constant = not args.all_columns
-
-    if args.split:
-        tables = [
-            (group, [r for r in rows if r["GROUP"] == group])
-            for group, _ in BASE_CONFIGS
-        ]
-    else:
-        tables = [(None, rows)]
-
-    heading, settings_header, bullet, print_table = FORMATS[args.format]
-    for i, (group, table_rows) in enumerate(tables):
-        cols = column_order(table_rows, hide_constant, with_group=group is None)
-        settings = common_settings(table_rows) if args.common_settings else []
+    rows = collect_rows(discover_os_names())
+    for i, (group, _) in enumerate(BASE_CONFIGS):
+        table_rows = [r for r in rows if r["GROUP"] == group]
+        settings = common_settings(table_rows)
         if i > 0:
             print()
-        if group is not None:
-            print(heading(group))
-        if settings and settings_header:
-            print(settings_header)
-        for s in settings:
-            print(bullet.format(s))
-        if settings and settings_header:
+        print(f"{group}\n{'-' * len(group)}\n")
+        if settings:
+            print("Common settings:\n")
+            for s in settings:
+                print(f"* ``{s}``")
             print()
-        if group is None or len(table_rows) > 1:
-            print_table(table_rows, cols)
+        if len(table_rows) > 1:
+            print_rst(table_rows, column_order(table_rows))
 
 
 if __name__ == "__main__":
