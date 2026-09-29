@@ -128,7 +128,7 @@ module ChapelProgramEntrypoints {
     chpl_task_callMain(p2);
 
     // @dlongnecke-cray, 11/16/2020
-    // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
+    // TODO: Call chpl_preUserCodeSync() here for Locale[0]?
     initTaskDynamicEndCount();
 
     // Now that module initialization is done, set the flag to 'true'.
