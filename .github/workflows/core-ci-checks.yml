@@ -646,6 +646,10 @@ jobs:
     with:
       configuration: ubsan.clang
       cron-script: util/cron/test-ubsan.clang.bash
+      # provides the clang UBSan runtime libraries
+      pre-build-steps: |
+        sudo apt-get update
+        sudo apt-get install -y libclang-rt-dev
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
