@@ -260,7 +260,8 @@ jobs:
       - name: determine max parallel jobs
         id: max-parallel
         env:
-          DEFAULT_PARALLEL: 20
+          # Use a lower number of parallel jobs for macOS.
+          DEFAULT_PARALLEL: ${{ startsWith(matrix.runner, 'ubuntu') && 20 || 5 }}
           INPUT_PARALLEL: ${{ inputs.max-parallel }}
           IS_MERGE_QUEUE: ${{ github.event.merge_group != null }}
           TEST_COUNT: ${{ steps.test-directories.outputs.test-count }}
