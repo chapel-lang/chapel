@@ -59,6 +59,11 @@ on:
         required: false
         type: boolean
         default: true
+      container-options:
+        description: Extra options passed to the Chapel CI container
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -90,7 +95,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user chpl-tester
+      options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
@@ -272,7 +277,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
       image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user chpl-tester
+      options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
