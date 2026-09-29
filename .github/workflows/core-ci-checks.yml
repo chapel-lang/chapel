@@ -543,7 +543,7 @@ jobs:
     with:
       configuration: fast
       cron-script: util/cron/test-fast.bash
-      start-test-args: -compopts --fast
+      start-test-args: -compopts --fast -compopts '--ccflags -Wno-invalid-feature-combination'
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
