@@ -532,6 +532,7 @@ jobs:
     with:
       configuration: asan
       cron-script: util/cron/test-asan.bash
+      timeout-minutes: 360
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
