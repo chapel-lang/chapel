@@ -4,6 +4,9 @@ name: Arkouda smoke testing
 on:
   workflow_call:
     inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
       arkouda-version:
         required: true
         type: string
@@ -23,7 +26,7 @@ jobs:
   arkouda-smoke-test:
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.CHAPEL_CI_IMAGE }}
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
