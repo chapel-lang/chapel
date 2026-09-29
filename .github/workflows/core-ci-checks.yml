@@ -547,7 +547,7 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
   paratest-gasnet-asan:
     name: Chapel paratest with GASNet and AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
@@ -577,7 +577,7 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
   paratest-gpu-cpu:
     name: Chapel paratest with CHPL_GPU=cpu
     uses: $/.github/workflows/ga-paratest.yml
@@ -592,7 +592,7 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
   paratest-memleaks:
     name: Chapel paratest with --memLeaks
     uses: $/.github/workflows/ga-paratest.yml
@@ -607,7 +607,7 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
   paratest-no-local:
     name: Chapel paratest with --no-local
     uses: $/.github/workflows/ga-paratest.yml
@@ -632,7 +632,7 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
     uses: $/.github/workflows/ga-paratest.yml
@@ -675,4 +675,4 @@ jobs:
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
+          all test-venv mason-deps
