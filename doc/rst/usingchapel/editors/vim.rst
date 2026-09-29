@@ -11,7 +11,7 @@ newer.
 Syntax Highlighting
 ~~~~~~~~~~~~~~~~~~~
 
-To get syntax highlighting for Chapel in Vim, either manually copy the files
+To get syntax highlighting for Chapel in Vim, either manually copy the files from the
 top-level ``highlight/vim`` directory of the Chapel source tree into your
 ``$HOME/.vim`` directory or use a plugin manager like `vim-plug`_ to install an unmanaged plugin.
 
@@ -72,14 +72,14 @@ must be somewhere under the home directory.
 Language Server Support
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The use the :ref:`Chapel language server <readme-chpl-language-server>` and :ref:`readme-chplcheck`, you will need to have an extension that supports the Language Server Protocol (LSP). There are a few options for this, these instructions will use the `vim-lsp <https://github.com/prabirshrestha/vim-lsp>`_ extension with `vim-plug`_.
+To use the :ref:`Chapel language server <readme-chpl-language-server>` and :ref:`readme-chplcheck`, you will need to have an extension that supports the Language Server Protocol (LSP). There are a few options for this, these instructions will use the `vim-lsp <https://github.com/prabirshrestha/vim-lsp>`_ extension with `vim-plug`_.
 
 Using vim-lsp:
 ^^^^^^^^^^^^^^
 
 Note that these instructions assume you have already setup Vim with Chapel syntax highlighting as described in the previous section.
 
-1. Assuming you have already installed the `vim-plug`_ plugin manager, you can add the following lines to your ``.vimrc`` file, between the between the ``call plug#begin()`` and ``call plug#end()`` lines:
+1. Assuming you have already installed the `vim-plug`_ plugin manager, you can add the following lines to your ``.vimrc`` file, between the ``call plug#begin()`` and ``call plug#end()`` lines:
 
    .. code-block:: vim
 
