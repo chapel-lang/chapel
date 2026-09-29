@@ -112,12 +112,7 @@ public:
     if (n > fnSymbolsSize_) {
       for (size_t i = fnSymbolsSize_; i < n; i++) {
         FnSymbol *fn = gFnSymbols.v[i];
-        auto it = map_.find(fn->name);
-        if (it == map_.end()) {
-          map_.insert({fn->name, {fn}});
-        } else {
-          it->second.push_back(fn);
-        }
+        map_[fn->name].push_back(fn);
       }
     }
     fnSymbolsSize_ = n;
