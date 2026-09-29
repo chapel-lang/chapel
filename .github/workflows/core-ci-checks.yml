@@ -549,7 +549,7 @@ jobs:
       configuration: quickstart.darwin
       runner: macos-latest
       use-container: false
-      test-dirs: test/release/examples
+      test-dirs: test/release
       cron-script: util/cron/test-quickstart.darwin.bash
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
