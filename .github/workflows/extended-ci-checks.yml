@@ -35,7 +35,7 @@ jobs:
         runner: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.runner }}
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ startsWith(matrix.runner, 'ubuntu') && 'ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest' || null }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
