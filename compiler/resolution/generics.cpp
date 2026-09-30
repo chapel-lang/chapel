@@ -130,7 +130,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
-  if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
+  if (fn->hasAnyFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     return actualTS;
   } else if (fn->hasFlag(FLAG_ALLOW_REF)) {
     // With FLAG_ALLOW_REF, always use actualTS type, even if it's a ref type

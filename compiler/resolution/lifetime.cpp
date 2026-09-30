@@ -1575,7 +1575,7 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
           rhsCall->isPrimitive(PRIM_SET_REFERENCE)) {
         SymExpr* rhsSe = toSymExpr(rhsCall->get(1));
         Symbol* rhs = rhsSe->symbol();
-        if (lhs->hasEitherFlag(FLAG_TEMP,FLAG_REF_TEMP)) {
+        if (lhs->hasAnyFlag(FLAG_TEMP,FLAG_REF_TEMP)) {
           a = lhs;
           b = rhs;
         }
@@ -2103,7 +2103,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 
 static bool isFunctionReturningNotOwned(FnSymbol* fn) {
   if (fn &&
-      fn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
+      fn->hasAnyFlag(FLAG_RETURN_NOT_OWNED,
                         FLAG_RETURNS_ALIASING_ARRAY))
     return true;
 
@@ -2554,7 +2554,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
     if (isSubjectToRefLifetimeAnalysis(lhs) ||
         isSubjectToBorrowLifetimeAnalysis(lhs)) {
 
-      if (lhs->hasEitherFlag(FLAG_RVV,FLAG_RETARG)) {
+      if (lhs->hasAnyFlag(FLAG_RVV,FLAG_RETARG)) {
         emitBadReturnErrors(call);
       } else {
         emitBadAssignErrors(call);
@@ -2893,7 +2893,7 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     // Ignore the RVV for this check since that's tested in acceptCall
     // (see test lifetimes/bug-like-timezones.chpl)
-    if (key->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
+    if (key->hasAnyFlag(FLAG_RVV,FLAG_RETARG))
       continue;
 
     // Don't emit errors again when we already made an error for that symbol
@@ -3175,7 +3175,7 @@ bool LifetimeState::shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
 
   // Don't propagate lifetime to RVV - we check moves to it
   // separately
-  if (sym->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
+  if (sym->hasAnyFlag(FLAG_RVV,FLAG_RETARG))
     return false;
 
   return true;
