@@ -88,16 +88,13 @@ proc callAllMethods(c: borrowed C, b: borrowed B, a: borrowed A) {
   writeln("="*80);
 }
 
-proc doDynamicCasts(baseClass: borrowed C?) {
+proc doDynamicCasts(baseClass: borrowed A?) {
   writeln("doDynamicCasts");
   if baseClass != nil {
-    writeln("Successfully casted to C");
-    var cObj = baseClass!;
-    cObj.method1();
-    cObj.method2();
-    cObj.method3();
-    cObj.method4();
-    cObj.method5();
+    writeln("Successfully casted to A");
+    var aObj = baseClass!;
+    aObj.method1();
+    aObj.method2();
   }
   if (baseClass : unmanaged B?) != nil {
     writeln("Successfully casted to B");
@@ -107,11 +104,14 @@ proc doDynamicCasts(baseClass: borrowed C?) {
     bObj.method3();
     bObj.method4();
   }
-  if (baseClass : unmanaged A?) != nil {
-    writeln("Successfully casted to A");
-    var aObj = (baseClass : unmanaged A?)!;
+  if (baseClass : unmanaged C?) != nil {
+    writeln("Successfully casted to C");
+    var aObj = (baseClass : unmanaged C?)!;
     aObj.method1();
     aObj.method2();
+    aObj.method3();
+    aObj.method4();
+    aObj.method5();
   }
   writeln("="*80);
 }
