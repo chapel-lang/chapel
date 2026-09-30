@@ -143,6 +143,10 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     # TODO: can we use pythons builtin tar module instead of system commands?
     tar_executable = "gtar" if shutil.which("gtar") else "tar"
 
+    # Prevent Python generating .pyc bytecode files (__pycache__ dirs),
+    # including implicit invocations such as use of chplenv.
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+
     # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
     # Just use whatever is found in $CHPL_HOME
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
@@ -234,10 +238,6 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
     with cd(archive_dir):
         set_make_threads()
         log(f"Will invoke 'make' with {make_threads} threads")
-
-        # Prevent Python generating .pyc bytecode files (__pycache__ dirs),
-        # including implicit invocations such as use of chplenv.
-        os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
         log("Creating the spec tests...")
         make("spectests")
