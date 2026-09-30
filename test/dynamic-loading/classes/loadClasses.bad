@@ -1,0 +1,101 @@
+A init
+B init
+C init
+A init
+B init
+A init
+callAllMethods
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method5 called
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method1 called (overridden in C)
+method2 called (overridden in C)
+method1 called (overridden in B)
+method2 called (overridden in B)
+method3 called
+method4 called
+method1 called (overridden in B)
+method2 called (overridden in B)
+method1 called
+method2 called
+================================================================================
+doDynamicCasts
+Successfully casted to A
+method1 called (overridden in C)
+method2 called (overridden in C)
+Successfully casted to B
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+Successfully casted to C
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method5 called
+================================================================================
+doDynamicCasts
+Successfully casted to A
+method1 called (overridden in B)
+method2 called (overridden in B)
+Successfully casted to B
+method1 called (overridden in B)
+method2 called (overridden in B)
+method3 called
+method4 called
+================================================================================
+doDynamicCasts
+Successfully casted to A
+method1 called
+method2 called
+================================================================================
+Loading Library
+Calling classes made in library
+A init
+B init
+C init
+A init
+B init
+A init
+callAllMethods
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method5 called
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method1 called (overridden in C)
+method2 called (overridden in C)
+method1 called (overridden in B)
+method2 called (overridden in B)
+method3 called
+method4 called
+method1 called (overridden in B)
+method2 called (overridden in B)
+method1 called
+method2 called
+================================================================================
+A deinit
+B deinit
+A deinit
+C deinit
+B deinit
+A deinit
+Calling classes from this program in the library
+callAllMethods
+method1 called (overridden in C)
+method2 called (overridden in C)
+method3 called (overridden in C)
+method4 called (overridden in C)
+method5 called
+myClasses.chpl:70: error: class instance was allocated by a different Chapel program
