@@ -211,6 +211,7 @@ exclude_patterns = [
     "modules/standard/ChapelIO.rst",
     "modules/standard/ChapelSysCTypes.rst",
     "usingchapel/prereqs-commands.rst",
+    "platforms/linux-pkg-table.rst",
     # exclude the chapel-py files
     "tools/chapel-py/chapel-py-api-template.rst",
     "tools/chapel-py/chapel-py-api.rst",
