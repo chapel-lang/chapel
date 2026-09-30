@@ -190,6 +190,9 @@ const char* legalizeName(const char* name) {
       case ':': ret += "_COLON_";       break;
       case '.': ret += "_DOT_";         break;
       case ' ': ret +=  "_SPACE_";      break;
+      case '(': ret += "";              break;
+      case ')': ret += "";              break;
+      case ',': ret += "_";             break;
       default:
       {
         char c = *ch;
@@ -1889,6 +1892,52 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
+// Name functions Outer_Inner_TypeName_fnName (TypeName only for methods),
+// clashes are handled later
+static void qualifyFunctionCname(FnSymbol* fn) {
+  // leave compiler-chosen cnames alone
+  if (fIdBasedMunging || fn->cname != fn->name || !fn->isRenameable())
+    return;
+
+  //
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
+  //
+  if (strncmp(fn->cname, "chpl_", 5) == 0) {
+    return;
+  }
+
+  // leave task/on functions alone
+  if (fn->hasAnyFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_COBEGIN_OR_COFORALL_BLOCK,
+                     FLAG_ON, FLAG_ON_BLOCK, FLAG_LOCAL_ON,
+                     FLAG_BEGIN, FLAG_BEGIN_BLOCK, FLAG_NON_BLOCKING))
+    return;
+
+  std::string name = fn->name;
+
+  if (fn->_this) {
+    Type* t = fn->_this->getValType();
+    if (t->symbol->hasFlag(FLAG_WIDE_CLASS))
+      t = t->getField("addr")->type;
+    if (AggregateType* at = toAggregateType(t))
+      name = std::string(at->getRootInstantiation()->symbol->name) + "_" + name;
+  } else if (fn->hasFlag(FLAG_NEW_WRAPPER)) {
+    // if _new, append typename
+    auto retType = fn->getReturnSymbol()->getValType();
+    if (AggregateType* at = toAggregateType(retType))
+      name = name + "_" + std::string(at->getRootInstantiation()->symbol->name);
+  }
+
+  for (ModuleSymbol* mod = fn->getModule();
+       mod != nullptr && mod != theProgram && mod != rootModule;
+       mod = mod->defPoint->parentSymbol->getModule()) {
+    name = std::string(mod->name) + "_" + name;
+  }
+
+  fn->cname = astr(name);
+}
+
 static void uniquify_names(std::set<const char*> & cnames,
                            std::vector<TypeSymbol*> & types,
                            std::vector<FnSymbol*> & functions,
@@ -1923,6 +1972,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    qualifyFunctionCname(fn);
     legalizeSymbolName(fn);
     functions.push_back(fn);
   }

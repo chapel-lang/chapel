@@ -1545,7 +1545,7 @@ static QualifiedType computeFlattenedRefType(QualifiedType qt) {
   Qualifier retQual = qt.getQual();
   Type* retType = qt.type();
 
-  bool isRefType = qt.type()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+  bool isRefType = qt.type()->symbol->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF);
 
   if (qt.isRefOrWideRef() && isRefType) {
     Qualifier q = qt.getQual();

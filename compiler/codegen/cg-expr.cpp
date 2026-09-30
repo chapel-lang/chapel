@@ -926,7 +926,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
       // local lv-pointer or value; in such cases they are wide
       // only if they are a wide reference or a wide class.
       // Then the wide type is the current Chapel type.
-      if( wide.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
+      if( wide.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
         ret = wide.chplType->getField("addr")->typeInfo();
         wideRefType = wide.chplType;
       } else {
@@ -945,7 +945,7 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
 
   INT_ASSERT(wide.isLVPtr == GEN_WIDE_PTR ||
              (wide.chplType &&
-              wide.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)));
+              wide.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)));
 
   // If we have a local pointer to a wide reference,
   // codegen value it.
@@ -1205,7 +1205,7 @@ GenRet doCodegenFieldPtr(
 
   // Reduce the Chapel reference or wide reference cases
   // to GEN_PTR or GEN_WIDE_PTR cases.
-  if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
+  if (baseType->symbol->hasAnyFlag(FLAG_REF,FLAG_WIDE_REF)) {
     if (baseType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       base = codegenDeref(base);
       base = codegenValue(base);
@@ -1613,7 +1613,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
 
   // Handle references to arrays or star tuples
   // by converting them to isLVPtr != GEN_VAL
-  if( base.chplType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ) {
+  if( base.chplType->symbol->hasAnyFlag(FLAG_REF,FLAG_WIDE_REF) ) {
     base = codegenDeref(base);
   }
 
@@ -1646,7 +1646,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   baseValType = baseType->getValType();
-  if (baseValType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)) {
+  if (baseValType->symbol->hasAnyFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)) {
     // with --llvm-wide-opt we can get here e.g. for a wide _ddata
     // and in that case, we need to compute the element type from
     // within the regular (narrow) ddata
@@ -1976,7 +1976,7 @@ GenRet codegenDeref(GenRet r)
   GenRet ret;
 
   INT_ASSERT(r.chplType);
-  if (r.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+  if (r.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
     ret = codegenValue(r);
     ret.isLVPtr = GEN_WIDE_PTR;
     ret.chplType = r.chplType->getValType();
@@ -2759,7 +2759,7 @@ GenRet codegenIsZero(GenRet x)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
+  if (x.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
     x = codegenRaddr(x);
     if (info->cfile) {
       ret.c = x.c;
@@ -2790,7 +2790,7 @@ GenRet codegenIsNotZero(GenRet x)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
+  if (x.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
     x = codegenRaddr(x);
     if (info->cfile) {
       ret.c = x.c;
@@ -4163,7 +4163,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   // a nil pointer of the correct type.
   if (from.chplType && to_ptr.chplType){
     AggregateType* ct = toAggregateType(from.chplType);
-    if (ct && ct->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+    if (ct && ct->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
       Symbol* valField = ct->getField("addr");
       if (valField && valField->getValType() == dtNil) {
          from = codegenAddrOf(
@@ -4172,7 +4172,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     }
     if (from.chplType == dtNil)
     {
-      if (to_ptr.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+      if (to_ptr.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
       {
         from = codegenWideHere(codegenNullPointer(), to_ptr.chplType);
         type = to_ptr.chplType->getValType();
@@ -5632,7 +5632,7 @@ DEFINE_PRIM(LOCAL_CHECK) {
     auto immediate = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
     const char* errorStr = immediate->v_string.c_str();
 
-    if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
+    if (lhsType->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
       GenRet filename = GenRet(call->get(4));
       GenRet error = GenRet(errorStr);
 
@@ -5653,7 +5653,7 @@ DEFINE_PRIM(IS_LOCAL) {
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
 
-    if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
+    if (lhsType->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
       GenRet lhs = call->get(1);
       if (call->get(1)->isRef()) {
         lhs = codegenDeref(lhs);
@@ -6456,7 +6456,7 @@ static GenRet maybeConvertToLocalPointer(Expr* expr, GenRet& act) {
     isRefToWide = true;
   }
 
-  if (act.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+  if (act.chplType->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
       isRefToWide) {
     // Get the local address.
     // Assume that we have already tested to ensure that this wide pointer

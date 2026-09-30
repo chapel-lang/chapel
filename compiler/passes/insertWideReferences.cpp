@@ -282,7 +282,7 @@ static bool isLocalBlock(Expr* stmt) {
 // Miscellaneous utility functions to help manage the AST
 //
 static bool isTypeFullyWide(BaseAST* bs) {
-  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
+  return bs->typeInfo()->symbol->hasAnyFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
 }
 
 static bool isFullyWide(BaseAST* bs) {
@@ -302,7 +302,7 @@ static bool hasSomeWideness(BaseAST* bs) {
 
 static bool isRefType(BaseAST* bs)
 {
-  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+  return bs->typeInfo()->symbol->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF);
 }
 
 static bool canWidenRecord(BaseAST* bs) {
@@ -1484,7 +1484,7 @@ static void insertStringLiteralTemps()
             SET_LINENO(se);
             if (call->isResolved())
             {
-              if (!call->resolvedFunction()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
+              if (!call->resolvedFunction()->hasAnyFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = newTemp(type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
