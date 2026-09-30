@@ -235,6 +235,10 @@ def make_tarball(chplhome, basetmpdir, tmpdir, reldir):
         set_make_threads()
         log(f"Will invoke 'make' with {make_threads} threads")
 
+        # Prevent Python generating .pyc bytecode files (__pycache__ dirs),
+        # including implicit invocations such as use of chplenv.
+        os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+
         log("Creating the spec tests...")
         make("spectests")
 
