@@ -17,11 +17,11 @@ proc main() {
 
   callAllMethods(c, b, a);
   doDynamicCasts(c.borrow());
-  doDynamicCasts(b.borrow():borrowed C);
-  doDynamicCasts(a.borrow():borrowed C);
+  doDynamicCasts(b.borrow():borrowed A?);
+  doDynamicCasts(a.borrow():borrowed A?);
 
   writeln("Loading Library");
-  var lib = binary.load(libName("libmyClassesLib", path));
+  var lib = binary.load(libName("libloadClassesLib", path));
 
   writeln("Calling classes made in library");
   var callMyClasses = lib.retrieve("callMyClasses", proc():void);
@@ -44,12 +44,12 @@ proc main() {
 
   var newC = (getC():unmanaged C?)!;
   var newB = (getB():unmanaged B?)!;
-  var newA = (getA():unmanaged C?)!;
+  var newA = (getA():unmanaged A?)!;
 
   callAllMethods(newC, newB, newA);
   doDynamicCasts(newC.borrow());
-  doDynamicCasts(newB.borrow():borrowed C);
-  doDynamicCasts(newA.borrow():borrowed C);
+  doDynamicCasts(newB.borrow():borrowed A?);
+  doDynamicCasts(newA.borrow():borrowed A?);
 
 
 }
