@@ -756,7 +756,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*, AstIdLess>* reasonNotConst) {
           // REF_MAYBE_CONST, but can be removed when that is removed
           //
           bool isArrayFormalOnTaskFunction = false;
-          if(calledFn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN) &&
+          if(calledFn->hasAnyFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN) &&
              formal->type &&
              formal->type->symbol &&
              formal->type->symbol->hasFlag(FLAG_ARRAY)) {
