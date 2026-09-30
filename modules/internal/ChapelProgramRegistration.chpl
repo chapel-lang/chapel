@@ -135,6 +135,7 @@ module ChapelProgramRegistration {
 
   pragma "no init"          /** Initialized manually at program startup.  */
   pragma "locale private"   /** One per locale, per program.              */
+  pragma "program info here" /** Codegen reads its id for class ids.    */
   var chpl_programInfoHere: chpl_programInfo;
 
   export proc chpl_prepareProgramInfoHere(): c_ptr(chpl_rt_prginfo) {
