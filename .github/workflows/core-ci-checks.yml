@@ -559,9 +559,9 @@ jobs:
     with:
       configuration: asan
       cron-script: util/cron/test-asan.bash
+      timeout-minutes: 360
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
-      timeout-minutes: 360
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
@@ -588,6 +588,7 @@ jobs:
       configuration: gasnet-asan
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
+      timeout-minutes: 360
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
