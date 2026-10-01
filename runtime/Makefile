@@ -27,7 +27,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 
 CHPL_ENV_HEADER_TEMPLATE=$(CHPL_MAKE_HOME)/runtime/etc/chpl-env-gen-template.h
-CHPL_ENV_HEADER_DIR=$(CHPL_MAKE_HOME)/runtime/include/gen/$(CHPL_MAKE_RUNTIME_SUBDIR)
+CHPL_ENV_HEADER_ROOT_DIR=$(CHPL_MAKE_HOME)/runtime/include/gen
+CHPL_ENV_HEADER_DIR=$(CHPL_ENV_HEADER_ROOT_DIR)/$(CHPL_MAKE_RUNTIME_SUBDIR)
 CHPL_ENV_HEADER=$(CHPL_ENV_HEADER_DIR)/chpl-env-gen.h
 
 all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
@@ -35,15 +36,15 @@ all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 depend:
 
 clean: clean.helpme
-	rm -f tags TAGS $(CHPL_ENV_HEADER)
+	rm -rf tags TAGS
 
 cleanall: cleanall.helpme
-	rm -f tags TAGS $(CHPL_ENV_HEADER)
+	rm -rf tags TAGS
 
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
-	rm -f tags TAGS $(CHPL_ENV_HEADER)
+	rm -rf tags TAGS $(CHPL_ENV_HEADER_ROOT_DIR)
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*
