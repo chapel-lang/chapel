@@ -532,6 +532,8 @@ jobs:
     with:
       configuration: asan
       cron-script: util/cron/test-asan.bash
+      pre-build-steps: |
+        export CHPL_TEST_TIMEOUT=1200
       timeout-minutes: 360
   paratest-fast:
     name: Chapel paratest with --fast
