@@ -77,7 +77,7 @@ bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
 }
 
 void ExpandExternArrayCalls::process(FnSymbol* fn) {
-  std::set<Expr*> cptrScopes;
+  std::set<Expr*, AstIdLess> cptrScopes;
   std::set<int> replaced_args;
   int current_formal = -1;
 

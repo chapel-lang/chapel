@@ -73,7 +73,7 @@ jobs:
                 echo 'EOF'
               } >> "$GITHUB_ENV"
       - name: Send mail
-        uses: dawidd6/action-send-mail@d35571df1982970871070b5e02f01d3b6095cb74 # v19
+        uses: dawidd6/action-send-mail@03a02a49409134de07636216fb379a026c52991e # v21
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER}}

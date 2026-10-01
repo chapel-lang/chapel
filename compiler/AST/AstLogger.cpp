@@ -279,8 +279,7 @@ bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
 void AstLogger::outputRenames(FILE* mFP,
                               std::map<const char*, const char*> renames,
                               bool first) {
-  for (std::map<const char*, const char*>::iterator it = renames.begin();
-       it != renames.end(); ++it) {
+  for (auto it = renames.begin(); it != renames.end(); ++it) {
     if (first) {
       first = false;
     } else {

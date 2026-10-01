@@ -4,7 +4,6 @@ env:
   REGISTRY: ghcr.io
   # NOTE: IMAGE_NAME must be lowercase
   IMAGE_NAME: chapel-github-ci
-  # NOTE: if this filename changes, also update in the on.paths section below
   DOCKERFILE: util/packaging/docker/github-ci/Dockerfile
 
 # Serialize runs of this workflow on 'main', to prevent a build from an older
@@ -13,33 +12,49 @@ concurrency:
   group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
   queue: max
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
-    # This limits the action so it only builds when this file changes
-    paths:
-      # unfortunately we can't use ${{env.DOCKERFILE}} here
-      # see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
-      - util/packaging/docker/github-ci/Dockerfile
-      # also trigger on changes to this workflow file itself
-      - .github/workflows/build-CI-container.yml
   pull_request:
-    paths:
-      # same as for pushes above
-      - util/packaging/docker/github-ci/Dockerfile
-      - .github/workflows/build-CI-container.yml
-  # Adds a "manual run" option in the GH UI
   workflow_dispatch:
-  # Also rebuild weekly
   schedule:
-    - cron: '0 0 * * 2'
+    - cron: '0 20 * * 2'
 
 defaults:
   run:
     shell: bash -exuo pipefail {0}
 
 jobs:
+  should-build-ci-container:
+    runs-on: ubuntu-slim
+    outputs:
+      should-build: ${{ steps.should-build.outputs.should-build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .
+      - name: Check if relevant paths changed
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: changes
+        with:
+          filters: |
+            docker-sources:
+              - ${{ env.DOCKERFILE }}
+              - '.github/workflows/build-CI-container.yml'
+      - name: Output that we should${{ env.SHOULD_BUILD && ' ' || ' not '}}build the image
+        id: should-build
+        env:
+          SHOULD_BUILD: ${{ steps.changes.outputs.docker-sources }} == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
+        run: |
+          echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
+
   build-ci-container:
+    needs: should-build-ci-container
+    if: needs.should-build-ci-container.outputs.should-build
     runs-on: ubuntu-latest
     permissions:
       contents: read

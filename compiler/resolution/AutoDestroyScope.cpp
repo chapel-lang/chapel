@@ -278,14 +278,14 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 //
 // adds autodestroys after refStmt
 void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
-                                          const std::set<VarSymbol*>& ignored) {
+                                          const std::set<VarSymbol*, AstIdLess>& ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
   bool                    recurse    = (gotoStmt != NULL) ? true : false;
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
   VarSymbol*              excludeVar = variableToExclude(fn, refStmt);
   const AutoDestroyScope* scope      = this;
   bool                    gotoError  = false;
-  std::set<VarSymbol*>    ignoredSet(ignored);
+  std::set<VarSymbol*, AstIdLess>    ignoredSet(ignored);
 
   if (gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
     gotoError = true;
@@ -343,7 +343,7 @@ static void deinitialize(Expr* before, Expr* after, VarSymbol* var) {
 }
 
 void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
-                                       const std::set<VarSymbol*>& ignored) {
+                                       const std::set<VarSymbol*, AstIdLess>& ignored) {
   INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
   if (ignored.count(var) == 0 && isVariableInitialized(var))
@@ -353,7 +353,7 @@ void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
 // Destroy outer variables and add them to the ignored set
 // This is used for error handling cases
 void AutoDestroyScope::destroyOuterVariables(Expr* before,
-                                             std::set<VarSymbol*>& ignored) const
+                                             std::set<VarSymbol*, AstIdLess>& ignored) const
 {
   size_t count = mInitedOuterVars.size();
   for (size_t i = 1; i <= count; i++) {
@@ -380,7 +380,7 @@ static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
 // add autoDestroys after refStmt
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
-                                        const std::set<VarSymbol*>& ignored,
+                                        const std::set<VarSymbol*, AstIdLess>& ignored,
                                         AutoDestroyScope* startingScope) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {

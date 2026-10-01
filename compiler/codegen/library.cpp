@@ -33,15 +33,15 @@
 
 #include <array>
 
-std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
+std::map<Symbol*, TypeSymbol*, AstIdLess> exportedArrayElementType;
 
 std::string libDir;
 std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
-std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
-std::map<TypeSymbol*, std::string> fortranKindNames;
-std::map<TypeSymbol*, std::string> fortranTypeNames;
+std::map<TypeSymbol*, std::pair<std::string, std::string>, AstIdLess> pythonNames;
+std::map<TypeSymbol*, std::string, AstIdLess> fortranKindNames;
+std::map<TypeSymbol*, std::string, AstIdLess> fortranTypeNames;
 
 static bool shouldGeneratePrototype(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_EXPORT)) {

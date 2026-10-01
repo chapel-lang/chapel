@@ -149,7 +149,7 @@ private:
   BlockType       mPrevBlockType;
   VarSymbol*      mThisAsParent;
 
-  std::set<DefExpr*> mImplicitFields;
+  std::set<DefExpr*, AstIdLess> mImplicitFields;
 };
 
 #endif

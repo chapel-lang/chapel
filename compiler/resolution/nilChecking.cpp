@@ -82,7 +82,7 @@ static bool isNonNilableType(Type* t);
 static bool isOuterVar(Symbol* sym, FnSymbol* fn);
 static void findNonNilableStoringNil(FnSymbol* fn);
 
-typedef std::map<Symbol*, AliasLocation> AliasMap;
+typedef std::map<Symbol*, AliasLocation, AstIdLess> AliasMap;
 
 static inline AliasLocation nilAliasLocation(BaseAST* reason) {
   AliasLocation ret;
@@ -127,7 +127,7 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
   AliasLocation loc = unknownAliasLocation();
 
   {
-    AliasMap::const_iterator it = aliasMap.find(sym);
+    auto it = aliasMap.find(sym);
     if (it != aliasMap.end()) {
       loc = it->second;
     }
@@ -153,7 +153,7 @@ static AliasLocation aliasLocationFromValue(Symbol* copyFrom,
     fromLocation = nilAliasLocation(inCall);
 
   } else {
-    AliasMap::const_iterator it = aliasMap.find(copyFrom);
+    auto it = aliasMap.find(copyFrom);
     if (it != aliasMap.end()) {
       fromLocation = it->second;
     }
@@ -163,7 +163,7 @@ static AliasLocation aliasLocationFromValue(Symbol* copyFrom,
     if (fromLocation.type == MUST_ALIAS_REFVAR) {
       Symbol* sym = toSymbol(fromLocation.location);
       INT_ASSERT(sym && !sym->isRef());
-      AliasMap::const_iterator it = aliasMap.find(sym);
+      auto it = aliasMap.find(sym);
       if (it != aliasMap.end()) {
         return it->second;
       }
@@ -181,7 +181,7 @@ static AliasLocation aliasLocationFrom(Symbol* copyFrom,
   AliasLocation fromLocation = unknownAliasLocation();
 
   {
-    AliasMap::const_iterator it = aliasMap.find(copyFrom);
+    auto it = aliasMap.find(copyFrom);
     if (it != aliasMap.end()) {
       fromLocation = it->second;
     }
@@ -328,7 +328,7 @@ static void checkForNilDereferencesInCall(
     //     but dereferencing that nil borrow would be
     if (isClassLike(t) || isNonNilableType(t)) {
       // Raise an error if it was definitely nil
-      AliasMap::const_iterator it = aliasMap.find(thisSym);
+      auto it = aliasMap.find(thisSym);
       if (it != aliasMap.end()) {
         AliasLocation loc = it->second;
         if (loc.type == MUST_ALIAS_NIL || loc.type == MUST_ALIAS_DEAD) {
@@ -339,7 +339,7 @@ static void checkForNilDereferencesInCall(
     }
   } else if (Type* resultType = isPostfixBangCall(call)) {
     Symbol* argSym = toSymExpr(call->get(1))->symbol();
-    AliasMap::const_iterator it = aliasMap.find(argSym);
+    auto it = aliasMap.find(argSym);
     if (it != aliasMap.end()) {
       AliasLocation loc = it->second;
       Symbol* referent = NULL;
@@ -363,7 +363,7 @@ static void checkForNilDereferencesInCall(
     }
   } else if (call->isPrimitive(PRIM_RETURN) && call->numActuals() >= 1) {
     Symbol* argSym = toSymExpr(call->get(1))->symbol();
-    AliasMap::const_iterator it = aliasMap.find(argSym);
+    auto it = aliasMap.find(argSym);
     if (it != aliasMap.end()) {
       AliasLocation loc = it->second;
       Symbol* referent = NULL;
@@ -413,7 +413,7 @@ static void checkForNilDereferencesInCall(
         bool isRec = isRecord(valType) && !isNonNilableC && !isNilableC;
         if (isNonNilableC || isRec) {
           AliasLocation loc = unknownAliasLocation();
-          AliasMap::const_iterator it = aliasMap.find(argSym);
+          auto it = aliasMap.find(argSym);
           if (it != aliasMap.end()) {
             loc = it->second;
           }
@@ -517,14 +517,14 @@ static void printAliasMap(const char* prefix,
                           const AliasMap& OUT,
                           const AliasMap* OnlyDifferencesFrom = NULL)
 {
-  for (AliasMap::const_iterator it = OUT.begin();
+  for (auto it = OUT.begin();
        it != OUT.end();
        ++it) {
     Symbol* sym = it->first;
     AliasLocation loc = it->second;
 
     if (OnlyDifferencesFrom != NULL) {
-      AliasMap::const_iterator it = OnlyDifferencesFrom->find(sym);
+      auto it = OnlyDifferencesFrom->find(sym);
       if (it != OnlyDifferencesFrom->end()) {
         AliasLocation was = it->second;
         if (was.type == loc.type &&
@@ -918,12 +918,12 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
   SymExpr* curr = SE;
   // Loop over the definitions for the temps.
   while (true) {
-    AliasMap::const_iterator it = OUT.find(curr->symbol());
+    auto it = OUT.find(curr->symbol());
     if (it != OUT.end()) {
       AliasLocation loc = it->second;
       if (loc.type == MUST_ALIAS_REFVAR) {
         Symbol* sym = toSymbol(loc.location);
-        AliasMap::const_iterator it2 = OUT.find(sym);
+        auto it2 = OUT.find(sym);
         if (it2 != OUT.end()) {
           loc = it2->second;
         }
@@ -1188,7 +1188,7 @@ static void gatherVariablesToCheck(FnSymbol* fn,
                                    bool debugging) {
 
   // Gather the variables to consider
-  std::map<Symbol*, int> symToIdx;
+  std::map<Symbol*, int, AstIdLess> symToIdx;
 
   int index = 0;
   std::vector<SymExpr*> symExprs;
@@ -1235,9 +1235,7 @@ static bool combine(FnSymbol* fn,
 
   bool changed = false;
 
-  for (AliasMap::const_iterator it = from.begin();
-       it != from.end();
-       ++it) {
+  for (auto it = from.begin(); it != from.end(); ++it) {
     Symbol* sym = it->first;
     AliasLocation loc = it->second;
 
@@ -1438,7 +1436,7 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
     fn->addFlag(FLAG_LEAVES_ARG_NIL);
 }
 
-typedef std::map<Symbol*,Expr*> SymbolToNilMap;
+typedef std::map<Symbol*,Expr*, AstIdLess> SymbolToNilMap;
 
 class FindInvalidNonNilables final : public AstVisitorTraverse {
   public:
@@ -1447,7 +1445,7 @@ class FindInvalidNonNilables final : public AstVisitorTraverse {
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
     // Only present errors once per symbol
-    std::set<Symbol*> erroredSymbols;
+    std::set<Symbol*, AstIdLess> erroredSymbols;
 
     bool enterDefExpr(DefExpr* def) override;
     bool enterCallExpr(CallExpr* call) override;

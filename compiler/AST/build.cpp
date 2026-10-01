@@ -1554,7 +1554,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
 
           setDefinedConstForDefExprIfApplicable(defExpr, flags);
 
-          for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
+          for (auto it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);
           }
         }

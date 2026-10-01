@@ -35,7 +35,7 @@
 
 static void updateRefCalls();
 static void inlineFunctionsImpl();
-static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
+static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet);
 static void inlineCall(CallExpr* call);
 static void updateDerefCalls();
 static void inlineCleanup();
@@ -69,7 +69,7 @@ void inlineFunctions() {
 
 static void inlineFunctionsImpl() {
   if (fNoInline == false) {
-    std::set<FnSymbol*> inlinedSet;
+    std::set<FnSymbol*, AstIdLess> inlinedSet;
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) == true &&
@@ -90,12 +90,12 @@ static void inlineFunctionsImpl() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void markFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
-static void inlineBody(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet);
+static void markFunction(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet);
+static void inlineBody(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet);
 static void simplifyBody(FnSymbol* fn);
 static void inlineAtCallSites(FnSymbol* fn);
 
-static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet) {
   markFunction(fn, inlinedSet);
 
   inlineBody(fn, inlinedSet);
@@ -105,7 +105,7 @@ static void inlineFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
   inlineAtCallSites(fn);
 }
 
-static void markFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+static void markFunction(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet) {
   inlinedSet.insert(fn);
 }
 
@@ -114,7 +114,7 @@ static void markFunction(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
 // procedure with this linkage specifier.  It is a preventable user error
 // if a recursive cycle is detected (directly or indirectly)
 //
-static void inlineBody(FnSymbol* fn, std::set<FnSymbol*>& inlinedSet) {
+static void inlineBody(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>& inlinedSet) {
   std::vector<CallExpr*> calls;
 
   collectFnCalls(fn, calls);

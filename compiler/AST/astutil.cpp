@@ -189,8 +189,8 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
         GOTOs.push_back(gt);
 }
 
-std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
-  std::set<Symbol*> ret;
+std::set<Symbol*, AstIdLess> findAllDetupledComponents(Symbol* sym) {
+  std::set<Symbol*, AstIdLess> ret;
 
   if (!sym->typeInfo()->symbol->hasFlag(FLAG_TUPLE) ||
       !sym->hasFlag(FLAG_TEMP)) {
@@ -468,7 +468,7 @@ void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet) {
   AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
 }
 
-void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet) {
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*, AstIdLess>& symSet) {
   if (DefExpr* def = toDefExpr(ast)) {
     if (isLcnSymbol(def->sym)) {
       symSet.insert(def->sym);
@@ -1323,7 +1323,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types) {
 }
 
 static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types) {
-  std::set<Type*> removed;
+  std::set<Type*, AstIdLess> removed;
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     auto ft = toFunctionType(ts->type);
@@ -1504,7 +1504,7 @@ Symbol* getSvecSymbol(CallExpr* call) {
 }
 
 
-static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols,
+static void addToUsedFnSymbols(std::set<FnSymbol*, AstIdLess>& fnSymbols,
                                FnSymbol*            newFn) {
   if(fnSymbols.count(newFn) == 0) {
     fnSymbols.insert(newFn);
@@ -1516,7 +1516,7 @@ static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols,
 * Collect all of the functions in the call graph at and below the function
 * call.
 */
-void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*, AstIdLess>& fnSymbols) {
   AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
 
   // if there is a function call, get the FnSymbol associated with it

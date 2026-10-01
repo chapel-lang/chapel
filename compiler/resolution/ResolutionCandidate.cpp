@@ -40,7 +40,7 @@ static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
 
-std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
+std::map<Type*,std::map<Type*,bool, AstIdLess>, AstIdLess> actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -536,7 +536,7 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    std::map<Type*,bool>& formalCoercible = actualFormalCoercible[actualType];
+    std::map<Type*,bool, AstIdLess>& formalCoercible = actualFormalCoercible[actualType];
     if (formalCoercible.count(formalType) > 0) {
       allowCoercions = formalCoercible[formalType];
     } else {

@@ -33,6 +33,7 @@ class ModuleSymbol;
 class Symbol;
 class VisibilityStmt;
 class astlocT;
+struct AstIdLess;
 
 #include <cstddef>
 #include <map>
@@ -47,8 +48,8 @@ Symbol*  lookup(const char*           name,
 void     lookup(const char*           name,
                 BaseAST*              context,
                 llvm::SmallVectorImpl<Symbol*>& symbols,
-                std::map<Symbol*, astlocT*>& renameLocs,
-                std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+                std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                 bool storeRenames = false);
 
 Symbol*  lookupAndCount(const char*           name,
@@ -68,8 +69,8 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs,
-                             std::map<Symbol*, VisibilityStmt*>& reexportPts);
+                             std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts);
 
 BaseAST* getScope(BaseAST* ast);
 

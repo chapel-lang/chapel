@@ -44,7 +44,7 @@ FnSymbol*                 gGenericTupleDestroy  = NULL;
 
 const char*               ftableName = "chpl_ftable";
 const char*               ftableSizeName = "chpl_ftableSize";
-std::map<FnSymbol*, int>  ftableMap;
+std::map<FnSymbol*, int, AstIdLess>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 
 FnSymbol::FnSymbol(const char* initName)
@@ -848,7 +848,7 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 
   } else {
     // avoid recursing for the function.
-    static std::set<Symbol*> seen;
+    static std::set<Symbol*, AstIdLess> seen;
     if (seen.count(this)) {
       INT_ASSERT(abortOK);
       return TGR_TAGGING_ABORTED;
@@ -1290,8 +1290,7 @@ Symbol* FnSymbol::getSubstitutionWithName(const char* name) const {
 }
 
 static bool stringNeedsParens(const std::string& str) {
-  for(std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
-      const char ch = *it;
+  for (const auto ch: str) {
       if (ch == ' ' || ch == '(' || ch == ')' || ch == ':')
         return true;
   }

@@ -514,10 +514,8 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
 
       int newStatements  = (int) info->cStatements.size() - prevStatements;
 
-      for (std::vector<std::string>::iterator it = info->cStatements.end() - newStatements;
-           it != info->cStatements.end();
-           ++it)
-      {
+      for (auto it = info->cStatements.end() - newStatements;
+            it != info->cStatements.end(); ++it) {
         seg += *it;
       }
 

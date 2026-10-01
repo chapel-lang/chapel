@@ -230,7 +230,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
 
 // we record the aggregators that we actually end up being used, so that we can
 // avoid removing their declarations/destructions
-std::set<Symbol *> usedAggregators;
+std::set<Symbol *, AstIdLess> usedAggregators;
 
 // called during LICM to restructure a conditional aggregation to direct
 // aggregation
@@ -294,7 +294,7 @@ void cleanupRemainingAggCondStmts() {
       // With the initial implementation of aggregators, I doubt we can have
       // more than 1 aggregator in this set. But we can have that, when we don't
       // limit aggregation to the last statement in the forall body.
-      std::set<Symbol *> aggregatorsToRemove;
+      std::set<Symbol *, AstIdLess> aggregatorsToRemove;
 
       for_vector(Expr, stmt, stmts) {
         if (CondStmt *condStmt = toCondStmt(stmt)) {
@@ -446,26 +446,20 @@ void finalizeForallOptimizationsResolution() {
   // the following chunks can be refactored into a helper, but there are slight
   // differences, and it may be dirtier if we do that.
   if (fReportAutoLocalAccess) {
-    std::set<astlocT>::iterator it;
-    for (it = primMaybeLocalThisLocations.begin() ;
-         it != primMaybeLocalThisLocations.end();
-         ++it) {
+    for (const auto& loc: primMaybeLocalThisLocations) {
       std::stringstream message;
       message << "Local access attempt reverted. All static checks failed or code is unreachable.";
-      message << "(" << it->stringLoc() << ")";
+      message << "(" << loc.stringLoc() << ")";
       LOG_ALA(0, message.str().c_str(), NULL);
     }
   }
   primMaybeLocalThisLocations.clear();
 
   if (fAutoAggregation) {
-    std::set<astlocT>::iterator it;
-    for (it = primMaybeAggregateAssignLocations.begin() ;
-         it != primMaybeAggregateAssignLocations.end();
-         ++it) {
+    for (const auto& loc: primMaybeAggregateAssignLocations) {
       std::stringstream message;
       message << "Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.";
-      message << "(" << it->stringLoc() << ")";
+      message << "(" << loc.stringLoc() << ")";
       LOG_AA(0, message.str().c_str(), NULL);
     }
   }
@@ -1094,12 +1088,9 @@ ALACandidate::ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs):
       int idx = -1;
       bool found = false;
 
-      std::vector< std::vector<Symbol *> >::iterator it;
-      for (it = forall->optInfo.multiDIndices.begin();
-           it != forall->optInfo.multiDIndices.end();
-           it++) {
+      for (const auto& it : forall->optInfo.multiDIndices) {
         idx++;
-        if (argsSupported(*it)) {
+        if (argsSupported(it)) {
           setIterandIdx(idx);
           found = true;
         }
@@ -1371,10 +1362,7 @@ static void optimizeLoop(ForallStmt *forall,
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
 
-  std::deque<ALACandidate>::iterator it;
-  for(it = candidates.begin() ; it != candidates.end() ; it++) {
-    ALACandidate& candidate = *it;
-
+  for (auto& candidate: candidates) {
     Symbol *checkSym = generateStaticCheckForAccess(candidate, forall,
                                                     staticCond);
     if (!doStatic) {
