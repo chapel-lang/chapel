@@ -45,7 +45,7 @@ jobs:
             docker-sources:
               - ${{ env.DOCKERFILE }}
               - '.github/workflows/build-CI-container.yml'
-      - name: Output that we should${{ env.SHOULD_BUILD && ' ' || ' not '}}build the image
+      - name: Output that we should${{ fromJSON(env.SHOULD_BUILD) && ' ' || ' not '}}build the image
         id: should-build
         env:
           SHOULD_BUILD: ${{ steps.changes.outputs.docker-sources == 'true' || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
@@ -54,7 +54,7 @@ jobs:
 
   build-ci-container:
     needs: should-build-ci-container
-    if: needs.should-build-ci-container.outputs.should-build
+    if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-build) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
