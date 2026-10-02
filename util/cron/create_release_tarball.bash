@@ -37,6 +37,10 @@ if [ "${CHPL_VERSION}" = "detect" ] ; then
     export CHPL_VERSION=$(get_prerelease_version)
     log_info "Detected CHPL_VERSION to be: ${CHPL_VERSION}"
 fi
+if [[ "$(tr -dc '.' <<< "$CHPL_VERSION" | awk '{ print length; }')" -ne 2 ]]; then
+  echo "Expected X.Y.Z version string, got: $CHPL_VERSION"
+  exit 1
+fi
 
 short_version=$(get_short_version)
 export CHPL_GEN_RELEASE_BRANCH=release/$short_version
