@@ -132,7 +132,7 @@ class BulkCopyRecords : public PassT<FnSymbol*> {
   static bool isAssignment(FnSymbol* fn);
 
  private:
-  std::map<Type*, bool> containsRef;
+  std::map<Type*, bool, AstIdLess> containsRef;
 };
 
 /**

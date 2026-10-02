@@ -668,7 +668,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
                        retDesc);
 
         // TODO: Globalize + clear me at pass end?
-        static std::set<AggregateType*> onceForEachAggregate;
+        static std::set<AggregateType*, AstIdLess> onceForEachAggregate;
 
         // Also hint that users can remove the extra overloads, but only
         // display this hint once per type to avoid verbosity.

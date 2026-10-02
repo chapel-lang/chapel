@@ -256,7 +256,7 @@ private:
   void                        addDeclaration(DefExpr* defExpr);
 
   void                        addClassToHierarchy(
-                                          std::set<AggregateType*>& seen);
+                                          std::set<AggregateType*, AstIdLess>& seen);
 
   AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
 

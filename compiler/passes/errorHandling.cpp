@@ -147,10 +147,10 @@ try {
 //
 // Here the key is a FnSymbol and the value is the reason it was
 // marked throwing (typically a CallExpr).
-typedef std::map<FnSymbol*, BaseAST*> implicitThrowsReasons_t;
+typedef std::map<FnSymbol*, BaseAST*, AstIdLess> implicitThrowsReasons_t;
 
 // Static functions
-static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>* visited, implicitThrowsReasons_t* reasons);
 static bool canBlockStmtThrow(BlockStmt* block);
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
@@ -945,7 +945,7 @@ static AList castToErrorNilable(Symbol* error, SymExpr* &castedError) {
 class ImplicitThrowsVisitor final : public AstVisitorTraverse {
 
 public:
-  ImplicitThrowsVisitor(std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
+  ImplicitThrowsVisitor(std::set<FnSymbol*, AstIdLess>* visited, implicitThrowsReasons_t* reasons);
 
   // possibly record a throwing function call
   void handleCallToFunction(FnSymbol* calledFn, Expr* forExpr);
@@ -969,11 +969,11 @@ private:
   bool canThrow;
   bool onlyUnchecked;
   BaseAST* reasonThrows; // one of the reasons it throws, for errors
-  std::set<FnSymbol*>* visited;
+  std::set<FnSymbol*, AstIdLess>* visited;
   implicitThrowsReasons_t* reasons;
 };
 
-ImplicitThrowsVisitor::ImplicitThrowsVisitor(std::set<FnSymbol*>* visitedIn, implicitThrowsReasons_t* reasonsIn) {
+ImplicitThrowsVisitor::ImplicitThrowsVisitor(std::set<FnSymbol*, AstIdLess>* visitedIn, implicitThrowsReasons_t* reasonsIn) {
   tryDepth = 0;
   canThrow = false;
   onlyUnchecked = true;
@@ -1409,7 +1409,7 @@ bool canFunctionImplicitlyThrow(FnSymbol* fn)
 // This function is useful to infer 'throws' for
 // certain compiler-introduced functions.
 
-static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*, AstIdLess>* visited, implicitThrowsReasons_t* reasons)
 {
   // Currently, only task functions and if-exprs can be implicitly throws.
   if (!canFunctionImplicitlyThrow(fn))
@@ -1446,7 +1446,7 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
 static bool
 canBlockStmtThrow(BlockStmt* block)
 {
-  std::set<FnSymbol*> visited;
+  std::set<FnSymbol*, AstIdLess> visited;
   implicitThrowsReasons_t reasons;
 
   ImplicitThrowsVisitor visit(&visited, &reasons);
@@ -1639,7 +1639,7 @@ static void adjustFunctionTypesToBeNonThrowing() {
 void lowerErrorHandling() {
   INT_ASSERT(dtError->inTree());
 
-  std::set<FnSymbol*> visited;
+  std::set<FnSymbol*, AstIdLess> visited;
   implicitThrowsReasons_t reasons;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {

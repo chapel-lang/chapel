@@ -520,8 +520,8 @@ struct CopyElisionState {
   }
 };
 
-typedef std::map<VarSymbol*, CopyElisionState> VarToCopyElisionState;
-typedef std::set<Symbol*> VariablesSet;
+typedef std::map<VarSymbol*, CopyElisionState, AstIdLess> VarToCopyElisionState;
+typedef std::set<Symbol*, AstIdLess> VariablesSet;
 
 struct ReturnInfo {
   /* Did the code being processed by copy elision return unconditionally?
@@ -613,9 +613,7 @@ static bool findCopyElisionCandidate(CallExpr* call,
 }
 
 static void doElideCopies(VarToCopyElisionState &map) {
-  for (VarToCopyElisionState::iterator it = map.begin();
-       it != map.end();
-       ++it) {
+  for (auto it = map.begin(); it != map.end(); ++it) {
     VarSymbol* var = it->first;
     CopyElisionState& state = it->second;
 
@@ -725,7 +723,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
 }
 
 static void noteUse(VarSymbol* var, VarToCopyElisionState& map) {
-  VarToCopyElisionState::iterator it = map.find(var);
+  auto it = map.find(var);
   if (it != map.end()) {
     CopyElisionState& state = it->second;
     state.reset();
@@ -762,8 +760,7 @@ static void promoteLocalVars(VarToCopyElisionState& parentMap,
                              VarToCopyElisionState& blockMap,
                              VariablesSet& parentSet,
                              VariablesSet& blockSet) {
-  VarToCopyElisionState::iterator it;
-  for (it = blockMap.begin(); it != blockMap.end(); ++it) {
+  for (auto it = blockMap.begin(); it != blockMap.end(); ++it) {
     VarSymbol* var = toVarSymbol(it->first);
     if (blockSet.find(var) != blockSet.end()) {
       if (parentSet.find(var) == parentSet.end()) {
@@ -830,7 +827,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         // two loops to handle duplicate mentions of same variable in the prim
         for_vector (SymExpr, se, symExprs) {
           if (VarSymbol* var = toVarSymbol(se->symbol())) {
-            VarToCopyElisionState::iterator it = map.find(var);
+            auto it = map.find(var);
             if (it != map.end()) {
               CopyElisionState& state = it->second;
               if (state.lastIsCopy) {
@@ -842,7 +839,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         }
         for_vector (SymExpr, se, symExprs) {
           if (VarSymbol* var = toVarSymbol(se->symbol())) {
-            VarToCopyElisionState::iterator it = map.find(var);
+            auto it = map.find(var);
             if (it != map.end()) {
               CopyElisionState& state = it->second;
               state.foundEndOfStmtMentioning = true;
@@ -988,9 +985,9 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         promoteLocalVars(map, elseMap, eligible, elseEligible);
 
         // The loop below relies on the maps being ordered.
-        VarToCopyElisionState::key_compare comp = map.key_comp();
-        VarToCopyElisionState::iterator ifIt = ifMap.begin();
-        VarToCopyElisionState::iterator elseIt = elseMap.begin();
+        auto comp = map.key_comp();
+        auto ifIt = ifMap.begin();
+        auto elseIt = elseMap.begin();
 
         while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
           VarSymbol* ifVar = ifIt->first;
@@ -1030,9 +1027,8 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
       // Figure out which one it is, and promote
       // all its elision points into the parent map.
       } else {
-        VarToCopyElisionState::iterator it, end;
-        it = ifRet.elidedCopies ? elseMap.begin() : ifMap.begin();
-        end = ifRet.elidedCopies ? elseMap.end() : ifMap.end();
+        auto it = ifRet.elidedCopies ? elseMap.begin() : ifMap.begin();
+        auto end = ifRet.elidedCopies ? elseMap.end() : ifMap.end();
         for (; it != end; ++it) {
           VarSymbol* var = it->first;
           CopyElisionState& state = it->second;

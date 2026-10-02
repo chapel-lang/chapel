@@ -644,8 +644,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
               }
             }
           }
-          PtrSet<const char*>::iterator it =
-            typeNames.find(nameToCheck);
+          auto it = typeNames.find(nameToCheck);
           if (it != typeNames.end()) {
             // This method is defined on a type that is in the filter list.
             // That means we should consider it a candidate.
@@ -1442,8 +1441,7 @@ void visibleFunctionsClear() {
       delete vfn;
     }
 
-    std::map<const char*, ReexportEntry>::iterator it;
-    for (it= vfb->reexports.begin(); it != vfb->reexports.end(); ++it) {
+    for (auto it = vfb->reexports.begin(); it != vfb->reexports.end(); ++it) {
       it->second.second.clear();
     }
 

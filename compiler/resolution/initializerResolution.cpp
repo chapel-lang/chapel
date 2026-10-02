@@ -141,7 +141,8 @@ static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
 // The map is keyed by the FnSymbol of the original initializer and the expr of
 //   the allocator (if any)
 // The value is the '_new' wrapped initializer
-static std::map<std::pair<FnSymbol*,Expr*>,FnSymbol*> newWrapperMap;
+static std::map<std::pair<FnSymbol*, Expr*>, FnSymbol*, AstIdLess>
+  newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion

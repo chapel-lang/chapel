@@ -89,7 +89,7 @@ static void cleanupHolder(BlockStmt* holder) {
 /*********** stand-in types ***********/
 
 // instantiations of AggregateTypes with CG types ex. interface formals
-static std::set<Type*> cgInstantiations;
+static std::set<Type*, AstIdLess> cgInstantiations;
 
 void startInterfaceChecking() {
   cgprint("(((\n");

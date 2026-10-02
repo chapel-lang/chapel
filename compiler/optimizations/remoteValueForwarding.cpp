@@ -54,13 +54,12 @@ class DotInfo {
 };
 DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
 
-static std::map<Symbol*, DotInfo*> dotLocaleMap;
-typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
+static std::map<Symbol*, DotInfo*, AstIdLess> dotLocaleMap;
 
 // deserializers for types that don't have any ref fields. This is used as a
 // cache of functions that don't need to be analyzed in
 // `handleRefDeserializers`.
-static std::set<FnSymbol*> regularDeserializers;
+static std::set<FnSymbol*, AstIdLess> regularDeserializers;
 
 static void computeUsesDotLocale();
 
@@ -90,7 +89,7 @@ void remoteValueForwarding() {
 
     freeDefUseMaps(defMap, useMap);
 
-    for (DotInfoIter it = dotLocaleMap.begin(); it != dotLocaleMap.end(); ++it) {
+    for (auto it = dotLocaleMap.begin(); it != dotLocaleMap.end(); ++it) {
       delete it->second;
     }
     dotLocaleMap.clear();
@@ -1309,7 +1308,7 @@ static void computeUsesDotLocale() {
     if (!se->isRef()) continue;
 
     DotInfo* info = NULL;
-    DotInfoIter it = dotLocaleMap.find(se->symbol());
+    auto it = dotLocaleMap.find(se->symbol());
     if (it == dotLocaleMap.end()) {
       info = new DotInfo();
       todo.push_back(se->symbol());

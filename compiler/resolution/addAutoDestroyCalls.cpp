@@ -46,27 +46,27 @@
 // last mention map:
 // Maps from expressions to the list of variables to be destroy after
 // that expression.
-typedef std::map<Expr*, std::vector<VarSymbol*> > LastMentionMap;
+typedef std::map<Expr*, std::vector<VarSymbol*>, AstIdLess> LastMentionMap;
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn);
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables,
+                      std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                       LastMentionMap&   lmm,
                       ForallStmt*       pfs = NULL);
 
 static void walkBlockWithScope(AutoDestroyScope& scope,
                                FnSymbol*         fn,
                                BlockStmt*        block,
-                               std::set<VarSymbol*>& ignoredVariables,
+                               std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                                LastMentionMap&   lmm);
 
 static bool isAutoDestroyedOrSplitInitedVariable(VarSymbol* var);
 
 void addAutoDestroyCalls() {
-  std::set<VarSymbol*> ignoredVariables;
+  std::set<VarSymbol*, AstIdLess> ignoredVariables;
   LastMentionMap lmm;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -137,12 +137,12 @@ static bool         isYieldStmt(const Expr* stmt);
 static void         walkForallBlocks(FnSymbol* fn,
                                      AutoDestroyScope* parentScope,
                                      ForallStmt* forall,
-                                     std::set<VarSymbol*>& parentIgnored,
+                                     std::set<VarSymbol*, AstIdLess>& parentIgnored,
                                      LastMentionMap& lmm);
 
 static void gatherIgnoredVariablesForYield(
     Expr* stmt,
-    std::set<VarSymbol*>& ignoredVariables);
+    std::set<VarSymbol*, AstIdLess>& ignoredVariables);
 
 //
 // A ForallStmt index variable does not have a DefExprs in the loop body.
@@ -165,7 +165,7 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
-                                    std::set<VarSymbol*>& ignoredVariables,
+                                    std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                                     LastMentionMap&   lmm);
 
 static void checkSplitInitOrder(CondStmt* cond,
@@ -180,7 +180,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
                            bool              inScopelessBlock,
                            bool              isEarlyVisitForGotoError,
                            Expr*             stmt,
-                           std::set<VarSymbol*>& ignoredVariables,
+                           std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                            LastMentionMap&   lmm) {
 
   Expr* ret = stmt;
@@ -378,7 +378,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     // Since this adds the destroy immediately after this statement,
     // it ends up destroying multiple variables to be destroyed here
     // in the reverse order of the vector - i.e. reverse initialization order.
-    LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+    auto lmmIt = lmm.find(stmt);
     if (lmmIt != lmm.end()) {
       const std::vector<VarSymbol*>& vars = lmmIt->second;
       for_vector(VarSymbol, var, vars) {
@@ -400,7 +400,7 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
-                                    std::set<VarSymbol*>& ignoredVariables,
+                                    std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                                     LastMentionMap&   lmm) {
   for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
     stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, false, stmt,
@@ -429,8 +429,8 @@ static void checkSplitInitOrder(CondStmt* cond,
     // so only consider variables that are initialized in both.
     std::vector<VarSymbol*> thenOrder2;
     std::vector<VarSymbol*> elseOrder2;
-    std::set<VarSymbol*> thenSet;
-    std::set<VarSymbol*> elseSet;
+    std::set<VarSymbol*, AstIdLess> thenSet;
+    std::set<VarSymbol*, AstIdLess> elseSet;
 
     for_vector(VarSymbol, var, thenOrder) {
       thenSet.insert(var);
@@ -519,7 +519,7 @@ void printUseBeforeInitDetails(VarSymbol* var) {
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables,
+                      std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                       LastMentionMap&   lmm,
                       ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
@@ -537,7 +537,7 @@ static void walkBlock(FnSymbol*         fn,
 static void walkBlockWithScope(AutoDestroyScope& scope,
                                FnSymbol*         fn,
                                BlockStmt*        block,
-                               std::set<VarSymbol*>& ignoredVariables,
+                               std::set<VarSymbol*, AstIdLess>& ignoredVariables,
                                LastMentionMap&   lmm) {
   AutoDestroyScope* parent    = scope.getParentScope();
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
@@ -707,10 +707,10 @@ static bool isYieldStmt(const Expr* stmt) {
 static void walkForallBlocks(FnSymbol* fn,
                              AutoDestroyScope* parentScope,
                              ForallStmt* forall,
-                             std::set<VarSymbol*>& parentIgnored,
+                             std::set<VarSymbol*, AstIdLess>& parentIgnored,
                              LastMentionMap& lmm)
 {
-  std::set<VarSymbol*> toIgnoreLB(parentIgnored);
+  std::set<VarSymbol*, AstIdLess> toIgnoreLB(parentIgnored);
   walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, forall);
 
   for_shadow_vars(svar, temp, forall)
@@ -719,7 +719,7 @@ static void walkForallBlocks(FnSymbol* fn,
         // I am unsure about these recursive walkBlock() calls, specifically
         //  * should 'toIgnoreSV' start out with 'parentIgnored'?
         //  * is it appropriate to reference 'fn' ?  -vass 1/2018
-        std::set<VarSymbol*> toIgnoreSV(parentIgnored);
+        std::set<VarSymbol*, AstIdLess> toIgnoreSV(parentIgnored);
         walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV, lmm);
         walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV, lmm);
       }
@@ -727,7 +727,7 @@ static void walkForallBlocks(FnSymbol* fn,
 
 static void gatherIgnoredVariablesForYield(
     Expr* yieldStmt,
-    std::set<VarSymbol*>& ignoredVariables)
+    std::set<VarSymbol*, AstIdLess>& ignoredVariables)
 {
   CallExpr* yield = toCallExpr(yieldStmt);
   SymExpr* yieldedSe = toSymExpr(yield->get(1));
@@ -752,10 +752,10 @@ class ComputeLastSymExpr final : public AstVisitorTraverse
 {
   public:
     std::vector<VarSymbol*>& inited;
-    std::set<VarSymbol*> initedSet;
-    std::map<VarSymbol*, Expr*>& last;
+    std::set<VarSymbol*, AstIdLess> initedSet;
+    std::map<VarSymbol*, Expr*, AstIdLess>& last;
     ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
-                       std::map<VarSymbol*, Expr*>& last)
+                       std::map<VarSymbol*, Expr*, AstIdLess>& last)
       : inited(inited), last(last) { }
     void noteRecordInit(VarSymbol* v, CallExpr* call);
     bool enterDefExpr(DefExpr* node) override;
@@ -769,7 +769,7 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
 
   std::vector<VarSymbol*> inited;
-  std::map<VarSymbol*, Expr*> last;
+  std::map<VarSymbol*, Expr*, AstIdLess> last;
 
   // Use a traversal to compute the last SymExpr mentioning each
   ComputeLastSymExpr visitor(inited, last);
@@ -778,7 +778,7 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   // Store the gathered DefExprs in the appropriate place in the inverse
   // map. The map creates vectors in order of initialization.
   for_vector(VarSymbol, var, inited) {
-    std::map<VarSymbol*, Expr*>::iterator it = last.find(var);
+    auto it = last.find(var);
     if (it != last.end()) {
       Expr* point = it->second;
       // find the end of statement

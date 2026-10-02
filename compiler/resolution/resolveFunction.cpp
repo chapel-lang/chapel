@@ -54,7 +54,7 @@
 
 #include <set>
 
-std::map<ArgSymbol*, std::string> exportedDefaultValues;
+std::map<ArgSymbol*, std::string, AstIdLess> exportedDefaultValues;
 
 struct ConversionsTableValue {
   FnSymbol* assign;
@@ -64,7 +64,8 @@ struct ConversionsTableValue {
 };
 
 typedef std::pair<Type*,Type*> ConversionsTableKey;
-typedef std::map<ConversionsTableKey, ConversionsTableValue> ConversionsTable;
+typedef std::map<ConversionsTableKey, ConversionsTableValue, AstIdLess>
+  ConversionsTable;
 
 static ConversionsTable conversionsTable;
 
@@ -1246,8 +1247,8 @@ class SplitInitVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  std::map<Symbol*, Expr*>& preventMap;
-  SplitInitVisitor(std::map<Symbol*, Expr*>& preventMap)
+  std::map<Symbol*, Expr*, AstIdLess>& preventMap;
+  SplitInitVisitor(std::map<Symbol*, Expr*, AstIdLess>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
 
@@ -1338,8 +1339,8 @@ class FixPrimInitsVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  std::map<Symbol*, Expr*>& preventMap;
-  FixPrimInitsVisitor(std::map<Symbol*, Expr*>& preventMap)
+  std::map<Symbol*, Expr*, AstIdLess>& preventMap;
+  FixPrimInitsVisitor(std::map<Symbol*, Expr*, AstIdLess>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
 
@@ -1488,7 +1489,7 @@ void MarkTempsVisitor::handleStmtGroup() {
     allEndOfBlock = true;
   }
 
-  std::set<VarSymbol*> endOfBlockSet;
+  std::set<VarSymbol*, AstIdLess> endOfBlockSet;
   {
     // compute endOfBlockSet
 
@@ -1652,7 +1653,7 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
   // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
   // This function needs to lower these.
 
-  std::map<Symbol*, Expr*> splitInitPreventers;
+  std::map<Symbol*, Expr*, AstIdLess> splitInitPreventers;
 
   // Convert PRIM_DEFAULT_INIT_VAR to split init where possible
   if (fNoSplitInit == false) {

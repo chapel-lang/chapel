@@ -118,7 +118,7 @@ class CalledFunInfo {
 public:
   const char* fnName;       // the name being called
   BlockStmt* declScope;          // the scope where the candidate is declared
-  std::set<BlockStmt*> visitedScopes; // scopes visited in getVisibleFunctions
+  std::set<BlockStmt*, AstIdLess> visitedScopes; // scopes visited in getVisibleFunctions
 
   // Is this CFI's function defined in the 'scope'?
   inline bool isDeclarationScope(BlockStmt* scope) {
@@ -178,8 +178,7 @@ void genericsCacheSummary(GenericsCacheInfo* ci) {
 
 void genericsCacheSummary(GenericsCacheInfo& ci) {
   printf("GenericsCacheInfo {\n");
-  for (std::vector<CalledFunInfo>::iterator it = ci.infos.begin();
-       it != ci.infos.end(); it++) {
+  for (auto it = ci.infos.begin(); it != ci.infos.end(); it++) {
     printf("  ");
     genericsCacheSummary(*it);
   }

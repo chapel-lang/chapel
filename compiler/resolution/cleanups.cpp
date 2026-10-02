@@ -62,7 +62,7 @@ static void removeUnusedFunction(FnSymbol* unusedFn) {
 
 
 static void removeUnusedFunctions() {
-  std::set<FnSymbol*> concreteWellKnownFunctionsSet;
+  std::set<FnSymbol*, AstIdLess> concreteWellKnownFunctionsSet;
 
   clearGenericWellKnownFunctions();
 
@@ -455,7 +455,7 @@ static void removeUnusedModuleVariables() {
 }
 
 
-static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
+static bool do_isUnusedClass(Type* t, const std::set<Type*, AstIdLess>& wellknown) {
   bool retval = true;
 
   AggregateType* at = toAggregateType(t);
@@ -501,8 +501,8 @@ static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   return retval;
 }
 
-std::set<Type*> getWellKnownTypesSet() {
-  std::set<Type*> concreteWellKnownTypesSet;
+std::set<Type*, AstIdLess> getWellKnownTypesSet() {
+  std::set<Type*, AstIdLess> concreteWellKnownTypesSet;
   std::vector<Type*> wellKnownTypes= getWellKnownTypes();
 
   for_vector(Type, type, wellKnownTypes) {
@@ -513,7 +513,7 @@ std::set<Type*> getWellKnownTypesSet() {
   return concreteWellKnownTypesSet;
 }
 
-bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
+bool isUnusedClass(Type* t, const std::set<Type*, AstIdLess>& wellknown) {
   bool retval = true;
 
   retval = do_isUnusedClass(t, wellknown);
@@ -541,7 +541,7 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
 static void removeUnusedTypes() {
 
   clearGenericWellKnownTypes();
-  std::set<Type*> wellknown = getWellKnownTypesSet();
+  std::set<Type*, AstIdLess> wellknown = getWellKnownTypesSet();
 
   // Remove unused aggregate types.
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
