@@ -388,7 +388,7 @@ jobs:
           pattern: ${{ env.TARBALL_NAME_PREFIX }}${{ env.IMAGE_NAME }}${{ env.GITHUB_SHA }}*.tar
           merge-multiple: true
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver-opts: network=host
       - name: load single-arch images from tarball
