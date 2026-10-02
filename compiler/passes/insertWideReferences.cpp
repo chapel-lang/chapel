@@ -2560,18 +2560,19 @@ insertWideReferences(void) {
   // Track functions downstream in the call-chain from a wrapon_fn
   //
   bool gotExternFns = false;
+  std::DenseSet<FnSymbol*> downstream;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
-        std::set<FnSymbol*, AstIdLess> downstream;
+        // 'downstream' is shared so each callee's body is only walked once
         collectUsedFnSymbols(call, downstream);
-        for_set(FnSymbol, on, downstream) {
-          downstreamFromOn[on] = true;
-          if (on->hasFlag(FLAG_EXTERN))
-            gotExternFns = true;
-        }
       }
     }
+  }
+  for_set(FnSymbol, on, downstream) {
+    downstreamFromOn[on] = true;
+    if (on->hasFlag(FLAG_EXTERN))
+      gotExternFns = true;
   }
   // An 'extern' function potentially can call any 'export' function.
   if (gotExternFns)
