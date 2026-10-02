@@ -29,6 +29,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     jq \
     libclang-19-dev \
     libclang-cpp19-dev \
+    libclang-rt-19-dev \
     libedit-dev \
     libprotoc-dev \
     llvm-19 \
