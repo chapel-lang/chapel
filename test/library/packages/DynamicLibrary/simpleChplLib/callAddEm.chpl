@@ -1,10 +1,10 @@
-use DynamicLoading, ChplConfig;
+use DynamicLibrary, ChplConfig;
 
 config param ext = if CHPL_TARGET_PLATFORM=="darwin" then ".dylib" else ".so";
 
-const bin = try! binary.load("./lib/libaddEm" + ext);
+const lib = try! loadFromPath("./lib/libaddEm" + ext);
 
-const myAddEm = bin.retrieve("addEm", proc(x: int, y: int): int);
+const myAddEm = lib.retrieve("addEm", proc(x: int, y: int): int);
 
 for loc in Locales do
   on loc do

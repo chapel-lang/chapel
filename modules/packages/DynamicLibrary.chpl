@@ -128,14 +128,6 @@ if !useProcedurePointers {
                 '\'true\' when compiling to activate it');
 }
 
-private proc type libName(basename: string, directory: string="") {
-  import Path;
-
-  const fileName = 'lib' + basename + '.' + library.libSuffix;
-  const ret = Path.normPath(Path.joinPath(directory, fileName));
-  return ret;
-}
-
 /*
   Create a record representing a dynamically loaded library using a string
   that stores the path to a library file. The file may be any natively
@@ -166,6 +158,45 @@ proc loadFromPath(path: string) throws {
   assert(bin != nil);
 
   return new dynamicLibrary(bin!);
+}
+
+/**
+  This procedure behaves similarly to :proc:`loadFromPath`, except that it
+  computes the path to load from the arguments that are passed to it.
+
+  For example, given a library ``name`` of `foo`, a ``directory`` of
+  `path/to`, a prefix of `lib`, and a Linux-based ``suffix`` of `.so`,
+  this procedure will attempt to load a dynamic library from the path
+  `path/to/libfoo.so`.
+
+  All the formal arguments except ``name`` are optional, so it is possible
+  to get the same result by only passing in the string `foo` and `path/to`.
+
+  :arg name: The base name of the dynamic library to load
+  :type name: `string`
+
+  :arg directory: An optional directory path to prepend to the result
+  :type name: `string`
+
+  :arg prefix: Prefix for ``name``, by default `lib`
+  :type name: `string`
+
+  :arg suffix: Suffix for ``name``, by default a `.` period followed by a
+               file extension fit for dynamic libraries on this platform
+  :type name: `string`
+
+  :throws DynLoadError: if dynamic loading fails
+  :throws IllegalArgumentError: if `name` contains slashes `/`, or if the
+                                given file extension contains a `.` period
+*/
+proc load(name: string, directory: string='',
+          prefix: string='lib',
+          suffix: string=('.' + dynamicLibrary.fileExt)) throws {
+  const fileName = prefix + name + suffix;
+  use Path only joinPath;
+  const path = joinPath(directory, fileName);
+  // TODO: Sanitation...
+  return loadFromPath(path);
 }
 
 /*
@@ -206,7 +237,7 @@ record dynamicLibrary {
     Return the expected dynamic library file extension for the current
     platform. The file extension does not include a prefix ``.``.
   */
-  proc type libSuffix param {
+  proc type fileExt param {
     use ChplConfig;
     if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
     return 'so';

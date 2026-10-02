@@ -1,15 +1,15 @@
-use DynamicLoading;
+use DynamicLibrary;
 use Reflection;
 use ChplConfig;
 
 proc test1() {
   writeln(Reflection.getRoutineName());
 
-  const bin = try! binary.load("./TestCLibraryToLoad.so");
+  const lib = try! loadFromPath("./TestCLibraryToLoad.so");
 
   type P1 = proc(_: int, _: int): int;
 
-  const addTwoReturn = try! bin.retrieve("addTwoReturn", P1);
+  const addTwoReturn = try! lib.retrieve("addTwoReturn", P1);
 
   writeln(addTwoReturn.type:string);
   writeln();
@@ -25,38 +25,27 @@ proc test1() {
 proc test2() {
   writeln(Reflection.getRoutineName());
 
-  const suffix = binary.libSuffix;
+  const ext = lib.fileExt;
 
   if CHPL_TARGET_PLATFORM == 'darwin' {
-    assert(suffix == 'dylib');
+    assert(ext == 'dylib');
   } else {
-    assert(suffix == 'so');
+    assert(ext == 'so');
   }
 }
 
 proc test3() {
   writeln(Reflection.getRoutineName());
 
-  const suffix = binary.libSuffix;
-  const libName1 = binary.libName('foo');
-  assert(libName1 == 'libfoo.' + suffix);
-
-  const libName2 = binary.libName('baz', 'foo/bar');
-  assert(libName2 == 'foo/bar/libbaz.' + suffix);
+  const lib = try! load('TestCLibrary');
 }
 
 proc test4() {
   writeln(Reflection.getRoutineName());
 
-  const bin = try! binary.loadLib('TestCLibrary');
-}
-
-proc test5() {
-  writeln(Reflection.getRoutineName());
-
-  const bin1 = try! binary.loadLib('TestCLibrary', 'lib');
-  const bin2 = try! binary.loadLib('TestCLibrary', 'lib/');
-  const bin3 = try! binary.loadLib('TestCLibrary', 'lib//');
+  const lib1 = try! load('TestCLibrary', 'lib');
+  const lib2 = try! load('TestCLibrary', 'lib/');
+  const lib3 = try! load('TestCLibrary', 'lib//');
 }
 
 proc main() {
