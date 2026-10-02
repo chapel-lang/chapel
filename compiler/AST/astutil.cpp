@@ -48,6 +48,8 @@
 
 #include "global-ast-vecs.h"
 
+#include "llvm/ADT/ArrayRef.h"
+
 #include <set>
 #include <vector>
 
@@ -743,21 +745,39 @@ int isDefAndOrUse(SymExpr* se) {
 }
 
 
+static Vec<SymExpr*>* getOrCreateUseOrDefVec(Map<Symbol*,Vec<SymExpr*>*>& ses,
+                                             Symbol* sym) {
+  Vec<SymExpr*>* sev = ses.get(sym);
+  if (sev == nullptr) {
+    sev = new Vec<SymExpr*>();
+    ses.put(sym, sev);
+  }
+  return sev;
+}
+
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   forv_Vec(Symbol, sym, symSet) {
     if (sym == NULL) continue;
 
+    // look up each symbol's vectors once rather than once per SymExpr
+    Vec<SymExpr*>* defs = nullptr;
+    Vec<SymExpr*>* uses = nullptr;
+
     for_SymbolSymExprs(se, sym) {
       if (se->inTree() && sym == se->symbol()) {
         int result = isDefAndOrUse(se);
 
-        if (result & 1)
-          addDef(defMap, se);
+        if (result & 1) {
+          if (defs == nullptr) defs = getOrCreateUseOrDefVec(defMap, sym);
+          defs->add(se);
+        }
 
-        if (result & 2)
-          addUse(useMap, se);
+        if (result & 2) {
+          if (uses == nullptr) uses = getOrCreateUseOrDefVec(useMap, sym);
+          uses->add(se);
+        }
       }
     }
   }
@@ -1504,28 +1524,11 @@ Symbol* getSvecSymbol(CallExpr* call) {
 }
 
 
-static void addToUsedFnSymbols(std::set<FnSymbol*, AstIdLess>& fnSymbols,
-                               FnSymbol*            newFn) {
-  if(fnSymbols.count(newFn) == 0) {
-    fnSymbols.insert(newFn);
-    AST_CHILDREN_CALL(newFn->body, collectUsedFnSymbols, fnSymbols);
-  }
-}
-
-/*
-* Collect all of the functions in the call graph at and below the function
-* call.
-*/
-void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*, AstIdLess>& fnSymbols) {
-  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
-
-  // if there is a function call, get the FnSymbol associated with it
-  // and look through that FnSymbol for other function calls. Do not
-  // look through an already visited FnSymbol, or you'll have an infinite
-  // loop in the case of recursion.
+template <typename Visit>
+static void forEachCallTarget(BaseAST* ast, Visit&& visit) {
   if (CallExpr* call = toCallExpr(ast)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
-      addToUsedFnSymbols(fnSymbols, fn);
+      visit(llvm::ArrayRef<FnSymbol*>(fn));
 
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
       //
@@ -1534,11 +1537,36 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*, AstIdLess>& fnSymbol
       // of recursive iterator lowering seems to be too big of an obstacle
       // right now.
       //
-      for (FnSymbol* fn : ftableVec) {
-        addToUsedFnSymbols(fnSymbols, fn);
-      }
+      visit(llvm::ArrayRef<FnSymbol*>(ftableVec));
     }
   }
+}
+
+void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets) {
+  AST_CHILDREN_CALL(ast, collectCallTargets, targets);
+
+  forEachCallTarget(ast, [&targets](llvm::ArrayRef<FnSymbol*> fns) {
+    targets.insert(targets.end(), fns.begin(), fns.end());
+  });
+}
+
+
+/*
+* Collect all of the functions in the call graph at and below the function
+* call.
+*/
+void collectUsedFnSymbols(BaseAST* ast, llvm::DenseSet<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
+
+  // Recurse into each target not already visited, so recursion terminates.
+  forEachCallTarget(ast, [&fnSymbols](llvm::ArrayRef<FnSymbol*> fns) {
+    for (FnSymbol* fn : fns) {
+      bool inserted = fnSymbols.insert(fn).second;
+      if (inserted) {
+        AST_CHILDREN_CALL(fn->body, collectUsedFnSymbols, fnSymbols);
+      }
+    }
+  });
 }
 
 static QualifiedType computeFlattenedRefType(QualifiedType qt) {
