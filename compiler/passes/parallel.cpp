@@ -1002,9 +1002,11 @@ makeHeapAllocations() {
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
 
   findHeapVarsAndRefs(defMap, varSet, varVec);
+
+  // Only the heap vars need def/use info, so don't build it for every symbol.
+  buildDefUseMaps(varSet, defMap, useMap);
 
   forv_Vec(Symbol, var, varVec) {
     // MPF: I'm disabling the below assert because PR #5692
@@ -1160,6 +1162,8 @@ makeHeapAllocations() {
     var->type = heapType;
     var->qual = QUAL_VAL;
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
