@@ -33,16 +33,6 @@
 extern "C" {
 #endif
 
-// Expand out an enum that is used internally and by a macro.
-typedef enum chpl_rt_prginfo_data_entries {
-  #define ENUM_PREFIX__(name__) CHPL_RT_PRGINFO_DATA_ENTRY_IDX(name__)
-  #define E_CONSTANT(name__, type__) ENUM_PREFIX__ ## name__ ,
-  #define E_CALLBACK(name__, ret_type__, ...) ENUM_PREFIX__ ## name__ ,
-  #include "chpl-prginfo-data-macro-adapter.h"
-  CHPL_RT_PRGINFO_DATA_ENTRY_COUNT
-  #undef ENUM_PREFIX__
-} chpl_rt_prginfo_data_entries;
-
 /** Define setters that module code can call to set up program data. */
 #define CONCAT(a__, b__) a__##b__
 #define PREFIX chpl_rt_prginfo_data_entry_set_
@@ -73,6 +63,12 @@ int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg);
 /** Used to debug the data listings in a 'chpl_rt_prginfo'. */
 void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
                                        int show_addresses);
+
+/** Get the number of build configuration constants used by the runtime. */
+int chpl_rt_num_build_constants(void);
+
+/** Get the name of the i'th runtime build constant in alphabetical order. */
+const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val);
 
 #ifdef __cplusplus
 }

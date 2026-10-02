@@ -32,6 +32,7 @@
 #ifndef _chpl_tasks_impl_fns_h_
 #define _chpl_tasks_impl_fns_h_
 
+#include "chpl-env-gen.h"
 #include "chpl-locale-model.h"
 #include "chpl-prginfo.h"
 #include "chpltypes.h"
@@ -186,8 +187,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
-        !strcmp(CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                                     CHPL_LOCALE_MODEL), "gpu"));
+           !strcmp(CHPL_LOCALE_MODEL_RT, "gpu"));
 
     // Only change sublocales if the caller asked for a particular one,
     // which is not the current one, and we're a (movable) task.
