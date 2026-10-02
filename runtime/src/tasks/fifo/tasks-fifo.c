@@ -631,8 +631,14 @@ uint32_t chpl_task_getMaxPar(void) {
   //
   max = (uint32_t) chpl_topo_getNumCPUsPhysical(true);
   maxThreads = chpl_thread_getMaxThreads();
-  if (maxThreads < max && maxThreads > 0)
-    max = maxThreads;
+  if (!chpl_env_rt_get_bool("FORCE_NUM_THREADS_PER_LOCALE", false)) {
+    if (maxThreads < max && maxThreads > 0)
+      max = maxThreads;
+  } else {
+    // if CHPL_RT_FORCE_NUM_THREADS_PER_LOCALE=true always use the specified threads
+    if (maxThreads > 0)
+      max = maxThreads;
+  }
   return max;
 }
 

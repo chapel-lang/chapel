@@ -3,12 +3,11 @@
 */
 
 use DistributedBag;
-config const tasks = 4;
 
 var bag = new distBag(int);
 
 // Insert multiple values concurrently.
-forall taskId in 0..#tasks do
+forall taskId in 0..#here.maxTaskPar do
   bag.add(taskId, taskId);
 
 writeln("single-locale: ", bag);
@@ -20,8 +19,8 @@ writeln("empty:         ", bag);
 
 // Insert multiple values concurrently from different locales.
 coforall locId in 0..#numLocales do on Locales[locId] {
-  forall taskId in 0..#tasks do
-    bag.add(taskId + locId * tasks, taskId);
+  forall taskId in 0..#here.maxTaskPar do
+    bag.add(taskId + locId * here.maxTaskPar, taskId);
 }
 
 writeln("multi-locale:  ", bag);
