@@ -692,8 +692,6 @@ jobs:
     with:
       configuration: ubsan.clang
       cron-script: util/cron/test-ubsan.clang.bash
-      pre-build-steps: |
-        export UBSAN_OPTIONS=print_stacktrace=1
       build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
