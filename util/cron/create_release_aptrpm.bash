@@ -14,6 +14,10 @@
 # Arguments
 #
 if [ -z "$CHPL_VERSION" ]; then echo "CHPL_VERSION must be set."; exit 1; fi
+if [[ "$(tr -dc '.' <<< "$CHPL_VERSION" | awk '{ print length; }')" -ne 2 ]]; then
+  echo "Expected X.Y.Z version string, got: $CHPL_VERSION"
+  exit 1
+fi
 if [ -z "$OS" ]; then echo "OS must be set."; exit 1; fi
 if [ -z "$PACKAGE_NAME" ]; then echo "PACKAGE_NAME must be set."; exit 1; fi
 if [ -z "$PACKAGE_VERSION" ]; then echo "PACKAGE_VERSION must be set."; exit 1; fi
