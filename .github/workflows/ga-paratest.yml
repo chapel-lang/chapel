@@ -244,8 +244,7 @@ jobs:
             }
           ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
 
-          # Output each directory as dir,flags,.chpl count; the count estimates
-          # the duration of directories without a recorded duration.
+          # Output each directory as dir,flags,.chpl count
           {
             echo "units<<EOF_UNITS"
             while IFS=',' read -r dir flags; do
@@ -283,18 +282,19 @@ jobs:
           UNITS: ${{ needs.build.outputs.units }}
         shell: python3 {0}
         run: |
-          import heapq, json, os
+          import csv, heapq, json, os
 
           max_jobs = int(os.environ["MAX_JOBS"])
           if not 1 <= max_jobs <= 256:
               raise SystemExit(f"max-jobs must be between 1 and 256, got {max_jobs}")
 
           units = []
-          for line in os.environ["UNITS"].splitlines():
-              if line.strip():
-                  test_dir, flags, count = line.split(",")
-                  units.append({"id": str(len(units)), "dir": test_dir,
-                                "flags": flags, "count": max(int(count), 1)})
+          reader = csv.DictReader(os.environ["UNITS"].splitlines(),
+                                  fieldnames=["dir", "flags", "count"])
+          for i, row in enumerate(reader):
+              row["id"] = str(i)
+              row["count"] = max(int(row["count"]), 1)
+              units.append(row)
           if not units:
               raise SystemExit("No test directories found")
 
@@ -418,7 +418,6 @@ jobs:
           fi
 
           # each unit is id,dir,flags; run them separately to keep per-directory flags, results, and durations
-          job_status=0
           IFS=';' read -ra units <<< "$TEST_UNITS"
           for unit in "${units[@]}"; do
             IFS=',' read -r unit_id test_dir test_flags <<< "$unit"
@@ -450,10 +449,8 @@ jobs:
             echo "$test_status" > "$result_dir/status.txt"
             if [[ "$test_status" != "0" ]]; then
               echo "::error::start_test failed for $test_dir with status $test_status"
-              job_status=$test_status
             fi
           done
-          exit "$job_status"
       - name: upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -613,10 +610,14 @@ jobs:
           new_timings=$(mktemp)
           while read -r duration_file; do
             result_dir=$(dirname "$duration_file")
+            if [[ "$(cat "$result_dir/status.txt" 2>/dev/null)" != "0" ]]; then
+              continue
+            fi
             printf '%s\t%s\n' "$(cat "$result_dir/directory.txt")" "$(cat "$duration_file")"
           done < <(find "$PARATEST_RESULTS_DIR" -name duration.txt) > "$new_timings"
 
-          # new durations replace old ones; directories that didn't report keep their old duration
+          # new durations replace old ones
+          # failed directories and directories that didn't report keep their old duration
           awk -F'\t' 'NR == FNR { seen[$1] = 1; print; next } !($1 in seen)' \
             "$new_timings" "$timings_file" | sort > "$timings_file.new"
           mv "$timings_file.new" "$timings_file"
