@@ -4,6 +4,10 @@ name: Full CI checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
 
 permissions:
   contents: read

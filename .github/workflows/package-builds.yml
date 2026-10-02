@@ -3,6 +3,9 @@ name: Build Linux packages
 on:
   workflow_call:
     inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
       chpl_version:
         required: false
         type: string
@@ -56,7 +59,7 @@ jobs:
     if: ${{ inputs.tarball_url == '' }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}

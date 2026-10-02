@@ -3,6 +3,9 @@ name: paratest
 on:
   workflow_call:
     inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
       configuration:
         description: Unique name for this Chapel configuration
         required: true
@@ -99,7 +102,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      image: ${{ inputs.use-container && inputs.CHAPEL_CI_IMAGE || '' }}
       options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
@@ -369,7 +372,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
+      image: ${{ inputs.use-container && inputs.CHAPEL_CI_IMAGE || '' }}
       options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
