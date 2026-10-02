@@ -32,6 +32,10 @@ jobs:
   core-checks:
     if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
     uses: $/.github/workflows/core-ci-checks.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
 
   should-run-extended-checks:
     if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
