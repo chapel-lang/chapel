@@ -62,6 +62,11 @@ Records
 Record type names should be camelCase. The idea is that starting with a
 lowercase letter is the convention for by-value types.
 
+Unions
+------
+
+Union type names should be camelCase since they are by-value types.
+
 Enums
 -----
 
