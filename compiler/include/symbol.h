@@ -116,7 +116,9 @@ public:
   BlockStmt*         getDeclarationScope()                     const;
 
   bool               hasFlag(Flag flag)                        const;
-  bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
+  bool               hasAnyFlag(FlagSet queryFlags)            const;
+  template <typename... Flags>
+  bool               hasAnyFlag(Flag flag, Flags... rest)      const;
 
   void               addFlag(Flag flag);
   void               addFlags(FlagSet flags);
@@ -716,8 +718,17 @@ inline void Symbol::removeFlag(Flag flag) {
   flags.reset(flag);
 }
 
-inline bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
-  return hasFlag(aflag) || hasFlag(bflag);
+inline bool Symbol::hasAnyFlag(FlagSet queryFlags) const {
+  return (flags & queryFlags) != 0;
+}
+template <typename... Flags>
+inline bool Symbol::hasAnyFlag(Flag flag, Flags... rest) const {
+  FlagSet query;
+  for (Flag f : {flag, rest...}) {
+    CHECK_FLAG(f);
+    query.set(f);
+  }
+  return hasAnyFlag(query);
 }
 
 inline bool Symbol::isRef() {

@@ -135,8 +135,8 @@ static void checkSyncAtomicReturnByCopy() {
     bool isAtomic = isOrContainsAtomicType(fn->retType, false);
     bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
 
-    bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
-    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
+    bool isInitAutoCopy = fn->hasAnyFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
+    bool isNoCopy = fn->hasAnyFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN, FLAG_NO_COPY_RETURNS_OWNED);
     bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
     bool isDefaultOf = fn->name == astr_defaultOf;
     bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);

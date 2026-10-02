@@ -202,6 +202,7 @@ bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoConstArgChecks = false;
 bool fNoDivZeroChecks = false;
+bool fNoDynamicLibraryChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
@@ -1122,6 +1123,7 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoStackChecks  = fNoChecks;
   fNoCastChecks = fNoChecks;
   fNoDivZeroChecks = fNoChecks;
+  fNoDynamicLibraryChecks = fNoChecks;
   fNoUnionChecks = fNoChecks;
 }
 
@@ -1480,6 +1482,7 @@ static ArgumentDescription arg_desc[] = {
  {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
  {"const-arg-checks", ' ', NULL, "Enable [disable] const argument checks (only when --warn-unstable is also used)", "n", &fNoConstArgChecks, NULL, NULL},
  {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
+ {"dynamic-library-checks", ' ', NULL, "Enable [disable] checks for features of dynamic libraries", "n", &fNoDynamicLibraryChecks, NULL, NULL},
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NIL_CHECKS", NULL},
@@ -2199,6 +2202,7 @@ static void setGPUFlags() {
       fNoStackChecks  = true;
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
+      fNoDynamicLibraryChecks = true;
       fNoUnionChecks = true;
     }
     //
