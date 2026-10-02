@@ -371,6 +371,7 @@ bool isUnusedClass(Type* t, const std::set<Type*, AstIdLess>& wellknown);
 
 void saveGenericSubstitutions();
 void pruneResolvedTree();
+void clearIteratorFormalCache();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
 
