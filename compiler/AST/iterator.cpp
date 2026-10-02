@@ -2041,7 +2041,7 @@ static inline Symbol* createAndInsertICField(int& i, Symbol* local, Type* type,
   return field;
 }
 
-static std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
+static std::map<Symbol*, std::vector<CallExpr*>, AstIdLess> formalToPrimMap;
 
 void gatherPrimIRFieldValByFormal() {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
@@ -2137,7 +2137,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       // while we're creating the iterator record fields based on the original
       // iterator function arguments, replace the primitive that gets the value
       // based on the formal with prim_get_member_value of the actual value.
-      std::map<Symbol*, std::vector<CallExpr*> >::iterator localIt =
+      auto localIt =
         formalToPrimMap.find(local);
       if (localIt != formalToPrimMap.end()) {
         for_vector(CallExpr, call, localIt->second) {

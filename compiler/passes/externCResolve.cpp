@@ -579,8 +579,8 @@ Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
 }
 
 static Symbol* doTryCResolve(ModuleSymbol* module,
-                             const char*                       name,
-                             llvm::SmallSet<ModuleSymbol*, 24> &visited) {
+                             const char* name,
+                             llvm::SmallSet<ModuleSymbol*, 24, AstIdLess> &visited) {
 
   if (module == NULL) {
     return NULL;
@@ -620,7 +620,7 @@ Symbol* tryCResolve(ModuleSymbol* mod, const char* name) {
     return got;
 
   if (fAllowExternC == true) {
-    llvm::SmallSet<ModuleSymbol*, 24> visited;
+    llvm::SmallSet<ModuleSymbol*, 24, AstIdLess> visited;
 
     retval = doTryCResolve(mod, name, visited);
   }

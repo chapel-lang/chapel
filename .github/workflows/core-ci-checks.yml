@@ -126,6 +126,24 @@ jobs:
       run: |
         CHPL_HOST_COMPILER=clang make run-dyno-linters
 
+  check_compiler_linters:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: set CHPL_HOME
+      run: |
+        echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
+    - name: run compiler linters
+      run: |
+        CHPL_HOST_COMPILER=clang make run-compiler-linters -j"$(util/buildRelease/chpl-make-cpu_count)"
+
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
     container:
@@ -439,7 +457,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        os: [ubuntu-latest, ubuntu-26.04-arm, macos-latest]
         config: [gasnet, none]
         exclude:
           - os: macos-latest
@@ -501,21 +519,30 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
-  prereqs-docs-compare:
+  docs-checks:
     runs-on: ubuntu-slim
     env:
       PREREQS_COMMANDS_FILE: "doc/rst/usingchapel/prereqs-commands.rst"
       PORTABILITY_TEST_DIR: "util/devel/test/portability"
+      PACKAGING_TABLE_FILE: "doc/rst/platforms/linux-pkg-table.rst"
+      PACKAGING_DIR: "util/packaging"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             ${{ env.PORTABILITY_TEST_DIR }}
+            ${{ env.PACKAGING_DIR }}
             doc
           persist-credentials: false
       - name: generate ${{ env.PREREQS_COMMANDS_FILE }}
         run: |
           ${{ env.PORTABILITY_TEST_DIR }}/apptainer/extract-docs.py > "$PREREQS_COMMANDS_FILE"
-      - name: compare against checked-in file
+      - name: comparing ${{ env.PREREQS_COMMANDS_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PREREQS_COMMANDS_FILE"
+      - name: generate ${{ env.PACKAGING_TABLE_FILE }}
+        run: |
+          ${{ env.PACKAGING_DIR }}/common/list_package_configs.py > "$PACKAGING_TABLE_FILE"
+      - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
+        run: |
+          git diff --exit-code "$PACKAGING_TABLE_FILE"

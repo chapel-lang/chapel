@@ -44,11 +44,9 @@
 #include <algorithm>
 #include <cstdio>
 
-typedef std::set<BasicBlock*> BasicBlockSet;
-
 static void deadBlockElimination(FnSymbol* fn);
-static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
-static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
+static void findReachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable);
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable);
 static bool         isInCForLoopHeader(Expr* expr);
 
 static unsigned int deadBlockCount;
@@ -87,7 +85,7 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  std::set<Symbol*> symSet;
+  std::set<Symbol*, AstIdLess> symSet;
   collectSymbolSet(fn, symSet);
 
   // Use 'symSet' and 'todo' together for a unique queue of symbols to process
@@ -112,7 +110,7 @@ void deadVariableElimination(FnSymbol* fn) {
       continue;
 
     if (isDeadVariable(sym)) {
-      std::set<Symbol*> potentiallyChanged;
+      std::set<Symbol*, AstIdLess> potentiallyChanged;
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         collectSymbolSet(call->getStmtExpr(), potentiallyChanged);
@@ -534,7 +532,7 @@ static void deadBlockElimination(FnSymbol* fn)
   BasicBlock::buildBasicBlocks(fn);
 
   // Find the reachable basic blocks within this function.
-  BasicBlockSet reachable;
+  BasicBlock::BasicBlockSet reachable;
 
   findReachableBlocks(fn, reachable);
   deleteUnreachableBlocks(fn, reachable);
@@ -543,7 +541,7 @@ static void deadBlockElimination(FnSymbol* fn)
 // Muchnick says we can enumerate the unreachable blocks first and then just
 // remove them.  We only need to do this once, because removal of an
 // unreachable block cannot possibly make any reachable block unreachable.
-static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+static void findReachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable)
 {
   // We set up a work queue to perform a BFS on reachable blocks, and seed it
   // with the first block in the function.
@@ -574,7 +572,7 @@ static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
   }
 }
 
-static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable)
 {
   // Visit all the blocks, deleting all those that are not reachable
   for_vector(BasicBlock, bb, *fn->basicBlocks)

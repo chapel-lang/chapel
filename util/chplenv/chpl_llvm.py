@@ -317,12 +317,18 @@ def find_system_llvm_config():
         paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
     by_version = defaultdict(list)
+    # TODO: this is unused and never printed. Should we report this in some way?
+    # not sure how to do that well without being super annoying with extraneous errors
     errs = []
 
     for command in paths:
         version, config_err = check_llvm_config(command)
         if not config_err:
-            by_version[version].append(command)
+            ok, err = check_llvm_packages(command)
+            if ok:
+                by_version[version].append(command)
+            else:
+                errs.append((command, err))
         else:
             errs.append((command, config_err))
 

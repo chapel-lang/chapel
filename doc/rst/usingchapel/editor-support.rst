@@ -13,6 +13,8 @@ If your preferred editor is not listed, consider opening an `issue
 
 * :ref:`neovim`
 
+* :ref:`pulsar`
+
 * :ref:`vim`
 
 * :ref:`vscode`
@@ -24,6 +26,10 @@ If your preferred editor is not listed, consider opening an `issue
 ------------
 
 .. include:: editors/neovim.rst
+
+------------
+
+.. include:: editors/pulsar.rst
 
 ------------
 

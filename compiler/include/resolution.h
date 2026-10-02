@@ -51,7 +51,7 @@ extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
-extern std::map<Type*,     Serializers> serializeMap;
+extern std::map<Type*,     Serializers, AstIdLess> serializeMap;
 
 
 
@@ -366,8 +366,8 @@ Type* moveDetermineRhsType(CallExpr* call);
 
 bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
-std::set<Type*> getWellKnownTypesSet();
-bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
+std::set<Type*, AstIdLess> getWellKnownTypesSet();
+bool isUnusedClass(Type* t, const std::set<Type*, AstIdLess>& wellknown);
 
 void saveGenericSubstitutions();
 void pruneResolvedTree();

@@ -71,6 +71,7 @@ cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
 
 clobber: $(CLOBBERSUBDIRS) echocompilerdir
 	rm -rf ./$(CLOBBER_TARGS)
+	rm -f main/LICENSE main/COPYRIGHT codegen/reservedSymbolNames.h
 	@$(MAKE) clean-chpl-cmake-module-files
 
 
@@ -198,6 +199,19 @@ run-frontend-linters: frontend-linters
 	  exit 1 ; \
 	fi
 	env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
+
+compiler-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the compiler linters"
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpl-generated-sources astIdLess
+
+run-compiler-linters: compiler-linters
+	@echo "Running the compiler linters"
+	@if [ "$(CHPL_MAKE_HOST_COMPILER)" != "clang" ]; then \
+	  echo error: run-compiler-linters requires CHPL_HOST_COMPILER=clang ; \
+	  exit 1 ; \
+	fi
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-j=\2/p'` ; \
+	  $(COMPILER_BUILD)/compiler/util/linters/astIdLess -p $(COMPILER_BUILD) $$JOBSFLAG
 
 parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
