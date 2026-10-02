@@ -2560,7 +2560,7 @@ insertWideReferences(void) {
   // Track functions downstream in the call-chain from a wrapon_fn
   //
   bool gotExternFns = false;
-  std::DenseSet<FnSymbol*> downstream;
+  llvm::DenseSet<FnSymbol*> downstream;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn

@@ -1193,7 +1193,7 @@ private:
     nextIndex++;
     stack.push_back(fn);
 
-    std::SmallVector<FnSymbol*, 8> targets;
+    llvm::SmallVector<FnSymbol*, 8> targets;
     collectCallTargets(fn->body, targets);
 
     for (FnSymbol* target: targets) {
