@@ -3,6 +3,10 @@ name: Core CI Checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
     secrets:
       WEBSITE_KEY:
         required: false
@@ -31,7 +35,7 @@ jobs:
   make_check:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -46,7 +50,7 @@ jobs:
   make_chplvis:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -67,7 +71,7 @@ jobs:
   make_doc:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -94,7 +98,7 @@ jobs:
   make_mason:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -111,7 +115,7 @@ jobs:
   check_dyno_linters:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -129,7 +133,7 @@ jobs:
   check_compiler_linters:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -147,7 +151,7 @@ jobs:
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -187,7 +191,7 @@ jobs:
   make_check_llvm_none:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -202,7 +206,7 @@ jobs:
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -305,7 +309,7 @@ jobs:
   check-release-files:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -412,7 +416,7 @@ jobs:
   test_chpl_language_server_chplcheck:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -507,7 +511,7 @@ jobs:
   test-networking-packages:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}

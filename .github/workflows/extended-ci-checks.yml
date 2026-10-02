@@ -4,6 +4,10 @@ name: Extended CI checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
     secrets:
       DOCKERHUB_USER:
         required: false
@@ -35,7 +39,7 @@ jobs:
         runner: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.runner }}
     container:
-      image: ${{ startsWith(matrix.runner, 'ubuntu') && 'ghcr.io/chapel-lang/chapel-github-ci:latest' || '' }}
+      image: ${{ startsWith(matrix.runner, 'ubuntu') && inputs.CHAPEL_CI_IMAGE || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -242,7 +246,7 @@ jobs:
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -291,7 +295,7 @@ jobs:
   test-c2chapel:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
