@@ -12,10 +12,12 @@ class Chapel < Formula
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    sha256 arm64_tahoe:   "d7b046ade6eccd937cd27b027903a7c6dc6672eef1084a1e8853f9f5a1d0930d"
-    sha256 arm64_sequoia: "cbda1a20fdb07979e06487d65e851bf822ea15e190666652f7c274ff8e62a6d7"
-    sha256 arm64_linux:   "9d2c2a892bc19c7699f83e2cdf3b22ea8ad816e4e6e022d9dc5386c1f251bfd4"
-    sha256 x86_64_linux:  "81d4850d992f5845dba3d777518551392c57c2a67c438fda0337f7434208ab04"
+    rebuild 1
+    sha256 arm64_golden_gate: "85d80bb657433b9634269b770d47d0a2fabe8c8ef41d3457b1f4f1088f81eb51"
+    sha256 arm64_tahoe:       "fe9be0261b76fb8451abc18b0a4a81f530f4c854dcbcdb1b0bc142fae422e406"
+    sha256 arm64_sequoia:     "b817c2f32658fd53714437ef5f60455beda4671bf54e08326f9ab1d4633f0028"
+    sha256 arm64_linux:       "1330f972661af23ac6d2b05d827d9617407d90ec38a2bc72cab890eeb85a96ea"
+    sha256 x86_64_linux:      "4cd686a949ac272d6f98210598b065ba6503f6a221ab3673075ce7f002cd6704"
   end
 
   depends_on "cmake"
@@ -26,9 +28,13 @@ class Chapel < Formula
   depends_on "pkgconf"
   depends_on "python@3.14"
 
-  on_macos do
-    # FIXME: chpl hits an internal error when building mason on macOS 27
-    depends_on maximum_macos: [:tahoe, :build]
+  # Fix bug with newer libc++, full fix will be available in 2.11
+  patch do
+    on_tahoe :or_newer do
+      file "Patches/chapel/remove_custom_stdless.diff"
+      type :backport
+      resolves "https://github.com/chapel-lang/chapel/issues/29458"
+    end
   end
 
   def llvm
