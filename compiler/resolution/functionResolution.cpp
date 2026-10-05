@@ -5719,8 +5719,9 @@ void CandidateSearchState::explainGatherCandidate() {
 }
 
 // Could a value of type 'actual' be passed to a formal of iterator type
-// 'target'? Errs on the side of 'true'. Iterator records/classes only accept
-// themselves, their subclasses, or promotion down to them.
+// 'target'? This is conservative to avoid false negatives.
+// Iterator records/classes can only accept themselves, their subclasses,
+// or promotion down to them.
 static bool mayDispatchToIteratorType(Type* actual, AggregateType* target,
                                       int depth) {
   if (actual == nullptr) return false;

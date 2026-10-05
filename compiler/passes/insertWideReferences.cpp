@@ -2564,7 +2564,6 @@ insertWideReferences(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
-        // 'downstream' is shared so each callee's body is only walked once
         collectUsedFnSymbols(call, downstream);
       }
     }

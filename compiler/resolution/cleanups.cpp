@@ -1036,7 +1036,6 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
-  // formals get removed below
   clearIteratorFormalCache();
 
   cleanupConstrainedGenerics();

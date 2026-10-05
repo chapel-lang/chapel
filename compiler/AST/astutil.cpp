@@ -1550,7 +1550,6 @@ void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets) 
   });
 }
 
-
 /*
 * Collect all of the functions in the call graph at and below the function
 * call.
@@ -1558,7 +1557,6 @@ void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets) 
 void collectUsedFnSymbols(BaseAST* ast, llvm::DenseSet<FnSymbol*>& fnSymbols) {
   AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
 
-  // Recurse into each target not already visited, so recursion terminates.
   forEachCallTarget(ast, [&fnSymbols](llvm::ArrayRef<FnSymbol*> fns) {
     for (FnSymbol* fn : fns) {
       bool inserted = fnSymbols.insert(fn).second;

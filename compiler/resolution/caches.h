@@ -100,8 +100,6 @@ public:
   SymbolMap map;
 };
 
-// Entries for one function, bucketed by a hash of their maps.
-// Each bucket keeps its entries in insertion order.
 typedef std::unordered_map<size_t, std::vector<SymbolMapScopeCacheEntry*>>
         SymbolMapScopeCacheBuckets;
 
