@@ -53,9 +53,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     wget \
     xxd \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/lldb-19 /usr/local/bin/lldb \
-    && ln -s /usr/bin/lldb-server-19 /usr/local/bin/lldb-server \
-    && ln -s /usr/bin/llvm-symbolizer-19 /usr/local/bin/llvm-symbolizer
+    && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-19 100 \
+    && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-19 100 \
+    && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-19 100
 
 RUN groupadd --gid 1001 chpl-tester && \
     useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
