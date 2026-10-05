@@ -1511,23 +1511,14 @@ static const char* cnameExprToString(Expr* cnameExpr) {
 }
 
 BlockStmt* buildVarDecls(BlockStmt* stmts) {
-  bool firstvar = true;
-  const char* cname = NULL;
-
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Store the user-provided cname, if there was one
-        if (cname)
-          var->cname = cname;
-
         if (var->hasFlag(FLAG_CONFIG)) {
           if (Expr* commandLineInit = lookupConfigVal(var)) {
             defExpr->init = commandLineInit;
           }
         }
-
-        firstvar = false;
         continue;
       }
     }
