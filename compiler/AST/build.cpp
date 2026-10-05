@@ -1456,21 +1456,6 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 }
 
 
-std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
-  // this will be deleted in buildVarDecls()
-  std::set<Flag>* flags = new std::set<Flag>();
-
-  if (flag1 != FLAG_UNKNOWN) {
-    flags->insert(flag1);
-  }
-  if (flag2 != FLAG_UNKNOWN) {
-    flags->insert(flag2);
-  }
-
-  return flags;
-}
-
-
 // look up cfgname and mark it as used if we find it
 static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
   Expr* configInit = NULL;
@@ -1525,17 +1510,9 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-BlockStmt* buildVarDecls(BlockStmt* stmts,
-                         std::set<Flag>* flags, Expr* cnameExpr) {
+BlockStmt* buildVarDecls(BlockStmt* stmts) {
   bool firstvar = true;
   const char* cname = NULL;
-
-  if (cnameExpr != NULL) {
-    cname = cnameExprToString(cnameExpr);
-    if (cname == NULL) {
-      USR_FATAL_CONT(cnameExpr, "at present, external variables can only be renamed using string literals");
-    }
-  }
 
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
@@ -1543,21 +1520,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
         // Store the user-provided cname, if there was one
         if (cname)
           var->cname = cname;
-
-        // Attach any flags provided to the variable
-        if (flags) {
-          if (flags->count(FLAG_EXTERN) && flags->count(FLAG_PARAM))
-            USR_FATAL(var, "external params are not supported");
-
-          if (cnameExpr != NULL && !firstvar)
-            USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
-
-          setDefinedConstForDefExprIfApplicable(defExpr, flags);
-
-          for (auto it = flags->begin(); it != flags->end(); ++it) {
-            var->addFlag(*it);
-          }
-        }
 
         if (var->hasFlag(FLAG_CONFIG)) {
           if (Expr* commandLineInit = lookupConfigVal(var)) {
@@ -1589,10 +1551,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
   // Add a PRIM_END_OF_STATEMENT.
   CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
   stmts->insertAtTail(end);
-
-  // this was allocated in buildVarDeclFlags()
-  if (flags)
-    delete flags;
 
   return stmts;
 }
