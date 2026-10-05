@@ -143,7 +143,7 @@ ofi_pmi2_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": ["none", "pic"],
+    "CHPL_LIB_PIC": "none",  # TODO: support pic with ofi as well, currently causes issues linking with pmi2
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
