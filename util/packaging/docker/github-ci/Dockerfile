@@ -25,6 +25,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     doxygen \
     g++ \
     gcc \
+    gdb \
     git \
     jq \
     libclang-19-dev \
@@ -35,6 +36,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     llvm-19 \
     llvm-19-dev \
     llvm-19-tools \
+    lldb-19 \
     locales \
     m4 \
     make \
@@ -50,7 +52,10 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     tzdata \
     wget \
     xxd \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/lldb-19 /usr/local/bin/lldb \
+    && ln -s /usr/bin/lldb-server-19 /usr/local/bin/lldb-server \
+    && ln -s /usr/bin/llvm-symbolizer-19 /usr/local/bin/llvm-symbolizer
 
 RUN groupadd --gid 1001 chpl-tester && \
     useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
