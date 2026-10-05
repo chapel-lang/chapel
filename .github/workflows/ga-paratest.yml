@@ -20,13 +20,23 @@ on:
         required: false
         type: string
         default: ""
+      make-targets:
+        description: Space separated make targets to build. If a custom 'build-steps' is provided, this is ignored.
+        required: false
+        type: string
+        default: "all test-venv chpldoc mason"
       build-steps:
-        description: Build commands, defaults to building the compiler, test venv, chpldoc, and mason
+        description: Commands to execute to build. By default, invokes the make command with the default make targets specified in `make-targets`
         required: false
         type: string
         default: |
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc mason
+          make_cmd=(make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1)
+          if [[ "$MAKE_TARGETS_TO_BUILD" =~ [^[:space:]] ]]; then
+            read -ra make_targets <<< "$MAKE_TARGETS_TO_BUILD"
+            make_cmd+=("${make_targets[@]}")
+          fi
+          "${make_cmd[@]}"
       start-test-args:
         description: Space-separated arguments to pass to start_test
         required: false
@@ -117,6 +127,7 @@ jobs:
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
+          MAKE_TARGETS_TO_BUILD: ${{ inputs.make-targets }}
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {

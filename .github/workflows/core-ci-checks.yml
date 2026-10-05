@@ -577,10 +577,7 @@ jobs:
       configuration: fast
       cron-script: util/cron/test-fast.bash
       start-test-args: -compopts --fast -compopts --ccflags -compopts -Wno-invalid-feature-combination
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   paratest-gasnet-asan:
     name: Chapel paratest with GASNet and AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
@@ -593,10 +590,7 @@ jobs:
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
       timeout-minutes: 360
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
     uses: $/.github/workflows/ga-paratest.yml
@@ -609,10 +603,7 @@ jobs:
       cron-script: util/cron/test-gasnet-fast.bash
       container-options: --shm-size=8g # required for SEGMENT=fast
       start-test-args: -multilocale-only
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   # runners only have 2 real cores, and smp can't oversubscribe
   # so this won't work yet
   # paratest-gasnet-smp:
@@ -627,10 +618,7 @@ jobs:
   #     cron-script: util/cron/test-gasnet-smp.bash
   #     container-options: --shm-size=8g # required for SEGMENT=fast
   #     test-dirs: test/release/examples
-  #     build-steps: |
-  #       num_procs=$(util/buildRelease/chpl-make-cpu_count)
-  #       make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-  #         all test-venv mason-deps
+  #     make-targets: all test-venv mason-deps
   paratest-gpu-cpu:
     name: Chapel paratest with CHPL_GPU=cpu
     uses: $/.github/workflows/ga-paratest.yml
@@ -642,10 +630,7 @@ jobs:
       configuration: gpu-cpu
       cron-script: util/cron/test-gpu-cpu.bash
       test-dirs: test/gpu/native test/users/engin/context test/release/examples
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   paratest-memleaks:
     name: Chapel paratest with --memLeaks
     uses: $/.github/workflows/ga-paratest.yml
@@ -657,10 +642,7 @@ jobs:
       configuration: memleaks
       cron-script: util/cron/test-memleaks.bash
       start-test-args: -memleaks
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   paratest-no-local:
     name: Chapel paratest with --no-local
     uses: $/.github/workflows/ga-paratest.yml
@@ -682,10 +664,7 @@ jobs:
     with:
       configuration: quickstart
       cron-script: util/cron/test-quickstart.bash
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
     uses: $/.github/workflows/ga-paratest.yml
@@ -696,10 +675,7 @@ jobs:
     with:
       configuration: ubsan.clang
       cron-script: util/cron/test-ubsan.clang.bash
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason
+      make-targets: all test-venv mason
   paratest-ubsan-gnu:
     name: Chapel paratest with UndefinedBehaviorSanitizer (gnu)
     uses: $/.github/workflows/ga-paratest.yml
@@ -710,10 +686,7 @@ jobs:
     with:
       configuration: ubsan.gnu
       cron-script: util/cron/test-ubsan.gnu.bash
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason
+      make-targets: all test-venv mason
   paratest-verify:
     name: Chapel paratest with --verify
     uses: $/.github/workflows/ga-paratest.yml
@@ -725,7 +698,4 @@ jobs:
       configuration: verify
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps

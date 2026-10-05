@@ -443,10 +443,7 @@ jobs:
       configuration: linux64
       cron-script: util/cron/test-linux64.bash
       start-test-args: --futures
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv chpldoc mason protoc-gen-chpl
+      make-targets: all test-venv chpldoc mason protoc-gen-chpl
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
@@ -458,7 +455,4 @@ jobs:
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --futures
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps
