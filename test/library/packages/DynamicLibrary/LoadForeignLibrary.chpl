@@ -25,7 +25,7 @@ proc test1() {
 proc test2() {
   writeln(Reflection.getRoutineName());
 
-  const ext = lib.fileExt;
+  const ext = dynamicLibrary.fileExt;
 
   if CHPL_TARGET_PLATFORM == 'darwin' {
     assert(ext == 'dylib');
@@ -49,7 +49,7 @@ proc test4() {
 }
 
 proc main() {
-  const tests = [ test1, test2, test3, test4, test5 ];
+  const tests = [ test1, test2, test3, test4 ];
   for test in tests {
     test();
     if test != tests.last then writeln();

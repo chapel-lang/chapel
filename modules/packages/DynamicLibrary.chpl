@@ -121,11 +121,55 @@ private use ChapelDynamicLoading;
 // Publish this error class for use by users.
 public use ChapelDynamicLoading only DynLoadError;
 
+private proc containsPathSep(s: string): bool {
+  use Path only pathSep;
+  return s.contains(pathSep);
+}
+
 if !useProcedurePointers {
   compilerError('This module cannot be used unless the experimental ' +
                 'procedure pointer implementation is activated. Set the ' +
                 'config param \'useProcedurePointers\' to ' +
                 '\'true\' when compiling to activate it');
+}
+
+// I found this XOR-like requirement too hard to describe with a bool alone.
+enum PathProperty {
+  MustContainSep,
+  CannotContainSep
+}
+
+private proc tryCheckPathComponent(style: PathProperty,
+                                   componentName: string,
+                                   val: string) throws {
+  const containsSep = containsPathSep(val);
+  var ok = containsSep;
+
+  if style == PathProperty.CannotContainSep {
+    ok = !containsSep;
+  }
+
+  if !ok {
+    const desc = if style == PathProperty.CannotContainSep
+                    then 'cannot ' else 'must ';
+    const msg = 'the provided library ' + componentName + '\'' + val + '\'' +
+                desc + ' contain a path separator';
+    throw new IllegalArgumentError(msg);
+  }
+}
+
+private proc loadFromPathImpl(path: string) throws {
+  var err: owned DynLoadError?;
+
+  writeln('Trying to load: ', path);
+
+  const bin = chpl_BinaryInfo.create(path, err);
+  if err then throw err;
+
+  // Should hold by construction.
+  assert(bin != nil);
+
+  return new dynamicLibrary(bin!);
 }
 
 /*
@@ -144,20 +188,21 @@ if !useProcedurePointers {
   representation (e.g., the file format was not natively executable, or
   it was not marked as executable).
 
+  Additionally, the ``path`` formal must be a string that contains one or
+  more instances of a path separator (e.g., `/`). This is required so that
+  the path is interpreted by the dynamic linker as an absolute or relative
+  path. If you want to rely on your dynamic linker's search behavior when
+  no directory is specified, consider calling the :proc:`load` procedure.
+
   :arg path: The path to the library file to dynamically load
   :type path: `string`
 
   :throws DynLoadError: if dynamic loading fails
+  :throws IllegalArgumentError: if ``path`` does not contain a path separator
 */
 proc loadFromPath(path: string) throws {
-  var err: owned DynLoadError?;
-  const bin = chpl_BinaryInfo.create(path, err);
-  if err then throw err;
-
-  // Should hold by construction.
-  assert(bin != nil);
-
-  return new dynamicLibrary(bin!);
+  tryCheckPathComponent(style=PathProperty.MustContainSep, 'path', path);
+  return loadFromPathImpl(path);
 }
 
 /**
@@ -186,17 +231,23 @@ proc loadFromPath(path: string) throws {
   :type name: `string`
 
   :throws DynLoadError: if dynamic loading fails
-  :throws IllegalArgumentError: if `name` contains slashes `/`, or if the
-                                given file extension contains a `.` period
+  :throws IllegalArgumentError: if any component other than ``directory``
+                                contains a path separator
 */
 proc load(name: string, directory: string='',
           prefix: string='lib',
           suffix: string=('.' + dynamicLibrary.fileExt)) throws {
-  const fileName = prefix + name + suffix;
   use Path only joinPath;
+
+  const style = PathProperty.CannotContainSep;
+  tryCheckPathComponent(style, 'name', name);
+  tryCheckPathComponent(style, 'prefix', prefix);
+  tryCheckPathComponent(style, 'suffix', suffix);
+
+  const fileName = prefix + name + suffix;
   const path = joinPath(directory, fileName);
-  // TODO: Sanitation...
-  return loadFromPath(path);
+
+  return loadFromPathImpl(path);
 }
 
 /*

@@ -5,7 +5,7 @@ chpl=$3
 chpl_home=$($chpl --print-chpl-home)
 c_compiler=$($chpl_home/util/printchplenv --value --only CHPL_HOST_CC)
 platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
-ext=$([ "$platform" == "darwin" ] && echo "dylib" || echo "so")
+ext=$([[ "$platform" == "darwin" ]] && echo "dylib" || echo "so")
 source_file="TestCLibraryToLoad.c"
 old_lib_name="TestCLibraryToLoad.so"
 proper_lib_name="libTestCLibrary.$ext"
