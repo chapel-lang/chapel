@@ -261,7 +261,6 @@ jobs:
             echo "EOF_UNITS"
           } | tee -a "$GITHUB_OUTPUT"
 
-  # Runs outside the container so the timings cache is compatible with the one saved by aggregate-results.
   plan:
     name: Plan test jobs (${{ inputs.configuration }})
     needs: build
@@ -492,7 +491,8 @@ jobs:
         env:
           BUILD_RESULT: ${{ needs.build.result }}
           CONFIGURATION: ${{ inputs.configuration }}
-          EXPECTED_TESTS: ${{ needs.plan.outputs.test-count }}
+          EXPECTED_JOBS: ${{ needs.plan.outputs.job-count }}
+          EXPECTED_DIRS: ${{ needs.plan.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
@@ -518,11 +518,16 @@ jobs:
               "${summary_files[@]}"
           fi
 
+          # each test job's artifact is downloaded into its own directory
+          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d \
+            -name "paratest-$CONFIGURATION-dir-results-*" | wc -l)
+          actual_jobs=$((actual_jobs))
+
           mapfile -t status_files < <(
             find "$PARATEST_RESULTS_DIR" -name status.txt -print | sort
           )
-          actual_tests=${#status_files[@]}
-          failed_tests=0
+          actual_dirs=${#status_files[@]}
+          failed_dirs=0
 
           {
             echo "# Chapel paratest: $CONFIGURATION"
@@ -541,7 +546,7 @@ jobs:
               result=pass
             else
               result=fail
-              failed_tests=$((failed_tests + 1))
+              failed_dirs=$((failed_dirs + 1))
             fi
             echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
           done
@@ -553,19 +558,23 @@ jobs:
 
           overall_status=0
           if [[ "$MATRIX_RESULT" != "success" ||
-                -z "$EXPECTED_TESTS" ||
-                "$actual_tests" != "$EXPECTED_TESTS" ||
-                "$summary_count" != "$EXPECTED_TESTS" ||
-                "$failed_tests" != "0" ]]; then
+                -z "$EXPECTED_JOBS" ||
+                -z "$EXPECTED_DIRS" ||
+                "$actual_jobs" != "$EXPECTED_JOBS" ||
+                "$actual_dirs" != "$EXPECTED_DIRS" ||
+                "$summary_count" != "$EXPECTED_DIRS" ||
+                "$failed_dirs" != "0" ]]; then
             overall_status=1
           fi
 
           {
             echo
-            echo "Expected test jobs: ${EXPECTED_TESTS:-unknown}"
-            echo "Reported test jobs: $actual_tests"
+            echo "Expected test jobs: ${EXPECTED_JOBS:-unknown}"
+            echo "Reported test jobs: $actual_jobs"
+            echo "Expected test directories: ${EXPECTED_DIRS:-unknown}"
+            echo "Reported test directories: $actual_dirs"
             echo "Reported test summaries: $summary_count"
-            echo "Failed test jobs: $failed_tests"
+            echo "Failed test directories: $failed_dirs"
             if [[ "$overall_status" == "0" ]]; then
               echo "Overall result: PASS"
             else
