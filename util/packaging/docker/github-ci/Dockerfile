@@ -62,6 +62,9 @@ RUN groupadd --gid 1001 chpl-tester && \
     echo "chpl-tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/chpl-tester && \
     chmod 0440 /etc/sudoers.d/chpl-tester
 
+RUN echo "settings set target.disable-aslr false" > /root/.lldbinit && \
+    echo "settings set target.disable-aslr false" > /home/chpl-tester/.lldbinit && \
+    chown chpl-tester:chpl-tester /home/chpl-tester/.lldbinit
 
 # Configure locale (taken from primary Chapel Dockerfile)
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
