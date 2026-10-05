@@ -94,7 +94,7 @@ default_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none",
+    "CHPL_LIB_PIC": ["none", "pic"],
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
@@ -118,7 +118,7 @@ gasnet_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none",
+    "CHPL_LIB_PIC": ["none", "pic"],
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
@@ -143,7 +143,7 @@ ofi_pmi2_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none",
+    "CHPL_LIB_PIC": ["none", "pic"],
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
