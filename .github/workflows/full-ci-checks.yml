@@ -15,7 +15,12 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 5
+  APT_INSTALL_TIMEOUT_MINS: 20
+  APT_NETWORK_CONF: |
+    Acquire::Retries "10";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
 
 defaults:
   run:
@@ -69,9 +74,19 @@ jobs:
       - name: install Apptainer
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
-          sudo add-apt-repository -y ppa:apptainer/ppa
-          sudo apt update
-          sudo apt install -y apptainer
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
+          max_attempts=5
+          for attempt in $(seq "$max_attempts"); do
+            sudo timeout 90 add-apt-repository --yes ppa:apptainer/ppa && break
+            if [[ "$attempt" -eq "$max_attempts" ]]; then
+              exit 1
+            fi
+            sleep 30
+          done
+          sudo apt-get update
+          sudo apt-get install -y apptainer
       - name: print Apptainer version
         run: |
           apptainer --version
