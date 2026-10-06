@@ -91,6 +91,9 @@
 #    executable>, <log>, <compiler executable>).
 # PRETEST: Script to execute before running the test. (arguments: <compiler
 #    executable>).
+# PRETEST_PARALLEL_SAFE: Marks the PRETEST as only modifying its own directory
+#    (no new subdirectories, no shared state), so `start_test --parallel` may
+#    run this directory concurrently with others.
 # PERFNUMTRIALS: Number of trials to run for performance testing
 # SUPPRESSIF: Suppress this test if certain environment conditions hold true
 #
