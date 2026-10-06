@@ -58,12 +58,6 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - name: install fluid and libfltk-dev
-      timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-      run: |
-        apt update && apt install -y \
-          fluid \
-          libfltk-dev
     - name: make chplvis
       run: |
         bash -c 'source ./util/setchplenv.bash && make chplvis'
