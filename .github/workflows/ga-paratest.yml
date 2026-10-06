@@ -376,8 +376,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-      # To delete per-directory result artifacts
-      actions: write
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: checkout
