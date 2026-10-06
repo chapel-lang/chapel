@@ -73,7 +73,7 @@ proc main() {
 // CHECK: v myIntList[1]
 // CHECK-NEXT: (int(64)) [1] = 2
 
-// CHECK: e -- myIntList.pushBack(8)
+// CHECK: expr -- myIntList.pushBack(8)
 // CHECK: p myIntList
 // CHECK-NEXT: (List::list(int(64)
 // CHECK-SAME: size = 4
@@ -93,7 +93,7 @@ proc main() {
 // CHECK: v myRealList[1]
 // CHECK-NEXT: (real(64)) [1] = 2.
 
-// CHECK: e -- myRealList.pushBack(8.8)
+// CHECK: expr -- myRealList.pushBack(8.8)
 // CHECK: p myRealList
 // CHECK-NEXT: (List::list(real(64)
 // CHECK-SAME: size = 4

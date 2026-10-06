@@ -71,7 +71,7 @@ proc main() {
 // CHECK: v myIntMap[1]
 // CHECK: = (key = 6, val = 16)
 
-// CHECK: e -- myIntMap.add(8, 9)
+// CHECK: expr -- myIntMap.add(8, 9)
 // CHECK: p myIntMap
 // CHECK-NEXT: (Map::map(int(64),int(64)
 // CHECK-SAME: size = 4

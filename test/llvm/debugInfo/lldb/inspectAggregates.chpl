@@ -85,7 +85,7 @@ proc main() {
 // CHECK-SAME: size = 1
 // CHECK-NEXT: [0] = (key = 1, val = 2.
 
-// CHECK: e -- myMap.add(2, 17.8)
+// CHECK: expr -- myMap.add(2, 17.8)
 // CHECK: p myMap
 // CHECK-NEXT: (Map::map(int(64),real(64)
 // CHECK-SAME: size = 2
