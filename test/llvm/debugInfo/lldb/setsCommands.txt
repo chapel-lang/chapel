@@ -2,13 +2,13 @@ r
 
 p myIntSet
 v myIntSet[1]
-e -- myIntSet.add(10)
+expr -- myIntSet.add(10)
 p myIntSet
 c
 
 p myRealSet
 v myRealSet[1]
-e -- myRealSet.add(8.8)
+expr -- myRealSet.add(8.8)
 p myRealSet
 c
 
