@@ -1,4 +1,4 @@
-# For valgrind/linux32 testing, activate backend optimizations
+# activate backend optimizations
 # (but don't specialize or turn off bounds checking)
 # in order to make the run time more acceptable
 --optimize
