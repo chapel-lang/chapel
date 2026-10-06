@@ -101,12 +101,12 @@ jobs:
           done
           sudo apt-get update
           sudo apt-get install -y \
-            cpp-$VERSION \
-            g++-$VERSION \
-            gcc-$VERSION \
-            gcc-$VERSION-base \
-            libgcc-$VERSION-dev \
-            libstdc++-$VERSION-dev
+            "cpp-$VERSION" \
+            "g++-$VERSION" \
+            "gcc-$VERSION" \
+            "gcc-$VERSION-base" \
+            "libgcc-$VERSION-dev" \
+            "libstdc++-$VERSION-dev"
 
           sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
@@ -211,7 +211,7 @@ jobs:
           # Work around https://github.com/llvm/llvm-project/issues/62152
           set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
 
-          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
+          sudo ${set_var:+"$set_var"} ./llvm.sh "${{ matrix.llvm_version }}" all
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
