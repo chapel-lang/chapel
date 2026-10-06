@@ -81,7 +81,6 @@ jobs:
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
       - name: Install GCC ${{ matrix.gcc_version }}
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         env:
           VERSION: ${{ matrix.gcc_version }}
         run: |
@@ -168,7 +167,6 @@ jobs:
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -201,7 +199,6 @@ jobs:
     runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-latest' || 'ubuntu-22.04' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -211,7 +208,7 @@ jobs:
           # Work around https://github.com/llvm/llvm-project/issues/62152
           set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
 
-          sudo ${set_var:+"$set_var"} ./llvm.sh "${{ matrix.llvm_version }}" all
+          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default

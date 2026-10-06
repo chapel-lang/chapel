@@ -25,7 +25,6 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 10
   APT_NETWORK_CONF: |
     Acquire::Retries "5";
     Acquire::http::Timeout "30";
@@ -475,7 +474,6 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm@22

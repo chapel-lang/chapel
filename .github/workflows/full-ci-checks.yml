@@ -15,9 +15,8 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 20
   APT_NETWORK_CONF: |
-    Acquire::Retries "10";
+    Acquire::Retries "5";
     Acquire::http::Timeout "30";
     Acquire::https::Timeout "30";
     Acquire::ForceIPv4 "true";
@@ -72,7 +71,6 @@ jobs:
       apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
       - name: install Apptainer
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
