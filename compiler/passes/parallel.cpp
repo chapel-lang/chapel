@@ -108,8 +108,7 @@ static void insertEndCounts();
 static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
 static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn);
-static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
+static void findHeapVarsAndRefs(Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
 static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg, FnSymbol* fn);
 
 static void replaceRecordWrappedRefs();
@@ -928,11 +927,7 @@ buildHeapType(Type* type) {
 //   Otherwise, if it is a record-wrapped type, replicate it.
 //   Otherwise,
 //    Add it to varSet and varVec, so it will be put on the heap.
-static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-
-                                Vec<Symbol*>& varSet,
-                                Vec<Symbol*>& varVec)
-{
+static void findHeapVarsAndRefs(Vec<Symbol*>& varSet, Vec<Symbol*>& varVec) {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
@@ -1002,9 +997,10 @@ makeHeapAllocations() {
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
 
-  findHeapVarsAndRefs(defMap, varSet, varVec);
+  findHeapVarsAndRefs(varSet, varVec);
+
+  buildDefUseMaps(varSet, defMap, useMap);
 
   forv_Vec(Symbol, var, varVec) {
     // MPF: I'm disabling the below assert because PR #5692
@@ -1160,6 +1156,8 @@ makeHeapAllocations() {
     var->type = heapType;
     var->qual = QUAL_VAL;
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
