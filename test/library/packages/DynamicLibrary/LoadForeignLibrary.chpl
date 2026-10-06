@@ -37,7 +37,8 @@ proc test2() {
 proc test3() {
   writeln(Reflection.getRoutineName());
 
-  const lib = try! load('TestCLibrary');
+  // TODO: Is it annoying to have to specify this all the time?
+  const lib = try! load('TestCLibrary', directory='./');
 }
 
 proc test4() {

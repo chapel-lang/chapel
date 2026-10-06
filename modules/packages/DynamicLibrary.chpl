@@ -152,16 +152,14 @@ private proc tryCheckPathComponent(style: PathProperty,
   if !ok {
     const desc = if style == PathProperty.CannotContainSep
                     then 'cannot ' else 'must ';
-    const msg = 'the provided library ' + componentName + '\'' + val + '\'' +
-                desc + ' contain a path separator';
+    const msg = 'the provided library ' + componentName + ' \'' + val +
+                '\' ' + desc + ' contain a path separator';
     throw new IllegalArgumentError(msg);
   }
 }
 
 private proc loadFromPathImpl(path: string) throws {
   var err: owned DynLoadError?;
-
-  writeln('Trying to load: ', path);
 
   const bin = chpl_BinaryInfo.create(path, err);
   if err then throw err;
