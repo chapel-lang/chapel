@@ -446,7 +446,7 @@ static void resolveVarIntent(VarSymbol* sym) {
 
 static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
   FunctionType* ret = ft;
-  std::vector<FunctionType::Formal> newFormals;
+  FunctionType::Formals newFormals;
   bool changed = false;
 
   // TODO: See how 'concreteIntentForArg' handles method receivers. Also need

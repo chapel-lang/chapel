@@ -936,12 +936,11 @@ static bool isInsideTaskWithClause(Expr* expr) {
 void checkUseBeforeDefs(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_RESOLVED_EARLY)) return;
   if (fn->defPoint->parentSymbol) {
-    ModuleSymbol*         mod = fn->getModule();
+    ModuleSymbol* mod = fn->getModule();
 
-    std::set<Symbol*, AstIdLess>     defined;
-
-    std::set<Symbol*, AstIdLess>     undefined;
-    std::set<const char*> undeclared;
+    llvm::SmallPtrSet<Symbol*, 8> defined;
+    llvm::SmallPtrSet<Symbol*, 8> undefined;
+    llvm::SmallPtrSet<const char*, 8> undeclared;
 
     std::vector<BaseAST*> asts;
 
@@ -950,14 +949,13 @@ void checkUseBeforeDefs(FnSymbol* fn) {
     for_vector(BaseAST, ast, asts) {
       if (Symbol* sym = theDefinedSymbol(ast)) {
         defined.insert(sym);
-
       } else if (SymExpr* se = toSymExpr(ast)) {
         Symbol* sym = se->symbol();
 
-        if (isModuleSymbol(sym)                    == true  &&
-            isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false &&
-            isImportStmt(se->parentExpr)           == false) {
+        if (isModuleSymbol(sym)  &&
+            !isFnSymbol(fn->defPoint->parentSymbol) &&
+            !isUseStmt(se->parentExpr) &&
+            !isImportStmt(se->parentExpr)) {
 
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST)) {
@@ -966,20 +964,19 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           }
           SymExpr* prev = toSymExpr(se->prev);
 
-          if (prev == NULL || prev->symbol() != gModuleToken) {
+          if (prev == nullptr || prev->symbol() != gModuleToken) {
             USR_FATAL_CONT(se, "modules (like '%s' here) cannot be called like procedures", sym->name);
           }
 
-        } else if (isLcnSymbol(sym) == true) {
+        } else if (isLcnSymbol(sym)) {
           if (sym->defPoint && sym->defPoint->parentExpr != rootModule->block) {
             Symbol* parent = sym->defPoint->parentSymbol;
 
             if (parent == fn || (parent == mod && mod->initFn == fn)) {
-              if (defined.find(sym)           == defined.end() &&
-
-                  sym->hasFlag(FLAG_ARG_THIS) == false         &&
-                  sym->hasFlag(FLAG_EXTERN)   == false         &&
-                  sym->hasFlag(FLAG_TEMP)     == false) {
+              if (defined.find(sym) == defined.end() &&
+                  !sym->hasFlag(FLAG_ARG_THIS) &&
+                  !sym->hasFlag(FLAG_EXTERN) &&
+                  !sym->hasFlag(FLAG_TEMP)) {
 
                 // Only complain one time
                 if (undefined.find(sym) == undefined.end()) {
@@ -993,7 +990,6 @@ void checkUseBeforeDefs(FnSymbol* fn) {
             }
           }
         }
-
       } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
         CallExpr* call = toCallExpr(use->parentExpr);
         if (call == nullptr && isNamedExpr(use->parentExpr))
@@ -1003,7 +999,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
             (call->baseExpr != use &&
              !call->isPrimitive(PRIM_CAPTURE_FN) &&
              !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
-          if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
+          if (!isFnSymbol(fn->defPoint->parentSymbol)) {
             const char* name = use->unresolved;
 
             // Only complain one time
