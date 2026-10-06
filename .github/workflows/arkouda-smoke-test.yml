@@ -65,12 +65,6 @@ jobs:
         ref: ${{ env.arkouda_version }}
         path: arkouda
         persist-credentials: false
-    - name: apt install some Arkouda deps
-      timeout-minutes: 10
-      run: |
-        apt update && apt install -y \
-          libzmq3-dev \
-          libcurl4-openssl-dev
     - name: set Arkouda env vars
       run: |
         cd arkouda
