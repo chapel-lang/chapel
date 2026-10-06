@@ -23,6 +23,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     cscope \
     curl \
     doxygen \
+    fluid \
     g++ \
     gcc \
     gdb \
@@ -31,8 +32,11 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libclang-19-dev \
     libclang-cpp19-dev \
     libclang-rt-19-dev \
+    libcurl4-openssl-dev \
     libedit-dev \
+    libfltk-dev \
     libprotoc-dev \
+    libzmq3-dev \
     llvm-19 \
     llvm-19-dev \
     llvm-19-tools \
