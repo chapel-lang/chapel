@@ -25,7 +25,11 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 5
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
 
 defaults:
   run:
@@ -58,12 +62,6 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - name: install fluid and libfltk-dev
-      timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-      run: |
-        apt update && apt install -y \
-          fluid \
-          libfltk-dev
     - name: make chplvis
       run: |
         bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -476,12 +474,13 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm@22
           else
-            sudo apt install \
+            sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+            sudo apt-get update
+            sudo apt-get install -y \
               clang \
               libclang-dev \
               libclang-cpp-dev \

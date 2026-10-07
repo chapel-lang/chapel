@@ -882,7 +882,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
                                formal->intent == INTENT_PARAM;
       bool isInitThis        = (fn->isInitializer() || fn->isCopyInit()) &&
                                formal->hasFlag(FLAG_ARG_THIS);
-      bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
+      bool isNewTypeArg      = fn->name == astrNew &&
                                coindex == 0; // first formal/actual
 
       bool promotes          = false;

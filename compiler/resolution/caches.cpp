@@ -27,6 +27,8 @@
 #include "visibleFunctions.h"
 #include "view.h"
 
+#include "llvm/ADT/Hashing.h"
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -237,22 +239,31 @@ SymbolMapScopeCache genericsCache;
 SymbolMapScopeCacheEntry::SymbolMapScopeCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
   fn(ifn), map(*imap) { }
 
+// Order-independent. Entries with a NULL value are skipped because
+// isCacheEntryMatch() treats them the same as missing entries.
+static size_t hashSymbolMap(SymbolMap* map) {
+  size_t h = 0;
+  form_Map(SymbolMapElem, e, *map) {
+    if (e->value != NULL)
+      h += llvm::hash_combine(e->key, e->value);
+  }
+  return h;
+}
+
 void
 addCache(SymbolMapScopeCache& cache,
          FnSymbol*       oldFn,
          FnSymbol*       fn,
          SymbolMap*      map) {
-  Vec<SymbolMapScopeCacheEntry*>* entries = cache.get(oldFn);
-  SymbolMapScopeCacheEntry*       entry = new SymbolMapScopeCacheEntry(fn, map);
+  SymbolMapScopeCacheBuckets* buckets = cache.get(oldFn);
+  SymbolMapScopeCacheEntry*   entry   = new SymbolMapScopeCacheEntry(fn, map);
 
-  if (entries) {
-    entries->add(entry);
-
-  } else {
-    entries = new Vec<SymbolMapScopeCacheEntry*>();
-    entries->add(entry);
-    cache.put(oldFn, entries);
+  if (buckets == NULL) {
+    buckets = new SymbolMapScopeCacheBuckets();
+    cache.put(oldFn, buckets);
   }
+
+  (*buckets)[hashSymbolMap(map)].push_back(entry);
 }
 
 
@@ -261,13 +272,15 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo,
 
 FnSymbol*
 checkCache(SymbolMapScopeCache& cache, FnSymbol* oldFn,
-           VisibilityInfo* visInfo, SymbolMap* map)
-{
-  if (Vec<SymbolMapScopeCacheEntry*>* entries = cache.get(oldFn)) {
-    forv_Vec(SymbolMapScopeCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(map, &entry->map) &&
-          (visInfo == NULL || isApplicableInstantiation(*visInfo, entry->fn)) )
-        return entry->fn;
+           VisibilityInfo* visInfo, SymbolMap* map) {
+  if (SymbolMapScopeCacheBuckets* buckets = cache.get(oldFn)) {
+    auto it = buckets->find(hashSymbolMap(map));
+    if (it != buckets->end()) {
+      for (SymbolMapScopeCacheEntry* entry: it->second) {
+        if (isCacheEntryMatch(map, &entry->map) &&
+            (visInfo == NULL || isApplicableInstantiation(*visInfo, entry->fn)))
+          return entry->fn;
+      }
     }
   }
 
@@ -278,8 +291,10 @@ checkCache(SymbolMapScopeCache& cache, FnSymbol* oldFn,
 void
 freeCache(SymbolMapScopeCache& cache) {
   form_Map(SymbolMapScopeCacheElem, elem, cache) {
-    forv_Vec(SymbolMapScopeCacheEntry, entry, *elem->value) {
-      delete entry;
+    for (auto& bucket: *elem->value) {
+      for (SymbolMapScopeCacheEntry* entry: bucket.second) {
+        delete entry;
+      }
     }
     delete elem->value;
   }

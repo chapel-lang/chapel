@@ -38,6 +38,9 @@
 #include "optimizations.h"
 #include "WhileStmt.h"
 
+#include <algorithm>
+#include <unordered_map>
+
 #include "global-ast-vecs.h"
 
 #include <algorithm>
@@ -1158,6 +1161,78 @@ static bool containsSynchronizationVar(BaseAST* ast) {
 // value forwarding. It would be a good idea to unify
 // the two implementations.
 
+// Memoizes whether a function or anything it transitively calls contains a
+// synchronization variable. Computed with Tarjan's SCC algorithm
+class SyncVarReachability {
+public:
+  bool reaches(FnSymbol* fn) {
+    auto it = result.find(fn);
+    if (it != result.end()) return it->second;
+    visit(fn);
+    return result[fn];
+  }
+
+  void clear() {
+    result.clear();
+  }
+
+private:
+  struct NodeInfo {
+    int  index;
+    int  low;
+    bool reach;
+  };
+
+  std::unordered_map<FnSymbol*, bool>     result;
+  std::unordered_map<FnSymbol*, NodeInfo> info;
+  std::vector<FnSymbol*>                  stack;
+  int                                     nextIndex = 0;
+
+  void visit(FnSymbol* fn) {
+    info[fn] = { nextIndex, nextIndex, containsSynchronizationVar(fn) };
+    nextIndex++;
+    stack.push_back(fn);
+
+    llvm::SmallVector<FnSymbol*, 8> targets;
+    collectCallTargets(fn->body, targets);
+
+    for (FnSymbol* target: targets) {
+      auto done = result.find(target);
+      if (done != result.end()) {
+        info[fn].reach |= done->second;
+      } else if (info.find(target) == info.end()) {
+        visit(target);
+        auto doneNow = result.find(target);
+        if (doneNow != result.end()) {
+          info[fn].reach |= doneNow->second;
+        } else {
+          info[fn].low = std::min(info[fn].low, info[target].low);
+        }
+      } else {
+        // target is on the stack, i.e. in the current SCC
+        info[fn].low = std::min(info[fn].low, info[target].index);
+      }
+    }
+
+    if (info[fn].low == info[fn].index) {
+      size_t start = stack.size();
+      bool reach = false;
+      do {
+        start--;
+        reach |= info[stack[start]].reach;
+      } while (stack[start] != fn);
+
+      for (size_t i = start; i < stack.size(); i++) {
+        result[stack[i]] = reach;
+        info.erase(stack[i]);
+      }
+      stack.resize(start);
+    }
+  }
+};
+
+static SyncVarReachability sSyncVarReachability;
+
 /*
  * Checks if a loop can have loop invariant code motion
  * performed on it. Specifically we do not want to hoist
@@ -1172,19 +1247,17 @@ static bool canPerformCodeMotion(Loop* loop) {
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
 
-      //Check for nested function calls containing
-      //synchronization variables
-      std::set<FnSymbol*, AstIdLess> fnSymbols;
-      collectUsedFnSymbols(expr, fnSymbols);
-      for_set(FnSymbol, fnSymbol2, fnSymbols) {
-        if(containsSynchronizationVar(fnSymbol2)) {
+      // Check for nested function calls containing synchronization variables
+      llvm::SmallVector<FnSymbol*, 8> targets;
+      collectCallTargets(expr, targets);
+      for (FnSymbol* target : targets) {
+        if (sSyncVarReachability.reaches(target)) {
           return false;
         }
       }
 
-      //Check if there are any synchronization variables
-      //in the current expr
-      if(containsSynchronizationVar(expr)) {
+      // Check if there are any synchronization variables in the current expr
+      if (containsSynchronizationVar(expr)) {
         return false;
       }
     }
@@ -1303,16 +1376,20 @@ static void licmFn(FnSymbol* fn) {
 }
 
 static void loopInvariantCodeMotionImpl(void) {
-  if(fNoLoopInvariantCodeMotion) {
+  if (fNoLoopInvariantCodeMotion) {
     return;
   }
 
   startTimer(overallTimer);
 
+  sSyncVarReachability.clear();
+
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     licmFn(fn);
   }
+
+  sSyncVarReachability.clear();
 
   stopTimer(overallTimer);
 

@@ -1036,6 +1036,8 @@ void saveGenericSubstitutions() {
 }
 
 void pruneResolvedTree() {
+  clearIteratorFormalCache();
+
   cleanupConstrainedGenerics();
 
   removeTiMarks();
@@ -1081,4 +1083,6 @@ void pruneResolvedTree() {
   removeStaleFunctionTypes();
 
   cleanupAfterRemoves();
+
+  clearIteratorFormalCache();
 }

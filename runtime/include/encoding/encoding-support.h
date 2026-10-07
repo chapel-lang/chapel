@@ -83,6 +83,12 @@ int chpl_enc_decode_char_buf_utf8(int32_t* CHPL_ENC_RESTRICT chr,
                                   const char* buf, ssize_t buflen,
                                   bool allow_escape)
 {
+  // early return when reading nothing
+  if (buflen == 0) {
+    *chr = 0;
+    *nbytes = 0;
+    return 0;
+  }
   const char* start = buf;
   const char* end = start + buflen;
   uint32_t codepoint=0, state;
