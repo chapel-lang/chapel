@@ -1,0 +1,13 @@
+#!/bin/sh
+
+outfile=$2
+
+# TODO: find a way to retrieve command-line file names in order to make this
+# prediff generic
+
+# Use diff to compare the files
+if diff -q "colors.png" "colors.good.png" >/dev/null; then
+    echo "Test passed: files match!" >> $outfile
+else
+    echo "Test failed: files do not match!" >> $outfile
+fi
