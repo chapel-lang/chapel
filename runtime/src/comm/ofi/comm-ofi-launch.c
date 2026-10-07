@@ -29,6 +29,7 @@
 #include "chplrt.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
 #include "chpl-prginfo.h"
 
 
