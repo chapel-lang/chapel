@@ -160,8 +160,8 @@ namespace {
     Lifetime borrowed;
   };
 
-  typedef std::map<Symbol*,LifetimePair> SymbolToLifetimeMap;
-  typedef std::map<CallExpr*,LifetimePair> ReturnToLifetimeMap;
+  typedef std::map<Symbol*,LifetimePair, AstIdLess> SymbolToLifetimeMap;
+  typedef std::map<CallExpr*,LifetimePair, AstIdLess> ReturnToLifetimeMap;
 
   /* A DetempGroup stores a group of Symbols that really refer
      to the same variable. The lifetime analysis uses a `detemp`
@@ -196,12 +196,12 @@ namespace {
     { }
   };
 
-  typedef std::map<Symbol*,DetempGroup*> SymbolToDetempGroupMap;
+  typedef std::map<Symbol*, DetempGroup*, AstIdLess> SymbolToDetempGroupMap;
   typedef std::set<DetempGroup*> DetempGroupSet;
-  typedef std::set<CallExpr*> CallExprSet;
-  typedef std::set<FnSymbol*> LocalFunctionsSet;
-  typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
-  typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
+  typedef std::set<CallExpr*, AstIdLess> CallExprSet;
+  typedef std::set<FnSymbol*, AstIdLess> LocalFunctionsSet;
+  typedef std::map<Symbol*, DeinitOrderNode, AstIdLess> DeinitOrderMap;
+  typedef std::map<Stmt*, DeinitOrderNode, AstIdLess> DeinitOrderBlockMap;
 
   enum struct LifetimeComparisonResult {
     UNKNOWN, // means it could be either/both (possible in a conditional)
@@ -337,7 +337,7 @@ namespace {
 
     public:
       LifetimeState* lifetimes;
-      std::set<Symbol*> erroredSymbols; // to avoid duplicate errors
+      std::set<Symbol*, AstIdLess> erroredSymbols; // to avoid duplicate errors
 
       bool enterCallExpr(CallExpr* call) override;
 
@@ -953,9 +953,7 @@ static void printLifetimeState(LifetimeState* state)
 {
   printf("Lifetime state:\n");
   printf("detemps:\n");
-  for (SymbolToDetempGroupMap::iterator it = state->detemp.begin();
-       it != state->detemp.end();
-       ++it) {
+  for (auto it = state->detemp.begin(); it != state->detemp.end(); ++it) {
     Symbol* key = it->first;
     DetempGroup* value = it->second;
     Symbol* favorite = value->favorite;
@@ -966,9 +964,7 @@ static void printLifetimeState(LifetimeState* state)
   }
 
   printf("deinit orders:\n");
-  for (DeinitOrderMap::iterator it = state->order.begin();
-       it != state->order.end();
-       ++it) {
+  for (auto it = state->order.begin(); it != state->order.end(); ++it) {
     Symbol* key = it->first;
     DeinitOrderNode& value = it->second;
 
@@ -977,9 +973,7 @@ static void printLifetimeState(LifetimeState* state)
   }
 
   printf("deinit blockOrders:\n");
-  for (DeinitOrderBlockMap::iterator it = state->blockOrder.begin();
-       it != state->blockOrder.end();
-       ++it) {
+  for (auto it = state->blockOrder.begin(); it != state->blockOrder.end(); ++it) {
     Stmt* key = it->first;
     DeinitOrderNode& value = it->second;
 
@@ -988,7 +982,7 @@ static void printLifetimeState(LifetimeState* state)
   }
 
   printf("intrinsic lifetimes:\n");
-  for (SymbolToLifetimeMap::iterator it = state->intrinsicLifetime.begin();
+  for (auto it = state->intrinsicLifetime.begin();
        it != state->intrinsicLifetime.end();
        ++it) {
     Symbol* key = it->first;
@@ -999,7 +993,7 @@ static void printLifetimeState(LifetimeState* state)
   }
 
   printf("inferred lifetimes:\n");
-  for (SymbolToLifetimeMap::iterator it = state->inferredLifetime.begin();
+  for (auto it = state->inferredLifetime.begin();
        it != state->inferredLifetime.end();
        ++it) {
     Symbol* key = it->first;
@@ -1014,9 +1008,7 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
   if (debugOutputOnError) {
     printf("Stopping due to debugOutputOnError\n");
     printf("Analyzed functions:\n");
-    for (LocalFunctionsSet::iterator it = state->inFns.begin();
-       it != state->inFns.end();
-       ++it) {
+    for (auto it = state->inFns.begin(); it != state->inFns.end(); ++it) {
       FnSymbol* inFn = *it;
       nprint_view(inFn);
     }
@@ -1040,17 +1032,13 @@ LifetimeState::~LifetimeState() {
 
   // First, gather them, not counting duplicates
   DetempGroupSet set;
-  for (SymbolToDetempGroupMap::iterator it = detemp.begin();
-       it != detemp.end();
-       ++it) {
+  for (auto it = detemp.begin(); it != detemp.end(); ++it) {
     DetempGroup* value = it->second;
     set.insert(value);
   }
 
   // Now, delete them
-  for (DetempGroupSet::iterator it = set.begin();
-       it != set.end();
-       ++it) {
+  for (auto it = set.begin(); it != set.end(); ++it) {
     DetempGroup* value = *it;
     delete value;
   }
@@ -1548,9 +1536,7 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
     // This intentionally copies the elements to a local buffer
     std::vector<Symbol*> elts = other->elements;
     // Move each element to the group
-    for (std::vector<Symbol*>::iterator it = elts.begin();
-         it != elts.end();
-         ++it) {
+    for (auto it = elts.begin(); it != elts.end(); ++it) {
       Symbol* value = *it;
       addSymbolToDetempGroup(value, group);
       map[value] = group;
@@ -2895,7 +2881,7 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
 
 
 void EmitLifetimeErrorsVisitor::emitErrors() {
-  for (SymbolToLifetimeMap::iterator it = lifetimes->inferredLifetime.begin();
+  for (auto it = lifetimes->inferredLifetime.begin();
        it != lifetimes->inferredLifetime.end();
        ++it) {
     Symbol* key = it->first;
@@ -3457,7 +3443,7 @@ LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
 }
 
 DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
-  DeinitOrderMap::iterator it = order.find(sym);
+  auto it = order.find(sym);
   if (it != order.end())
     return &it->second;
 
@@ -3467,7 +3453,7 @@ DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
   if (block == NULL && isArgSymbol(sym))
     block = sym->defPoint->getFunction()->body;
 
-  DeinitOrderBlockMap::iterator it2 = blockOrder.find(block);
+  auto it2 = blockOrder.find(block);
   INT_ASSERT(it2 != blockOrder.end());
   return &it2->second;
 }

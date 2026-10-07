@@ -25,6 +25,7 @@
 #include "alist.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/DenseSet.h"
 
 #include <functional>
 #include <vector>
@@ -58,7 +59,7 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
 // Given a detupled tuple 'sym', collect all its components.
-std::set<Symbol*> findAllDetupledComponents(Symbol* sym);
+std::set<Symbol*, AstIdLess> findAllDetupledComponents(Symbol* sym);
 
 // collect children asts in _an_ order. Today this is preorder
 // but callsites should transition to using collect_asts_{pre,post,un}order
@@ -134,7 +135,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 // collect set of symbols
 //
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
-void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*, AstIdLess>& symSet);
 void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet);
 
 
@@ -250,7 +251,9 @@ bool givesType(Symbol* sym);
 bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call);
 
 Symbol* getSvecSymbol(CallExpr* call);
-void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
+void collectUsedFnSymbols(BaseAST* ast, llvm::DenseSet<FnSymbol*>& fnSymbols);
+// came as collectUsedFnSymbols, but does not follow them transitively
+void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets);
 
 void cleanupAfterTypeRemoval();
 

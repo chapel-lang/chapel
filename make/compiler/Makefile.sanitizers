@@ -46,7 +46,7 @@ ifneq ($(CHPL_MAKE_SANITIZE), none)
   # flag for this (or have a 'function' option), but clang does, so we disable
   # it for clang only.
   ifeq ($(CHPL_MAKE_SANITIZE), undefined)
-  ifeq ($(CHPL_MAKE_CC), clang)
+  ifeq ($(CHPL_MAKE_COMPILER), clang)
   SANITIZER_CFLAGS += -fno-sanitize=function
   SANITIZER_LDFLAGS += -fno-sanitize=function
   endif

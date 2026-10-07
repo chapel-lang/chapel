@@ -75,9 +75,9 @@ namespace {
 using SharedFcfSuperInfo = std::shared_ptr<FcfSuperInfo>;
 
 static std::map<const char*, SharedFcfSuperInfo> superNameToInfo;
-static std::map<Type*, SharedFcfSuperInfo> typeToInfo;
-static std::map<FnSymbol*, FnSymbol*> payloadToSharedParentFactory;
-static std::map<FnSymbol*, bool> payloadToResolved;
+static std::map<Type*, SharedFcfSuperInfo, AstIdLess> typeToInfo;
+static std::map<FnSymbol*, FnSymbol*, AstIdLess> payloadToSharedParentFactory;
+static std::map<FnSymbol*, bool, AstIdLess> payloadToResolved;
 static const char* superTypePrefix = "chpl_fcf_";
 
 static int uniqueFcfId = 0;
@@ -847,7 +847,7 @@ namespace fcfs {
 
 // This visitor will collect all the uses of outer variables in a function.
 struct OuterVariableCollector : public AstVisitorTraverse {
-  using OuterVarToMentionMap = std::map<Symbol*, std::vector<SymExpr*>>;
+  using OuterVarToMentionMap = std::map<Symbol*, std::vector<SymExpr*>, AstIdLess>;
 
   FnSymbol* owner_;
   std::vector<Symbol*>& outerVariables_;
@@ -1142,7 +1142,7 @@ std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {
   return ret;
 }
 
-static std::map<FnSymbol*, ClosureEnv> fnToEnv;
+static std::map<FnSymbol*, ClosureEnv, AstIdLess> fnToEnv;
 
 const ClosureEnv& computeOuterVariables(FnSymbol* fn) {
   auto it = fnToEnv.find(fn);

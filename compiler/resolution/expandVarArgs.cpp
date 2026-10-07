@@ -149,17 +149,13 @@ static int       varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
   bool      isQueryVariable = false;
-  FnSymbol* retval          = NULL;
+  FnSymbol* retval          = nullptr;
 
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
-      if (isDefExpr(formal->variableExpr->body.tail) == true) {
-        isQueryVariable = true;
-      } else if (SymExpr* se = toSymExpr(formal->variableExpr->body.tail)) {
-        if (se->symbol() == gUninstantiated) {
-          isQueryVariable = true;
-        }
-      }
+    if (formal->variableExpr != nullptr) {
+      isQueryVariable |= isDefExpr(formal->variableExpr->body.tail);
+      auto se = toSymExpr(formal->variableExpr->body.tail);
+      isQueryVariable |= se && se->symbol() == gUninstantiated;
 
       numVarArgs = numVarArgs + 1;
     }
@@ -867,13 +863,13 @@ static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
 *                                                                             *
 ************************************** | *************************************/
 
-typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
+typedef std::map<FnSymbol*, std::vector<FnSymbol*>*, AstIdLess> ExpandVarArgsMap;
 
 static ExpandVarArgsMap sCache;
 
 static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
-  ExpandVarArgsMap::iterator it     = sCache.find(fn);
-  FnSymbol*                  retval = NULL;
+  auto it = sCache.find(fn);
+  FnSymbol* retval = NULL;
 
   if (it != sCache.end()) {
     std::vector<FnSymbol*>* fns = it->second;
@@ -889,7 +885,7 @@ static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
 }
 
 static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
-  ExpandVarArgsMap::iterator it = sCache.find(fn);
+  auto it = sCache.find(fn);
 
   if (it != sCache.end()) {
     it->second->push_back(expansion);

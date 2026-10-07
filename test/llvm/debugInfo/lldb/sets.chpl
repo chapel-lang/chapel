@@ -72,7 +72,7 @@ proc main() {
 // CHECK: v myIntSet[1]
 // CHECK-NEXT: (int(64)) {{.*}} = 2
 
-// CHECK: e -- myIntSet.add(10)
+// CHECK: expr -- myIntSet.add(10)
 // CHECK: p myIntSet
 // CHECK-NEXT: (Set::set(int(64)
 // CHECK-SAME: size = 4
@@ -92,7 +92,7 @@ proc main() {
 // CHECK: v myRealSet[1]
 // CHECK-NEXT: (real(64)) {{.*}} = 1.
 
-// CHECK: e -- myRealSet.add(8.8)
+// CHECK: expr -- myRealSet.add(8.8)
 // CHECK: p myRealSet
 // CHECK-NEXT: (Set::set(real(64)
 // CHECK-SAME: size = 4

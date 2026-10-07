@@ -32,6 +32,10 @@ function memleaks_log()
 
 function save_memleaks_log()
 {
+    if [ -n "${CHPL_NIGHTLY_DO_NOTHING:-}" ]; then
+        return
+    fi
+
     local tests=$1
     local logfile=$(memleaks_log $tests)
     local abs_logfile=${CHPL_NIGHTLY_TMPDIR:-${TMPDIR:-/tmp}}/$logfile

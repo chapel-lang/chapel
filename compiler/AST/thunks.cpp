@@ -46,7 +46,7 @@ class LowerThunkPrimsVisitor final : public AstVisitorTraverse
     bool enterCallExpr(CallExpr* node) override;
 };
 
-static void collectThunkOuterVars(Expr* expr, std::set<Symbol*>& outerVars) {
+static void collectThunkOuterVars(Expr* expr, std::set<Symbol*, AstIdLess>& outerVars) {
   std::vector<SymExpr*> uses;
   collectSymExprs(expr, uses);
   for (auto use : uses) {
@@ -60,7 +60,7 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   CHPL_ASSERT(node->numActuals() == 1);
   auto delayedExpr = node->get(1);
 
-  std::set<Symbol*> outerVars;
+  std::set<Symbol*, AstIdLess> outerVars;
   collectThunkOuterVars(delayedExpr, outerVars);
 
   static int thunkUid = 0;

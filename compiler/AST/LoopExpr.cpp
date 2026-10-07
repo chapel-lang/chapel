@@ -613,7 +613,7 @@ bool considerForOuter(Symbol* sym) {
 // outer variables for iterator-functions, can we leverage that?
 static void findOuterVars(LoopExpr* loopExpr,
                           BlockStmt* primsFromAttrs,
-                          std::set<Symbol*>& outerVars) {
+                          std::set<Symbol*, AstIdLess>& outerVars) {
   std::vector<SymExpr*> uses;
 
   collectSymExprs(loopExpr->loopBody, uses);
@@ -656,7 +656,7 @@ ArgSymbol* newOuterVarArg(Symbol* ovar) {
 //
 static CallExpr* buildCallAndArgs(FnSymbol* fn,
                                   Expr* iteratorExpr,
-                                  std::set<Symbol*>& outerVars,
+                                  std::set<Symbol*, AstIdLess>& outerVars,
                                   SymbolMap* outerMap,
                                   ArgSymbol** iteratorExprArg) {
 
@@ -692,7 +692,7 @@ static CallExpr* buildCallAndArgs(FnSymbol* fn,
 // when we choose between serial or leader/follower.
 //
 static void addOuterVariableFormals(FnSymbol* ifn,
-                                    std::set<Symbol*>& outerVars) {
+                                    std::set<Symbol*, AstIdLess>& outerVars) {
   if (outerVars.size() == 0)
     return; // nothing to do
 
@@ -750,7 +750,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     primsFromAttrs = attrBlock->getPrimitivesBlock()->copy();
   }
 
-  std::set<Symbol*> outerVars;
+  std::set<Symbol*, AstIdLess> outerVars;
   findOuterVars(loopExpr, primsFromAttrs, outerVars);
 
   // We need the individual pieces of loopExpr. We want to keep loopExpr itself

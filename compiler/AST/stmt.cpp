@@ -67,11 +67,9 @@ bool VisibilityStmt::isARenamedSym(const char* name) const {
 }
 
 const char* VisibilityStmt::getRenamedSym(const char* name) const {
-  std::map<const char*, const char*>::const_iterator it;
-  const char*                                        retval = NULL;
+  const char* retval = NULL;
 
-  it = renamed.find(name);
-
+  auto it = renamed.find(name);
   if (it != renamed.end()) {
     retval = it->second;
   }
@@ -133,12 +131,10 @@ void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
 *                                                                             *
 ************************************** | *************************************/
 void VisibilityStmt::validateRenamed() {
-  std::map<const char*, const char*>::iterator it;
-
   BaseAST*            scopeToUse = getSearchScope();
   const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
-  for (it = renamed.begin(); it != renamed.end(); ++it) {
+  for (auto it = renamed.begin(); it != renamed.end(); ++it) {
     std::vector<Symbol*> symbols;
 
     scope->getFields(it->second, symbols);
@@ -177,10 +173,8 @@ void VisibilityStmt::validateRenamed() {
 *                                                                             *
 ************************************** | *************************************/
 void VisibilityStmt::noRepeatsInRenamed() const {
-  std::map<const char*, const char*>::const_iterator it2;
-
-  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
-    std::map<const char*, const char*>::const_iterator next = it2;
+  for (auto it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
+    auto next = it2;
 
     for (++next; next != renamed.end(); ++next) {
       if (strcmp(it2->second, next->second) == 0) {
@@ -1396,8 +1390,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bo
   if (renames->size() > 0) {
     // The new names of symbols in the module being used, to avoid conflicts
     // for instance.
-    for (std::map<const char*, const char*>::iterator it = renames->begin();
-         it != renames->end(); ++it) {
+    for (auto it = renames->begin(); it != renames->end(); ++it) {
       renamed[it->first] = astr(it->second);
     }
   }

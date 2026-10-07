@@ -96,8 +96,7 @@ ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
   if (renamesMap->size() > 0) {
     // Symbols to enable unqualified access to with a different name than the
     // name with which they were originally declared
-    for (std::map<const char*, const char*>::iterator it = renamesMap->begin();
-         it != renamesMap->end(); ++it) {
+    for (auto it = renamesMap->begin(); it != renamesMap->end(); ++it) {
       renamed[it->first] = it->second;
     }
   }
@@ -148,9 +147,7 @@ void ImportStmt::verify() {
     INT_ASSERT(name == astr(name));
   }
 
-  for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
-       it != renamed.end();
-       ++it) {
+  for (auto it = renamed.begin(); it != renamed.end(); ++it) {
     INT_ASSERT(it->first == astr(it->first));
     INT_ASSERT(it->second == astr(it->second));
   }
@@ -334,12 +331,9 @@ void ImportStmt::validateList() {
 }
 
 void ImportStmt::noRepeats() const {
-  std::vector<const char*>::const_iterator           it1;
 
-  for (it1 = unqualified.begin(); it1 != unqualified.end(); ++it1) {
-    std::vector<const char*>::const_iterator next = it1;
-    std::map<const char*, const char*>::const_iterator rit;
-
+  for (auto it1 = unqualified.begin(); it1 != unqualified.end(); ++it1) {
+    auto next = it1;
     for (++next; next != unqualified.end(); ++next) {
       // Check rest of named for the same name
       if (strcmp(*it1, *next) == 0) {
@@ -347,7 +341,7 @@ void ImportStmt::noRepeats() const {
       }
     }
 
-    for (rit = renamed.begin(); rit != renamed.end(); ++rit) {
+    for (auto rit = renamed.begin(); rit != renamed.end(); ++rit) {
       if (strcmp(*it1, rit->second) == 0) {
         // This identifier is also used as the old name for a renaming.
         // Probably a mistake on the user's part, but not a catastrophic one
@@ -445,9 +439,7 @@ void ImportStmt::typeWasNamed(Type* t,
     }
 
     // Including if it was renamed
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end();
-        ++it) {
+    for (auto it = renamed.begin(); it != renamed.end(); ++it) {
       if (name == it->first) {
         // Save the original name because we'll be looking in its scope
         namedTypes->insert(it->second);
@@ -485,9 +477,7 @@ bool ImportStmt::skipSymbolSearch(const char* name) const {
         return false;
     }
 
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end();
-        ++it) {
+    for(auto it = renamed.begin(); it != renamed.end(); ++it) {
       if (astr(name) == astr(it->first)) {
         return false;
       }
@@ -581,17 +571,14 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
       }
     }
 
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end(); ++it) {
+    for(auto it = renamed.begin(); it != renamed.end(); ++it) {
       // Don't check against other's only list.  A renamed version of
       // something in their only list is a new symbol
       // Do check against other's renamed list.  If both uses cause the exact
       // same rename to occur, we should count it.
-      for (std::map<const char*, const char*>::const_iterator otherIt =
-             other->renamed.begin();
-           otherIt != other->renamed.end(); ++otherIt) {
-        if (astr(it->first) ==  astr(otherIt->first) &&
-            astr(it->second) == astr(otherIt->second)) {
+      for (auto it2 = other->renamed.begin(); it2 != other->renamed.end(); ++it2) {
+        if (astr(it->first) ==  astr(it2->first) &&
+            astr(it->second) == astr(it2->second)) {
           numSame++;
         }
       }
@@ -634,17 +621,14 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
         }
       }
 
-      for(std::map<const char*, const char*>::const_iterator it =
-            renamed.begin(); it != renamed.end(); ++it) {
+      for(auto it = renamed.begin(); it != renamed.end(); ++it) {
         // Don't check against other's unqualified list.  A renamed version of
         // something in their unqualified list is a new symbol
         // Do check against other's renamed list.  If both uses cause the exact
         // same rename to occur, we should count it.
-        for (std::map<const char*, const char*>::const_iterator otherIt =
-               other->renamed.begin();
-             otherIt != other->renamed.end(); ++otherIt) {
-          if (strcmp(it->first,  otherIt->first)  == 0 &&
-              strcmp(it->second, otherIt->second) == 0) {
+        for (auto it2 = other->renamed.begin(); it2 != other->renamed.end(); ++it2) {
+          if (strcmp(it->first,  it2->first)  == 0 &&
+              strcmp(it->second, it2->second) == 0) {
             numSame++;
           }
         }
@@ -692,8 +676,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
 
     std::map<const char*, const char*> newRenamed;
 
-    for (std::map<const char*, const char*>::iterator it = renamed.begin();
-         it != renamed.end(); ++it) {
+    for (auto it = renamed.begin(); it != renamed.end(); ++it) {
       if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
           outer->named.end()) {
         // We didn't find the new name in the list to exclude, so the rename
@@ -738,9 +721,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
         newUnqualifiedList.push_back(includeMe);
 
       } else {
-        std::map<const char*, const char*>::iterator it =
-          renamed.find(includeMe);
-
+        auto it = renamed.find(includeMe);
         if (it != renamed.end()) {
           // We found this symbol in the renamed list and the outer 'only'
           // list so add it to the new renamed list.
@@ -749,16 +730,14 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       }
     }
 
-    for (std::map<const char*, const char*>::const_iterator it =
-           outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+    for (auto it = outer->renamed.begin(); it != outer->renamed.end(); ++it) {
       if (std::find(unqualified.begin(), unqualified.end(),
                     it->second) != unqualified.end()) {
         // The old name was in our list.  We need to rename it.
         newRenamed[it->first] = it->second;
       } else {
 
-        std::map<const char*, const char*>::const_iterator innerIt =
-          renamed.find(it->second);
+        auto innerIt = renamed.find(it->second);
 
         if (innerIt != renamed.end()) {
           // We found this symbol in the renamed list and the outer
@@ -825,9 +804,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
           newUnqualifiedList.push_back(includeMe);
 
         } else {
-          std::map<const char*, const char*>::iterator it =
-            renamed.find(includeMe);
-
+          auto it = renamed.find(includeMe);
           if (it != renamed.end()) {
             // We found this symbol in the renamed list and the outer
             // list so add it to the new renamed list.
@@ -836,16 +813,14 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
         }
       }
 
-      for (std::map<const char*, const char*>::const_iterator it =
-             outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+      for (auto it = outer->renamed.begin(); it != outer->renamed.end(); ++it) {
         if (std::find(unqualified.begin(), unqualified.end(),
                       it->second) != unqualified.end()) {
           // The old name was in our list.  We need to rename it.
           newRenamed[it->first] = it->second;
         } else {
 
-          std::map<const char*, const char*>::const_iterator innerIt =
-            renamed.find(it->second);
+          auto innerIt = renamed.find(it->second);
 
           if (innerIt != renamed.end()) {
             // We found this symbol in the renamed list and the outer

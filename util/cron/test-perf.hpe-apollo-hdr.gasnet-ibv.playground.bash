@@ -27,22 +27,16 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=1
+SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
 fi
 
-# Test what happens to performance if all references to compiler-generated
-# symbols in the Chapel runtime are replaced with indirect references to
-# the same data that are accessed via struct field reads.
-#
-# E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
-
-GITHUB_USER=dlongnecke-cray
-GITHUB_BRANCH=dynamic-loading-runtime-explore
-SHORT_NAME=runtimeIndirectlyReferencesProgramData
-START_DATE=4/14/26
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=rewrite-vmtable
+SHORT_NAME=rewrite-vmtable
+START_DATE=9/24/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH

@@ -696,8 +696,7 @@ static void moveAndCheckInterfaceConstraints() {
 ************************************** | *************************************/
 
 static void transformLogicalShortCircuit() {
-  std::set<Expr*>           stmts;
-  std::set<Expr*>::iterator iter;
+  std::set<Expr*, AstIdLess> stmts;
 
   // Collect the distinct stmts that contain logical AND/OR expressions
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
@@ -717,8 +716,7 @@ static void transformLogicalShortCircuit() {
   // scope has been wrapped around the do-while before we perform this
   // transform.
   //
-  for (iter = stmts.begin(); iter != stmts.end(); iter++) {
-    Expr* stmt = *iter;
+  for (auto stmt: stmts) {
     TransformLogicalShortCircuit transform;
 
     if (isAlive(stmt)) {
@@ -940,9 +938,9 @@ void checkUseBeforeDefs(FnSymbol* fn) {
   if (fn->defPoint->parentSymbol) {
     ModuleSymbol*         mod = fn->getModule();
 
-    std::set<Symbol*>     defined;
+    std::set<Symbol*, AstIdLess>     defined;
 
-    std::set<Symbol*>     undefined;
+    std::set<Symbol*, AstIdLess>     undefined;
     std::set<const char*> undeclared;
 
     std::vector<BaseAST*> asts;
@@ -1127,7 +1125,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
-static std::set<VarSymbol*> globalTemps;
+static std::set<VarSymbol*, AstIdLess> globalTemps;
 
 static void moveGlobalDeclarationsToModuleScope() {
 
@@ -3796,7 +3794,7 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
-std::set<Symbol*> gAlreadyWarnedGenericFormalSyms;
+std::set<Symbol*, AstIdLess> gAlreadyWarnedGenericFormalSyms;
 
 static bool isDotTypeExpr(Expr* typeExpr) {
   bool dotType = false;

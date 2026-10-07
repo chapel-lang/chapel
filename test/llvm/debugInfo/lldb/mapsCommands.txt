@@ -2,7 +2,7 @@ r
 
 p myIntMap
 v myIntMap[1]
-e -- myIntMap.add(8, 9)
+expr -- myIntMap.add(8, 9)
 p myIntMap
 c
 
