@@ -146,12 +146,10 @@ bool isUsedInArrayGet(Symbol* sym) {
 }
 
 static
-void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
-  std::map<Symbol*, CallExpr*>::iterator it;
-  std::map<Symbol*, CallExpr*>::iterator it2;
+void reportAliases(std::map<Symbol*, CallExpr*, AstIdLess> &noAliasCallsForSymbol) {
 
   if (developer) {
-    for (it = noAliasCallsForSymbol.begin();
+    for (auto it = noAliasCallsForSymbol.begin();
          it != noAliasCallsForSymbol.end();
          ++it) {
       Symbol* sym = it->first;
@@ -180,7 +178,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
   }
 
   // Print out doesn't-alias pairs
-  for (it = noAliasCallsForSymbol.begin();
+  for (auto it = noAliasCallsForSymbol.begin();
        it != noAliasCallsForSymbol.end();
        ++it) {
     Symbol* sym = it->first;
@@ -192,7 +190,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
       INT_ASSERT(call);
     }
 
-    for (it2 = noAliasCallsForSymbol.begin();
+    for (auto it2 = noAliasCallsForSymbol.begin();
          it2 != noAliasCallsForSymbol.end();
          ++it2) {
       Symbol* otherSym = it2->first;
@@ -290,7 +288,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
 
 static
 void addNoAliasSetsInFn(FnSymbol* fn) {
-  std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
+  std::map<Symbol*, CallExpr*, AstIdLess> noAliasCallsForSymbol;
   CallExpr* lastNoAliasCall = NULL;
   CallExpr* noop = NULL;
 
@@ -377,10 +375,8 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
     // For every other thing in the map, add an entry
     //  - includes local array value variables
     //  - includes array arguments
-    std::map<Symbol*, CallExpr*>::iterator it;
-    for (it = noAliasCallsForSymbol.begin();
-        it != noAliasCallsForSymbol.end();
-        ++it) {
+    for (auto it = noAliasCallsForSymbol.begin();
+              it != noAliasCallsForSymbol.end(); ++it) {
       Symbol* otherSym = it->first;
       if (otherSym != var) {
         if (ArgSymbol* arg = toArgSymbol(otherSym)) {
@@ -570,13 +566,13 @@ BitVec makeBitVec(int size) {
 //
 // returns true if it changed something
 static
-bool addAlias(std::map<Symbol*, BitVec> &map,
+bool addAlias(std::map<Symbol*, BitVec, AstIdLess> &map,
               int bitVecSize,
               Symbol* sym,
               int index) {
 
   bool changed = false;
-  std::map<Symbol*, BitVec>::iterator it = map.find(sym);
+  auto it = map.find(sym);
 
   INT_ASSERT(index < bitVecSize);
 
@@ -595,13 +591,13 @@ bool addAlias(std::map<Symbol*, BitVec> &map,
 }
 
 static
-bool addAliases(std::map<Symbol*, BitVec> &map,
+bool addAliases(std::map<Symbol*, BitVec, AstIdLess> &map,
                 int bitVecSize,
                 Symbol* sym,
                 BitVec& from) {
 
   bool changed = false;
-  std::map<Symbol*, BitVec>::iterator it = map.find(sym);
+  auto it = map.find(sym);
 
   if (it == map.end()) {
     it = map.insert(std::make_pair(sym, makeBitVec(bitVecSize))).first;
@@ -632,14 +628,14 @@ void computeNoAliasSets() {
   // These are the main results of this function
 
   // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
-  std::map<Symbol*, BitVec> formalsAliasingGlobals;
+  std::map<Symbol*, BitVec, AstIdLess> formalsAliasingGlobals;
 
   // set ArgSymbol where we gave up on analysis
-  std::set<ArgSymbol*> formalsAliasingAnything;
+  std::set<ArgSymbol*, AstIdLess> formalsAliasingAnything;
 
   // map from FnSymbol -> BitVec of size nFormalPairs,
   //   storing pairs of arguments that can alias
-  std::map<Symbol*, BitVec> fpairs;
+  std::map<Symbol*, BitVec, AstIdLess> fpairs;
 
 
   // reused a few times in this function
@@ -647,7 +643,7 @@ void computeNoAliasSets() {
 
   // First, compute global variables that have their address taken.
   // The analysis will establish when these can alias ref arguments.
-  std::map<Symbol*, int> addrTakenGlobalsToIds;
+  std::map<Symbol*, int, AstIdLess> addrTakenGlobalsToIds;
 
   {
     int id = 1;
@@ -719,7 +715,7 @@ void computeNoAliasSets() {
   // f1 is passed to f2 in a call q(...) inside of the body of p.
   // See Kennedy p 564
 
-  std::map<ArgSymbol*, std::set<ArgSymbol*> > bindingGraph;
+  std::map<ArgSymbol*, std::set<ArgSymbol*, AstIdLess>, AstIdLess> bindingGraph;
 
   for_alive_in_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
@@ -770,11 +766,9 @@ void computeNoAliasSets() {
   do {
     lastiter = niters == maxiters;
     changed = false;
-    std::map<ArgSymbol*, std::set<ArgSymbol*> >::const_iterator it;
-
-    for (it = bindingGraph.begin(); it != bindingGraph.end(); ++it) {
+    for (auto it = bindingGraph.begin(); it != bindingGraph.end(); ++it) {
       ArgSymbol* f1 = it->first;
-      const std::set<ArgSymbol*> &toSet = it->second;
+      const auto& toSet = it->second;
       for_set(ArgSymbol, f2, toSet) {
         // Propagate alias information from f1 to f2
 
@@ -789,8 +783,7 @@ void computeNoAliasSets() {
         // propagate aliases to globals
         {
           bool newGlobals = false;
-          std::map<Symbol*, BitVec>::iterator it =
-            formalsAliasingGlobals.find(f1);
+          auto it = formalsAliasingGlobals.find(f1);
           if (it != formalsAliasingGlobals.end()) {
             BitVec &fromBits = it->second;
             newGlobals = addAliases(formalsAliasingGlobals,
@@ -1000,16 +993,15 @@ void computeNoAliasSets() {
                   pairCanAlias = true;
 
                 // Does (idx1,idx2) appear in fpairs(p) ?
-                std::map<Symbol*, BitVec>::iterator it = fpairs.find(p);
+                auto it = fpairs.find(p);
                 if (it != fpairs.end()) {
                   BitVec &bits = it->second;
                   if (bits.get(maxFormals*idx1 + idx2))
                     pairCanAlias = true;
                 }
                 // Is formalsAliasingGlobals non-intersecting?
-                std::map<Symbol*, BitVec>::iterator it2;
                 it = formalsAliasingGlobals.find(formal1);
-                it2 = formalsAliasingGlobals.find(formal2);
+                auto it2 = formalsAliasingGlobals.find(formal2);
                 if (it != formalsAliasingGlobals.end() &&
                     it2 != formalsAliasingGlobals.end()) {
                   BitVec &bits1 = it->second;

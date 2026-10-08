@@ -68,19 +68,19 @@ public:
 
   void                     insertAutoDestroys(FnSymbol* fn,
                                               Expr*     refStmt,
-                                              const std::set<VarSymbol*>& ignored);
+                                              const std::set<VarSymbol*, AstIdLess>& ignored);
 
   void                     destroyVariable(Expr* after, VarSymbol* var,
-                                           const std::set<VarSymbol*>& ignored);
+                                           const std::set<VarSymbol*, AstIdLess>& ignored);
 
 private:
   void                     variablesDestroy(Expr*      refStmt,
                                             VarSymbol* excludeVar,
-                                            const std::set<VarSymbol*>& ignored,
+                                            const std::set<VarSymbol*, AstIdLess>& ignored,
                                             AutoDestroyScope* startingScope) const;
 
   void                     destroyOuterVariables(Expr* before,
-                                                 std::set<VarSymbol*>& ignored) const;
+                                                 std::set<VarSymbol*, AstIdLess>& ignored) const;
 
   // Returns true if the variable has already been initialized - and
   // has not already been deinitialized - in this or a parent scope.
@@ -105,11 +105,11 @@ private:
   // in initialization order.
 
   // Which variables are declared in this scope?
-  std::set<VarSymbol*>     mDeclaredVars;
+  std::set<VarSymbol*, AstIdLess>     mDeclaredVars;
 
   // Which variables have been initialized in this scope
   // (possibly including outer variables)?
-  std::set<VarSymbol*>     mInitedVars;
+  std::set<VarSymbol*, AstIdLess>     mInitedVars;
 
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.
@@ -117,7 +117,7 @@ private:
 
   // Which variables have been deinitialized early in this scope
   // (possibly including outer variables)?
-  std::set<VarSymbol*>     mDeinitedVars;
+  std::set<VarSymbol*, AstIdLess>     mDeinitedVars;
 };
 
 #endif

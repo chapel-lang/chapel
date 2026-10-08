@@ -21,5 +21,6 @@
 #include <map>
 
 class BaseAST;
+struct AstIdLess;
 
-void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst);
+void lateConstCheck(std::map<BaseAST*, BaseAST*, AstIdLess>* reasonNotConst);

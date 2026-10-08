@@ -3,21 +3,21 @@ class Chapel < Formula
 
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/2.9.0/chapel-2.9.0.tar.gz"
-  sha256 "d91ececfc070f0e94c979dd08cdd3f6da84db4ee48fe06f3187ad259ea9553e7"
+  # TODO: Try building on macOS 27 in a future release
+  url "https://github.com/chapel-lang/chapel/releases/download/2.10.0/chapel-2.10.0.tar.gz"
+  sha256 "55234b391e32757fbdcf78a4c9517a1f0f8075e4d73a68005fc4ac251ef6b5d4"
   license "Apache-2.0"
-  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    sha256 arm64_tahoe:   "02a0ac8fd456d4370bf14bead7f287056b2445b083e6023e9c82a3b6bcbf2446"
-    sha256 arm64_sequoia: "fe9c991b88fbbc248466c5ba1597c982f5b95760e1dfec924e54ba94e0aefa64"
-    sha256 arm64_sonoma:  "e65c9c49a4b9f0cf664eadb9bdfcc4b779cdb601d7c1e37e21723c0330412da8"
-    sha256 sonoma:        "16ea1b15ae7f4051236e3483a14091b3b6ff5658fd05a7fb13000d12f18c298f"
-    sha256 arm64_linux:   "80ce9f9f681e7a494740675b0e9cc6deba17d3faeaa53bed0aacce827fdf4bdb"
-    sha256 x86_64_linux:  "df7fc5d6f337777e8be3036def8b5075f780126fa9ac21017aed99432ef283af"
+    rebuild 1
+    sha256 arm64_golden_gate: "85d80bb657433b9634269b770d47d0a2fabe8c8ef41d3457b1f4f1088f81eb51"
+    sha256 arm64_tahoe:       "fe9be0261b76fb8451abc18b0a4a81f530f4c854dcbcdb1b0bc142fae422e406"
+    sha256 arm64_sequoia:     "b817c2f32658fd53714437ef5f60455beda4671bf54e08326f9ab1d4633f0028"
+    sha256 arm64_linux:       "1330f972661af23ac6d2b05d827d9617407d90ec38a2bc72cab890eeb85a96ea"
+    sha256 x86_64_linux:      "4cd686a949ac272d6f98210598b065ba6503f6a221ab3673075ce7f002cd6704"
   end
 
   depends_on "cmake"

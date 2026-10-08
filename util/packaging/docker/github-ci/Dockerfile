@@ -18,22 +18,30 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
+    ccache \
     clang-19 \
     cmake \
     cscope \
     curl \
     doxygen \
+    fluid \
     g++ \
     gcc \
+    gdb \
     git \
     jq \
     libclang-19-dev \
     libclang-cpp19-dev \
+    libclang-rt-19-dev \
+    libcurl4-openssl-dev \
     libedit-dev \
+    libfltk-dev \
     libprotoc-dev \
+    libzmq3-dev \
     llvm-19 \
     llvm-19-dev \
     llvm-19-tools \
+    lldb-19 \
     locales \
     m4 \
     make \
@@ -49,13 +57,19 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     tzdata \
     wget \
     xxd \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-19 100 \
+    && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-19 100 \
+    && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-19 100
 
 RUN groupadd --gid 1001 chpl-tester && \
     useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
     echo "chpl-tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/chpl-tester && \
     chmod 0440 /etc/sudoers.d/chpl-tester
 
+RUN echo "settings set target.disable-aslr false" > /root/.lldbinit && \
+    echo "settings set target.disable-aslr false" > /home/chpl-tester/.lldbinit && \
+    chown chpl-tester:chpl-tester /home/chpl-tester/.lldbinit
 
 # Configure locale (taken from primary Chapel Dockerfile)
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \

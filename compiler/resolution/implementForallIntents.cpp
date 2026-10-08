@@ -1041,7 +1041,7 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
 static void doConvertFieldsOfThis(LoopWithShadowVarsInterface* fs, AggregateType* recType,
                                   ShadowVarSymbol* svar, Symbol* ovar)
 {
-  std::map<Symbol*, ShadowVarSymbol*> fieldVars;
+  std::map<Symbol*, ShadowVarSymbol*, AstIdLess> fieldVars;
 
   // This traversal covers the loop body as well as IB/DB.
   for_SymbolSymExprs(se, svar) {
@@ -1146,7 +1146,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   ArgSymbol* thisArg = enclosingRecordThisArg(fn);
   if (! thisArg) return; // not in a method on a record
   AggregateType* thisType = toAggregateType(thisArg->type->getValType());
-  std::map<Symbol*, ArgSymbol*> fieldArgs;
+  std::map<Symbol*, ArgSymbol*, AstIdLess> fieldArgs;
 
   // If the source code contains an explicit intent on `this`,
   // all references to `thisArg` within the task construct have been replaced

@@ -405,7 +405,7 @@ inLocalBlock(CallExpr *call) {
 }
 
 static int
-markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
+markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*, AstIdLess>& visited) {
 
   // First, handle functions we've already visited.
   if (visited.count(fn) != 0) {
@@ -583,7 +583,7 @@ static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
 static void addRunningTaskModifiers(void) {
   compute_call_sites();
 
-  std::set<CallExpr*> visited;
+  std::set<CallExpr*, AstIdLess> visited;
   forv_Vec(CallExpr, taskMigrationCall, gCallExprs) {
     FnSymbol* fn = taskMigrationCall->resolvedFunction();
     if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
@@ -622,7 +622,7 @@ optimizeOnClauses(void) {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    std::set<FnSymbol*> visited;
+    std::set<FnSymbol*, AstIdLess> visited;
 
     int is = markFastSafeFn(fn, optimize_on_clause_limit, visited);
 

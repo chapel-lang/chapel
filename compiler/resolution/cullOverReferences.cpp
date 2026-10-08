@@ -291,7 +291,7 @@ bool contextCallItDepends(Symbol* sym, ContextCallExpr* cc) {
 //    -> std::vector<bool> of linearized indices
 //    -> tracks if that tuple element is const
 
-//typedef std::map<Symbol*, std::vector<bool> > tupleElementConst_t;
+//typedef std::map<Symbol*, std::vector<bool>, AstIdLess> tupleElementConst_t;
 struct GraphNode {
   Symbol* variable; // a VarSymbol or ArgSymbol;
   int     fieldIndex; // 0 for "any field" / not a tuple
@@ -588,7 +588,7 @@ static
 void transitivelyMarkNotConst(GraphNode node, /* sym, index */
                               revisitGraph_t & graph,
                               revisitUnknowns_t & unknownConstSyms,
-                              std::map<BaseAST*, BaseAST*> & reasonNotConst)
+                              std::map<BaseAST*, BaseAST*, AstIdLess>& reasonNotConst)
 {
   std::vector<GraphNode> & edges = graph[node];
 
@@ -682,7 +682,7 @@ private:
   std::vector<GraphNode> collectedSymbols;
   revisitUnknowns_t unknownConstSyms;
   revisitGraph_t revisitGraph;
-  std::map<BaseAST*, BaseAST*> reasonNotConst;
+  std::map<BaseAST*, BaseAST*, AstIdLess> reasonNotConst;
 };
 
 // Forward-flow constness for `FLAG_REF_TO_CONST_WHEN_CONST_THIS`.
@@ -1523,9 +1523,7 @@ void CullRefCtx::visitCollectedSymbol(GraphNode node) {
 void CullRefCtx::propagateNonConstnessThroughRevisitGraph(void) {
 
   // First, propagate non-const-ness through the graph.
-  for (revisitGraph_t::iterator it = revisitGraph.begin();
-       it != revisitGraph.end();
-       ++it) {
+  for (auto it = revisitGraph.begin(); it != revisitGraph.end(); ++it) {
 
     GraphNode node = it->first;
     Symbol* sym = node.variable;
@@ -1548,7 +1546,7 @@ void CullRefCtx::propagateNonConstnessThroughRevisitGraph(void) {
 // they are never set (this accounts for cycles possibly due to recursive
 // functions with blank-intent array formals).
 void CullRefCtx::markRemainingSymsWithUnknownConstnessConst(void) {
-  for (revisitUnknowns_t::iterator it = unknownConstSyms.begin();
+  for (auto it = unknownConstSyms.begin();
        it != unknownConstSyms.end();
        ++it) {
 

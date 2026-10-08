@@ -398,7 +398,7 @@ class ContextHandler {
 
   // map between any handle used within user's loop body and the indices to
   // contexts within contextStack
-  std::map<Symbol*, int> handleMap_;
+  std::map<Symbol*, int, AstIdLess> handleMap_;
 
   ContextHandler(CForLoop* loop): loopCtx_(loop) {}
 
@@ -652,7 +652,7 @@ class ContextHandler {
     // TODO cache this stuff somewhere, but we remove some below. Is that a problem?
     std::vector<CallExpr*> callsInLoop;
     collectCallExprs(this->loop(), callsInLoop);
-    std::map<Symbol*, std::vector<CallExpr*>> autoDestroysInLoop;
+    std::map<Symbol*, std::vector<CallExpr*>, AstIdLess> autoDestroysInLoop;
     for_vector (CallExpr, call, callsInLoop) {
       if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
@@ -689,7 +689,7 @@ class ContextHandler {
     FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
     INT_ASSERT(parentFn);
 
-    std::map<ArgSymbol*, int> outerActuals;
+    std::map<ArgSymbol*, int, AstIdLess> outerActuals;
 
     while (cur != defPrev) {
       CONTEXT_DEBUG(debugDepth+1, "hoisting", cur);

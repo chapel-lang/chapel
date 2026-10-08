@@ -30,19 +30,20 @@ jobs:
         image_name: ["chapel", "chapel-gasnet", "chapel-gasnet-smp"]
     env:
       RELEASE_VERSION: ${{ inputs.chpl_version }}
+      IMAGE_NAME: ${{ matrix.image_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver-opts: network=host
       - name: check release branch
         run: |
           echo "Pushing release-tagged image for version: $RELEASE_VERSION"
 
-          if [[ "${#${RELEASE_VERSION//[^.]}}" -ne 2 ]]; then
+          if [[ "$(tr -dc '.' <<< "$RELEASE_VERSION" | awk '{ print length; }')" -ne 2 ]]; then
             echo "Expected X.Y.Z version string, got: $RELEASE_VERSION"
             exit 1
           fi
@@ -60,9 +61,16 @@ jobs:
             echo "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
             exit 1
           fi
-      - name: tag and push image for release ${{ env.RELEASE_VERSION }}
+      - name: log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+      - name: tag and push image for release as '${{ env.RELEASE_VERSION }}' and 'latest'
         run: |
           IMAGE_NO_TAG="$EXTERNAL_REGISTRY/$NAMESPACE/$IMAGE_NAME"
           SHA_TAGGED_IMAGE="$IMAGE_NO_TAG:$SHA_TAG"
           RELEASE_TAGGED_IMAGE="$IMAGE_NO_TAG:$RELEASE_VERSION"
+          LATEST_TAGGED_IMAGE="$IMAGE_NO_TAG:latest"
           docker buildx imagetools create -t "$RELEASE_TAGGED_IMAGE" "$SHA_TAGGED_IMAGE"
+          docker buildx imagetools create -t "$LATEST_TAGGED_IMAGE" "$SHA_TAGGED_IMAGE"

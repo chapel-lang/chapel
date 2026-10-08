@@ -9,7 +9,7 @@ Python packages required by the developer tool `chplspell`.
 The primary package required by `chplspell` is `scspell3k`.
 
 The primary developer packages required by `chpl-language-server` (CLS) are
-`pytest`, `pytest-lsp`, and   pytest-xdist`.
+`pytest`, `pytest-lsp`, and `pytest-xdist`.
 The general packages requires by CLS are mentioned in README.md.
 
 

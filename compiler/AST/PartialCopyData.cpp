@@ -38,8 +38,8 @@ PartialCopyData::~PartialCopyData() {
 
 // Return true if there is an entry for 'fn' in the partialCopyFnMap
 bool hasPartialCopyData(const FnSymbol* fn) {
-  std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
-  bool                                     retval = false;
+  auto it     = sFnMap.find(fn->id);
+  bool retval = false;
 
   if (it != sFnMap.end()) {
     retval = true;
@@ -50,8 +50,8 @@ bool hasPartialCopyData(const FnSymbol* fn) {
 
 // Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.
 PartialCopyData* getPartialCopyData(FnSymbol* fn) {
-  std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
-  PartialCopyData*                         retval = NULL;
+  auto             it     = sFnMap.find(fn->id);
+  PartialCopyData* retval = NULL;
 
   if (it != sFnMap.end()) {
     retval = &(it->second);

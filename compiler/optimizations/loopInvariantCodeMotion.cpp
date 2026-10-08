@@ -38,6 +38,9 @@
 #include "optimizations.h"
 #include "WhileStmt.h"
 
+#include <algorithm>
+#include <unordered_map>
+
 #include "global-ast-vecs.h"
 
 #include <algorithm>
@@ -221,7 +224,7 @@ public:
 };
 
 typedef std::vector<BasicBlock*> BasicBlocks;
-typedef std::map<Symbol*,std::vector<SymExpr*>*> symToVecSymExprMap;
+typedef std::map<Symbol*,std::vector<SymExpr*>*, AstIdLess> symToVecSymExprMap;
 
 //These two functions are used to collect all natural loops from a bunch of basic blocks and ensure the loops are stored
 //from most nested to least nested for any give loop nest
@@ -515,7 +518,7 @@ static void addDefOrUse(symToVecSymExprMap& localDefOrUseMap, Symbol* var, SymEx
  * Build the local def use maps for a loop and while we're at it build the local map which is the map from each
  * symExpr to the block it it is defined in.
  */
-static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, symToVecSymExprMap& localUseMap, std::map<SymExpr*, int>& localMap) {
+static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, symToVecSymExprMap& localUseMap, std::map<SymExpr*, int, AstIdLess>& localMap) {
 
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
@@ -586,11 +589,10 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
  * Free the def and use maps
  */
 static void freeLocalDefUseMaps(symToVecSymExprMap& localDefMap, symToVecSymExprMap& localUseMap) {
- symToVecSymExprMap::iterator it;
-  for(it = localDefMap.begin(); it != localDefMap.end(); it++) {
+  for(auto it = localDefMap.begin(); it != localDefMap.end(); it++) {
     delete it->second;
   }
-  for(it = localUseMap.begin(); it != localUseMap.end(); it++) {
+  for(auto it = localUseMap.begin(); it != localUseMap.end(); it++) {
     delete it->second;
   }
 }
@@ -602,7 +604,7 @@ static void freeLocalDefUseMaps(symToVecSymExprMap& localDefMap, symToVecSymExpr
  *
  * This should only be called externally on a call expr whose lhs has only one def in a loop
  */
-static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInvariants, std::set<SymExpr*>& loopInvariantInstructions, Loop* loop,   std::map<SymExpr*, std::set<SymExpr*> >& actualDefs) {
+static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*, AstIdLess>& loopInvariants, std::set<SymExpr*, AstIdLess>& loopInvariantInstructions, Loop* loop,   std::map<SymExpr*, std::set<SymExpr*, AstIdLess>, AstIdLess>& actualDefs) {
 
   //if we have an assignment, recursively compute if all operands are invariant
   //if there was a different loop invariant operand, make sure all its arguments
@@ -688,7 +690,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
   return false;
 }
 
-static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& aliases, bool isGpuBound) {
+static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*, AstIdLess>, AstIdLess>& aliases, bool isGpuBound) {
   //Since the current alias analysis is pretty conservative, you can run into
   //the case where you have so many aliases that you run of space in memory to
   //hold all of the aliases (since we keep track of all pairs) , which leads to
@@ -778,10 +780,9 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
     if (fn->getModule()->modTag == MOD_USER) {
       printf("LICM: may-alias report for a loop in function %s:\n", fn->name);
       // Print out aliases for user variables
-      std::map<Symbol*, std::set<Symbol*> >::iterator it;
-      for (it = aliases.begin(); it != aliases.end(); ++it) {
+      for (auto it = aliases.begin(); it != aliases.end(); ++it) {
         Symbol* sym = it->first;
-        std::set<Symbol*> &others = it->second;
+        auto& others = it->second;
         for_set(Symbol, otherSym, others) {
 
           // Don't report each pair more than once
@@ -829,8 +830,8 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
  * of a variable check if it is composed of loop invariant operands and operations.
  */
 static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
-    std::set<Symbol*>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
-    std::map<Symbol*, std::set<Symbol*> >& aliases) {
+    std::set<Symbol*, AstIdLess>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
+    std::map<Symbol*, std::set<Symbol*, AstIdLess>, AstIdLess>& aliases) {
 
   // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
@@ -853,9 +854,9 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
   //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants
   startTimer(calculateActualDefsTimer);
-  std::set<SymExpr*> loopInvariantOperands;
-  std::set<SymExpr*> loopInvariantInstructions;
-  std::map<SymExpr*, std::set<SymExpr*> > actualDefs;
+  std::set<SymExpr*, AstIdLess> loopInvariantOperands;
+  std::set<SymExpr*, AstIdLess> loopInvariantInstructions;
+  std::map<SymExpr*, std::set<SymExpr*, AstIdLess>, AstIdLess> actualDefs;
   for_vector(SymExpr, symExpr, loopSymExprs) {
 
     //skip already known invariants
@@ -1069,7 +1070,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
  * because that would have the effect of executing first = false before the use.
  *
  */
-static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap, symToVecSymExprMap& localUseMap) {
+static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int, AstIdLess>& localMap, symToVecSymExprMap& localUseMap) {
 
   if(localUseMap.count(def->symbol()) == 0 ) {
     return false;
@@ -1103,7 +1104,7 @@ static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& 
  * where it may be used.
  *
  */
-static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
+static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int, AstIdLess>& localMap) {
   if (def->symbol()->defPoint != nullptr &&
       LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
     // If the symbol-to-hoist is defined inside a loop, no reason to worry about
@@ -1160,6 +1161,78 @@ static bool containsSynchronizationVar(BaseAST* ast) {
 // value forwarding. It would be a good idea to unify
 // the two implementations.
 
+// Memoizes whether a function or anything it transitively calls contains a
+// synchronization variable. Computed with Tarjan's SCC algorithm
+class SyncVarReachability {
+public:
+  bool reaches(FnSymbol* fn) {
+    auto it = result.find(fn);
+    if (it != result.end()) return it->second;
+    visit(fn);
+    return result[fn];
+  }
+
+  void clear() {
+    result.clear();
+  }
+
+private:
+  struct NodeInfo {
+    int  index;
+    int  low;
+    bool reach;
+  };
+
+  std::unordered_map<FnSymbol*, bool>     result;
+  std::unordered_map<FnSymbol*, NodeInfo> info;
+  std::vector<FnSymbol*>                  stack;
+  int                                     nextIndex = 0;
+
+  void visit(FnSymbol* fn) {
+    info[fn] = { nextIndex, nextIndex, containsSynchronizationVar(fn) };
+    nextIndex++;
+    stack.push_back(fn);
+
+    llvm::SmallVector<FnSymbol*, 8> targets;
+    collectCallTargets(fn->body, targets);
+
+    for (FnSymbol* target: targets) {
+      auto done = result.find(target);
+      if (done != result.end()) {
+        info[fn].reach |= done->second;
+      } else if (info.find(target) == info.end()) {
+        visit(target);
+        auto doneNow = result.find(target);
+        if (doneNow != result.end()) {
+          info[fn].reach |= doneNow->second;
+        } else {
+          info[fn].low = std::min(info[fn].low, info[target].low);
+        }
+      } else {
+        // target is on the stack, i.e. in the current SCC
+        info[fn].low = std::min(info[fn].low, info[target].index);
+      }
+    }
+
+    if (info[fn].low == info[fn].index) {
+      size_t start = stack.size();
+      bool reach = false;
+      do {
+        start--;
+        reach |= info[stack[start]].reach;
+      } while (stack[start] != fn);
+
+      for (size_t i = start; i < stack.size(); i++) {
+        result[stack[i]] = reach;
+        info.erase(stack[i]);
+      }
+      stack.resize(start);
+    }
+  }
+};
+
+static SyncVarReachability sSyncVarReachability;
+
 /*
  * Checks if a loop can have loop invariant code motion
  * performed on it. Specifically we do not want to hoist
@@ -1174,19 +1247,17 @@ static bool canPerformCodeMotion(Loop* loop) {
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
 
-      //Check for nested function calls containing
-      //synchronization variables
-      std::set<FnSymbol*> fnSymbols;
-      collectUsedFnSymbols(expr, fnSymbols);
-      for_set(FnSymbol, fnSymbol2, fnSymbols) {
-        if(containsSynchronizationVar(fnSymbol2)) {
+      // Check for nested function calls containing synchronization variables
+      llvm::SmallVector<FnSymbol*, 8> targets;
+      collectCallTargets(expr, targets);
+      for (FnSymbol* target : targets) {
+        if (sSyncVarReachability.reaches(target)) {
           return false;
         }
       }
 
-      //Check if there are any synchronization variables
-      //in the current expr
-      if(containsSynchronizationVar(expr)) {
+      // Check if there are any synchronization variables in the current expr
+      if (containsSynchronizationVar(expr)) {
         return false;
       }
     }
@@ -1256,15 +1327,15 @@ static void licmFn(FnSymbol* fn) {
     startTimer(buildLocalDefMapsTimer);
     symToVecSymExprMap localDefMap;
     symToVecSymExprMap localUseMap;
-    std::map<SymExpr*, int> localMap;
+    std::map<SymExpr*, int, AstIdLess> localMap;
     buildLocalDefUseMaps(curLoop, localDefMap, localUseMap, localMap);
     stopTimer(buildLocalDefMapsTimer);
 
     //and use the defUseMaps to compute loop invariants
     startTimer(computeLoopInvariantsTimer);
     std::vector<SymExpr*> loopInvariants;
-    std::set<Symbol*> defsInLoop;
-    std::map<Symbol*, std::set<Symbol*> > aliases;
+    std::set<Symbol*, AstIdLess> defsInLoop;
+    std::map<Symbol*, std::set<Symbol*, AstIdLess>, AstIdLess> aliases;
     bool tooManyAliases = computeAliases(fn, aliases, curLoop->isGpuBound());
     if (tooManyAliases) {
       return;
@@ -1305,16 +1376,20 @@ static void licmFn(FnSymbol* fn) {
 }
 
 static void loopInvariantCodeMotionImpl(void) {
-  if(fNoLoopInvariantCodeMotion) {
+  if (fNoLoopInvariantCodeMotion) {
     return;
   }
 
   startTimer(overallTimer);
 
+  sSyncVarReachability.clear();
+
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     licmFn(fn);
   }
+
+  sSyncVarReachability.clear();
 
   stopTimer(overallTimer);
 

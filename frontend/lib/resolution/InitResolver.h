@@ -76,7 +76,7 @@ class InitResolver {
   std::vector<owned<ErrorBase>> errorsFromImplicitSuperInit;
 
   //initialization points to guide handling `=` operators
-  std::set<const uast::AstNode*> initPoints;
+  std::set<ID> initPoints;
 
   ResolvedFunction::ImplicitInitMap implicitInits_;
 

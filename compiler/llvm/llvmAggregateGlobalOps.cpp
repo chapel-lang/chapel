@@ -146,9 +146,7 @@ Instruction* postponeDependentInstructions(
   Instruction *LastMemopUse = NULL;
 
   // Gather any instructions using the result of a load
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();
-       ++BI)
+  for (auto BI = First->getIterator(); !BI->isTerminator(); ++BI)
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -176,8 +174,7 @@ Instruction* postponeDependentInstructions(
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();)
+  for (auto BI = First->getIterator(); !BI->isTerminator();)
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -239,14 +236,13 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   typedef std::list<MemOpRange>::iterator range_iterator;
   const DataLayout &DL;
   MemOpRanges(const DataLayout &td) : DL(td) { }
-  typedef std::list<MemOpRange>::const_iterator const_iterator;
-  const_iterator begin() const { return Ranges.begin(); }
-  const_iterator end() const { return Ranges.end(); }
+  auto begin() const { return Ranges.begin(); }
+  auto end() const { return Ranges.end(); }
   bool empty() const { return Ranges.empty(); }
   bool moreThanOneOp() const {
     if( Ranges.size() > 1 ) return true;
-    MemOpRanges::const_iterator I = begin();
-    MemOpRanges::const_iterator E = end();
+    auto I = begin();
+    auto E = end();
     if( I != E ) {
       const MemOpRange &Range = *I;
       if( Range.TheStores.size() > 1 ) return true;
@@ -499,8 +495,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Print out debugging information before reordering
   if (DebugThis) {
-    for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-         I != E; ++I) {
+    for (auto I = Ranges.begin(), E = Ranges.end(); I != E; ++I) {
       const MemOpRange &Range = *I;
 
       if (Range.TheStores.size() == 1) continue;
@@ -514,9 +509,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
 
       if( isStore ) {
-        for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+        for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
           StoreInst* oldStore = cast<StoreInst>(*SI);
 
           if( DebugThis ) {
@@ -528,9 +521,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
 
       if( isLoad ) {
-        for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+        for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
           LoadInst* oldLoad = cast<LoadInst>(*SI);
           if( DebugThis ) {
             dbgs() << "have load in range:";
@@ -544,8 +535,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Now that we have full information about ranges, loop over the ranges and
   // emit memcpy's for anything big enough to be worthwhile.
-  for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-       I != E; ++I) {
+  for (auto I = Ranges.begin(), E = Ranges.end(); I != E; ++I) {
     const MemOpRange &Range = *I;
 
     if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
@@ -555,9 +545,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     SmallSet<Instruction*, 8> toAggregate;
     Instruction *First = NULL;
     Instruction *Last = NULL;
-    for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+    for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
       Instruction* insn = *SI;
       if (First == NULL || bbPos[insn] < bbPos[First])
         First = insn;
@@ -617,9 +605,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
-      for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+      for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         int64_t offset = 0;
@@ -704,9 +690,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // If loading, load from the memcpy'd region
     if( isLoad ) {
-      for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+      for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
 
@@ -742,9 +726,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     }
 
     // Zap all the old loads/stores
-    for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+    for (auto SI = Range.TheStores.begin(),
+              SE = Range.TheStores.end(); SI != SE; ++SI) {
       (*SI)->eraseFromParent();
     }
   }
@@ -768,7 +751,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
-  for (Function::iterator BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
+  for (auto BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
 
     bool ChangedBB = false;
 
@@ -778,7 +761,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
       dbgs() << '\n';
     }
 
-    for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
+    for (auto BI = BB->begin(), BE = BB->end(); BI != BE;) {
       // Avoid invalidating the iterator.
       Instruction& insnRef = *BI;
       Instruction *I = &insnRef;
