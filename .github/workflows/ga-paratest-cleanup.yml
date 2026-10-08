@@ -20,7 +20,6 @@ defaults:
 jobs:
   paratest-cleanup:
     name: Clean up paratest run intermediate artifacts
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-slim
     steps:
       - name: clean up individual test dir result artifacts (retrying)
@@ -41,7 +40,7 @@ jobs:
             gh api --paginate "/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" | jq '.' | tee artifacts_raw.json
             jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
 
-            readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
+            readarray -t config_dir_results_artifacts < <(jq '.[] | select(.name | test("paratest-.*-dir-results-.*")) | .id' artifacts_array.json)
             for artifact_id in "${config_dir_results_artifacts[@]}"; do
               echo "Deleting artifact $artifact_id"
               gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id" >&2
