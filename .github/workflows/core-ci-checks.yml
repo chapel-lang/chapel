@@ -51,7 +51,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -71,7 +70,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: make chplvis
       run: |
         bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -91,7 +89,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -123,7 +120,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -181,7 +177,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: set CHPL_HOME
       run: |
         echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -211,7 +206,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: run create_tarball.bash
       run: |
        ./util/cron/create_tarball.bash
@@ -231,7 +225,6 @@ jobs:
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       with:
         create-symlink: true
-        update-package-index: true
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -512,7 +505,6 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          update-package-index: true
       - name: install deps
         run: |
           if [[ "$OS" == "macos"* ]] ; then
