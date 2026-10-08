@@ -29,7 +29,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           configuration: ${{ github.event.workflow.inputs.configuration }}
-          run_id: ${{ github.event.workflow.run_id }}
+          run_id: ${{ github.event.workflow_run.id }}
         with:
           max_attempts: 3
           timeout_seconds: 360
