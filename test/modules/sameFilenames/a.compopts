@@ -1,0 +1,3 @@
+subdir1/a.chpl
+subdir1/a.chpl b.chpl  # ab.good
+subdir2/a.chpl         # aa.good
