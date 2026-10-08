@@ -550,8 +550,8 @@ jobs:
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
 
-  paratest-linux64-examples:
-    name: Chapel paratest on linux64
+  paratest-linux64-small:
+    name: Chapel paratest on linux64 on just a few tests
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64
