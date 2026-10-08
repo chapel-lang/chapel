@@ -29,12 +29,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           run_id: ${{ github.event.workflow_run.id }}
+          run_name: ${{ github.event.workflow_run.name }}
+          run_url: ${{ github.event.workflow_run.html_url }}
         with:
           max_attempts: 3
           timeout_seconds: 360
           retry_wait_seconds: 30
           command: |
             set -exuo pipefail
+
+            echo "Cleaning up paratest artifacts from '"$run_name"' run at $run_url"
 
             gh api --paginate "/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" | jq '.' | tee artifacts_raw.json
             jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
