@@ -1,0 +1,47 @@
+name: clean up paratest artifacts
+
+on:
+  workflow_run:
+    workflows: [paratest]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  packages: read
+  actions: write
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  paratest-cleanup:
+    name: Clean up paratest run intermediate artifacts
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-slim
+    steps:
+      - name: clean up individual test dir result artifacts (retrying)
+        # this is best-effort, ignore failures
+        continue-on-error: true
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          configuration: ${{ github.event.workflow.inputs.configuration }}
+          run_id: ${{ github.event.workflow.run_id }}
+        with:
+          max_attempts: 3
+          timeout_seconds: 360
+          retry_wait_seconds: 30
+          command: |
+            set -exuo pipefail
+
+            gh api --paginate "/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" | jq '.' | tee artifacts_raw.json
+            jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
+
+            readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
+            for artifact_id in "${config_dir_results_artifacts[@]}"; do
+              echo "Deleting artifact $artifact_id"
+              gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id" >&2
+              sleep 0.25
+            done
