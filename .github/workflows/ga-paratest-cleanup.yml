@@ -20,7 +20,6 @@ defaults:
 jobs:
   paratest-cleanup:
     name: Clean up paratest run intermediate artifacts
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-slim
     steps:
       - name: clean up individual test dir result artifacts (retrying)
