@@ -2,7 +2,9 @@ name: clean up paratest artifacts
 
 on:
   workflow_run:
-    workflows: [paratest]
+    workflows:
+      - "Run PR checks"
+      - "Run nightly checks"
     types:
       - completed
 
