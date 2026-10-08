@@ -28,8 +28,7 @@ jobs:
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         env:
           GH_TOKEN: ${{ github.token }}
-          configuration: ${{ github.event.workflow.inputs.configuration }}
-          run_id: ${{ github.event.workflow.run_id }}
+          run_id: ${{ github.event.workflow_run.id }}
         with:
           max_attempts: 3
           timeout_seconds: 360
