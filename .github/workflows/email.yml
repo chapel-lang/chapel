@@ -59,6 +59,14 @@ jobs:
             fi
 
             gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee "$PR_JSON"
+      - name: extract PR title and author
+        run: |
+          TITLE=$(jq -r '.title' "$PR_JSON")
+          AUTHOR=$(jq -r '.merged_by.login' "$PR_JSON")
+          {
+            echo "TITLE=$TITLE"
+            echo "AUTHOR=$AUTHOR"
+          } >> "$GITHUB_ENV"
       - name: generate email body from PR info
         run: |
           diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT "$(jq -r '.base.sha' "$PR_JSON")" "$(jq -r '.head.sha' "$PR_JSON")")
@@ -68,10 +76,10 @@ jobs:
           cat << EOF > "$EMAIL_BODY_FILENAME"
           Branch: $(jq -r '.head.ref' "$PR_JSON")
           Revision: $(jq -r '.merge_commit_sha' "$PR_JSON")
-          Author: $(jq -r '.merged_by.login' "$PR_JSON")
+          Author: $AUTHOR
           Link: $(jq -r '.html_url' "$PR_JSON")
           Log Message:
-          $(jq -r '.title' "$PR_JSON")
+          $TITLE
 
           $(jq -r '.body' "$PR_JSON")
 
@@ -101,7 +109,7 @@ jobs:
            secure: true
            username: ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
-           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
+           subject: "[Chapel Merge] ${{ env.TITLE }}"
            to: chapel+commits@discoursemail.com
-           from: "${{env.AUTHOR}} <chapel_commits@cray.com>"
+           from: "${{ env.AUTHOR }} <chapel_commits@cray.com>"
            body: file://${{ env.EMAIL_BODY_FILENAME }}
