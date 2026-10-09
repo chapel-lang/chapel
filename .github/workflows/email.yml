@@ -30,6 +30,8 @@ jobs:
     env:
       EMAIL_BODY_FILENAME: email.md
       GH_TOKEN: ${{ github.token }}
+      PR_JSON: pr.json
+      DIFF_MAX_LINES: 1000
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,22 +59,28 @@ jobs:
               exit 1
             fi
 
-            gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee pr.json
+            gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee $PR_JSON
       - name: generate email body from PR info
         run: |
-          cat << EOF > "$EMAIL_BODY_FILENAME"
-          Branch: ${{github.ref}}
-          Revision: ${{ github.event.pull_request.merge_commit_sha }}
-          Author: ${{ env.AUTHOR}}
-          Link: ${{github.event.pull_request._links.html.href}}
-          Log Message:
-          ${{env.MERGE}}
+          diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
+          # Cut off long diff output after some number of lines
+          diff=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }")
 
-          Compare: ${{env.COMPARE_URL}}
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          Branch: $GITHUB_REF
+          Revision: $GITHUB_SHA
+          Author: $(jq '.merged_by.login' $PR_JSON)
+          Link: $(jq '.html_url' $PR_JSON)
+          Log Message:
+          $(jq '.title' $PR_JSON)
+
+          $(jq '.body' $PR_JSON)
+
+          Compare: $(jq '.html_url' $PR_JSON)/changes
 
           Diff:
-                   ${{env.DIFF}}
-                   ${{github.event.pull_request.diff_url}}
+                   $diff
+                   $(jq '.diff_url' $PR_JSON)
           EOF
       - name: Send mail
         if: ${{ ! always() }}
