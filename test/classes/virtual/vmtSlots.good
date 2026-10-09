@@ -1,0 +1,50 @@
+object 0
+  as L0:
+L0.m0
+L0.shared0
+object 1
+  as L0:
+L1.m0
+L0.shared0
+  as L1:
+L1.m0
+L0.shared0
+L1.m1
+L1.shared1
+object 2
+  as L0:
+L1.m0
+L0.shared0
+  as L1:
+L1.m0
+L0.shared0
+L2.m1
+L1.shared1
+  as L2:
+L1.m0
+L0.shared0
+L2.m1
+L1.shared1
+L2.m2
+object 3
+  as L0:
+L1.m0
+L3.shared0
+  as L1:
+L1.m0
+L3.shared0
+L2.m1
+L3.shared1
+  as L2:
+L1.m0
+L3.shared0
+L2.m1
+L3.shared1
+L3.m2
+  as L3:
+L1.m0
+L3.shared0
+L2.m1
+L3.shared1
+L3.m2
+L3.m3

@@ -650,6 +650,14 @@ OPTIONS
     Enable [disable] run-time checks in integer division and modulus operations
     to guard against dividing by zero.
 
+.. _man-dynamic-library-checks:
+.. index:: --dynamic-library-checks, --no-dynamic-library-checks
+
+**\--[no-]dynamic-library-checks**
+
+    Enable [disable] run-time checks specific to dynamically loaded Chapel
+    libraries.
+
 .. _man-formal-domain-checks:
 .. index:: --formal-domain-checks, --no-formal-domain-checks
 
