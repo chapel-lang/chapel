@@ -45,7 +45,7 @@ jobs:
       - name: find PR number associated with this push
         run: |
           pr_number=$(gh pr list --search "0350468ff2228a94ec7bc433c5ee94bddbe2195e" --state merged --json "number" | jq '.[0].number')
-          if [ -n "$pr_number" ]; then
+          if [ -z "$pr_number" ]; then
             echo "Couldn't find PR corresponding to commit 0350468ff2228a94ec7bc433c5ee94bddbe2195e" | tee -a "$EMAIL_BODY_FILENAME"
             exit 1
           fi
