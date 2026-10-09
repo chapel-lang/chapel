@@ -30,6 +30,10 @@ jobs:
       EMAIL_BODY_FILENAME: email.md
       GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .
       - name: generate fallback email body
         run: |
           cat << EOF > "$EMAIL_BODY_FILENAME"
