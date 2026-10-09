@@ -38,7 +38,7 @@ import Path.joinPath;
 import ThirdParty.Pathlib.path;
 use ThirdParty.Pathlib.IOHelpers;
 
-enum OutputFormat {
+enum outputFormat {
   json,
   text
 }
@@ -65,9 +65,9 @@ proc masonModules(args: [] string) throws {
     skipUpdate = !updateFlag.valueAsBool();
   }
 
-  var outputFormat: OutputFormat;
+  var of: outputFormat;
   try {
-    outputFormat = formatFlag.value():OutputFormat;
+    of = formatFlag.value():outputFormat;
   } catch {
     throw new MasonError("Invalid output format specified. " +
                          "Valid options are 'json' and 'text'.");
@@ -118,8 +118,8 @@ proc masonModules(args: [] string) throws {
   const examples =
     [f in MasonExample.getExamples(tomlFile, projectHome)] examplePath / f;
 
-  select outputFormat {
-    when OutputFormat.text {
+  select of {
+    when outputFormat.text {
       var sep = "";
       for m in modules {
         write(sep, m:string);
@@ -127,7 +127,7 @@ proc masonModules(args: [] string) throws {
       }
       writeln();
     }
-    when OutputFormat.json {
+    when outputFormat.json {
       import JSON;
       var jsonObj = new map(string, list(string));
       jsonObj["modules"] = new list([m in modules] m:string);
