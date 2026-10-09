@@ -129,7 +129,7 @@ jobs:
         CHPL_HOST_COMPILER=clang make run-dyno-linters
 
   check_compiler_linters:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
