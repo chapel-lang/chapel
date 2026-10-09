@@ -5,7 +5,7 @@ extern proc chpl_SIGRTMAX(): c_int;
 
 // Make sure the subprocess stays around long enough for us to potentially
 // interact with it
-var subproc = spawn(["sleep", "60"]);
+var subproc = spawn(["sleep", "20"]);
 
 try {
   subproc.sendPosixSignal(chpl_SIGRTMAX() + 1);
