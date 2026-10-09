@@ -42,17 +42,22 @@ jobs:
 
           Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
-      - name: find PR number associated with this push
-        run: |
-          pr_number=$(gh pr list --search "0350468ff2228a94ec7bc433c5ee94bddbe2195e" --state merged --json "number" | jq '.[0].number')
-          if [ -z "$pr_number" ]; then
-            echo "Couldn't find PR corresponding to commit 0350468ff2228a94ec7bc433c5ee94bddbe2195e" | tee -a "$EMAIL_BODY_FILENAME"
-            exit 1
-          fi
-          echo "pr_number=$pr_number" >> "$GITHUB_ENV"
-      - name: get info about PR
-        run: |
-          gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee pr.json
+      - name: find PR associated with this push and grab info
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 60
+          retry_wait_seconds: 30
+          command: |
+            set -exuo pipefail
+
+            pr_number=$(gh pr list --search "0350468ff2228a94ec7bc433c5ee94bddbe2195e" --state merged --json "number" | jq '.[0].number')
+            if [ -z "$pr_number" ]; then
+              echo "Couldn't find PR corresponding to commit 0350468ff2228a94ec7bc433c5ee94bddbe2195e" | tee -a "$EMAIL_BODY_FILENAME"
+              exit 1
+            fi
+
+            gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee pr.json
       - name: Send mail
         if: ${{ ! always() }}
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
