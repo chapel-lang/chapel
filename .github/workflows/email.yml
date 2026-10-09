@@ -53,7 +53,7 @@ jobs:
           command: |
             set -exuo pipefail
 
-            pr_number=$(gh pr list --search "25b5b2d9a76ecdae3e68d8188b103ddbd657e8f2" --state merged --json "number" | jq '.[0].number')
+            pr_number=$(gh pr list --search "25b5b2d9a76ecdae3e68d8188b103ddbd657e8f2" --state merged --json "number" | jq -r '.[0].number')
             if [ -z "$pr_number" ]; then
               echo "Couldn't find PR corresponding to commit 25b5b2d9a76ecdae3e68d8188b103ddbd657e8f2" | tee -a "$EMAIL_BODY_FILENAME"
               exit 1
@@ -62,25 +62,25 @@ jobs:
             gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee "$PR_JSON"
       - name: generate email body from PR info
         run: |
-          diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT "$(jq '.base.sha' "$PR_JSON")" "$(jq '.head.sha' "$PR_JSON")")
+          diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT "$(jq -r '.base.sha' "$PR_JSON")" "$(jq -r '.head.sha' "$PR_JSON")")
           # Cut off long diff output after some number of lines
           diff=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }")
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
-          Branch: $(jq '.head.ref' "$PR_JSON")
-          Revision: $(jq '.merge_commit_sha' "$PR_JSON")
-          Author: $(jq '.merged_by.login' "$PR_JSON")
-          Link: $(jq '.html_url' "$PR_JSON")
+          Branch: $(jq -r '.head.ref' "$PR_JSON")
+          Revision: $(jq -r '.merge_commit_sha' "$PR_JSON")
+          Author: $(jq -r '.merged_by.login' "$PR_JSON")
+          Link: $(jq -r '.html_url' "$PR_JSON")
           Log Message:
-          $(jq '.title' "$PR_JSON")
+          $(jq -r '.title' "$PR_JSON")
 
-          $(jq '.body' "$PR_JSON")
+          $(jq -r '.body' "$PR_JSON")
 
-          Compare: $(jq '.html_url' "$PR_JSON")/changes
+          Compare: $(jq -r '.html_url' "$PR_JSON")/changes
 
           Diff:
           ${diff/#/  }
-          $(jq '.diff_url' "$PR_JSON")
+          $(jq -r '.diff_url' "$PR_JSON")
           EOF
       - name: archive JSON files from run
         if: always()
