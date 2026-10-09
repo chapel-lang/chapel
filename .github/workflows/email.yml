@@ -79,8 +79,8 @@ jobs:
           Compare: $(jq '.html_url' "$PR_JSON")/changes
 
           Diff:
-                   $diff
-                   $(jq '.diff_url' "$PR_JSON")
+          ${diff/#/  }
+          $(jq '.diff_url' "$PR_JSON")
           EOF
       - name: archive JSON files from run
         if: always()
