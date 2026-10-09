@@ -68,7 +68,7 @@ jobs:
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
           Branch: $(jq '.head.ref' $PR_JSON)
-          Revision: $GITHUB_SHA
+          Revision: $(jq '.merge_commit_sha' $PR_JSON)
           Author: $(jq '.merged_by.login' $PR_JSON)
           Link: $(jq '.html_url' $PR_JSON)
           Log Message:
