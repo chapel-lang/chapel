@@ -3,6 +3,9 @@ name: paratest
 on:
   workflow_call:
     inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
       configuration:
         description: Unique name for this Chapel configuration
         required: true
@@ -17,13 +20,23 @@ on:
         required: false
         type: string
         default: ""
+      make-targets:
+        description: Space separated make targets to build. If a custom 'build-steps' is provided, this is ignored.
+        required: false
+        type: string
+        default: "all test-venv chpldoc mason"
       build-steps:
-        description: Build commands, defaults to building the compiler, test venv, chpldoc, and mason
+        description: Commands to execute to build. By default, invokes the make command with the default make targets specified in `make-targets`
         required: false
         type: string
         default: |
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 all test-venv chpldoc mason
+          make_cmd=(make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1)
+          if [[ "$MAKE_TARGETS_TO_BUILD" =~ [^[:space:]] ]]; then
+            read -ra make_targets <<< "$MAKE_TARGETS_TO_BUILD"
+            make_cmd+=("${make_targets[@]}")
+          fi
+          "${make_cmd[@]}"
       start-test-args:
         description: Space-separated arguments to pass to start_test
         required: false
@@ -34,6 +47,11 @@ on:
         required: false
         type: string
         default: ""
+      max-jobs:
+        description: Maximum number of test jobs (at most 256). Test directories are packed into jobs using their durations from previous runs.
+        required: false
+        type: number
+        default: 50
       max-parallel:
         description: Maximum number of test jobs to run concurrently; 0 is unrestricted. If unset, defaults to 20 for non-merge-queue runs, and unrestricted for merge queue runs.
         required: false
@@ -58,6 +76,11 @@ on:
         required: false
         type: boolean
         default: true
+      container-options:
+        description: Extra options passed to the Chapel CI container
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -74,6 +97,7 @@ env:
   PARATEST_RESULTS_DIR: paratest-results
   AGGREGATED_RESULTS_DIR: aggregated-results
   CHAPEL_BUILD_FILES_SLUG: chapel-build-files
+  PARATEST_TIMINGS_DIR: paratest-timings
   CRON_SCRIPT: ${{ inputs.cron-script }}
   PRE_BUILD_STEPS: ${{ inputs.pre-build-steps }}
 
@@ -88,15 +112,13 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user chpl-tester
+      image: ${{ inputs.use-container && inputs.CHAPEL_CI_IMAGE || '' }}
+      options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
     outputs:
-      matrix: ${{ steps.test-directories.outputs.matrix }}
-      test-count: ${{ steps.test-directories.outputs.test-count }}
-      max-parallel: ${{ steps.max-parallel.outputs.max-parallel }}
+      units: ${{ steps.test-directories.outputs.units }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,6 +127,7 @@ jobs:
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
+          MAKE_TARGETS_TO_BUILD: ${{ inputs.make-targets }}
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {
@@ -154,6 +177,7 @@ jobs:
           archive: false
           retention-days: ${{ inputs.retention-days }}
       - name: determine test directories
+        id: test-directories
         env:
           TEST_DIRS: ${{ inputs.test-dirs }}
         run: |
@@ -176,12 +200,19 @@ jobs:
           # clean-only walks the suite without running it.
           # This is more reliable than just using `ls` (it resolves skipifs, notests, etc).
           # Store each matrix job as CSV: directory,start_test flags.
-          awk -v home="$CHPL_HOME/" '
+          awk -v home="$CHPL_HOME/" -v requested_dirs="$TEST_DIRS" '
             BEGIN {
               # these are well-known slow directories that should be split into multiple jobs
               slow_directories["test/classes"] = 1
               slow_directories["test/library"] = 1
               slow_directories["test/types"] = 1
+              # explicitly requested directories are always their own jobs
+              n = split(requested_dirs, req)
+              for (i = 1; i <= n; i++) {
+                d = relative(req[i])
+                sub(/\/+$/, "", d)
+                requested[d] = 1
+              }
             }
             function relative(path) {
               if (index(path, home) == 1) return substr(path, length(home) + 1)
@@ -202,7 +233,7 @@ jobs:
               visited[dir] = 1
               # For directories well-known to be large, split them into multiple jobs.
               # Still run the directory itself as it may have tests outside the subdirectories.
-              if (dir ~ "^test/[^/]+$") {
+              if (dir ~ "^test/[^/]+$" || dir in requested) {
                 flags = (dir in slow_directories) ? "--no-recurse" : ""
                 testdirs[dir] = flags
               } else {
@@ -225,38 +256,105 @@ jobs:
                 }
               }
             }
-          ' "$RUNNER_TEMP/cleanlog.txt" | sort -u \
-            | xargs -I'{}' bash -c "echo $(cut -d',' -f1 <<<"{}" | (read -r p; find "$p" -type f -name "*.chpl" | wc -l)):{}" | sort -r | cut -d':' -f2 | tee "$RUNNER_TEMP/testdirs.csv"
+          ' "$RUNNER_TEMP/cleanlog.txt" | sort -u > "$RUNNER_TEMP/testdirs.csv"
 
-      - name: create testing matrix
-        id: test-directories
+          # Output each directory as dir,flags,.chpl count
+          {
+            echo "units<<EOF_UNITS"
+            while IFS=',' read -r dir flags; do
+              if [[ "$flags" == "--no-recurse" ]]; then
+                count=$(find "$dir" -maxdepth 1 -type f -name '*.chpl' | wc -l)
+              else
+                count=$(find "$dir" -type f -name '*.chpl' | wc -l)
+              fi
+              echo "$dir,$flags,$((count))"
+            done < "$RUNNER_TEMP/testdirs.csv"
+            echo "EOF_UNITS"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  plan:
+    name: Plan test jobs (${{ inputs.configuration }})
+    needs: build
+    runs-on: ubuntu-slim
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      test-count: ${{ steps.plan.outputs.test-count }}
+      job-count: ${{ steps.plan.outputs.job-count }}
+      max-parallel: ${{ steps.max-parallel.outputs.max-parallel }}
+    steps:
+      - name: restore test directory durations
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PARATEST_TIMINGS_DIR }}
+          key: paratest-timings-${{ inputs.configuration }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: paratest-timings-${{ inputs.configuration }}-
+      - name: pack test directories into jobs
+        id: plan
+        env:
+          MAX_JOBS: ${{ inputs.max-jobs }}
+          UNITS: ${{ needs.build.outputs.units }}
+        shell: python3 {0}
         run: |
-          if [[ ! -s "$RUNNER_TEMP/testdirs.csv" ]]; then
-            echo "No test directories found"
-            exit 1
-          fi
+          import csv, heapq, json, os
 
-          test_count=$(($(wc -l < "$RUNNER_TEMP/testdirs.csv")))
-          if (( test_count > 256 )); then
-            echo "The generated matrix has $test_count jobs; GitHub Actions permits at most 256"
-            exit 1
-          fi
+          max_jobs = int(os.environ["MAX_JOBS"])
+          if not 1 <= max_jobs <= 256:
+              raise SystemExit(f"max-jobs must be between 1 and 256, got {max_jobs}")
 
-          matrix=$(python3 -c '
-          import csv, json, os
-          path = os.path.join(os.environ["RUNNER_TEMP"], "testdirs.csv")
-          rows = list(csv.reader(open(path, encoding="utf-8", newline="")))
-          include = [
-            {"id": str(i),
-             "dir": row[0],
-             "flags": row[1]} for i, row in enumerate(rows) if row
-          ]
-          print(json.dumps({"include": include}, separators=(",", ":")))
-          ')
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "test-count=$test_count" >> "$GITHUB_OUTPUT"
-          echo "Created $test_count test jobs:"
-          cat "$RUNNER_TEMP/testdirs.csv"
+          units = []
+          reader = csv.DictReader(os.environ["UNITS"].splitlines(),
+                                  fieldnames=["dir", "flags", "count"])
+          for i, row in enumerate(reader):
+              row["id"] = str(i)
+              row["count"] = max(int(row["count"]), 1)
+              units.append(row)
+          if not units:
+              raise SystemExit("No test directories found")
+
+          durations = {}
+          timings_file = os.path.join(os.environ["PARATEST_TIMINGS_DIR"], "timings.tsv")
+          if os.path.exists(timings_file):
+              with open(timings_file, encoding="utf-8") as f:
+                  for line in f:
+                      test_dir, _, seconds = line.rstrip("\n").partition("\t")
+                      if seconds:
+                          durations[test_dir] = float(seconds)
+
+          # estimate unmeasured directories using the measured seconds per .chpl file
+          measured = [u for u in units if u["dir"] in durations]
+          measured_files = sum(u["count"] for u in measured)
+          seconds_per_file = (sum(durations[u["dir"]] for u in measured) / measured_files
+                              if measured_files else 1.0)
+          for u in units:
+              u["weight"] = durations.get(u["dir"], u["count"] * seconds_per_file)
+
+          # longest first, each into the currently lightest job, so a directory
+          # longer than the average job load always ends up in a job by itself
+          num_jobs = min(max_jobs, len(units))
+          jobs = [[] for _ in range(num_jobs)]
+          loads = [(0.0, i) for i in range(num_jobs)]
+          for u in sorted(units, key=lambda u: u["weight"], reverse=True):
+              load, i = heapq.heappop(loads)
+              jobs[i].append(u)
+              heapq.heappush(loads, (load + u["weight"], i))
+          job_loads = {i: load for load, i in loads}
+
+          print(f"Measured durations for {len(measured)} of {len(units)} test directories")
+          include = []
+          for job_id, i in enumerate(sorted(range(num_jobs), key=lambda i: job_loads[i], reverse=True)):
+              job = jobs[i]
+              name = job[0]["dir"] + (f" +{len(job) - 1} more" if len(job) > 1 else "")
+              include.append({
+                  "id": str(job_id),
+                  "name": name,
+                  "units": ";".join(f'{u["id"]},{u["dir"]},{u["flags"]}' for u in job),
+              })
+              print(f"job {job_id} (~{job_loads[i] / 60:.1f} min): " + " ".join(u["dir"] for u in job))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write("matrix=" + json.dumps({"include": include}, separators=(",", ":")) + "\n")
+              f.write(f"test-count={len(units)}\n")
+              f.write(f"job-count={num_jobs}\n")
       - name: determine max parallel jobs
         id: max-parallel
         env:
@@ -264,7 +362,7 @@ jobs:
           DEFAULT_PARALLEL: ${{ startsWith(inputs.runner, 'ubuntu') && 20 || 5 }}
           INPUT_PARALLEL: ${{ inputs.max-parallel }}
           IS_MERGE_QUEUE: ${{ github.event.merge_group != null }}
-          TEST_COUNT: ${{ steps.test-directories.outputs.test-count }}
+          JOB_COUNT: ${{ steps.plan.outputs.job-count }}
         run: |
           if [[ -n "$INPUT_PARALLEL" ]]; then
             max_parallel=$INPUT_PARALLEL
@@ -274,25 +372,25 @@ jobs:
             max_parallel=$DEFAULT_PARALLEL
           fi
           if [[ "$max_parallel" == "0" ]]; then
-            max_parallel=$TEST_COUNT
+            max_parallel=$JOB_COUNT
           fi
           echo "max-parallel=$max_parallel" >> "$GITHUB_OUTPUT"
 
   run-tests:
-    name: Test ${{ matrix.dir }} (${{ inputs.configuration }})
-    needs: build
+    name: Test ${{ matrix.name }} (${{ inputs.configuration }})
+    needs: plan
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     container:
-      image: ${{ inputs.use-container && format('ghcr.io/{0}/chapel-github-ci:latest', github.repository_owner) || '' }}
-      options: --user chpl-tester
+      image: ${{ inputs.use-container && inputs.CHAPEL_CI_IMAGE || '' }}
+      options: --user chpl-tester ${{ inputs.container-options }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ github.token }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ fromJSON(needs.build.outputs.max-parallel) }}
-      matrix: ${{ fromJSON(needs.build.outputs.matrix) }}
+      max-parallel: ${{ fromJSON(needs.plan.outputs.max-parallel) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: random sleep to avoid hitting GitHub APIs simultaneously
         run: sleep $((RANDOM % 60))
@@ -310,13 +408,14 @@ jobs:
           # Some tests assume git has been properly configured, so configure it here for the test runner.
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
+          if [[ -f /home/chpl-tester/.lldbinit ]]; then
+            cat /home/chpl-tester/.lldbinit >> "$HOME/.lldbinit"
+          fi
       - name: run tests
         env:
           CONFIGURATION: ${{ inputs.configuration }}
           START_TEST_ARGS: ${{ inputs.start-test-args }}
-          TEST_DIR: ${{ matrix.dir }}
-          TEST_FLAGS: ${{ matrix.flags }}
-          TEST_ID: ${{ matrix.id }}
+          TEST_UNITS: ${{ matrix.units }}
         run: |
           echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
           # shellcheck source=/dev/null
@@ -327,32 +426,47 @@ jobs:
           fi
           tar -xzf "$RUNNER_TEMP/$CHAPEL_BUILD_FILES_SLUG/$CHAPEL_BUILD_FILES_SLUG-$CONFIGURATION.tar.gz"
 
-          result_dir="$CHPL_HOME/$PARATEST_RESULTS_DIR/$TEST_ID"
-          mkdir -p "$result_dir"
-          echo "$TEST_DIR" > "$result_dir/directory.txt"
-
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          start_test_cmd=("$CHPL_HOME/util/start_test")
+          base_cmd=("$CHPL_HOME/util/start_test")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
-            start_test_cmd+=("${start_test_args[@]}")
+            base_cmd+=("${start_test_args[@]}")
           fi
-          if [[ "$TEST_FLAGS" =~ [^[:space:]] ]]; then
-            read -ra test_flags <<< "$TEST_FLAGS"
-            start_test_cmd+=("${test_flags[@]}")
-          fi
-          start_test_cmd+=(
-            "$TEST_DIR"
-            -logfile "$result_dir/results.log"
-            --parallel "$num_procs"
-          )
-          set +e
-          "${start_test_cmd[@]}"
-          test_status=$?
-          set -e
 
-          echo "$test_status" > "$result_dir/status.txt"
-          exit "$test_status"
+          # each unit is id,dir,flags; run them separately to keep per-directory flags, results, and durations
+          IFS=';' read -ra units <<< "$TEST_UNITS"
+          for unit in "${units[@]}"; do
+            IFS=',' read -r unit_id test_dir test_flags <<< "$unit"
+
+            result_dir="$CHPL_HOME/$PARATEST_RESULTS_DIR/$unit_id"
+            mkdir -p "$result_dir"
+            echo "$test_dir" > "$result_dir/directory.txt"
+
+            start_test_cmd=("${base_cmd[@]}")
+            if [[ "$test_flags" =~ [^[:space:]] ]]; then
+              read -ra flags <<< "$test_flags"
+              start_test_cmd+=("${flags[@]}")
+            fi
+            start_test_cmd+=(
+              "$test_dir"
+              -logfile "$result_dir/results.log"
+              --parallel "$num_procs"
+            )
+
+            echo "::group::$test_dir"
+            start_seconds=$SECONDS
+            set +e
+            "${start_test_cmd[@]}"
+            test_status=$?
+            set -e
+            echo "::endgroup::"
+
+            echo "$((SECONDS - start_seconds))" > "$result_dir/duration.txt"
+            echo "$test_status" > "$result_dir/status.txt"
+            if [[ "$test_status" != "0" ]]; then
+              echo "::error::start_test failed for $test_dir with status $test_status"
+            fi
+          done
       - name: upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -365,13 +479,11 @@ jobs:
   aggregate-results:
     name: Aggregate results (${{ inputs.configuration }})
     if: ${{ !cancelled() }}
-    needs: [build, run-tests]
+    needs: [build, plan, run-tests]
     runs-on: ubuntu-slim
     permissions:
       contents: read
       packages: read
-      # To delete per-directory result artifacts
-      actions: write
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: checkout
@@ -391,7 +503,8 @@ jobs:
         env:
           BUILD_RESULT: ${{ needs.build.result }}
           CONFIGURATION: ${{ inputs.configuration }}
-          EXPECTED_TESTS: ${{ needs.build.outputs.test-count }}
+          EXPECTED_JOBS: ${{ needs.plan.outputs.job-count }}
+          EXPECTED_DIRS: ${{ needs.plan.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
@@ -417,11 +530,16 @@ jobs:
               "${summary_files[@]}"
           fi
 
+          # each test job's artifact is downloaded into its own directory
+          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d \
+            -name "paratest-$CONFIGURATION-dir-results-*" | wc -l)
+          actual_jobs=$((actual_jobs))
+
           mapfile -t status_files < <(
             find "$PARATEST_RESULTS_DIR" -name status.txt -print | sort
           )
-          actual_tests=${#status_files[@]}
-          failed_tests=0
+          actual_dirs=${#status_files[@]}
+          failed_dirs=0
 
           {
             echo "# Chapel paratest: $CONFIGURATION"
@@ -440,7 +558,7 @@ jobs:
               result=pass
             else
               result=fail
-              failed_tests=$((failed_tests + 1))
+              failed_dirs=$((failed_dirs + 1))
             fi
             echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
           done
@@ -452,19 +570,23 @@ jobs:
 
           overall_status=0
           if [[ "$MATRIX_RESULT" != "success" ||
-                -z "$EXPECTED_TESTS" ||
-                "$actual_tests" != "$EXPECTED_TESTS" ||
-                "$summary_count" != "$EXPECTED_TESTS" ||
-                "$failed_tests" != "0" ]]; then
+                -z "$EXPECTED_JOBS" ||
+                -z "$EXPECTED_DIRS" ||
+                "$actual_jobs" != "$EXPECTED_JOBS" ||
+                "$actual_dirs" != "$EXPECTED_DIRS" ||
+                "$summary_count" != "$EXPECTED_DIRS" ||
+                "$failed_dirs" != "0" ]]; then
             overall_status=1
           fi
 
           {
             echo
-            echo "Expected test jobs: ${EXPECTED_TESTS:-unknown}"
-            echo "Reported test jobs: $actual_tests"
+            echo "Expected test jobs: ${EXPECTED_JOBS:-unknown}"
+            echo "Reported test jobs: $actual_jobs"
+            echo "Expected test directories: ${EXPECTED_DIRS:-unknown}"
+            echo "Reported test directories: $actual_dirs"
             echo "Reported test summaries: $summary_count"
-            echo "Failed test jobs: $failed_tests"
+            echo "Failed test directories: $failed_dirs"
             if [[ "$overall_status" == "0" ]]; then
               echo "Overall result: PASS"
             else
@@ -494,28 +616,39 @@ jobs:
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
-      - name: clean up individual test dir result artifacts (retrying)
-        # Skip on pull_request runs, because they don't have permission to delete artifacts.
-        if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' && github.event_name != 'pull_request' }}
-        # if this step fails, don't fail the job
-        continue-on-error: true
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        env:
-          GH_TOKEN: ${{ github.token }}
-          configuration: ${{ inputs.configuration }}
+      - name: restore test directory durations
+        if: ${{ !cancelled() }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          max_attempts: 3
-          timeout_seconds: 360
-          retry_wait_seconds: 30
-          command: |
-            set -exuo pipefail
+          path: ${{ env.PARATEST_TIMINGS_DIR }}
+          key: paratest-timings-${{ inputs.configuration }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: paratest-timings-${{ inputs.configuration }}-
+      - name: update test directory durations
+        id: update-timings
+        if: ${{ !cancelled() }}
+        run: |
+          timings_file="$PARATEST_TIMINGS_DIR/timings.tsv"
+          mkdir -p "$PARATEST_TIMINGS_DIR" "$PARATEST_RESULTS_DIR"
+          touch "$timings_file"
 
-            gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
-            jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
+          new_timings=$(mktemp)
+          while read -r duration_file; do
+            result_dir=$(dirname "$duration_file")
+            if [[ "$(cat "$result_dir/status.txt" 2>/dev/null)" != "0" ]]; then
+              continue
+            fi
+            printf '%s\t%s\n' "$(cat "$result_dir/directory.txt")" "$(cat "$duration_file")"
+          done < <(find "$PARATEST_RESULTS_DIR" -name duration.txt) > "$new_timings"
 
-            readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
-            for artifact_id in "${config_dir_results_artifacts[@]}"; do
-              echo "Deleting artifact $artifact_id"
-              gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id" >&2
-              sleep 0.25
-            done
+          # new durations replace old ones
+          # failed directories and directories that didn't report keep their old duration
+          awk -F'\t' 'NR == FNR { seen[$1] = 1; print; next } !($1 in seen)' \
+            "$new_timings" "$timings_file" | sort > "$timings_file.new"
+          mv "$timings_file.new" "$timings_file"
+          echo "count=$(($(wc -l < "$new_timings")))" >> "$GITHUB_OUTPUT"
+      - name: save test directory durations
+        if: ${{ !cancelled() && steps.update-timings.outputs.count != '0' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PARATEST_TIMINGS_DIR }}
+          key: paratest-timings-${{ inputs.configuration }}-${{ github.run_id }}-${{ github.run_attempt }}

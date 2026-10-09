@@ -4,6 +4,9 @@ name: Arkouda smoke testing
 on:
   workflow_call:
     inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
       arkouda-version:
         required: true
         type: string
@@ -23,7 +26,7 @@ jobs:
   arkouda-smoke-test:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -62,12 +65,6 @@ jobs:
         ref: ${{ env.arkouda_version }}
         path: arkouda
         persist-credentials: false
-    - name: apt install some Arkouda deps
-      timeout-minutes: 10
-      run: |
-        apt update && apt install -y \
-          libzmq3-dev \
-          libcurl4-openssl-dev
     - name: set Arkouda env vars
       run: |
         cd arkouda

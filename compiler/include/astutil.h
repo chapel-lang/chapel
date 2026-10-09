@@ -25,6 +25,7 @@
 #include "alist.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/DenseSet.h"
 
 #include <functional>
 #include <vector>
@@ -250,7 +251,9 @@ bool givesType(Symbol* sym);
 bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call);
 
 Symbol* getSvecSymbol(CallExpr* call);
-void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*, AstIdLess>& fnSymbols);
+void collectUsedFnSymbols(BaseAST* ast, llvm::DenseSet<FnSymbol*>& fnSymbols);
+// came as collectUsedFnSymbols, but does not follow them transitively
+void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets);
 
 void cleanupAfterTypeRemoval();
 

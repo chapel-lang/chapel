@@ -58,6 +58,7 @@
 #include "ResolutionCandidate.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
+#include "runpasses.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -78,6 +79,8 @@
 
 #include <algorithm>
 #include <cmath>
+
+#include "llvm/ADT/DenseMap.h"
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -5715,11 +5718,120 @@ void CandidateSearchState::explainGatherCandidate() {
   ::explainGatherCandidate(info, candidates);
 }
 
+// Could a value of type 'actual' be passed to a formal of iterator type
+// 'target'? This is conservative to avoid false negatives.
+// Iterator records/classes can only accept themselves, their subclasses,
+// or promotion down to them.
+static bool mayDispatchToIteratorType(Type* actual, AggregateType* target,
+                                      int depth) {
+  if (actual == nullptr) return false;
+  if (depth > 16) return true;
+
+  Type* valType = actual->getValType();
+  Type* t = canonicalClassType(valType);
+
+  if (t == target) return true;
+
+  if (t == dtUnknown || t == dtAny || t == dtNil ||
+      t->symbol->hasFlag(FLAG_GENERIC))
+    return true;
+
+  if (AggregateType* at = toAggregateType(t)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (parent && mayDispatchToIteratorType(parent, target, depth + 1))
+        return true;
+    }
+  }
+
+  if (mayDispatchToIteratorType(valType->scalarPromotionType, target,
+                                depth + 1))
+    return true;
+
+  if (t != valType &&
+      mayDispatchToIteratorType(t->scalarPromotionType, target, depth + 1))
+    return true;
+
+  return false;
+}
+
+namespace {
+struct IteratorFormalInfo {
+  int            index; // positional index of the formal, or -1 if none
+  AggregateType* type;
+};
+}
+
+// cleared when the pass changes and when formals are removed (pruneResolvedTree).
+static llvm::DenseMap<FnSymbol*, IteratorFormalInfo> sIteratorFormalCache;
+static int sIteratorFormalCachePass = -1;
+
+void clearIteratorFormalCache() {
+  sIteratorFormalCache.clear();
+}
+
+static IteratorFormalInfo computeIteratorFormalInfo(FnSymbol* fn) {
+  int i = 0;
+  for_formals(formal, fn) {
+    if (formal->variableExpr != nullptr)
+      break;
+
+    Type* ft = canonicalClassType(formal->type->getValType());
+    if (AggregateType* at = toAggregateType(ft)) {
+      if (at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+                                    FLAG_ITERATOR_CLASS) &&
+          !at->symbol->hasFlag(FLAG_GENERIC)) {
+        return { i, at };
+      }
+    }
+
+    i++;
+  }
+
+  return { -1, nullptr };
+}
+
+// The compiler generates per-iterator functions (e.g. one '_getIterator'
+// per iterator record) that are visible everywhere. Cheaply reject those
+// whose iterator-typed formal cannot accept the corresponding actual.
+static bool iteratorFormalCannotMatch(CallInfo& info, FnSymbol* fn) {
+  if (fExplainVerbose)
+    return false;
+
+  if (!fn->hasEitherFlag(FLAG_AUTO_II, FLAG_COMPILER_GENERATED) &&
+      !fn->hasFlag(FLAG_FIELD_ACCESSOR))
+    return false;
+
+  if (sIteratorFormalCachePass != currentPassNo) {
+    sIteratorFormalCache.clear();
+    sIteratorFormalCachePass = currentPassNo;
+  }
+
+  auto it = sIteratorFormalCache.find(fn);
+  if (it == sIteratorFormalCache.end()) {
+    it = sIteratorFormalCache.insert({fn, computeIteratorFormalInfo(fn)}).first;
+  }
+
+  const IteratorFormalInfo& ifi = it->second;
+  if (ifi.index < 0 || ifi.index >= info.actuals.n)
+    return false;
+
+  for (int i = 0; i < info.actualNames.n; i++) {
+    if (info.actualNames.v[i] != nullptr) return false;
+  }
+
+  return !mayDispatchToIteratorType(info.actuals.v[ifi.index]->type,
+                                    ifi.type, 0);
+}
+
 // run filterCandidate() on 'fn' if appropriate
 static void gatherCandidates(CallInfo&                  info,
                              VisibilityInfo&            visInfo,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates) {
+      if (iteratorFormalCannotMatch(info, fn)) {
+        return;
+      }
+
       // Consider
       //
       //   c1.foo(10, 20);

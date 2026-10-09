@@ -53,6 +53,9 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 static int reservedCore = -1;
 
@@ -1081,6 +1084,10 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
     chpl_internal_error_v("fork failed: %s", strerror(errno));
     return 1;
   } else if (f == 0) {
+#if defined(__linux__) && defined(PR_SET_PTRACER)
+    // allow ptrace of the parent process (lldb-server)
+    prctl(PR_SET_PTRACER, getppid(), 0, 0, 0);
+#endif
     sleep(SLEEP_FUDGE_FACTOR);
     return 0; // continue
   } else {

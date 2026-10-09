@@ -149,17 +149,13 @@ static int       varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
   bool      isQueryVariable = false;
-  FnSymbol* retval          = NULL;
+  FnSymbol* retval          = nullptr;
 
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
-      if (isDefExpr(formal->variableExpr->body.tail) == true) {
-        isQueryVariable = true;
-      } else if (SymExpr* se = toSymExpr(formal->variableExpr->body.tail)) {
-        if (se->symbol() == gUninstantiated) {
-          isQueryVariable = true;
-        }
-      }
+    if (formal->variableExpr != nullptr) {
+      isQueryVariable |= isDefExpr(formal->variableExpr->body.tail);
+      auto se = toSymExpr(formal->variableExpr->body.tail);
+      isQueryVariable |= se && se->symbol() == gUninstantiated;
 
       numVarArgs = numVarArgs + 1;
     }

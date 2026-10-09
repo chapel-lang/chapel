@@ -4,6 +4,10 @@ name: Extended CI checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
     secrets:
       DOCKERHUB_USER:
         required: false
@@ -16,7 +20,12 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 5
+  APT_INSTALL_TIMEOUT_MINS: 20
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
 
 defaults:
   run:
@@ -35,7 +44,7 @@ jobs:
         runner: [ubuntu-26.04, macos-latest]
     runs-on: ${{ matrix.runner }}
     container:
-      image: ${{ startsWith(matrix.runner, 'ubuntu') && 'ghcr.io/chapel-lang/chapel-github-ci:latest' || '' }}
+      image: ${{ startsWith(matrix.runner, 'ubuntu') && inputs.CHAPEL_CI_IMAGE || '' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -71,33 +80,35 @@ jobs:
       - name: save matrix properties to env
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-      - name: Install GCC ${{ matrix.gcc_version }} (retrying)
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      - name: Install GCC ${{ matrix.gcc_version }}
         env:
           VERSION: ${{ matrix.gcc_version }}
-        with:
-          max_attempts: 3
-          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-          retry_wait_seconds: 60
-          command: |
-            set -exuo pipefail
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
-            # Ignore errors in the case there are no alternatives.
-            sudo update-alternatives --remove-all gcc || true
-            sudo update-alternatives --remove-all g++ || true
+          # Ignore errors in the case there are no alternatives.
+          sudo update-alternatives --remove-all gcc || true
+          sudo update-alternatives --remove-all g++ || true
 
-            sudo add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
-            sudo apt update
-            sudo apt install -y \
-              cpp-$VERSION \
-              g++-$VERSION \
-              gcc-$VERSION \
-              gcc-$VERSION-base \
-              libgcc-$VERSION-dev \
-              libstdc++-$VERSION-dev
+          max_attempts=5
+          for attempt in $(seq "$max_attempts"); do
+            sudo timeout 90 add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test && break
+            if [[ "$attempt" -eq "$max_attempts" ]]; then
+              exit 1
+            fi
+            sleep 30
+          done
+          sudo apt-get update
+          sudo apt-get install -y \
+            "cpp-$VERSION" \
+            "g++-$VERSION" \
+            "gcc-$VERSION" \
+            "gcc-$VERSION-base" \
+            "libgcc-$VERSION-dev" \
+            "libstdc++-$VERSION-dev"
 
-            sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
-            sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+          sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
+          sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
       - name: Check desired GCC version is default
         run: |
           actual_gcc_version=$(gcc -dumpversion)
@@ -156,21 +167,17 @@ jobs:
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-          retry_wait_seconds: 60
-          command: |
-            set -exuo pipefail
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
-            sudo apt install \
-              clang \
-              libclang-dev \
-              libclang-cpp-dev \
-              libedit-dev \
-              llvm \
-              llvm-dev
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            libclang-dev \
+            libclang-cpp-dev \
+            libedit-dev \
+            llvm \
+            llvm-dev
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
@@ -191,28 +198,21 @@ jobs:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
     runs-on: ${{ matrix.llvm_version >= 17 && 'ubuntu-26.04' || 'ubuntu-22.04' }}
     steps:
-      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script (retrying)
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          timeout_minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-          retry_wait_seconds: 60
-          command: |
-            set -exuo pipefail
+      - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
-            wget https://apt.llvm.org/llvm.sh
-            chmod +x llvm.sh
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
 
-            # Work around https://github.com/llvm/llvm-project/issues/62152
-            set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
+          # Work around https://github.com/llvm/llvm-project/issues/62152
+          set_var=${{ matrix.llvm_version == 15 && 'DPKG_FORCE=overwrite' || '' }}
 
-            sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
+          sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
 
-            echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
+          echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
       - name: Check desired LLVM version is default
         run: |
-          set -exuo pipefail
-
           # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
           llvm_version=$($CHPL_LLVM_CONFIG --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
@@ -242,7 +242,7 @@ jobs:
   release-tarball-smoke-test:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -291,7 +291,7 @@ jobs:
   test-c2chapel:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -388,7 +388,7 @@ jobs:
           pattern: ${{ env.TARBALL_NAME_PREFIX }}${{ env.IMAGE_NAME }}${{ env.GITHUB_SHA }}*.tar
           merge-multiple: true
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver-opts: network=host
       - name: load single-arch images from tarball
@@ -431,30 +431,16 @@ jobs:
   paratest-linux64:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     with:
       configuration: linux64
       cron-script: util/cron/test-linux64.bash
       start-test-args: --futures
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv chpldoc mason protoc-gen-chpl
+      make-targets: all test-venv chpldoc mason protoc-gen-chpl
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     with:
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --futures
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason-deps
+      make-targets: all test-venv mason-deps

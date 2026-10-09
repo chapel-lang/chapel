@@ -2,8 +2,7 @@ name: build-CI-container
 
 env:
   REGISTRY: ghcr.io
-  # NOTE: IMAGE_NAME must be lowercase
-  IMAGE_NAME: chapel-github-ci
+  CHAPEL_CI_IMAGE: ghcr.io/chapel-lang/chapel-github-ci:latest
   DOCKERFILE: util/packaging/docker/github-ci/Dockerfile
 
 # Serialize runs of this workflow on 'main', to prevent a build from an older
@@ -84,8 +83,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: ${{ env.DOCKERFILE }}
-          # example: ghcr.io/chapel-lang/chapel-github-ci:latest
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.CHAPEL_CI_IMAGE }}
           push: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

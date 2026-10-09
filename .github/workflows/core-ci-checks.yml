@@ -3,6 +3,10 @@ name: Core CI Checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
     secrets:
       WEBSITE_KEY:
         required: false
@@ -21,7 +25,11 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 5
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
 
 defaults:
   run:
@@ -31,7 +39,7 @@ jobs:
   make_check:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -46,7 +54,7 @@ jobs:
   make_chplvis:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -54,12 +62,6 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - name: install fluid and libfltk-dev
-      timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-      run: |
-        apt update && apt install -y \
-          fluid \
-          libfltk-dev
     - name: make chplvis
       run: |
         bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -67,7 +69,7 @@ jobs:
   make_doc:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -94,7 +96,7 @@ jobs:
   make_mason:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -111,7 +113,7 @@ jobs:
   check_dyno_linters:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -129,7 +131,7 @@ jobs:
   check_compiler_linters:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -147,7 +149,7 @@ jobs:
   check_compiler_dyno_tests:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -187,7 +189,7 @@ jobs:
   make_check_llvm_none:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -202,7 +204,7 @@ jobs:
   check_annotations_rt_calls:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -305,7 +307,7 @@ jobs:
   check-release-files:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -412,7 +414,7 @@ jobs:
   test_chpl_language_server_chplcheck:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -472,12 +474,13 @@ jobs:
         with:
           persist-credentials: false
       - name: install deps
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             brew install llvm@22
           else
-            sudo apt install \
+            sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+            sudo apt-get update
+            sudo apt-get install -y \
               clang \
               libclang-dev \
               libclang-cpp-dev \
@@ -507,7 +510,7 @@ jobs:
   test-networking-packages:
     runs-on: ubuntu-26.04
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
