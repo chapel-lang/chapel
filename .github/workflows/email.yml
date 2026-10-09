@@ -63,8 +63,8 @@ jobs:
       - name: generate email body from PR info
         run: |
           diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
-          # Cut off long diff output after some number of lines
-          diff=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }")
+          # Cut off long diff output, and add indentation to diff lines
+          diff=$(echo "$diff" | awk 'NR <= '"$DIFF_MAX_LINES"' {print "  $0"}; NR > '"$DIFF_MAX_LINES"' { print "(diff output truncated at '"$DIFF_MAX_LINES"' lines)"; exit }')
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
           Branch: $(jq '.head.ref' "$PR_JSON")
@@ -79,8 +79,8 @@ jobs:
           Compare: $(jq '.html_url' "$PR_JSON")/changes
 
           Diff:
-                   $diff
-                   $(jq '.diff_url' "$PR_JSON")
+          $diff
+          $(jq '.diff_url' "$PR_JSON")
           EOF
       - name: archive JSON files from run
         if: always()
