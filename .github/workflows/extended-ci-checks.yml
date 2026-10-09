@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-latest, macos-latest]
+        runner: [ubuntu-26.04, macos-latest]
     runs-on: ${{ matrix.runner }}
     container:
       image: ${{ startsWith(matrix.runner, 'ubuntu') && inputs.CHAPEL_CI_IMAGE || '' }}
@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
-    runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     steps:
       - name: save matrix properties to env
         run: |
@@ -152,7 +152,7 @@ jobs:
       fail-fast: false
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     steps:
       - name: Install Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
@@ -196,7 +196,7 @@ jobs:
       fail-fast: false
       matrix:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
-    runs-on: ${{ matrix.llvm_version <= 16 && 'ubuntu-22.04' || matrix.llvm_version <= 20 && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.llvm_version <= 16 && 'ubuntu-22.04' || matrix.llvm_version <= 20 && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
         run: |
@@ -240,7 +240,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
@@ -271,7 +271,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-26.04, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: save matrix properties to env
@@ -289,7 +289,7 @@ jobs:
           fi
 
   test-c2chapel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
@@ -361,7 +361,7 @@ jobs:
 
   push-multiarch-docker-images:
     needs: [base-docker-image, gasnet-docker-images]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
