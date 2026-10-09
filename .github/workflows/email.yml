@@ -96,19 +96,12 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
         with:
-           # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER }}
            server_port: 465
-           # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
-           # Optional (recommended): mail server username:
            username: ${{ secrets.MAIL_USERNAME }}
-           # Optional (recommended) mail server password:
            password: ${{ secrets.MAIL_PASSWORD }}
-           # Required mail subject:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
-           # Required recipients' addresses:
            to: chapel+commits@discoursemail.com
-           # Required sender (supported formats: see "Supported address formats" below)
            from: "${{env.AUTHOR}} <chapel_commits@cray.com>"
            body: file://${{ env.EMAIL_BODY_FILENAME }}
