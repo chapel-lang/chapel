@@ -62,7 +62,7 @@ jobs:
             gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee "$PR_JSON"
       - name: generate email body from PR info
         run: |
-          diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
+          diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT "$(jq '.base.sha' "$PR_JSON")" "$(jq '.head.sha' "$PR_JSON")")
           # Cut off long diff output after some number of lines
           diff=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }")
 
