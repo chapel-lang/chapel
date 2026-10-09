@@ -7,8 +7,6 @@ on:
   # corresponding PR to gather info from.
   push:
     branches: [ main ]
-  # TODO: remove PR trigger which was just for testing
-  pull_request:
 
 # Serialize runs of this workflow to ensure emails are sent in the same order
 # as merges are done.
@@ -95,7 +93,6 @@ jobs:
         run: |
           cat "$EMAIL_BODY_FILENAME"
       - name: Send mail
-        if: ${{ ! always() }}
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
         with:
            # Required mail server address if not connection_url:
