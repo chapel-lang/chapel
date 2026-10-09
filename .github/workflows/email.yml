@@ -86,5 +86,3 @@ jobs:
               Diff:
                        ${{env.DIFF}}
                        ${{github.event.pull_request.diff_url}}
-           # Optional priority: 'high', 'normal' (default) or 'low'
-           priority: low
