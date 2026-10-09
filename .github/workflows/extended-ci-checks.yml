@@ -122,6 +122,8 @@ jobs:
           create-symlink: true
       - name: Check desired GCC version is default
         run: |
+          which gcc
+
           actual_gcc_version=$(gcc -dumpversion)
           gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
           if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
@@ -176,6 +178,9 @@ jobs:
           create-symlink: true
       - name: Check desired Python version is default
         run: |
+          which python || true
+          which python3 || true
+
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
@@ -232,6 +237,8 @@ jobs:
           create-symlink: true
       - name: Check desired LLVM version is default
         run: |
+          which llvm-config-${{ matrix.llvm_version }}
+
           # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
           llvm_version=$($CHPL_LLVM_CONFIG --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
