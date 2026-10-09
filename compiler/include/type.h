@@ -478,13 +478,13 @@ class FunctionType final : public Type {
     bool isRetArg() const;
   };
 
-  using Formals = std::vector<Formal>;
+  using Formals = llvm::SmallVector<Formal, 8>;
 
  private:
   Kind kind_;
   Width width_;
   Linkage linkage_;
-  std::vector<Formal> formals_;
+  Formals formals_;
   RetTag returnIntent_;
   Type* returnType_;
   bool throws_;
@@ -495,13 +495,13 @@ class FunctionType final : public Type {
   buildUserTypeString(Kind kind,
                       Width width,
                       Linkage linkage,
-                      const std::vector<Formal>& formals,
+                      const Formals& formals,
                       RetTag returnIntent,
                       Type* returnType,
                       bool throws);
 
   FunctionType(Kind kind, Width width, Linkage linkage,
-               std::vector<Formal> formals,
+               Formals formals,
                RetTag returnIntent,
                Type* returnType,
                bool throws,
@@ -509,7 +509,7 @@ class FunctionType final : public Type {
                const char* userTypeString);
 
   static FunctionType* create(Kind kind, Width width, Linkage linkage,
-                              std::vector<Formal> formals,
+                              Formals formals,
                               RetTag returnIntent,
                               Type* returnType,
                               bool throws);
@@ -525,7 +525,7 @@ class FunctionType final : public Type {
 
   /*** Result is shared by functions of the same type. */
   static FunctionType* get(Kind kind, Width width, Linkage linkage,
-                           std::vector<Formal> formals,
+                           Formals formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws);
