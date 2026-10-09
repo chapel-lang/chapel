@@ -67,7 +67,7 @@ jobs:
           diff=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }")
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
-          Branch: $GITHUB_REF
+          Branch: $(jq '.head.ref' $PR_JSON)
           Revision: $GITHUB_SHA
           Author: $(jq '.merged_by.login' $PR_JSON)
           Link: $(jq '.html_url' $PR_JSON)
