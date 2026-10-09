@@ -533,8 +533,7 @@ static bool isGetDynamicEndCount(CallExpr* call)
 static
 void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype, Symbol* error)
 {
-  if (fn->hasFlag(FLAG_NON_BLOCKING) ||
-      fn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
+  if (fn->hasAnyFlag(FLAG_NON_BLOCKING, FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
     CallExpr* downEndCount = findDownEndCount(fn);
     // We should have found a downEndCount for non-blocking task/on fns
     INT_ASSERT(downEndCount);

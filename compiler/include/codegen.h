@@ -195,7 +195,6 @@ struct GenInfo {
 
 
 extern GenInfo* gGenInfo;
-extern int      gMaxVMT;
 extern int      gStmtCount;
 extern bool     gCodegenGPU;
 

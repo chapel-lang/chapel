@@ -544,6 +544,7 @@ PRAGMA(PRIMITIVE_TYPE, ypr, "primitive type", "attached to primitive types to ke
 PRAGMA(PRINT_MODULE_INIT_FN, ypr, "print module init fn", ncm)
 PRAGMA(PRINT_MODULE_INIT_INDENT_LEVEL, ypr, "print module init indent level", ncm)
 PRAGMA(PRIVATE, npr, "private", ncm)
+PRAGMA(PROGRAM_INFO_HERE, ypr, "program info here", "this binary's per-locale program info, read by codegen for class ids")
 PRAGMA(PROMOTION_WRAPPER, npr, "promotion wrapper", ncm)
 PRAGMA(PROMOTION_PROTO_FIELD, npr, "temporary promotion field", ncm)
 PRAGMA(PROMOTION_ITERATOR_RECORD, npr, "promotion iterator record", ncm)

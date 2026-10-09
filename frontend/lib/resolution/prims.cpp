@@ -1818,8 +1818,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 0));
       break;
-    /* primitives that return an int32 */
     case PRIM_GETCID:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           UintType::get(context, 32));
+      break;
+    /* primitives that return an int32 */
     case PRIM_GET_USER_FILE:
     case PRIM_GPU_THREADIDX_X:
     case PRIM_GPU_THREADIDX_Y:

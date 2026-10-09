@@ -8073,7 +8073,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
         formalDetails ? astr(" '", formal->name, "'") : "";
 
       const char* calleeParens =
-        calleeFn->hasEitherFlag(FLAG_OPERATOR, FLAG_NO_PARENS) ? "" : "()";
+        calleeFn->hasAnyFlag(FLAG_OPERATOR, FLAG_NO_PARENS) ? "" : "()";
 
       USR_FATAL_CONT(actual, "%s is passed to %s%s formal%s of %s%s%s",
                        kind,
@@ -9844,7 +9844,7 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   bool shouldCheckMoveToRef =
     (lhsSym->hasFlag(FLAG_REF_VAR) &&
-     ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)) ||
+     ! lhsSym->hasAnyFlag(FLAG_TEMP, FLAG_EXPR_TEMP)) ||
     (lhsSym->hasFlag(FLAG_RVV) &&
      lhsSym->typeInfo() && lhsSym->typeInfo()->isRef());
   if (shouldCheckMoveToRef                                &&
@@ -11924,7 +11924,7 @@ static void resolveObviousGlobals() {
            Symbol* lhs = lhsSE->symbol();
            Symbol* rhs = rhsSE->symbol();
 
-           if (lhs->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP))
+           if (lhs->hasAnyFlag(FLAG_TEMP, FLAG_EXPR_TEMP))
              continue; // handle only user variables
 
            if (lhs->hasFlag(FLAG_PARAM)) {
@@ -15068,7 +15068,7 @@ static void resolveInitRef(CallExpr* call) {
   if (call->numActuals() == 2) {
     Symbol* refSym = toSymExpr(call->get(1))->symbol();
     INT_ASSERT(!isShadowVarSymbol(refSym) &&
-               !refSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP) &&
+               !refSym->hasAnyFlag(FLAG_TEMP, FLAG_EXPR_TEMP) &&
                refSym->hasFlag(FLAG_REF_VAR));
     INT_ASSERT(refSym->type == dtUnknown); // fyi
 

@@ -103,7 +103,7 @@ bool Type::isDefaultIntentConst() const {
 }
 
 bool Type::isWidePtrType() const {
-  if (symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+  if (symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
     // Workaround an ugly hack in insert wide references
     // which can make a wide _array record containing an "addr" record
     Type* baseType = this->getField("addr")->type;
@@ -2258,14 +2258,10 @@ bool isClass(Type* t) {
 bool isHeapAllocatedType(Type* t) {
   if (AggregateType* ct = toAggregateType(t)) {
     TypeSymbol* ts = ct->symbol;
-    if (ts->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF))
-      return false;
-    if (ts->hasFlag(FLAG_C_ARRAY))
+    if (ts->hasAnyFlag(FLAG_REF,FLAG_WIDE_REF,FLAG_C_ARRAY))
       return false;
 
-    return (ts->hasFlag(FLAG_DATA_CLASS) ||
-            ts->hasFlag(FLAG_WIDE_CLASS) ||
-            ct->isClass());
+    return (ts->hasAnyFlag(FLAG_DATA_CLASS, FLAG_WIDE_CLASS) || ct->isClass());
   }
   return false;
 }

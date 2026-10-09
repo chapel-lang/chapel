@@ -893,7 +893,7 @@ initPrimitive() {
 
   prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true);
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false);
-  prim_def(PRIM_GETCID, "getcid", returnInfoInt32, false);
+  prim_def(PRIM_GETCID, "getcid", returnInfoUInt32, false);
   prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true);
   prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false);
 

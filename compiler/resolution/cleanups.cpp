@@ -42,7 +42,7 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
     // Ditto for iterator fn in iterator info.
     if (at->iteratorInfo) {
       IteratorInfo* ii = at->iteratorInfo;
-      INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+      INT_ASSERT(at->symbol->hasAnyFlag(FLAG_ITERATOR_RECORD,
                                            FLAG_ITERATOR_CLASS));
       if (ii) {
         if (ii->iterator == unusedFn)

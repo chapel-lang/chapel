@@ -466,7 +466,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();
   const bool chapelClass  = isClassLike(ct) && isClass(ct);
-  const bool typeOrParam  = field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM);
+  const bool typeOrParam  = field->hasAnyFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM);
   FnSymbol*  fn           = new FnSymbol(field->name);
 
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -1766,7 +1766,7 @@ static void buildRecordHashFunction(AggregateType *ct) {
 ************************************** | *************************************/
 
 static void buildDefaultOfFunction(AggregateType* ct) {
-  if (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) &&
+  if (ct->symbol->hasAnyFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) &&
       ct->defaultValue != gNil &&
       functionExists("_defaultOf", ct) == NULL) {
 

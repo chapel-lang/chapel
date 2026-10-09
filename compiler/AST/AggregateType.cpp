@@ -957,7 +957,7 @@ AggregateType* AggregateType::generateType(CallExpr* call,
       // don't allow type-constructor calls to use named-argument passing
       // for a field that isn't 'type' or 'param'
       if (!allowAllNamedArgs &&
-          !field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+          !field->hasAnyFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
         USR_FATAL_CONT(call, "named arguments can only be used in "
                              "type construction to set "
                              "'type' or 'param' fields");
@@ -2340,7 +2340,7 @@ void AggregateType::buildDefaultInitializer() {
           const char* name = field->name;
           ArgSymbol* arg = new ArgSymbol(INTENT_IN, name, dtUnknown);
 
-          if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+          if (field->hasAnyFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
             USR_FATAL(arg, "union types don't currently support `type` or `param` fields");
           }
 
@@ -2506,8 +2506,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
         ArgSymbol*  arg      = new ArgSymbol(INTENT_IN, name, dtUnknown);
-        bool isTypeOrParam = field->hasEitherFlag(FLAG_TYPE_VARIABLE,
-                                                  FLAG_PARAM);
+        bool isTypeOrParam = field->hasAnyFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM);
 
         // The 'reader' initializer will only have type or param formals
         // that correspond to fields.
@@ -2733,7 +2732,7 @@ void AggregateType::handleSuperFields(FnSymbol*                    fn,
           if (names.find(formal->name) != names.end()) {
 
           } else if (desHelper == nullptr ||
-                     field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+                     field->hasAnyFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
             DefExpr* superArg = formal->defPoint->copy();
 
             fieldArgMap.put(field, superArg->sym);
