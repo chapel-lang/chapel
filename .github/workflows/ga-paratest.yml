@@ -205,6 +205,7 @@ jobs:
               # these are well-known slow directories that should be split into multiple jobs
               slow_directories["test/classes"] = 1
               slow_directories["test/library"] = 1
+              slow_directories["test/library/standard"] = 1
               slow_directories["test/types"] = 1
               # explicitly requested directories are always their own jobs
               n = split(requested_dirs, req)
