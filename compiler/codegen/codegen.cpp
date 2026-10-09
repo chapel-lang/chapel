@@ -477,9 +477,7 @@ static void preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber) {
       }
     }
 
-    for (children_set::iterator it = children.begin();
-         it != children.end();
-         ++it ) {
+    for (auto it = children.begin(); it != children.end(); ++it ) {
       TypeSymbol* child = *it;
 
       preorderVisitClassesComputeIds(child, nextNumber);
@@ -2891,11 +2889,9 @@ void gatherTypesForCodegen(void) {
 }
 
 Type* getNamedTypeDuringCodegen(const char* name) {
-  std::map<const char*, Type*>::iterator it;
-
   name = astr(name);
 
-  it = cnameToTypeMap.find(name);
+  auto it = cnameToTypeMap.find(name);
   if (it != cnameToTypeMap.end()) {
     return it->second;
   }
@@ -3308,7 +3304,7 @@ static void generateDynoLibFile() {
   libWriter.setSourcePaths(gDynoGenLibSourcePaths);
 
   // gather the modules we are code generating
-  std::set<ModuleSymbol*> genModules;
+  std::set<ModuleSymbol*, AstIdLess> genModules;
   forv_Vec(ModuleSymbol, modSym, gModuleSymbols) {
     if (gDynoGenLibModuleNameAstrs.count(modSym->name) > 0) {
       genModules.insert(modSym);

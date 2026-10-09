@@ -445,7 +445,7 @@ static const char* blockStateString(MayBlockState state) {
   return ret;
 }
 
-static std::map<FnSymbol*, MayBlockState> fnMayBlock;
+static std::map<FnSymbol*, MayBlockState, AstIdLess> fnMayBlock;
 
 class GatherBlockingFunctions final : public AstVisitorTraverse {
 

@@ -1,0 +1,4 @@
+--doError=0 # atEOF.good
+--doError=1 # atEOF.error1.good
+--doError=2 # atEOF.error2.good
+--doError=3 # atEOF.error3.good

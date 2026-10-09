@@ -206,8 +206,7 @@ static void usePostamble(const UseStmt* use, int indent) {
     printf("%s", str);
   }
 
-  for (std::map<const char*, const char*>::const_iterator it =
-         use->renamed.begin(); it != use->renamed.end(); ++it) {
+  for (auto it = use->renamed.begin(); it != use->renamed.end(); ++it) {
     if (first) {
       first = false;
     } else {
@@ -237,8 +236,7 @@ static void importPostamble(const ImportStmt* import, int indent) {
       printf("%s", str);
     }
 
-    for (std::map<const char*, const char*>::const_iterator it =
-           import->renamed.begin(); it != import->renamed.end(); ++it) {
+    for (auto it = import->renamed.begin(); it != import->renamed.end(); ++it) {
       if (first) {
         first = false;
       } else {
@@ -1261,22 +1259,22 @@ void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v) {
 // set_view: print the contents of a std::set
 //
 
-void set_view(std::set<BlockStmt*>* bss) {
+void set_view(std::set<BlockStmt*, AstIdLess>* bss) {
   set_view(*bss);
 }
 
-void set_view(std::set<BlockStmt*>& bss) {
+void set_view(std::set<BlockStmt*, AstIdLess>& bss) {
   printf("set<BlockStmt> %d elm(s)\n", (int)bss.size());
   for (BlockStmt* elm: bss)
     if (elm) showBlock(elm);
     else     printf("  <null>\n");
 }
 
-void set_view(std::set<FnSymbol*>* bss) {
+void set_view(std::set<FnSymbol*, AstIdLess>* bss) {
   set_view(*bss);
 }
 
-void set_view(std::set<FnSymbol*>& bss) {
+void set_view(std::set<FnSymbol*, AstIdLess>& bss) {
   printf("set<FnSymbol> %d elm(s)\n", (int)bss.size());
   for (FnSymbol* elm: bss)
     if (elm) showFnSymbol(elm);

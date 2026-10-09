@@ -35,7 +35,7 @@ removeEmptyRecords() {
   if (fNoRemoveEmptyRecords)
     return;
 
-  std::set<Type*> emptyRecordTypeSet;
+  std::set<Type*, AstIdLess> emptyRecordTypeSet;
   int numEmptyRecordTypes = 0;
   std::vector<Symbol*> emptyRecordSymbols;
 

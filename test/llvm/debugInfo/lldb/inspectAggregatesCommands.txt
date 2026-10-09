@@ -15,7 +15,7 @@ p myRecList.first().compute(3.0)
 p myStringSet
 
 p myMap
-e -- myMap.add(2, 17.8)
+expr -- myMap.add(2, 17.8)
 p myMap
 
 p myArr

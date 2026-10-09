@@ -6442,7 +6442,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     }
 
     if (gGenInfo->cfile){
-      fnPtr.c = std::string("chpl_vmtable") + "[" + index.c + "]";
+      fnPtr.c = std::string("chpl_vmtable") + "[" + index.c + "]" + "/*" + fn->name + "*/";
     } else {
 #ifdef HAVE_LLVM
       GenRet       table = gGenInfo->lvt->getValue("chpl_vmtable");

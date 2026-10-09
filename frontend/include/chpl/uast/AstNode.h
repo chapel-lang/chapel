@@ -605,32 +605,4 @@ template<> struct deserialize<uast::AstList> {
   }
 };
 } // end namespace chpl
-
-/// \cond DO_NOT_DOCUMENT
-namespace std {
-
-// define std::less for the various AST types
-// using macros and uast-classes-list.h
-/// \cond DO_NOT_DOCUMENT
-#define AST_NODE(NAME) \
-  template<> struct less<chpl::uast::NAME*> { \
-    bool operator()(const chpl::uast::NAME* lhs, \
-                    const chpl::uast::NAME* rhs) const { \
-      if (lhs == nullptr && rhs != nullptr) return true; \
-      if (rhs == nullptr) return false; \
-      std::less<chpl::ID> lessID; \
-      /* cast in the next line is so it compiles with only forward decls */ \
-      return lessID(((const chpl::uast::AstNode*)lhs)->id(), \
-                    ((const chpl::uast::AstNode*)rhs)->id()); \
-    } \
-  };
-/// \endcond
-// Additionally, apply the macro to AstNode
-AST_NODE(AstNode)
-// Apply the above macros to uast-classes-list.h
-#include "chpl/uast/uast-classes-list-adapter.h"
-/// \endcond
-
-} // end namespace std
-
 #endif

@@ -4,6 +4,10 @@ name: Full CI checks
 
 on:
   workflow_call:
+    inputs:
+      CHAPEL_CI_IMAGE:
+        type: string
+        default: ghcr.io/chapel-lang/chapel-github-ci:latest
 
 permissions:
   contents: read
@@ -11,7 +15,11 @@ permissions:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  APT_INSTALL_TIMEOUT_MINS: 5
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
 
 defaults:
   run:
@@ -63,11 +71,20 @@ jobs:
       apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
       - name: install Apptainer
-        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         run: |
-          sudo add-apt-repository -y ppa:apptainer/ppa
-          sudo apt update
-          sudo apt install -y apptainer
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
+          max_attempts=5
+          for attempt in $(seq "$max_attempts"); do
+            sudo timeout 90 add-apt-repository --yes ppa:apptainer/ppa && break
+            if [[ "$attempt" -eq "$max_attempts" ]]; then
+              exit 1
+            fi
+            sleep 30
+          done
+          sudo apt-get update
+          sudo apt-get install -y apptainer
       - name: print Apptainer version
         run: |
           apptainer --version
@@ -122,24 +139,12 @@ jobs:
   paratest-linux64-c-backend:
     name: Chapel paratest on linux64 with C backend
     uses: $/.github/workflows/ga-paratest.yml
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     with:
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
-      build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv mason
   paratest-darwin:
     name: Chapel paratest on darwin
     uses: $/.github/workflows/ga-paratest.yml
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     with:
       configuration: darwin
       runner: macos-latest
@@ -147,3 +152,101 @@ jobs:
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
         brew install llvm@22
+  paratest-asan:
+    name: Chapel paratest with AddressSanitizer
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: asan
+      cron-script: util/cron/test-asan.bash
+      timeout-minutes: 360
+      pre-build-steps: |
+        export CHPL_TEST_TIMEOUT=1200
+  paratest-fast:
+    name: Chapel paratest with --fast
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: fast
+      cron-script: util/cron/test-fast.bash
+      start-test-args: -compopts --fast -compopts --ccflags -compopts -Wno-invalid-feature-combination
+      make-targets: all test-venv mason-deps
+  paratest-gasnet-asan:
+    name: Chapel paratest with GASNet and AddressSanitizer
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet-asan
+      cron-script: util/cron/test-gasnet-asan.bash
+      start-test-args: -multilocale-only
+      timeout-minutes: 360
+      make-targets: all test-venv mason-deps
+  paratest-gasnet-fast:
+    name: Chapel paratest with GASNet fast segment
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet-fast
+      cron-script: util/cron/test-gasnet-fast.bash
+      container-options: --shm-size=8g # required for SEGMENT=fast
+      start-test-args: -multilocale-only
+      make-targets: all test-venv mason-deps
+  # runners only have 2 real cores, and smp can't oversubscribe
+  # so this won't work yet
+  # paratest-gasnet-smp:
+  #   name: Chapel paratest with GASNet SMP conduit
+  #   uses: $/.github/workflows/ga-paratest.yml
+  #   with:
+  #     configuration: gasnet-fast
+  #     cron-script: util/cron/test-gasnet-smp.bash
+  #     container-options: --shm-size=8g # required for SEGMENT=fast
+  #     test-dirs: test/release/examples
+  #     make-targets: all test-venv mason-deps
+  paratest-gpu-cpu:
+    name: Chapel paratest with CHPL_GPU=cpu
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gpu-cpu
+      cron-script: util/cron/test-gpu-cpu.bash
+      test-dirs: test/gpu/native test/users/engin/context test/release/examples
+      make-targets: all test-venv mason-deps
+  paratest-memleaks:
+    name: Chapel paratest with --memLeaks
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: memleaks
+      cron-script: util/cron/test-memleaks.bash
+      start-test-args: -memleaks
+      make-targets: all test-venv mason-deps
+  paratest-no-local:
+    name: Chapel paratest with --no-local
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: no-local
+      cron-script: util/cron/test-no-local.bash
+      start-test-args: -compopts --no-local
+  paratest-quickstart:
+    name: Chapel paratest with quickstart configuration
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: quickstart
+      cron-script: util/cron/test-quickstart.bash
+      make-targets: all test-venv mason-deps
+  paratest-ubsan-clang:
+    name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: ubsan.clang
+      cron-script: util/cron/test-ubsan.clang.bash
+      make-targets: all test-venv mason
+  paratest-ubsan-gnu:
+    name: Chapel paratest with UndefinedBehaviorSanitizer (gnu)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: ubsan.gnu
+      cron-script: util/cron/test-ubsan.gnu.bash
+      make-targets: all test-venv mason
+  paratest-verify:
+    name: Chapel paratest with --verify
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: verify
+      cron-script: util/cron/test-verify.bash
+      start-test-args: -compopts --verify
+      make-targets: all test-venv mason-deps

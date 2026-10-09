@@ -20,7 +20,7 @@ Language Server Support
 The ``Chapel Language`` extension provides builtin support for the :ref:`Chapel
 language server <readme-chpl-language-server>` and :ref:`readme-chplcheck`. If
 ``chpl-language-server`` and ``chplcheck`` are in your ``$PATH``, the extension
-will automatically use it. If not, you can either specify you ``CHPL_HOME`` in
+will automatically use it. If not, you can either specify your ``CHPL_HOME`` in
 the extension settings or specify the path to the executables.
 
 Specifying ``CHPL_HOME``:
@@ -56,7 +56,7 @@ Since version 0.0.7, the extension also provides builtin support to generate
 ``launch.json`` files for Chapel programs via the "Create a debug launch.json
 for Chapel" command, which can be invoked from the `command palette
 <https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette>`_.
-If custom arguments are needed, its recommend to generate a default
+If custom arguments are needed, it's recommended to generate a default
 ``launch.json`` file and modify it to your needs.
 
 .. image:: editors/vscode-debug.png

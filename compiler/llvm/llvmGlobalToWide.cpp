@@ -1126,7 +1126,7 @@ namespace {
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
                             GlobalTypeFixer *TypeMapper) {
-    ValueToValueMapTy::iterator I = VM.find(C);
+    auto I = VM.find(C);
 
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return cast<Constant>(I->second);
@@ -1214,7 +1214,7 @@ namespace {
                       ValueToValueMapTy &VM,
                       RemapFlags Flags,
                       GlobalTypeFixer *TypeMapper) {
-    ValueToValueMapTy::iterator I = VM.find(V);
+    auto I = VM.find(V);
 
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return I->second;
@@ -1253,7 +1253,7 @@ namespace {
       if( isa<GlobalValue>(V) ) continue;
 
       // Check for it in the map.
-      ValueToValueMapTy::iterator I = VM.find(V);
+      auto I = VM.find(V);
 
       // If the value already exists in the map, use it.
       if (I != VM.end() && I->second) newV = I->second;
@@ -1374,8 +1374,7 @@ bool GlobalToWide::run(Module &M) {
 
 
         // Now go identify special functions in the module by name.
-        for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
-        {
+        for (auto next_func = M.begin(); next_func!= M.end(); ) {
           Function *F = &*next_func;
           ++next_func;
 
@@ -1497,8 +1496,7 @@ bool GlobalToWide::run(Module &M) {
        *    longer used (even if they still exist in the LLVM context).
        */
 
-      for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
-      {
+      for (auto next_func = M.begin(); next_func!= M.end(); ) {
         Function *F = &*next_func;
         ++next_func;
 
@@ -1742,8 +1740,7 @@ bool GlobalToWide::run(Module &M) {
           }
 
           if (containsGlobalPointers(info, F->getReturnType())) {
-            for (Function::iterator BB = NF->begin(), E = NF->end();
-                    BB != E; ++BB) {
+            for (auto BB = NF->begin(), E = NF->end(); BB != E; ++BB) {
               if (ReturnInst *RI = dyn_cast<ReturnInst>(BB->getTerminator())) {
                 Instruction *New;
                 New = fixer.callGlobalToWideFn(RI->getReturnValue(), RI);
@@ -1844,8 +1841,7 @@ bool GlobalToWide::run(Module &M) {
       RemapFlags Flags = RF_IgnoreMissingLocals;
       SmallVector<Instruction*,16> Junk;
 
-      for(Module::iterator func = M.begin(); func!= M.end(); func++)
-      {
+      for(auto func = M.begin(); func != M.end(); func++) {
         Function *F = &*func;
 
         debugPassTwo = debugAllPassTwo;
@@ -1887,12 +1883,12 @@ bool GlobalToWide::run(Module &M) {
                 RemapInstruction, moving all global types to wide types
             Throw out the junk.
          */
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             Instruction *prev = NULL;
             if( I != BB->begin() ) {
@@ -1905,14 +1901,9 @@ bool GlobalToWide::run(Module &M) {
 
             fixer.fixInstruction(insn);
 
-            if( debugPassTwo ) {
+            if (debugPassTwo) {
               // Print out insns that we added, from prev to I.
-              BasicBlock::iterator J;
-              if( prev != NULL ) {
-                J = BasicBlock::iterator(prev);
-              } else {
-                J = BB->begin();
-              }
+              auto J = prev != NULL ? BasicBlock::iterator(prev) : BB->begin();
               for( ; J != I; ++J ) {
                 Instruction *new_insn = &*J;
                 if( new_insn != prev && new_insn != insn )
@@ -1934,7 +1925,7 @@ bool GlobalToWide::run(Module &M) {
           dbgs() << "Now pass 2.2 mapping w2g and g2w: \n";
         }
 
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
@@ -1943,7 +1934,7 @@ bool GlobalToWide::run(Module &M) {
           //  dbgs() << BB->getName() << ":\n";
           //}
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
 
@@ -1967,12 +1958,12 @@ bool GlobalToWide::run(Module &M) {
           dbgs() << "Now pass 2.3 remapping instructions\n";
         }
 
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
 
@@ -1998,7 +1989,7 @@ bool GlobalToWide::run(Module &M) {
         if( debugPassTwo ) {
           dbgs() << "AFTER PASS 2 the function is:\n";
 
-          for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+          for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
             BasicBlock& BBRef = *BI;
             BasicBlock* BB = &BBRef;
             ++BI;
@@ -2007,7 +1998,7 @@ bool GlobalToWide::run(Module &M) {
               dbgs() << BB->getName() << ":\n";
             }
 
-            for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+            for (auto I = BB->begin(), E = BB->end(); I != E; ) {
               Instruction *insn = &*I;
               ++I;
               dbgs() << "    |" << *insn << "|" << "\n";
@@ -2029,9 +2020,9 @@ bool GlobalToWide::run(Module &M) {
       // Delete special functions, verifying that there are
       // no uses left.
 
-      for(specialFunctions_t::iterator I = info->specialFunctions.begin(),
-                                       E = info->specialFunctions.end();
-          I != E; ++I ) {
+      for (auto I = info->specialFunctions.begin(),
+                E = info->specialFunctions.end();
+           I != E; ++I ) {
 
         Value* v = *I;
         if (v) {
@@ -2322,7 +2313,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 
   // Is it already in the globalTypes map?
   {
-    globalTypes_t::iterator it = info->gTypes.find(t);
+    auto it = info->gTypes.find(t);
     if(it != info->gTypes.end()) {
       GlobalPointerInfo g = (*it).second;
       if( g.wideTy ) return g.wideTy;

@@ -2,13 +2,13 @@ r
 
 p myIntList
 v myIntList[1]
-e -- myIntList.pushBack(8)
+expr -- myIntList.pushBack(8)
 p myIntList
 c
 
 p myRealList
 v myRealList[1]
-e -- myRealList.pushBack(8.8)
+expr -- myRealList.pushBack(8.8)
 p myRealList
 c
 

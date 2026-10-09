@@ -52,7 +52,7 @@ struct TupleInfo {
 };
 
 
-static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
+static std::map<std::vector<TypeSymbol*>, TupleInfo> tupleMap;
 
 static
 AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock);

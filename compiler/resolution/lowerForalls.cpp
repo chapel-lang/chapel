@@ -436,12 +436,11 @@ static void removeVoidReturn(BlockStmt* cloneBody) {
 // Do not create top-level TPVs and such when there are no "top-level" yields
 // i.e. yields outside any parallel constructs.
 // A yield within an 'if' or a serial loop is considered "top-level".
-static std::map<FnSymbol*,bool> toplevelYieldsArePresent;
-typedef std::map<FnSymbol*,bool>::iterator TLVYIterator;
+static std::map<FnSymbol*,bool, AstIdLess> toplevelYieldsArePresent;
 
 static bool hasToplevelYields(FnSymbol* fn) {
   std::pair<FnSymbol*,bool> val(fn, false);
-  std::pair<TLVYIterator,bool> result = toplevelYieldsArePresent.insert(val);
+  auto result = toplevelYieldsArePresent.insert(val);
   if (result.second) {
     // Yes, we inserted a new element. Compute tlvy, store and return it.
     bool hasTlvy = false;
@@ -564,7 +563,7 @@ not contain other ForallStmts in its ShadowVarSymbols' de/init blocks, if any.
 Leaving this a future work for now.
 */
 
-static std::set<ForallStmt*> forallsAlreadyChecked;
+static std::set<ForallStmt*, AstIdLess> forallsAlreadyChecked;
 
 static void checkForallsInShadowVarBlock(ShadowVarSymbol* svar,
                                          BlockStmt* block, bool& gotError) {

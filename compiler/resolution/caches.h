@@ -23,6 +23,9 @@
 
 #include "baseAST.h"
 
+#include <unordered_map>
+#include <vector>
+
 class CalledFunInfo;
 class VisibilityInfo;
 class GenericsCacheInfo;
@@ -97,8 +100,11 @@ public:
   SymbolMap map;
 };
 
-typedef Map<FnSymbol*,     Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCache;
-typedef MapElem<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCacheElem;
+typedef std::unordered_map<size_t, std::vector<SymbolMapScopeCacheEntry*>>
+        SymbolMapScopeCacheBuckets;
+
+typedef Map<FnSymbol*,     SymbolMapScopeCacheBuckets*> SymbolMapScopeCache;
+typedef MapElem<FnSymbol*, SymbolMapScopeCacheBuckets*> SymbolMapScopeCacheElem;
 
 void      addCache(SymbolMapScopeCache& cache,
                    FnSymbol*       oldFn,
