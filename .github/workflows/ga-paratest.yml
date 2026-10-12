@@ -144,8 +144,8 @@ jobs:
               source "$CRON_SCRIPT"
             fi
 
-            "$CHPL_HOME/util/printchplenv" --all --internal \
-              > "$RUNNER_TEMP/printchplenv.txt"
+            "$CHPL_HOME/util/printchplenv" --all --internal | \
+              tee "$RUNNER_TEMP/printchplenv.txt"
 
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
             # shellcheck source=/dev/null
