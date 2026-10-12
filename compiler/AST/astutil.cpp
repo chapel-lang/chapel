@@ -433,10 +433,8 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   // symbols from among all def expressions.
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->parentSymbol) {
-      if (isLcnSymbol(def->sym)) {
-        symSet.set_add(def->sym);
-      }
+    if (def->parentSymbol && isLcnSymbol(def->sym)) {
+      symSet.set_add(def->sym);
     }
   }
 
@@ -570,10 +568,10 @@ bool isMoveOrAssign(CallExpr* call) {
 // - the RHS is a reference
 //
 bool isDerefMove(CallExpr* call) {
-  return isMoveOrAssign(call)                    &&
-         isSymExpr(call->get(2))                 &&
-         call->get(1)->isRefOrWideRef() == false &&
-         call->get(2)->isRefOrWideRef() ==  true;
+  return isMoveOrAssign(call)            &&
+         isSymExpr(call->get(2))         &&
+         !call->get(1)->isRefOrWideRef() &&
+         call->get(2)->isRefOrWideRef();
 }
 
 bool isNewLike(CallExpr* call) {
@@ -690,7 +688,7 @@ int isDefAndOrUse(SymExpr* se) {
     } else if (call->isPrimitive(PRIM_MOVE)) {
       if (isFirstActual) {
         if (se->isRef()) {
-          if (call->get(2)->isRef() == false) {
+          if (!call->get(2)->isRef()) {
             return DEF_USE; // *(se) = var;
           } else {
             return DEF; // se = ref; just copying the pointer
@@ -950,18 +948,9 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
 }
 
 bool givesType(Symbol* sym) {
-  bool retval = false;
-
-  if (isTypeSymbol(sym) == true) {
-    retval = true;
-
-  } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    retval = true;
-
-  } else if (FnSymbol* fn = toFnSymbol(sym)) {
-    retval = fn->retTag == RET_TYPE;
-  }
-
+  bool retval = isTypeSymbol(sym) ||
+                sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+                (isFnSymbol(sym) && toFnSymbol(sym)->retTag == RET_TYPE);
   return retval;
 }
 
@@ -1033,26 +1022,26 @@ bool isTypeExpr(Expr* expr) {
     retval = givesType(sym->symbol());
 
   } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_TYPEOF) == true) {
+    if (call->isPrimitive(PRIM_TYPEOF)) {
       retval = true;
 
-    } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
-               call->isPrimitive(PRIM_GET_MEMBER)       == true) {
+    } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+               call->isPrimitive(PRIM_GET_MEMBER)) {
       SymExpr*       left = toSymExpr(call->get(1));
       Type*          t    = canonicalDecoratedClassType(left->getValType());
       AggregateType* ct   = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);
 
-      if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
-          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {
+      if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) &&
+          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
         retval = true;
 
       } else {
         SymExpr*   right = toSymExpr(call->get(2));
         VarSymbol* var   = toVarSymbol(right->symbol());
 
-        if (var->isType() == true) {
+        if (var->isType()) {
           retval = true;
 
         } else if (var->immediate != NULL) {
@@ -1625,7 +1614,7 @@ static void setQualRef(Symbol* sym) {
 static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
   FunctionType* ret = ft;
 
-  std::vector<FunctionType::Formal> newFormals;
+  FunctionType::Formals newFormals;
   bool changed = false;
 
   for (auto& formal : ft->formals()) {
@@ -1793,7 +1782,7 @@ computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   // use of AST (e.g., not 'VarSymbol' fields in 'AggregateType').
   // TODO: Do other subclass of Type that embed AST need special help here?
   if (auto ft = toFunctionType(ret)) {
-    std::vector<FunctionType::Formal> newFormals;
+    FunctionType::Formals newFormals;
     bool anyChanged = false;
 
     for (int i = 0; i < ft->numFormals(); i++) {
