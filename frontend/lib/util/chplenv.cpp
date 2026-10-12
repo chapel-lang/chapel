@@ -28,34 +28,22 @@
 
 namespace chpl {
 
-static void parseChplEnv(std::string& output, ChplEnvMap& into) {
-  // Lines
-  std::string line= "";
-  std::string lineDelimiter = "\n";
-  size_t linePos = 0;        // Line break position
+static void parseChplEnv(const std::string& output, ChplEnvMap& into) {
+  size_t lineStart = 0;
+  size_t lineEnd = 0;
 
-  // Tokens
-  std::string tokenDelimiter = "=";
-  size_t delimiterPos = 0;    // Position of delimiter
-  size_t valuePos = 0;        // Position of value
-
-  std::string key = "";
-  std::string value = "";
-
-  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-  {
-    line = output.substr(0, linePos);
+  while ((lineEnd = output.find('\n', lineStart)) != std::string::npos) {
+    std::string line = output.substr(lineStart, lineEnd - lineStart);
 
     // Key is substring up until "=" on a given line
-    delimiterPos = line.find(tokenDelimiter);
-    key = line.substr(0, delimiterPos);
+    size_t delimiterPos = line.find('=');
+    std::string key = line.substr(0, delimiterPos);
 
     // Value is substring after "=" on a given line
-    valuePos = delimiterPos + tokenDelimiter.length();
-    value = line.substr(valuePos);
+    std::string value = line.substr(delimiterPos + 1);
 
     into[key] = value;
-    output.erase(0, linePos + lineDelimiter.length());
+    lineStart = lineEnd + 1;
   }
 }
 
@@ -91,7 +79,6 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
     // Save copy of command output if out-parameter was supplied
     if (printchplenvOutput) {
       assert(printchplenvOutput->empty());
-      // This is intentionally copied since parseChplEnv destroys the input
       *printchplenvOutput = commandOutput.get();
     }
 
