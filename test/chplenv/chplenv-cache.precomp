@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+touch chplenv-cache.none.good
+# match how the compiler invokes printchplenv
+export CHPLENV_SKIP_HOST=true CHPLENV_SUPPRESS_WARNINGS=true
+$CHPL_HOME/util/printchplenv --all --internal --no-tidy --simple > chplenv-cache.base.good
+CHPL_COMM=gasnet CHPL_GASNET_SEGMENT=everything $CHPL_HOME/util/printchplenv --all --internal --no-tidy --simple > chplenv-cache.gasnet.good
+cat chplenv-cache.base.good chplenv-cache.gasnet.good > chplenv-cache.base+gasnet.good
