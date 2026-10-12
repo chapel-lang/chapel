@@ -1,0 +1,1 @@
+compareArrayTypeFieldOnly-ordered.chpl:8: error: ordered comparisons not supported by default on records with type fields that have runtime type

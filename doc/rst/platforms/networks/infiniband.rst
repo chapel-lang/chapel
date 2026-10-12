@@ -128,7 +128,7 @@ values are:
   more information about this option, including how to configure job
   launch via ``PMIRUN_CMD``, see the `GASNet README for the PMI-based
   spawner
-  <https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README>`_
+  <https://github.com/BerkeleyLab/gasnet/tree/main/other/pmi-spawner/README>`_
   (also available at
   ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/pmi-spawner/README``).
 
@@ -180,7 +180,7 @@ For further information about environment variables that can be used
 to control how `ssh` is used to launch your Chapel program, see the
 descriptions of ``GASNET_SSH_CMD`` and ``GASNET_SSH_OPTIONS`` in the
 `GASNet README for the ssh spawner
-<https://bitbucket.org/berkeleylab/gasnet/src/master/other/ssh-spawner/README>`_
+<https://github.com/BerkeleyLab/gasnet/tree/main/other/ssh-spawner/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/ssh-spawner/README``).
 
@@ -216,7 +216,7 @@ preferred for InfiniBand):
 For tips and best practices about how to configure/use GASNet to avoid
 such conflicts with MPI, please refer to the section "Build-time
 Configuration" in the `GASNet README for the MPI spawner
-<https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README>`_
+<https://github.com/BerkeleyLab/gasnet/tree/main/other/mpi-spawner/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/mpi-spawner/README``).
 Within this README, see also the description of the ``MPIRUN_CMD``
@@ -362,18 +362,23 @@ GASNet also provides additional environment variable settings that can
 optionally be used to control the detailed behavior of these threads, see the
 GASNet documentation referenced in :ref:`ibv-conduit-docs`.
 
+.. _readme-infiniband-CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE:
+
 By default, the blocking progress threads are created by GASNet and do not
 have any thread-specific core binding.  An experimental Chapel feature
-allows more control over the behavior of the blocking progress threads:
+allows the blocking progress thread to be bound to a specific core:
 
 .. code-block:: bash
 
+      export CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE=true
       export CHPL_RT_COMM_GASNET_DEFER_PROGRESS_THREADS=true
 
-Specifically, this setting enables the
-``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
-earlier section to additionally control the placement and binding of GASNet's
-blocking send and receive progress threads.
+This combination dedicates a core for the receive progress thread (as
+well as the PSHM progress thread, if using co-locales). That core will be
+dedicated to improving communication performance and will not be
+available for other computation. Note that it is possible to dedicate a
+core for the PSHM progress thread without changing the receive progress
+thread by setting only the first of these.
 
 .. _ibv-conduit-docs:
 

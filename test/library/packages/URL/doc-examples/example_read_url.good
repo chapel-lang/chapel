@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test page</title>
+</head>
+<body>
+  <h1>Example page for Chapel networking tests</h1>
+  <p>Hello, world!</p>
+</body>
+</html>
+

@@ -1,0 +1,1 @@
+intoVarFromTuple4.chpl:2: error: cannot initialize return value of type '2*[domain(1,int(64),one)] int(64)' from an '2*int(64)'

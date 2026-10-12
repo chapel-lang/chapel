@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+srcname="DemoChapelLibrary.chpl"
+
+echo Building dynamic Chapel library...
+$chpl --library --dynamic --no-builtin-runtime $srcname

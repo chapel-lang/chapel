@@ -1,2 +1,4 @@
+# no need to test these in most configs
+CHPL_TARGET_PLATFORM!=linux64
 # doesn't trigger with checks turned off, so skip testing that
 COMPOPTS <= --fast

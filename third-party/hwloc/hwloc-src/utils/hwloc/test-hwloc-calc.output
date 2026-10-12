@@ -85,8 +85,23 @@ Group0:1.Group2:2 Group0:1.Group2:3
 # List of MCDRAM subtype NUMA Nodes near 2 L3
 3,5
 
-# Hierarchical list of MCDRAM subtype NUMA nodes within Package
+# Hierarchical list of MCDRAM subtype NUMA nodes within Package (DDR node is ignored)
 Package:0.NUMANode:1 Package:0.NUMANode:7
+
+# List of default NUMA Nodes in a Package
+0,1,2,3
+
+# Number of Memory Tiers
+2
+
+# Memory Tier of a single node
+1
+
+# Check that we don't mix a single input NUMA node with other local nodes
+2
+
+# Check that we find CPU-less NUMA nodes like others
+1,2
 
 # List of Machine objects
 0
@@ -166,6 +181,23 @@ NUMANode:1
 # Best-capacity local node near a PU (node:6@Machine)
 6
 
+
+# no node is local to one pu of each package
+
+
+# 1 node is local to one package and one pu of the other
+0
+
+# both nodes are local to one pu of each package, if intersecting
+NUMANode:0,NUMANode:1
+
+# both nodes are local to one package and one pu of the other, if intersecting
+0,1
+
+# all local nodes
+0%1
+
+
 # CPU kind by index
 0x000000ff
 
@@ -174,6 +206,12 @@ NUMANode:1
 
 # CPU kind by info attr
 0x00000fff
+
+# Number of CPU kinds
+2
+
+# List of CPU kinds
+0,2
 
 # Caches with attributes
 0x0000000b
@@ -239,11 +277,14 @@ NUMANode:1
 0-2,5-6,8,10,14,16-17,21,24
 8-
 
-# Converting to systemd-dbus-api
-AllowedCPUs ay 0x0001 0x01
-AllowedCPUs ay 0x0004 0x01 0x00 0x00 0x80
-AllowedCPUs ay 0x0008 0x01 0x00 0x00 0x80 0x00 0x00 0x00 0x80
-AllowedCPUs ay 0x0009 0x0f 0xf0 0x00 0x00 0xf0 0x00 0x00 0x00 0x0f
+# Converting a cpuset to the systemd-dbus-api format
+ay 0x0001 0x01
+ay 0x0004 0x01 0x00 0x00 0x80
+ay 0x0008 0x01 0x00 0x00 0x80 0x00 0x00 0x00 0x80
+ay 0x0009 0x0f 0xf0 0x00 0x00 0xf0 0x00 0x00 0x00 0x0f
+# Converting a nodeset to the systemd-dbus-api format
+ay 0x0001 0x05
+ay 0x0001 0x0f
 
 # Reading from stdin
 Waiting for locations to process on stdin...

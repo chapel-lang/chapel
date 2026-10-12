@@ -5,6 +5,7 @@ _xnet_files = \
 	prov/tcp/src/xnet_cm.c		\
 	prov/tcp/src/xnet_rdm_cm.c	\
 	prov/tcp/src/xnet_domain.c	\
+	prov/tcp/src/xnet_av.c	\
 	prov/tcp/src/xnet_rma.c	\
 	prov/tcp/src/xnet_msg.c	\
 	prov/tcp/src/xnet_ep.c		\

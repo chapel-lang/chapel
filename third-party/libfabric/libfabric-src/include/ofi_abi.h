@@ -46,31 +46,16 @@ extern "C" {
 /*
  * ABI version support definitions.
  *
- * CURRENT_ABI:
- * This defines the current ABI version.  The ABI version is separate from
- * the packaging or interface versions.  Whenever a change is
- * added to the interfaces that breaks the ABI, this definition should be
- * updated.  If you don't know if a change breaks the ABI, then you shouldn't
- * be modifying the header files under include/rdma!  :P
- *
  * DEFAULT_SYMVER_PRE:
  * This macro appends an underscore to a function name.  It should be used
  * around any function that is exported from the library as the default call
  * that applications invoke.
  *
- * CURRENT_SYMVER:
- * This macro is placed after a function definition.  It should be used with
- * any function that is exported by the library and was added as part of the
- * current ABI (identified by CURRENT_ABI) version.  It results in the function
- * being exported at the current ABI version.  This is the macro to use when
- * exporting new functions.
- *
  * DEFAULT_SYMVER:
- * This macro is similar to CURRENT_SYMVER, but is used to specify that a
- * function, while the default interface that applications call, was added
- * in a previous version of the ABI.  Any function that was not impacted by
- * an ABI change should use this macro.  This often means converting functions
- * marked as CURRENT_SYMVER to DEFAULT_SYMVER as part of the ABI update.
+ * This macro is placed after a function definition.  It should be used to
+ * specify that a function is the default interface that applications call
+ * and is/was added in the specified ABI version.  Any function that is new
+ * or is not impacted by an ABI change should use this macro.
  *
  * COMPAT_SYMVER:
  * The compatibility symbols are used to mark interfaces which were exported
@@ -83,21 +68,19 @@ extern "C" {
  * ABI version 1.1 modified the behavior for function foo().
  * This scenario would result in the following definitions.
  *
- * CURRENT_ABI "MYLIB_1.1"
- *
  * This function is the main entry point for function bar.
  * int DEFAULT_SYMVER_PRE(bar)(void)
  * {
  *    ...
  * }
- * DEFAULT_SYMVER(bar_, bar, MYLIB_1.0);
+ * DEFAULT_SYMVER(bar_, bar, FABRIC_1.0);
  *
  * This function is the main entry point for function foo.
  * int DEFAULT_SYMVER_PRE(foo)(void)
  * {
  *    ...
  * }
- * CURRENT_SYMVER(foo_, foo);
+ * DEFAULT_SYMVER(foo_, foo, FABRIC_1.1);
  *
  * This function is the old entry point for function foo, provided for
  * backwards compatibility.
@@ -105,13 +88,11 @@ extern "C" {
  * {
  *    ...
  * }
- * COMPAT_SYMVER(foo_1_0, foo, MYLIB_1.0);
+ * COMPAT_SYMVER(foo_1_0, foo, FABRIC_1.0);
  *
  * By convention, the name of compatibility functions is the exported function
  * name appended with the ABI version that it is compatible with.
  */
-
-#define CURRENT_ABI "FABRIC_1.7"
 
 #if  HAVE_ALIAS_ATTRIBUTE == 1
 #define DEFAULT_SYMVER_PRE(a) a##_
@@ -126,8 +107,6 @@ extern "C" {
 	asm(".symver " #name "," #api "@" #ver "\n")
 #define DEFAULT_SYMVER(name, api, ver) \
 	asm(".symver " #name "," #api "@@" #ver "\n")
-#define CURRENT_SYMVER(name, api) \
-	asm(".symver " #name "," #api "@@" CURRENT_ABI "\n")
 
 #else
 
@@ -136,11 +115,8 @@ extern "C" {
 #if HAVE_ALIAS_ATTRIBUTE == 1
 #define DEFAULT_SYMVER(name, api, ver) \
 	extern typeof (name) api __attribute__((alias(#name)));
-#define CURRENT_SYMVER(name, api) \
-	extern typeof (name) api __attribute__((alias(#name)));
 #else
 #define DEFAULT_SYMVER(name, api, ver)
-#define CURRENT_SYMVER(name, api)
 #endif  /* HAVE_ALIAS_ATTRIBUTE == 1*/
 
 #endif /* HAVE_SYMVER_SUPPORT */

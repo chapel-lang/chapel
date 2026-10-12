@@ -1,0 +1,7 @@
+anymanaged-init2.chpl:3: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+anymanaged-init2.chpl:3: warning: please use '?' when declaring a field with generic type
+anymanaged-init2.chpl:3: note: for example with 'A(?,?)'
+anymanaged-init2.chpl:4: error: this recursive type construction is not yet handled
+Note: This source location is a guess.

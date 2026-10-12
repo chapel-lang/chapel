@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2024 Inria.  All rights reserved.
+ * Copyright © 2009-2025 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2023 Université de Reims Champagne-Ardenne.  All rights reserved.
@@ -84,6 +84,7 @@ static int show_first_only = 0;
 static int show_local_memory = 0;
 static int show_local_memory_flags = HWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY | HWLOC_LOCAL_NUMANODE_FLAG_LARGER_LOCALITY;
 static hwloc_memattr_id_t best_memattr_id = (hwloc_memattr_id_t) -1;
+static int show_default_memory = 0;
 static unsigned long best_node_flags = 0;
 static unsigned current_obj;
 static const char *only_attr_name = NULL;
@@ -105,6 +106,7 @@ void usage(const char *name, FILE *where)
   fprintf (where, "  --local-memory        Only display the local memory nodes\n");
   fprintf (where, "  --local-memory-flags <x>   Change flags for selecting local memory nodes\n");
   fprintf (where, "  --best-memattr <attr> Only display the best target among the local nodes\n");
+  fprintf (where, "  --default-nodes       Only display the default local nodes\n");
   fprintf (where, "  --first               Only report the first matching object\n");
   fprintf (where, "  -n                    Prefix each line with the index of the considered object\n");
   fprintf (where, "Object filtering options:\n");
@@ -482,6 +484,23 @@ hwloc_info_show_local_memory(hwloc_topology_t topology, hwloc_obj_t node,
 }
 
 static void
+hwloc_info_show_default_memory(hwloc_topology_t topology, hwloc_obj_t node,
+                               hwloc_obj_t obj, const char *objs,
+                               int number, const char *prefix, int verbose)
+{
+  char nodes[128];
+  hwloc_obj_type_snprintf(nodes, sizeof(nodes), node, 1);
+  if (!only_attr_name) {
+    if (verbose < 0)
+      printf("%s%s:%u\n", prefix, nodes, node->logical_index);
+    else
+      printf("%s%s L#%u = default node #%u of %s L#%u\n",
+             prefix, nodes, node->logical_index, number, objs, obj->logical_index);
+  }
+  hwloc_info_show_obj(topology, node, nodes, prefix, verbose);
+}
+
+static void
 hwloc_info_show_single_obj(hwloc_topology_t topology,
                            hwloc_obj_t obj, const char *objs,
                            const char *prefix, int verbose)
@@ -653,7 +672,7 @@ hwloc_calc_process_location_info_cb(struct hwloc_calc_location_context_s *lconte
       loc.location.object = obj;
       err = hwloc_get_local_numanode_objs(topology, &loc, &nrnodes, nodes, show_local_memory_flags);
       if (!err) {
-        unsigned i;
+        unsigned i, j;
         if (best_memattr_id != (hwloc_memattr_id_t) -1) {
           /* only keep the best ones for that memattr */
 
@@ -661,27 +680,61 @@ hwloc_calc_process_location_info_cb(struct hwloc_calc_location_context_s *lconte
           loc.type = HWLOC_LOCATION_TYPE_CPUSET;
           loc.location.cpuset = obj->cpuset;
           err = hwloc_utils_get_best_node_in_array_by_memattr(topology, best_memattr_id,
-                                                               nrnodes, nodes, &loc, best_node_flags, nodeset);
+                                                              nrnodes, nodes, &loc, best_node_flags, nodeset, verbose);
           if (err < -1) {
             if (verbose > 0)
               fprintf(stderr, "Failed to find a best local node for memory attribute.\n");
             /* on error, nodeset is zeroed, and we report nothing below (except if default flag is set) */
           }
         }
-        for(i=0; i<nrnodes; i++) {
+        for(i=0, j=0; i<nrnodes; i++) {
           if (!hwloc_bitmap_isset(nodeset, nodes[i]->os_index))
             continue;
           if (show_index_prefix)
-	    snprintf(prefix, sizeof(prefix), "%u.%u: ", current_obj, i);
-          hwloc_info_show_local_memory(topology, nodes[i], obj, objs, i, prefix, verbose);
+	    snprintf(prefix, sizeof(prefix), "%u.%u: ", current_obj, j);
+          hwloc_info_show_local_memory(topology, nodes[i], obj, objs, j, prefix, verbose);
           if (show_first_only)
             break;
+          j++;
         }
       }
     } else {
       fprintf(stderr, "Failed to allocate array of local NUMA nodes\n");
     }
     hwloc_bitmap_free(nodeset);
+    free(nodes);
+  } else if (show_default_memory) {
+    int err;
+    unsigned i, j;
+    unsigned nrnodes;
+    hwloc_obj_t *nodes;
+    hwloc_nodeset_t default_nodeset = hwloc_bitmap_alloc();
+    nrnodes = hwloc_bitmap_weight(hwloc_topology_get_topology_nodeset(topology));
+    nodes = malloc(nrnodes * sizeof(*nodes));
+    if (default_nodeset && nodes) {
+      err = hwloc_topology_get_default_nodeset(topology, default_nodeset, 0);
+      if (!err) {
+        struct hwloc_location loc;
+        loc.type = HWLOC_LOCATION_TYPE_OBJECT;
+        loc.location.object = obj;
+        err = hwloc_get_local_numanode_objs(topology, &loc, &nrnodes, nodes, show_local_memory_flags);
+        if (!err) {
+          for(i=0, j=0; i<nrnodes; i++) {
+            if (!hwloc_bitmap_isset(default_nodeset, nodes[i]->os_index))
+              continue;
+            if (show_index_prefix)
+              snprintf(prefix, sizeof(prefix), "%u.%u: ", current_obj, j);
+            hwloc_info_show_default_memory(topology, nodes[i], obj, objs, j, prefix, verbose);
+            if (show_first_only)
+              break;
+            j++;
+          }
+        }
+      }
+    } else {
+      fprintf(stderr, "Failed to allocate array of local NUMA nodes for default\n");
+    }
+    hwloc_bitmap_free(default_nodeset);
     free(nodes);
   } else {
     hwloc_info_show_single_obj(topology, obj, objs, prefix, verbose);
@@ -891,6 +944,9 @@ main (int argc, char *argv[])
         show_local_memory = 1;
         best_memattr_str = argv[1];
         opt = 1;
+      }
+      else if (!strcmp (argv[0], "--default-nodes")) {
+        show_default_memory = 1;
       }
       else if (!strcmp (argv[0], "--first")) {
         show_first_only = 1;

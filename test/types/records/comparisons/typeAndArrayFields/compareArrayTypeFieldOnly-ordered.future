@@ -1,0 +1,10 @@
+language design: How should array type fields be handled in <, >, <=, >=?
+
+If we improve the ==/!= operators to reason about `type` fields as
+proposed in sibling futures to this one, we'll need to decide what to
+do about ordered comparison operators.  My instinct would be to have a
+type field with runtime type information throw up its hands in the
+default compiler-generated comparisons, similar to what we do for
+array fields themselves.
+
+#28755

@@ -1,0 +1,3 @@
+ # imagInfinity.good
+--warn-unstable # imagInfinity.unstable.good
+--warn-unstable --edition=preview # imagInfinity.good

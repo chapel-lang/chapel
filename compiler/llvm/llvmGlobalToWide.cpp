@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -282,14 +282,9 @@ namespace {
     trackLLVMValue(ptr);
 
     Constant* undef = UndefValue::get(widePtrType);
-#if HAVE_LLVM_VER >= 150
     IRBuilder<> irBuilder(insertBefore);
     Value* undefLocPtr = irBuilder.CreateExtractValue(undef, wideAddrGEP);
     trackLLVMValue(undefLocPtr);
-#else
-    Constant* undefLocPtr = ConstantExpr::getExtractValue(undef,
-                                                          wideAddrGEP);
-#endif
     // get the local address space pointer.
     Value* cast = CastInst::CreatePointerCast(ptr, undefLocPtr->getType(),
                                               "", getInsertPosition(insertBefore));
@@ -323,8 +318,8 @@ namespace {
 
     Value* alloc = makeAlloca(allocType, "widecast", insertBefore);
 
-    Type* fromPtrType = llvm::PointerType::getUnqual(fromValue->getType());
-    Type* newPtrType = llvm::PointerType::getUnqual(toType);
+    auto fromPtrType = getPointerType(fromValue->getType());
+    auto newPtrType = getPointerType(toType);
 
     Value* allocAsFrom = alloc;
     if (allocAsFrom->getType() != fromPtrType) {
@@ -401,7 +396,7 @@ namespace {
       voidPtrTy = getPointerType(M.getContext(), 0);
       glVoidPtrTy = getPointerType(M.getContext(), info->globalSpace);
       wideVoidPtrTy = convertTypeGlobalToWide(&M, info, glVoidPtrTy);
-      ptrLocTy = llvm::PointerType::getUnqual(info->localeIdType);
+      ptrLocTy = getPointerType(info->localeIdType);
       i64Ty = llvm::Type::getInt64Ty(M.getContext());
       i8Ty = llvm::Type::getInt8Ty(M.getContext());
 
@@ -1131,7 +1126,7 @@ namespace {
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
                             GlobalTypeFixer *TypeMapper) {
-    ValueToValueMapTy::iterator I = VM.find(C);
+    auto I = VM.find(C);
 
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return cast<Constant>(I->second);
@@ -1219,7 +1214,7 @@ namespace {
                       ValueToValueMapTy &VM,
                       RemapFlags Flags,
                       GlobalTypeFixer *TypeMapper) {
-    ValueToValueMapTy::iterator I = VM.find(V);
+    auto I = VM.find(V);
 
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return I->second;
@@ -1258,7 +1253,7 @@ namespace {
       if( isa<GlobalValue>(V) ) continue;
 
       // Check for it in the map.
-      ValueToValueMapTy::iterator I = VM.find(V);
+      auto I = VM.find(V);
 
       // If the value already exists in the map, use it.
       if (I != VM.end() && I->second) newV = I->second;
@@ -1304,7 +1299,11 @@ bool GlobalToWide::run(Module &M) {
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
         dbgs() << "GlobalToWide: ";
         dbgs().write_escaped(M.getModuleIdentifier()) << '\n';
+#if LLVM_VERSION_MAJOR >= 21
+        dbgs().write_escaped(M.getTargetTriple().str()) << '\n';
+#else
         dbgs().write_escaped(M.getTargetTriple()) << '\n';
+#endif
       }
 
       // Normally we expect a user of this optimization to have
@@ -1312,12 +1311,12 @@ bool GlobalToWide::run(Module &M) {
       // information, but if not we set some defaults here so
       // that tests can be created and bugpoint can be run.
       if( !info ) {
-        Type* voidTy = llvm::Type::getVoidTy(M.getContext());
-        Type* voidPtrTy = getPointerType(M.getContext(), 0);
-        Type* i64Ty = llvm::Type::getInt64Ty(M.getContext());
-        Type* i8Ty = llvm::Type::getInt8Ty(M.getContext());
+        auto voidTy = llvm::Type::getVoidTy(M.getContext());
+        auto voidPtrTy = getPointerType(M.getContext(), 0);
+        auto i64Ty = llvm::Type::getInt64Ty(M.getContext());
+        auto i8Ty = llvm::Type::getInt8Ty(M.getContext());
         const DataLayout& DL = M.getDataLayout();
-        Type* sizeTy = DL.getIntPtrType(M.getContext(), 0);
+        auto sizeTy = DL.getIntPtrType(M.getContext(), 0);
 
         errs() << "Warning: GlobalToWide using default configuration\n";
         info = new GlobalToWideInfo();
@@ -1375,8 +1374,7 @@ bool GlobalToWide::run(Module &M) {
 
 
         // Now go identify special functions in the module by name.
-        for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
-        {
+        for (auto next_func = M.begin(); next_func!= M.end(); ) {
           Function *F = &*next_func;
           ++next_func;
 
@@ -1498,8 +1496,7 @@ bool GlobalToWide::run(Module &M) {
        *    longer used (even if they still exist in the LLVM context).
        */
 
-      for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
-      {
+      for (auto next_func = M.begin(); next_func!= M.end(); ) {
         Function *F = &*next_func;
         ++next_func;
 
@@ -1743,8 +1740,7 @@ bool GlobalToWide::run(Module &M) {
           }
 
           if (containsGlobalPointers(info, F->getReturnType())) {
-            for (Function::iterator BB = NF->begin(), E = NF->end();
-                    BB != E; ++BB) {
+            for (auto BB = NF->begin(), E = NF->end(); BB != E; ++BB) {
               if (ReturnInst *RI = dyn_cast<ReturnInst>(BB->getTerminator())) {
                 Instruction *New;
                 New = fixer.callGlobalToWideFn(RI->getReturnValue(), RI);
@@ -1826,7 +1822,7 @@ bool GlobalToWide::run(Module &M) {
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
           GlobalAlias *new_alias = GlobalAlias::create(
-              llvm::PointerType::getUnqual(new_type),
+              getPointerType(new_type),
               0, /* addr space */
               ga->getLinkage(),
               "", init, &M);
@@ -1845,8 +1841,7 @@ bool GlobalToWide::run(Module &M) {
       RemapFlags Flags = RF_IgnoreMissingLocals;
       SmallVector<Instruction*,16> Junk;
 
-      for(Module::iterator func = M.begin(); func!= M.end(); func++)
-      {
+      for(auto func = M.begin(); func != M.end(); func++) {
         Function *F = &*func;
 
         debugPassTwo = debugAllPassTwo;
@@ -1888,12 +1883,12 @@ bool GlobalToWide::run(Module &M) {
                 RemapInstruction, moving all global types to wide types
             Throw out the junk.
          */
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             Instruction *prev = NULL;
             if( I != BB->begin() ) {
@@ -1906,14 +1901,9 @@ bool GlobalToWide::run(Module &M) {
 
             fixer.fixInstruction(insn);
 
-            if( debugPassTwo ) {
+            if (debugPassTwo) {
               // Print out insns that we added, from prev to I.
-              BasicBlock::iterator J;
-              if( prev != NULL ) {
-                J = BasicBlock::iterator(prev);
-              } else {
-                J = BB->begin();
-              }
+              auto J = prev != NULL ? BasicBlock::iterator(prev) : BB->begin();
               for( ; J != I; ++J ) {
                 Instruction *new_insn = &*J;
                 if( new_insn != prev && new_insn != insn )
@@ -1935,7 +1925,7 @@ bool GlobalToWide::run(Module &M) {
           dbgs() << "Now pass 2.2 mapping w2g and g2w: \n";
         }
 
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
@@ -1944,7 +1934,7 @@ bool GlobalToWide::run(Module &M) {
           //  dbgs() << BB->getName() << ":\n";
           //}
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
 
@@ -1968,12 +1958,12 @@ bool GlobalToWide::run(Module &M) {
           dbgs() << "Now pass 2.3 remapping instructions\n";
         }
 
-        for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+        for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
 
-          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+          for (auto I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
 
@@ -1999,7 +1989,7 @@ bool GlobalToWide::run(Module &M) {
         if( debugPassTwo ) {
           dbgs() << "AFTER PASS 2 the function is:\n";
 
-          for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
+          for (auto BI = F->begin(), BE = F->end(); BI != BE; ) {
             BasicBlock& BBRef = *BI;
             BasicBlock* BB = &BBRef;
             ++BI;
@@ -2008,7 +1998,7 @@ bool GlobalToWide::run(Module &M) {
               dbgs() << BB->getName() << ":\n";
             }
 
-            for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
+            for (auto I = BB->begin(), E = BB->end(); I != E; ) {
               Instruction *insn = &*I;
               ++I;
               dbgs() << "    |" << *insn << "|" << "\n";
@@ -2030,9 +2020,9 @@ bool GlobalToWide::run(Module &M) {
       // Delete special functions, verifying that there are
       // no uses left.
 
-      for(specialFunctions_t::iterator I = info->specialFunctions.begin(),
-                                       E = info->specialFunctions.end();
-          I != E; ++I ) {
+      for (auto I = info->specialFunctions.begin(),
+                E = info->specialFunctions.end();
+           I != E; ++I ) {
 
         Value* v = *I;
         if (v) {
@@ -2149,18 +2139,9 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
   assert(info->localeIdType);
   assert(info->nodeIdType);
 
-  GlobalPointerInfo & r = info->gTypes[globalPtrTy];
+  GlobalPointerInfo& r = info->gTypes[globalPtrTy];
 
-  if (isOpaquePointer(globalPtrTy)) {
-    ptrTy = llvm::PointerType::getUnqual(module->getContext());
-  } else {
-#ifdef HAVE_LLVM_TYPED_POINTERS
-    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
-#else
-    assert(false && "Should not be reachable");
-#endif
-  }
-
+  ptrTy = getPointerType(module->getContext());
   locTy = info->localeIdType;
   nodeTy = info->nodeIdType;
 
@@ -2314,16 +2295,7 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  llvm::PointerType* ptrTy = nullptr;
-  if (eltTy) {
-#ifdef HAVE_LLVM_TYPED_POINTERS
-    ptrTy = llvm::PointerType::getUnqual(eltTy);
-#else
-    assert(false && "Should not be reachable");
-#endif
-  } else {
-    ptrTy = llvm::PointerType::getUnqual(context);
-  }
+  llvm::Type* ptrTy = getPointerType(context);
   assert(ptrTy);
   fields[1] = ptrTy;
 
@@ -2341,7 +2313,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 
   // Is it already in the globalTypes map?
   {
-    globalTypes_t::iterator it = info->gTypes.find(t);
+    auto it = info->gTypes.find(t);
     if(it != info->gTypes.end()) {
       GlobalPointerInfo g = (*it).second;
       if( g.wideTy ) return g.wideTy;
@@ -2409,29 +2381,12 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
   }
 
   if (t->isPointerTy()) {
-    if (isOpaquePointer(t)) {
-      if (t->getPointerAddressSpace() == info->globalSpace ||
-          t->getPointerAddressSpace() == info->wideSpace) {
-          // Replace the pointer with a struct containing {locale, address}
-          return createWidePointerToType(module, info, nullptr);
-      } else {
-          return llvm::PointerType::get(context, t->getPointerAddressSpace());
-      }
+    if (t->getPointerAddressSpace() == info->globalSpace ||
+        t->getPointerAddressSpace() == info->wideSpace) {
+        // Replace the pointer with a struct containing {locale, address}
+        return createWidePointerToType(module, info, nullptr);
     } else {
-#ifdef HAVE_LLVM_TYPED_POINTERS
-      Type* eltType = t->getPointerElementType();
-      assert(t != t->getPointerElementType());  // detect simple recursion
-      Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
-      if (t->getPointerAddressSpace() == info->globalSpace ||
-          t->getPointerAddressSpace() == info->wideSpace) {
-          // Replace the pointer with a struct containing {locale, address}
-          return createWidePointerToType(module, info, wideEltType);
-      } else {
-          return llvm::PointerType::get(wideEltType, t->getPointerAddressSpace());
-      }
-#else
-      assert(false && "Should not be reachable");
-#endif
+        return getPointerType(context, t->getPointerAddressSpace());
     }
   }
 

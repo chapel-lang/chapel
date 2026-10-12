@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# uses '{N;d;}' to delete the following line. Here, it's just an empty line
+cat $2 | sed '/WARNING: AMD GPU device(s) is\/are in a low-power state. Check power control\/runtime_status/{N;d;}' > $2.tmp
+cat $2.tmp > $2
+rm $2.tmp

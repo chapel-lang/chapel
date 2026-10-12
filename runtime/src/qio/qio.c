@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,8 @@
 #include "qbuffer.h"
 #include "qio_plugin_api.h"
 
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-rt-math.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -143,10 +144,6 @@ void qio_unlock(qio_lock_t* x) {
   x->owner = NULL_OWNER;
   atomic_unlock_spinlock_t(&x->lock);
 }
-#endif
-
-#ifdef CHPL_RT_UNIT_TEST
-#include "qio_plugin_api_dummy.c"
 #endif
 
 qioerr qio_readv(qio_file_t* file, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
@@ -889,7 +886,7 @@ qioerr qio_file_init_plugin(qio_file_t** file_out, void* file_info, int fdflags,
   }
 
   if (seekable) {
-    err = chpl_qio_filelength(file_info, &initial_length);
+    err = qio_plugin_wrapper_filelength(file_info, &initial_length);
     // Disregard errors in case it is not seekable (and if we need seek to get the
     // length). If we can't get the length, we'll set initial_pos below anyways.
     if (err) initial_length = 0;
@@ -986,7 +983,7 @@ qioerr _qio_file_do_close(qio_file_t* f)
 
   if (f->file_info) {
     if (f->hints & QIO_HINT_OWNED)  // Should always be true
-      err = chpl_qio_file_close(f->file_info);
+      err = qio_plugin_wrapper_file_close(f->file_info);
     f->hints &= ~QIO_HINT_OWNED;
   }
 
@@ -1033,7 +1030,7 @@ qioerr qio_file_sync(qio_file_t* f)
   } else if( f->fd >= 0 ) {
     err = qio_int_to_err(sys_fsync(f->fd));
   } else if( f->file_info ) {
-    err = chpl_qio_fsync(f->file_info);
+    err = qio_plugin_wrapper_fsync(f->file_info);
   }
 
   return err;
@@ -1309,7 +1306,7 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)
-    return chpl_qio_getpath(f->file_info, (uint8_t**) string_out, &len);
+    return qio_plugin_wrapper_getpath(f->file_info, (uint8_t**) string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
@@ -1332,7 +1329,7 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
     err = qio_int_to_err(sys_fstat(f->fd, &stats));
     *len_out = stats.st_size;
   } else if (f->file_info) {
-    err = chpl_qio_filelength(f->file_info, len_out);
+    err = qio_plugin_wrapper_filelength(f->file_info, len_out);
   } else {
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
   }
@@ -1340,6 +1337,11 @@ qioerr qio_file_length(qio_file_t* f, int64_t *len_out)
   qio_unlock(& f->lock);
 
   return err;
+}
+
+bool qio_isatty(qio_file_t* file)
+{
+  return (file->fd != -1) && isatty(file->fd);
 }
 
 /* CHANNELS ----------------------------- */
@@ -1405,7 +1407,7 @@ qioerr _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_
   // Setup any plugin channel, if necessary
   if (file->file_info != NULL) {
     void* chan_info = NULL;
-    err = chpl_qio_setup_plugin_channel(file->file_info, &chan_info, start, end, ch);
+    err = qio_plugin_wrapper_setup_plugin_channel(file->file_info, &chan_info, start, end, ch);
     if (err) return err;
     ch->chan_info = chan_info;
   }
@@ -1521,7 +1523,7 @@ qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hi
   if( err ) return err;
 
   start += file->initial_pos;
-  end += file->initial_pos;
+  CHPL_SAT_SADD(end, end, file->initial_pos, int64_t, uint64_t, INT64_MAX);
 
   ch->bit_buffer = 0;
   ch->bit_buffer_bits = 0;
@@ -1827,7 +1829,7 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
   // Close plugin structure if any
   if (ch->chan_info != NULL)
-    chpl_qio_channel_close(ch->chan_info);
+    qio_plugin_wrapper_channel_close(ch->chan_info);
 
   if( !destroyed_buffer && qbuffer_is_initialized(&ch->buf) ) {
     // Destroy the buffer.
@@ -2019,7 +2021,8 @@ qioerr _buffered_get_memory_file_lock_held(qio_channel_t* ch, int64_t amt, int w
 
 
   start = qbuffer_end_offset(&ch->buf);
-  end = start + amt;
+  CHPL_SAT_SADD(end, start, amt, int64_t, uint64_t, INT64_MAX);
+
 
   // do not exceed end_pos.
   if( end > ch->end_pos ) {
@@ -2265,7 +2268,7 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
   }
 
   if (ch->chan_info) {
-    return chpl_qio_read_atleast(ch->chan_info, amt);
+    return qio_plugin_wrapper_read_atleast(ch->chan_info, amt);
   }
 
   //printf("Allocating bufferspace %lli\n", (long long int) amt);
@@ -2692,7 +2695,7 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
   //debug_print_qbuffer(&ch->buf);
 
   if (ch->chan_info && (ch->flags & QIO_FDFLAG_WRITEABLE)) {
-    return chpl_qio_write(ch->chan_info, nbytes);
+    return qio_plugin_wrapper_write(ch->chan_info, nbytes);
   }
 
   if(ch->hints & QIO_HINT_DIRECT) {
@@ -3462,7 +3465,7 @@ qioerr _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64
   {
     int64_t start, end;
     start = _right_mark_start(ch);
-    end = start + len_bytes;
+    CHPL_SAT_SADD(end, start, len_bytes, int64_t, uint64_t, INT64_MAX);
     if( end > ch->end_pos ) {
       end = ch->end_pos;
     }
@@ -3976,7 +3979,7 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   // Fast path: all data is available in the cached area.
   if( nbytes < INTPTR_MAX &&
       qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
-    ch->cached_cur = qio_ptr_add(ch->cached_cur, nbytes);
+    ch->cached_cur = nbytes == 0 ? ch->cached_cur : qio_ptr_add(ch->cached_cur, nbytes);
     return 0;
   }
 
@@ -4254,7 +4257,8 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   // We've got > 64 bits to write.
   part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
   part_two = nbits - part_one;
-  part_one_bits = (tmp_bits << part_one) | ( v >> part_two );
+  part_one_bits = CHPL_SAFE_LSHIFT(tmp_bits, part_one, 64) |
+                  CHPL_SAFE_RSHIFT(v, part_two, 64);
   part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
   tmp_bits = v;
   tmp_live = part_two;
@@ -4315,7 +4319,6 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   qio_bitbuffer_t part_one, part_two;
   qio_bitbuffer_t parts_be[2];
   qio_bitbuffer_t tmp_bits;
-  uint64_t tmpv;
   int tmp_live;
   int tmp_leftshift;
   int part_bits;
@@ -4340,15 +4343,14 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   if( nbits > tmp_leftshift ) {
     // we will need more than one word...
     v_rightshift = nbits - tmp_leftshift;
-    tmpv = (v_rightshift < 64) ? v : 0;
-    part_one = (tmp_bits << tmp_leftshift) | (tmpv >> v_rightshift);
-    tmpv = (v_rightshift > 0) ? v : 0;
-    part_two = tmpv << (8*sizeof(qio_bitbuffer_t) - v_rightshift);
+    part_one = CHPL_SAFE_LSHIFT(tmp_bits, tmp_leftshift, 64) |
+               CHPL_SAFE_RSHIFT(v, v_rightshift, 64);
+    part_two = CHPL_SAFE_LSHIFT(v, 8*sizeof(qio_bitbuffer_t) - v_rightshift, 64);
   } else {
     // otherwise, we will not spill over..
     v_leftshift = tmp_leftshift - nbits;
-    tmpv = (v_leftshift < 64) ? v : 0;
-    part_one = (tmp_bits << tmp_leftshift) | (tmpv << v_leftshift);
+    part_one = CHPL_SAFE_LSHIFT(tmp_bits, tmp_leftshift, 64) |
+               CHPL_SAFE_LSHIFT(v, v_leftshift, 64);
     part_two = 0;
   }
 
@@ -4385,10 +4387,11 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   if( writebytes < (int) sizeof(qio_bitbuffer_t) ) {
     // remainder in part_one
     // put the byte in question to the hi byte
-    tmp_bits = part_one << (8*writebytes);
+    tmp_bits = CHPL_SAFE_LSHIFT(part_one, 8*writebytes, 64);
   } else {
     // put the byte in question to the hi byte
-    tmp_bits = part_two << (8*(writebytes-sizeof(qio_bitbuffer_t)));
+    tmp_bits = CHPL_SAFE_LSHIFT(part_two,
+                                8*(writebytes-sizeof(qio_bitbuffer_t)), 64);
   }
   // put the byte in question to the lo byte
   tmp_bits = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - 8);
@@ -4475,7 +4478,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   buf = qio_bitbuffer_unbe(buf);
 
   // Extract the part that applies to our value.
-  value <<= value_part;
+  value = CHPL_SAFE_LSHIFT(value, value_part, 64);
   value |= qio_bitbuffer_topn(buf, value_part);
 
   *v = value;
@@ -4483,7 +4486,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   // Now what's left in buf (<8bits) needs to go into
   // tmp_bits.
   part_one = 8*to_copy - value_part;
-  buf <<= value_part;
+  buf = CHPL_SAFE_LSHIFT(buf, value_part, 64);
   tmp_bits = qio_bitbuffer_topn(buf, part_one); // currently storing at bottom.
   tmp_live = part_one;
 
@@ -4505,13 +4508,14 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   buf = qio_bitbuffer_unbe(buf);
 
   // OK, now extract the part of buf that we care about.
-  tmp_bits <<= part_two;
+  tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, part_two, 64);
   tmp_bits |= qio_bitbuffer_topn(buf, part_two);
   tmp_live += part_two;
 
   // Now move tmp_bits to the higher order bits
   // like we want for reading.
-  tmp_bits <<= (8*sizeof(qio_bitbuffer_t) - tmp_live);
+  tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits,
+                              8*sizeof(qio_bitbuffer_t) - tmp_live, 64);
 
   ch->bit_buffer = tmp_bits;
   ch->bit_buffer_bits = tmp_live;
@@ -4535,7 +4539,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
   if( nbits <= tmp_live ) {
     // we're going to get everything we need from tmp_bits.
     *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
-    tmp_bits <<= nbits;
+    tmp_bits = CHPL_SAFE_LSHIFT(tmp_bits, nbits, 64);
     tmp_live -= nbits;
   } else {
     part_two = nbits - tmp_live;
@@ -4568,10 +4572,10 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
     buf = qio_bitbuffer_unbe(buf);
 
     value = qio_bitbuffer_topn(tmp_bits, tmp_live);
-    value <<= part_two;
+    value = CHPL_SAFE_LSHIFT(value, part_two, 64);
 
     value |= qio_bitbuffer_topn(buf, part_two);
-    tmp_bits = buf << part_two;
+    tmp_bits = CHPL_SAFE_LSHIFT(buf, part_two, 64);
     tmp_live = 8*tmp_read - part_two;
 
     // Now we haven't read ahead any bytes beyond
@@ -4606,9 +4610,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
 {
   if( element == QIO_STYLE_ELEMENT_STRING ) return ch->style.str_style;
   if( element == QIO_STYLE_ELEMENT_COMPLEX ) return ch->style.complex_style;
-  if( element == QIO_STYLE_ELEMENT_ARRAY ) return ch->style.array_style;
-  if( element == QIO_STYLE_ELEMENT_AGGREGATE ) return ch->style.aggregate_style;
-  if( element == QIO_STYLE_ELEMENT_TUPLE ) return ch->style.tuple_style;
   if( element == QIO_STYLE_ELEMENT_BYTE_ORDER ) return ch->style.byteorder;
 # if __BYTE_ORDER == __LITTLE_ENDIAN
   if( element == QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER ) {
@@ -4621,8 +4622,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
             ch->style.byteorder == QIO_NATIVE) ? 1 : 0;
   }
 #endif // __BYTE_ORDER
-  if( element == QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS )
-    return ch->style.skip_unknown_fields;
   return 0;
 }
 
@@ -4684,7 +4683,7 @@ qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
   sys_statfs_t s;
 
   if (fl->file_info) {
-    err = chpl_qio_get_chunk(fl->file_info, len_out);
+    err = qio_plugin_wrapper_get_chunk(fl->file_info, len_out);
   } else {
     fd = fl->fd;
     if (fl->fp) fd = fileno(fl->fp);
@@ -4717,7 +4716,7 @@ qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char
   qioerr err = 0;
   if (fl->file_info) {
     void* tmp = NULL;
-    err = chpl_qio_get_locales_for_region(fl->file_info, start, end, &tmp, num_locs_out);
+    err = qio_plugin_wrapper_get_locales_for_region(fl->file_info, start, end, &tmp, num_locs_out);
     *loc_names_out = (const char**) tmp;
     return err;
   } else {

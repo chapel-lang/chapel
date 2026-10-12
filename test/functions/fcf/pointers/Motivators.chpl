@@ -106,6 +106,26 @@ module Motivators {
     bar(p2, 8);
   }
 
+  proc testCallProcPassingAndReturningByRef() {
+    proc foo(ref counter: int, const n: int) ref {
+      counter = n;
+      return globalCounter;
+    }
+
+    const p1 = foo;
+
+    proc bar(p, n: int) {
+      var counter = 0;
+      ref x = p(counter, n);
+      assert(counter == n);
+      x = here.id;
+      assert(globalCounter == here.id);
+    }
+
+    bar(p1, 4);
+    bar(p1, 8);
+  }
+
   proc testParenlessProcNotProcType() {
     proc f2 { return 2; }
     assert(!isProcedure(f2.type));
@@ -176,7 +196,27 @@ module Motivators {
     assert(x == 8);
   }
 
+  // Case 1: Procedure pointer returning ref should be widened.
+  proc testWideRefPatterns0() {
+    globalCounter = 0;
+    const p = proc() const ref { return globalCounter; };
+
+    for loc in Locales do on loc {
+      const ref x = p();
+      assert(globalCounter == x && x == 0);
+    }
+
+    globalCounter = 8;
+
+    for loc in Locales do on loc {
+      const ref x = p();
+      assert(globalCounter == x && x == 8);
+    }
+  }
+
   proc main() {
+    use ChplConfig;
+
     testSimpleProcTypeEquivalence();
     testProcTypeFromNamedProcedure();
     testEnsureProcTypeIsNotClass();
@@ -187,14 +227,15 @@ module Motivators {
     testNestedProcInGenericInstantiation();
     testPtrToNestedProcInMethod();
     testCallProcStoredInRecordField();
-    // TODO: Need to fit 'FunctionType' into 'insertWideReferences'.
-    // testCallProcReturningByConstRef();
     testParenlessProcNotProcType();
-    // testProcValueThatThrows1();
-    // testProcValueThatThrows2();
     testProcCallAsActualParsing1();
     testProcCallAsActualParsing2();
     testAnonProcAsForwardingCrazyProgram();
     testCallProcReturningProc();
+    testCallProcReturningByConstRef();
+    testCallProcPassingAndReturningByRef();
+    testProcValueThatThrows1();
+    testProcValueThatThrows2();
+    testWideRefPatterns0();
   }
 }

@@ -1,0 +1,3 @@
+Compiling [debug] target: git_prereq_app
+mason build succeeded
+Hello from C prereq!

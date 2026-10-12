@@ -7,13 +7,15 @@ Initializing Modules:
        Atomics
         MemConsistency
         currentTask
-    ChapelThreads
     ChapelTuple
      DSIUtil
     ChapelRange
      ChapelDebugPrint
       ChapelIOStringifyHelper
     ChapelTaskDataHelp
+    ChapelRuntimeInterface
+     ChapelProgramRegistration
+      ChapelSetProgramInfoDataEntries
     LocaleModel
      LocaleModelHelpFlat
       LocaleModelHelpSetup
@@ -21,7 +23,6 @@ Initializing Modules:
         ChapelNumLocales
        DefaultRectangular
         ChapelArray
-         ArrayViewSlice
          ChapelPrivatization
          ChapelDomain
           FormattedIO
@@ -36,14 +37,13 @@ Initializing Modules:
           RadixSortHelp
           Partitioning
            PartitioningUtility
-            BlockDist
-             ChapelUtil
-             CompressedSparseLayout
-              RangeChunk
             CopyAggregation
              AggregationPrimitives
+            RangeChunk
             Time
              ChapelHashtable
+            ChapelUtil
+            CompressedSparseLayout
            Random
             PCGRandomLib
            Collectives
@@ -63,10 +63,9 @@ Initializing Modules:
     LocalesArray
     ChapelTaskTable
     MemTracking
-    ExportWrappers
-    ChapelContext
     ChapelStaticVars
     ChapelDynamicLoading
+    ChapelProgramEntrypoints
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

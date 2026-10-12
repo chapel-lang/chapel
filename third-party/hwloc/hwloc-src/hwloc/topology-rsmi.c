@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2022 Inria.  All rights reserved.
+ * Copyright © 2012-2025 Inria.  All rights reserved.
  * Copyright (c) 2020, Advanced Micro Devices, Inc. All rights reserved.
  * Written by Advanced Micro Devices,
  * See COPYING in top-level directory.
@@ -120,6 +120,32 @@ static int get_device_pci_info(uint32_t dv_ind, uint64_t *bdfid)
     return -1;
   }
   return 0;
+}
+
+/*
+ * Get the partition ID of the GPU
+ *
+ * dv_ind  (IN) The device index
+ * partid   (OUT) partition ID of GPU devices
+ */
+static int get_device_partition_id(uint32_t dv_ind __hwloc_attribute_unused, uint32_t *partid __hwloc_attribute_unused)
+{
+#if HAVE_DECL_RSMI_DEV_PARTITION_ID_GET
+  rsmi_status_t rsmi_rc = rsmi_dev_partition_id_get(dv_ind, partid);
+
+  if (rsmi_rc != RSMI_STATUS_SUCCESS) {
+    if (HWLOC_SHOW_ALL_ERRORS()) {
+      const char *status_string;
+      rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
+      fprintf(stderr, "hwloc/rsmi: GPU(%u): Failed to get partition ID: %s\n", (unsigned)dv_ind, status_string);
+    }
+    return -1;
+  }
+  return 0;
+#else
+  errno = ENOSYS;
+  return -1;
+#endif
 }
 
 /*
@@ -366,6 +392,16 @@ hwloc_rsmi_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
       device = ((bdfid & 0xff)>>3) & 0x1f;
       func = bdfid & 0x7;
       parent = hwloc_pci_find_parent_by_busid(topology, domain, bus, device, func);
+      if ((!parent || parent->type != HWLOC_OBJ_PCI_DEVICE) && func > 0) {
+        /* Partitioned MI devices may return the partition ID in a fake BDF func,
+         * hence we would fail to find a pcidev parent.
+         * Try with func=0 instead.
+         */
+        uint32_t partid = 0;
+        get_device_partition_id(i, &partid);
+        if (func == partid)
+          parent = hwloc_pci_find_parent_by_busid(topology, domain, bus, device, 0);
+      }
       if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE)
         get_device_pci_linkspeed(i, &parent->attr->pcidev.linkspeed);
       if (!parent)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,18 +29,20 @@
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-internal.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
+#include "chpl-exec.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
+#include "chpl-prginfo.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -51,6 +53,9 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 static int reservedCore = -1;
 
@@ -180,13 +185,14 @@ void wait_done_obj(done_t* done, chpl_bool do_yield)
 }
 
 typedef struct {
-  c_nodeid_t    caller;
-  c_sublocid_t  subloc;
+  c_nodeid_t      caller;
+  c_sublocid_t    subloc;
+  chpl_rt_prg_id  prg_id;
 
-  void*         ack;
+  void*           ack;
 
-  chpl_fn_int_t fid;
-  uint16_t      payload_size;
+  chpl_fn_int_t   fid;
+  uint16_t        payload_size;
 
   // TODO: is there a way to "compress" this?
   chpl_task_infoChapel_t infoChapel;
@@ -221,18 +227,21 @@ typedef struct {
 } large_fork_task_t;
 
 typedef struct {
-  void*   ack;
-  int     id;       // private broadcast table entry to update
-  int     size;     // size of data
-  char    data[0];  // data
+  void*           ack;
+  int             id;       // private broadcast table entry to update
+  int             size;     // size of data
+  chpl_rt_prg_id  prg_id;   // id of program requesting, or '0' for RT
+} priv_bcast_hdr_t;
+
+typedef struct {
+  priv_bcast_hdr_t  hdr;      // header
+  char              data[0];  // data
 } priv_bcast_t;
 
 typedef struct {
-  void* ack;
-  int   id;       // private broadcast table entry to update
-  int   size;     // size of data
-  int   offset;   // offset of piece of data
-  char  data[0];  // data
+  priv_bcast_hdr_t  hdr;      // header
+  int               offset;   // offset of piece of data
+  char              data[0];  // data
 } priv_bcast_large_t;
 
 typedef struct {
@@ -269,8 +278,8 @@ typedef enum {
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = buf;
 
-  // Run the function
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
+  // Call the function using info from the bundle.
+  chpl_rt_comm_bundle_ftable_call(f);
 
   // Signal that the handler has completed if that was requested.
   if (f->comm.ack)
@@ -279,17 +288,19 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static inline
-size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t nbytes)
-{
-  chpl_comm_bundleData_t comm  = { .caller = f->caller,
-                                   .ack    = f->ack };
-  chpl_comm_on_bundle_t bundle = { .kind = CHPL_ARG_BUNDLE_KIND_COMM,
-                                   .comm =  comm };
+size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f,
+                             size_t nbytes) {
+  chpl_comm_bundleData_t comm  = { .caller  = f->caller,
+                                   .ack     = f->ack };
+  chpl_comm_on_bundle_t bundle = { .kind    = CHPL_ARG_BUNDLE_KIND_COMM,
+                                   .comm    = comm,
+                                   .prg_id  = f->prg_id };
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
   size_t payload_size = nbytes - sizeof(small_fork_hdr_t);
 
-  // Copy task-local data to the new task
+  // Copy task-local data and set the 'fid'.
   bundle.task_bundle.infoChapel = f->infoChapel;
+  bundle.task_bundle.requested_fid = f->fid;
 
   dst->bundle = bundle;
 
@@ -301,15 +312,17 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
 
 
 static inline
-size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nbytes)
-{
-  chpl_comm_bundleData_t comm  = { .caller = f->hdr.caller,
-                                   .ack    = f->hdr.ack };
-  chpl_comm_on_bundle_t bundle = { .kind = CHPL_ARG_BUNDLE_KIND_COMM,
-                                   .comm =  comm };
+size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f,
+                             size_t nbytes) {
+  chpl_comm_bundleData_t comm  = { .caller  = f->hdr.caller,
+                                   .ack     = f->hdr.ack };
+  chpl_comm_on_bundle_t bundle = { .kind    = CHPL_ARG_BUNDLE_KIND_COMM,
+                                   .comm    = comm,
+                                   .prg_id  = f->hdr.prg_id };
 
-  // Copy task-local data to the new task
+  // Copy task-local data and set the 'fid'.
   bundle.task_bundle.infoChapel = f->hdr.infoChapel;
+  bundle.task_bundle.requested_fid = f->hdr.fid;
 
   dst->bundle = bundle;
   // Copy the large fork info into the task bundle
@@ -327,8 +340,7 @@ static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
   // Copy the data into a chpl_comm_on_bundle_t
   setup_small_fork_task(&task, f, nbytes);
 
-  // Run the function
-  chpl_ftable_call(f->fid, bptr);
+  chpl_rt_comm_bundle_ftable_call(bptr);
 
   // Signal that the handler has completed if that was requested.
   if (f->ack)
@@ -338,8 +350,7 @@ static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
 
 
 static void fork_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
-
+  chpl_rt_comm_bundle_ftable_call(f);
   GASNET_Safe(gasnet_AMRequestShort2(f->comm.caller, SIGNAL,
                                      Arg0(f->comm.ack), Arg1(f->comm.ack)));
 }
@@ -369,19 +380,12 @@ static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
 
 
 static void fork_large_wrapper(large_fork_task_t* f) {
-  large_fork_t *lg = &f->large;
-  chpl_comm_on_bundle_t* arg;
-  int caller;
-  size_t bundle_size_on_caller;
-  void* arg_on_caller;
-  void* ack;
-  chpl_fn_int_t fid;
-
-  caller = lg->hdr.caller;
-  bundle_size_on_caller = lg->arg_size;
-  arg_on_caller = lg->arg;
-  ack = lg->hdr.ack;
-  fid = lg->hdr.fid;
+  large_fork_t *lg              = &f->large;
+  int caller                    = lg->hdr.caller;
+  size_t bundle_size_on_caller  = lg->arg_size;
+  void* arg_on_caller           = lg->arg;
+  void* ack                     = lg->hdr.ack;
+  chpl_comm_on_bundle_t* arg    = NULL;
 
   // Allocate the bundle
   arg = chpl_mem_allocMany(1, bundle_size_on_caller,
@@ -393,7 +397,7 @@ static void fork_large_wrapper(large_fork_task_t* f) {
                 CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Call the on body function
-  chpl_ftable_call(fid, arg);
+  chpl_rt_comm_bundle_ftable_call(arg);
 
   // Signal completion
   GASNET_Safe(gasnet_AMRequestShort2(caller, SIGNAL, Arg0(ack), Arg1(ack)));
@@ -420,7 +424,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
+  chpl_rt_comm_bundle_ftable_call(f);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
@@ -452,17 +456,11 @@ static void AM_fork_nb_small(gasnet_token_t  token,
 
 
 static void fork_nb_large_wrapper(large_fork_task_t* f) {
-  large_fork_t *lg = &f->large;
-  chpl_comm_on_bundle_t* arg;
-  int caller;
-  size_t bundle_size_on_caller;
-  void* arg_on_caller;
-  chpl_fn_int_t fid;
-
-  caller = lg->hdr.caller;
-  bundle_size_on_caller = lg->arg_size;
-  arg_on_caller = lg->arg;
-  fid = lg->hdr.fid;
+  large_fork_t* lg                = &f->large;
+  int caller                      = lg->hdr.caller;
+  size_t bundle_size_on_caller    = lg->arg_size;
+  void* arg_on_caller             = lg->arg;
+  chpl_comm_on_bundle_t* arg      = NULL;
 
   // Allocate the bundle
   arg = chpl_mem_allocMany(1, bundle_size_on_caller,
@@ -477,8 +475,14 @@ static void fork_nb_large_wrapper(large_fork_task_t* f) {
                                      Arg0(arg_on_caller),
                                      Arg1(arg_on_caller)));
 
+  // NOTE: These must match. Currently we 'GET' the entire "on bundle" from
+  //       the remote and then execute the ftable call using it. If we ever
+  //       decide to e.g., fetch only the bundle data and not the whole
+  //       bundle, then this will break (thus the assert).
+  assert(arg->task_bundle.requested_fid == lg->hdr.fid);
+
   // Call the user function
-  chpl_ftable_call(fid, arg);
+  chpl_rt_comm_bundle_ftable_call(arg);
 
   // Free the bundle we just allocated
   chpl_mem_free(arg, 0, 0);
@@ -519,20 +523,52 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  chpl_memcpy(chpl_rt_priv_bcast_tab[pbp->id], pbp->data, pbp->size);
+  priv_bcast_hdr_t hdr = pbp->hdr;
+  size_t table_len = 0;
+  void** table = NULL;
+
+  // Get the broadcast table to use on this node.
+  table = chpl_rt_comm_fetch_broadcast_table(NULL, hdr.prg_id, &table_len);
+
+  // Make sure the index is in bounds.
+  assert(0 <= hdr.id && hdr.id < table_len);
+
+  void* dst = table[hdr.id];
+  void* src = pbp->data;
+  size_t bytes = hdr.size;
+  chpl_memcpy(dst, src, bytes);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
-                                   Arg0(pbp->ack), Arg1(pbp->ack)));
+                                   Arg0(hdr.ack),
+                                   Arg1(hdr.ack)));
 }
 
-static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
+static void AM_priv_bcast_large(gasnet_token_t token, void* buf,
+                                size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  chpl_memcpy((char*)chpl_rt_priv_bcast_tab[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  priv_bcast_hdr_t hdr = pblp->hdr;
+  size_t table_len = 0;
+  void** table = NULL;
+
+  // Get the broadcast table to use on this node.
+  table = chpl_rt_comm_fetch_broadcast_table(NULL, hdr.prg_id, &table_len);
+
+  // Make sure the index is in bounds.
+  assert(0 <= hdr.id && hdr.id < table_len);
+
+  // Compute the starting byte offset.
+  char* start = ((char*) table[hdr.id] + pblp->offset);
+
+  void* dst = start;
+  void* src = pblp->data;
+  size_t bytes = hdr.size;
+  chpl_memcpy(dst, src, bytes);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
-                                   Arg0(pblp->ack), Arg1(pblp->ack)));
+                                   Arg0(hdr.ack),
+                                   Arg1(hdr.ack)));
 }
 
 static void AM_free(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
@@ -595,7 +631,7 @@ static gex_AM_Entry_t ftable[] = {
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   gex_Event_t ret;
   int remote_in_segment;
@@ -633,7 +669,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   gex_Event_t ret;
   int remote_in_segment;
@@ -966,6 +1002,9 @@ void chpl_comm_pre_mem_init(void) {
     // of the global variable locations; everyone else will just peek at its copy.  So
     // locale 0 sets up its segment to an appropriate size:
     //
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            chpl_numGlobalsOnHeap);
+
     int global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) + GASNETT_PAGESIZE;
     void* global_table = sys_malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) +
@@ -991,22 +1030,93 @@ void chpl_comm_pre_mem_init(void) {
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 }
 
-void chpl_comm_post_mem_init(void) {
-  chpl_comm_init_prv_bcast_tab();
-}
+void chpl_comm_post_mem_init(void) {}
 
 //
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
-// No support for lldb for now
+// Prototype support for using lldb-server
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  return 0;
+
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+  // mac has some issues with debugserver, users will likely run into issues
+  // warn them about it
+  chpl_warning("Running Chapel with CHPL_COMM=gasnet and lldb is not well supported on MacOS", 0, 0);
+  const char* default_lldb_server =
+    "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver";
+#else
+  const char* default_lldb_server = "lldb-server";
+#endif
+
+  const char* lldb_server =
+    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", NULL);
+  int BASE_PORT = chpl_env_rt_get_int("DEBUG_SERVER_BASE_PORT", 5000);
+  // before launching the runtime, sleep for just a little bit to allow the
+  // parent to attach to the runtime process
+  // otherwise the child may end before the parent gets a chance to run
+  int SLEEP_FUDGE_FACTOR =
+    chpl_env_rt_get_int("DEBUG_SERVER_SLEEP_FUDGE_FACTOR", 2);
+
+  // this check is really important for good user errors and preventing injection
+  if (lldb_server != NULL && access(lldb_server, X_OK) != 0) {
+    char buf[1024];
+    snprintf(buf, sizeof(buf), "Could not find '%s'", lldb_server);
+    chpl_error(buf, 0, 0);
+    return 1;
+  }
+  if (lldb_server == NULL) {
+    lldb_server = default_lldb_server;
+  }
+
+  int port = BASE_PORT + chpl_nodeID;
+  char portStr[16];
+  snprintf(portStr, sizeof(portStr), "%d", port);
+
+  pid_t f = fork();
+  if (f < 0) {
+    chpl_internal_error_v("fork failed: %s", strerror(errno));
+    return 1;
+  } else if (f == 0) {
+#if defined(__linux__) && defined(PR_SET_PTRACER)
+    // allow ptrace of the parent process (lldb-server)
+    prctl(PR_SET_PTRACER, getppid(), 0, 0, 0);
+#endif
+    sleep(SLEEP_FUDGE_FACTOR);
+    return 0; // continue
+  } else {
+    // the parent attaches to the runtime process, which is the child
+    char pidStr[16];
+    snprintf(pidStr, sizeof(pidStr), "%d", f);
+
+    char* command;
+
+  // this is somewhat fragile, as a user could provide a different
+  // lldb_server path thats actually lldb-server on MacOS, but its unlikely
+  // (as of today, June 7th 2025, lldb-server segfaults on MacOS)
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+    command = chpl_glom_strings(5,
+      lldb_server,
+      " 127.0.0.1:",
+      portStr,
+      " --attach=", pidStr);
+    *status = chpl_invoke_using_system(command, "running debugserver", 0);
+#else
+    command = chpl_glom_strings(5,
+      lldb_server,
+      " g :",
+      portStr,
+      " --attach ", pidStr);
+    *status = chpl_invoke_using_system(command, "running lldb-server", 0);
+#endif
+    return 1;
+  }
 }
 
 static void start_gasnet_progress_threads(void) {
@@ -1080,6 +1190,9 @@ void chpl_comm_rollcall(void) {
 
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          chpl_numGlobalsOnHeap);
+
   *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t)
              + (char*)seginfo_table[chpl_nodeID].addr;
   *size_p  = seginfo_table[chpl_nodeID].size
@@ -1090,7 +1203,7 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #endif
 }
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   //
   // Gather the global variables' wide pointers on node 0 into the
   // buffer at the front of our communicable segment.  We don't have
@@ -1099,7 +1212,24 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   // node 0 has filled in that buffer, however.
   //
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
+
+    // TODO: This is racey. How do we prevent that?
+    // TODO: A quick hack here is to just allocate some large segment e.g.,
+    //       say 1024 wide pointers long and error if a program exceeds that
+    //       number of global variables.
+    // TODO: And then we can just adjust the caller algorithm to work in
+    //       chunks of e.g., 1024 in the case that there are more globals.
+    int needed_global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t)
+                                 + GASNETT_PAGESIZE;
+    if (needed_global_table_size > seginfo_table[0].size) {
+      chpl_internal_error("gasnet segment used to communicate global vars "
+                          "is not large enough");
+    }
+
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
+      // Populate the segment buffer with the wide pointer values from L0.
       ((wide_ptr_t*) seginfo_table[0].addr)[i] = *chpl_globals_registry[i];
     }
     chpl_comm_barrier("fill node 0 globals buf");
@@ -1110,60 +1240,92 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   }
 }
 
-void chpl_comm_broadcast_private(int id, size_t size) {
-  int  node, offset;
-  int  payloadSize = size + sizeof(priv_bcast_t);
-  done_t* done;
-  int numOffsets=1;
+// TODO (@bonachea, thanks!): This naive/non-scalable code was written for
+// GASNet-1 and has not been updated to take advantage of EX. If it ever
+// becomes a problem, we can rewrite it to use e.g., 'gex_Coll_BroadcastNB'
+// which should be simpler to use and scale better.
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
+  chpl_mem_descInt_t pbp_dsc = CHPL_RT_MD_COMM_PRV_BCAST_DATA;
+  int node = 0;
+  int offset = 0;
+  int payload_size = size + sizeof(priv_bcast_t);
+  done_t* done = NULL;
+  int num_offsets = 1;
+  void** table = NULL;
+  size_t table_len = 0;
 
-  // This can use the system allocator because it involves internode communication.
-  done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
-                                          CHPL_RT_MD_COMM_FRK_DONE_FLAG,
-                                          0, 0);
-  if (payloadSize <= gasnet_AMMaxMedium()) {
-    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    chpl_memcpy(pbp->data, chpl_rt_priv_bcast_tab[id], size);
-    pbp->id = id;
-    pbp->size = size;
+  // Check for overflow. TODO: Make this code more robust w.r.t. overflows.
+  assert((size_t) payload_size == size + sizeof(priv_bcast_t));
+
+  // Get the broadcast table to use on this node.
+  table = chpl_rt_comm_fetch_broadcast_table(prg, 0, &table_len);
+
+  // Can use the system allocator because it involves internode communication.
+  done = chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
+                                CHPL_RT_MD_COMM_FRK_DONE_FLAG,
+                                0, 0);
+
+  if (payload_size <= gasnet_AMMaxMedium()) {
+    priv_bcast_t* pbp = chpl_mem_allocMany(1, payload_size, pbp_dsc, 0, 0);
+    chpl_memcpy(pbp->data, table[id], size);
+
+    pbp->hdr.id = id;
+    pbp->hdr.size = size;
+    pbp->hdr.prg_id = chpl_rt_prginfo_id(prg);
+
     for (node = 0; node < chpl_numNodes; node++) {
       if (node != chpl_nodeID) {
-        pbp->ack = &done[node];
+        pbp->hdr.ack = &done[node];
         init_done_obj(&done[node], 1);
-        GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST, pbp, payloadSize));
+        GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST, pbp,
+                                            payload_size));
       }
     }
+
     chpl_mem_free(pbp, 0, 0);
   } else {
-    size_t maxpayloadsize = gasnet_AMMaxMedium();
-    size_t maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
-    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
-    pblp->id = id;
-    numOffsets = (size+maxsize)/maxsize;
+    size_t max_payload_size = gasnet_AMMaxMedium();
+    size_t max_size = max_payload_size - sizeof(priv_bcast_large_t);
+    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, max_payload_size,
+                                                  pbp_dsc, 0, 0);
+    pblp->hdr.id = id;
+    pblp->hdr.prg_id = chpl_rt_prginfo_id(prg);
+
+    num_offsets = (size + max_size) / max_size;
+
     for (node = 0; node < chpl_numNodes; node++) {
       if (node != chpl_nodeID)
-        init_done_obj(&done[node], numOffsets);
+        init_done_obj(&done[node], num_offsets);
     }
-    for (offset = 0; offset < size; offset += maxsize) {
-      size_t thissize = size - offset;
-      if (thissize > maxsize)
-        thissize = maxsize;
+
+    for (offset = 0; offset < size; offset += max_size) {
+      size_t this_size = size - offset;
+      if (this_size > max_size) this_size = max_size;
+
+      pblp->hdr.size = this_size;
       pblp->offset = offset;
-      pblp->size = thissize;
-      chpl_memcpy(pblp->data, (char*)chpl_rt_priv_bcast_tab[id]+offset, thissize);
+      chpl_memcpy(pblp->data, ((char*) table) + offset, this_size);
+
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
-          pblp->ack = &done[node];
-          GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST_LARGE, pblp, sizeof(priv_bcast_large_t)+thissize));
+          size_t packet_size = sizeof(priv_bcast_large_t) + this_size;
+          pblp->hdr.ack = &done[node];
+          GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST_LARGE, pblp,
+                                              packet_size));
         }
       }
     }
+
     chpl_mem_free(pblp, 0, 0);
   }
+
   // wait for the handlers to complete
   for (node = 0; node < chpl_numNodes; node++) {
     if (node != chpl_nodeID)
       GASNET_BLOCKUNTIL(done[node].flag);
   }
+
   chpl_mem_free(done, 0, 0);
 }
 
@@ -1220,7 +1382,7 @@ void chpl_comm_exit(int all, int status) {
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1296,7 +1458,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1419,12 +1581,12 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id,
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn) {
+                         int32_t ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
   // will ignore arrays in this case
-  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
 
   ptrdiff_t dststr[strlvls_nz];
@@ -1462,12 +1624,12 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id,
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn) {
+                         int32_t ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
   // will ignore arrays in this case
-  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
 
   ptrdiff_t dststr[strlvls_nz];
@@ -1505,7 +1667,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn) {
+                                int32_t ln, int32_t fn) {
   assert(dstaddr != NULL);
   assert(srcaddr != NULL);
 
@@ -1538,22 +1700,25 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
 }
 
 void chpl_comm_getput_unordered_task_fence(void) { }
 
 static inline
-void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
-                        chpl_fn_int_t fid,
-                        chpl_comm_on_bundle_t *arg, size_t arg_size,
-                        chpl_bool fast, chpl_bool blocking) {
+void execute_on_common(chpl_rt_prginfo* prg, c_nodeid_t node,
+                       c_sublocid_t subloc,
+                       chpl_fn_int_t fid,
+                       chpl_comm_on_bundle_t *arg,
+                       size_t arg_size,
+                       chpl_bool fast,
+                       chpl_bool blocking) {
   done_t done;
   size_t payload_size = arg_size - sizeof(chpl_comm_on_bundle_t);
   size_t small_msg_size = payload_size + sizeof(small_fork_hdr_t);
@@ -1591,17 +1756,19 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   if (large) {
     payload_size = sizeof(large_fork_t) - sizeof(small_fork_hdr_t);
   }
+
   arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
 
   if (small || large) {
     special_fork_t tmp;
 
-    small_fork_hdr_t hdr = { .caller = chpl_nodeID,
-                             .subloc = subloc,
-                             .ack = blocking ? &done : NULL,
-                             .infoChapel = infoChapel,
-                             .fid = fid,
-                             .payload_size = payload_size };
+    small_fork_hdr_t hdr = { .caller        = chpl_nodeID,
+                             .subloc        = subloc,
+                             .prg_id        = chpl_rt_prginfo_id(prg),
+                             .ack           = blocking ? &done : NULL,
+                             .infoChapel    = infoChapel,
+                             .fid           = fid,
+                             .payload_size  = payload_size };
 
     if (small) {
       // Copy the argument bundle payload to a smaller message.
@@ -1656,6 +1823,9 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
     arg->comm.caller = chpl_nodeID;
     arg->comm.ack = blocking ? &done : NULL;
 
+    assert(arg->prg_id != CHPL_RT_PRGINFO_NULL_ID);
+    assert(arg->task_bundle.prg != NULL);
+
     GASNET_Safe(gasnet_AMRequestMedium0(node, op, arg, arg_size));
   }
 
@@ -1665,75 +1835,51 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in chpl_comm_on_bundle_t redundant? active message can determine this.
-void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                           chpl_fn_int_t fid,
-                           chpl_comm_on_bundle_t *arg, size_t arg_size,
-                           int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int32_t ln,
+                                  int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
-    chpl_ftable_call(fid, arg);
+    chpl_rt_ftable_call(prg, fid, arg);
   } else {
-    // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-    }
-
-    chpl_comm_diags_verbose_executeOn("", node, ln, fn);
-    chpl_comm_diags_incr(execute_on);
-
-    execute_on_common(node, subloc, fid, arg, arg_size,
+    execute_on_common(prg, node, subloc, fid, arg, arg_size,
                      /*fast*/ false, /*blocking*/ true);
   }
 }
 
-void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                              chpl_fn_int_t fid,
-                              chpl_comm_on_bundle_t *arg, size_t arg_size,
-                              int ln, int32_t fn) {
-
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t *arg,
+                                     size_t arg_size,
+                                     int32_t ln,
+                                     int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0); // locale model code should prevent this...
+    chpl_rt_ftable_call(prg, fid, arg);
   } else {
-    // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-    }
-
-    chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
-    chpl_comm_diags_incr(execute_on_nb);
-
-    execute_on_common(node, subloc, fid, arg, arg_size,
+    execute_on_common(prg, node, subloc, fid, arg, arg_size,
                       /*fast*/ false, /*blocking*/ false);
   }
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                                chpl_fn_int_t fid,
-                                chpl_comm_on_bundle_t *arg, size_t arg_size,
-                                int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t *arg,
+                                       size_t arg_size,
+                                       int32_t ln,
+                                       int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
-    chpl_ftable_call(fid, arg);
+    chpl_rt_ftable_call(prg, fid, arg);
   } else {
-    // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-    }
-
-    chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
-    chpl_comm_diags_incr(execute_on_fast);
-
-    execute_on_common(node, subloc, fid, arg, arg_size,
+    execute_on_common(prg, node, subloc, fid, arg, arg_size,
                       /*fast*/ true, /*blocking*/ true);
   }
 }

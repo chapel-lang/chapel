@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ public:
 
   // "interim instantiation" copies of CG functions invoked from this function
   // for those calls that rely on this function's interfaceConstraints
-  std::set<FnSymbol*> invokedCGfns;
+  std::set<FnSymbol*, AstIdLess> invokedCGfns;
 };
 
 class FnSymbol final : public Symbol {
@@ -142,7 +142,6 @@ public:
   FnSymbol*                  valueFunction;
 
   int                        codegenUniqueNum;
-  const char*                doc;
 
   // Used to store the return symbol during partial copying.
   Symbol*                    retSymbol;
@@ -209,6 +208,12 @@ public:
 
   // Compute the type based on the current signature. Does not resolve.
   FunctionType*             computeAndSetType();
+
+  // Determine if this function is used as a "first class procedure".
+  bool                      isUsedAsValue()                              const;
+
+  // Determine if this function has "extern" or "export" linkage.
+  bool                      hasForeignLinkage()                          const;
 
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);
@@ -314,7 +319,7 @@ extern FnSymbol*                gGenericTupleDestroy;
 
 extern const char*              ftableName;
 extern const char*              ftableSizeName;
-extern std::map<FnSymbol*, int> ftableMap;
+extern std::map<FnSymbol*, int, AstIdLess> ftableMap;
 extern std::vector<FnSymbol*>   ftableVec;
 
 

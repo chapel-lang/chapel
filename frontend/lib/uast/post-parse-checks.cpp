@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,6 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include <vector>
-#include <string.h>
 
 namespace {
 
@@ -142,7 +141,6 @@ struct Visitor {
   void checkOverrideNonMethod(const Function* node);
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
-  void checkLambdaReturnIntent(const Function* node);
   void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
@@ -155,7 +153,6 @@ struct Visitor {
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
-  void checkLambdaDeprecated(const Function* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -169,6 +166,8 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
   void checkMainFunctions(const Function* node);
+  void checkUnionElements(const Union* node);
+  bool checkUnionElement(const Variable* var, bool first, bool last);
 
   /*
   TODO
@@ -186,10 +185,12 @@ struct Visitor {
   void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
+  void checkTupleDeclAsField(const TupleDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
   void warnUnstableForeachLoops(const Foreach* node);
+  void warnUnstableForwardingDecls(const ForwardingDecl* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -212,6 +213,7 @@ struct Visitor {
   void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const Local* node);
+  void visit(const Match* node);
   void visit(const Module* node);
   void visit(const OpCall* node);
   void visit(const Return* node);
@@ -444,6 +446,7 @@ void Visitor::check(const AstNode* node) {
   }
   if (auto tup = node->toTupleDecl()) {
     checkTupleDeclFormalIntent(tup);
+    checkTupleDeclAsField(tup);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -546,6 +549,9 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   // If we are descended from the formal's type expression, OK!
   if (auto foundFormal = searchParents(asttags::Formal, &lastInWalk)) {
     auto formal = foundFormal->toFormal();
+    if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
+  } else if (auto foundFormal = searchParents(asttags::VarArgFormal, &lastInWalk)) {
+    auto formal = foundFormal->toVarArgFormal();
     if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
   }
 
@@ -1121,36 +1127,6 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
-void Visitor::checkLambdaDeprecated(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
-             "procedures using the 'proc' keyword instead");
-}
-
-void Visitor::checkLambdaReturnIntent(const Function* node) {
-  if (node->kind() != Function::LAMBDA) return;
-
-  const char* disallowedReturnType = NULL;
-  switch (node->returnIntent()) {
-    case Function::CONST_REF:
-    case Function::REF:
-      disallowedReturnType = "[const] ref";
-      break;
-    case Function::PARAM:
-      disallowedReturnType = "param";
-      break;
-    case Function::TYPE:
-      disallowedReturnType = "type";
-      break;
-    default:
-      break;
-  }
-  if (disallowedReturnType) {
-    error(node, "'%s' return intent is not allowed in lambdas.",
-          disallowedReturnType);
-  }
-}
-
 void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
@@ -1494,10 +1470,6 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   } else if (isNameReservedType(name)) {
     error(node, "attempt to redefine reserved type '%s'.", name.c_str());
   }
-
-  if(strchr(name.c_str(), '$') != nullptr) {
-    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
-  }
 }
 
 void Visitor::checkLinkageName(const NamedDecl* node) {
@@ -1522,6 +1494,12 @@ void Visitor::checkTupleDeclFormalIntent(const TupleDecl* node) {
       node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
       node->intentOrKind() != TupleDecl::IntentOrKind::VAR) {
     error(node, "intents on tuple-grouped arguments are not yet supported");
+  }
+}
+
+void Visitor::checkTupleDeclAsField(const TupleDecl* node) {
+  if (parent(0) && parent(0)->isAggregateDecl()) {
+    error(node, "de-tupling declarations are not currently supported as fields");
   }
 }
 
@@ -1585,6 +1563,12 @@ void Visitor::warnUnstableForeachLoops(const Foreach* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "foreach loops are currently unstable and are expected to change "
              "in ways that may break some of their current uses.");
+}
+
+void Visitor::warnUnstableForwardingDecls(const ForwardingDecl* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "forwarding is currently unstable and may change "
+             "in ways that will break some of its current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
@@ -1803,8 +1787,6 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
-  checkLambdaDeprecated(node);
-  checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
   checkIterNames(node);
@@ -1817,6 +1799,7 @@ void Visitor::visit(const FunctionSignature* node) {
 }
 
 void Visitor::visit(const Union* node) {
+  checkUnionElements(node);
   warnUnstableUnions(node);
 }
 
@@ -1825,6 +1808,7 @@ void Visitor::visit(const Foreach* node) {
 }
 
 void Visitor::visit(const ForwardingDecl* node) {
+  warnUnstableForwardingDecls(node);
   checkForwardingInNonRecordOrClass(node);
 }
 
@@ -2111,9 +2095,80 @@ void Visitor::checkMainFunctions(const Function* fn) {
   }
 }
 
+void Visitor::checkUnionElements(const Union* node) {
+  for (auto decl : node->decls()) {
+    if (const Variable* var = decl->toVariable()) {
+      checkUnionElement(var, true, true);
+    } else if (auto multivar = decl->toMultiDecl()) {
+      bool first = true;
+      const Variable* last = NULL;
+      for (auto child : multivar->decls()) {
+        if (const Variable* var = child->toVariable()) {
+          if (checkUnionElement(var, first, false)) {
+            last = var;
+          } else {
+            last = NULL;
+          }
+        }
+        first = false;
+      }
+      // The loop above will skip past cases where type and init are
+      // both NULL since we can't tell whether they're about to
+      // inherit the following field's values or not.  This re-checks
+      // the last declaration to make sure.
+      if (last) {
+        checkUnionElement(last, first, true);
+      }
+    }
+  }
+}
+
+// returns 'true' if OK, 'false' if there's a (known) problem
+//
+// if 'last' is false, we won't generate an error for init+type==NULL
+// cases, since it could be inheriting one that follows...
+  
+bool Visitor::checkUnionElement(const Variable* var, bool first, bool last) {
+  bool retval = false;
+
+  if (var->kind() != Variable::VAR && first) {
+    error(var, "union fields must be 'var'");
+  } else if (var->initExpression()) {
+    error(var, "union fields cannot have initializers");
+  } else if (!var->typeExpression() && last) {
+    error(var, "union fields must have an explicit type");
+  } else {
+    retval = true;
+  }
+  return retval;
+}
+
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
   checkModuleNotInModule(node);
+}
+
+void Visitor::visit(const Match* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    // TODO: this should probably be only in the preview edition, its a pretty
+    // big change and unstable is too lightweight imo
+    warn(node, "'union select' statements are a placeholder syntax for a future 'match' statement and are expected to change");
+  }
+  std::unordered_map<UniqueString, const AstNode*> seenCaseExprs;
+  for (auto caseStmt : node->caseStmts()) {
+    if (auto expr = caseStmt->expr()) {
+      if (expr->isErroneousExpression()) continue;
+      // as written today, the parser ensures this
+      auto exprVar = expr->toVariable();
+      CHPL_ASSERT(exprVar);
+      if (auto it = seenCaseExprs.find(exprVar->name());
+          it != seenCaseExprs.end()) {
+        CHPL_REPORT(context_, DuplicateMatchExpr, caseStmt, expr, it->second);
+      } else {
+        seenCaseExprs.insert({exprVar->name(), caseStmt});
+      }
+    }
+  }
 }
 
 void Visitor::visit(const Yield* node) {

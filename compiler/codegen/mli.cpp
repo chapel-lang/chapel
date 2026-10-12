@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,7 +72,7 @@ private:
   bool debugPrint;
   std::vector<FnSymbol*> exps;
   std::vector<FnSymbol*> throws;
-  std::map<Type*, int64_t> typeMap;
+  std::map<Type*, int64_t, AstIdLess> typeMap;
   fileinfo fiMarshalling;
   fileinfo fiClientBundle;
   fileinfo fiServerBundle;
@@ -147,10 +147,10 @@ std::string str(T value) {
 // This is the main entrypoint for MLI code generation, call this if the
 // necessary conditions are met in codegen().
 //
-void codegenMultiLocaleInteropWrappers(void) {
+void codegenClientServerLibraryWrappers(void) {
   Vec<ModuleSymbol*> &mds = allModules;
 
-  MLIContext mli(fMultiLocaleLibraryDebug);
+  MLIContext mli(fClientServerLibraryDebug);
 
   mli.emitClientPrelude();
   mli.emitServerPrelude();
@@ -292,7 +292,6 @@ void MLIContext::emitServerPrelude(void) {
 }
 
 void MLIContext::emitMarshalRoutines(void) {
-  std::map<Type*, int64_t>::iterator i;
   std::string gen;
 
   gen += this->debugPrint ? this->genDefine("CHPL_MLI_DEBUG_PRINT") : "";
@@ -307,7 +306,7 @@ void MLIContext::emitMarshalRoutines(void) {
   gen += this->genHeaderInc(astr("mli/", mliCommonRuntimeSource));
   gen += "\n";
 
-  for (i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
+  for (auto i = this->typeMap.begin(); i != this->typeMap.end(); ++i) {
     if (this->debugPrint) {
       std::string tpn = this->genTypeName(i->first);
       gen += this->genComment(tpn.c_str());
@@ -487,7 +486,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool push) {
   // what we can translate is limited.
   //
 
-  if (isPrimitiveScalar(t) && !is_complex_type(t)) {
+  if (isPrimitiveScalar(t) && !isComplexType(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, push);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
@@ -697,7 +696,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (
-      (isPrimitiveScalar(t) && !is_complex_type(t)) ||
+      (isPrimitiveScalar(t) && !isComplexType(t)) ||
       t == exportTypeChplByteBuffer
   );
 }

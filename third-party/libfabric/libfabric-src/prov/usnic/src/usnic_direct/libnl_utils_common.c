@@ -213,7 +213,7 @@ static int usnic_nl_sk_alloc(struct usnic_nl_sk **p_sk, int protocol)
 		goto err_close_nlh;
 
 	unlsk->nlh = nlh;
-	unlsk->seq = time(NULL);
+	unlsk->seq = (uint32_t) time(NULL);
 	*p_sk = unlsk;
 	return 0;
 

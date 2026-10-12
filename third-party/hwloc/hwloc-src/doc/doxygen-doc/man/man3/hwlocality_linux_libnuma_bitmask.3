@@ -1,4 +1,4 @@
-.TH "hwlocality_linux_libnuma_bitmask" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_linux_libnuma_bitmask" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,16 +10,16 @@ hwlocality_linux_libnuma_bitmask \- Interoperability with Linux libnuma bitmask
 
 .in +1c
 .ti -1c
-.RI "static struct bitmask * \fBhwloc_cpuset_to_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)"
+.RI "struct bitmask * \fBhwloc_cpuset_to_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)"
 .br
 .ti -1c
-.RI "static struct bitmask * \fBhwloc_nodeset_to_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)"
+.RI "struct bitmask * \fBhwloc_nodeset_to_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_cpuset_from_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const struct bitmask *bitmask)"
+.RI "int \fBhwloc_cpuset_from_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const struct bitmask *bitmask)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_nodeset_from_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const struct bitmask *bitmask)"
+.RI "int \fBhwloc_nodeset_from_linux_libnuma_bitmask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const struct bitmask *bitmask)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -36,7 +36,7 @@ The behavior of libnuma is undefined if the kernel is not NUMA-aware\&. (when CO
 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_cpuset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const struct bitmask * bitmask)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_cpuset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const struct bitmask * bitmask)\fC [inline]\fP"
 
 .PP
 Convert libnuma bitmask \fCbitmask\fP into hwloc CPU set \fCcpuset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&.
@@ -49,7 +49,7 @@ Convert libnuma bitmask \fCbitmask\fP into hwloc CPU set \fCcpuset\fP\&. This fu
 .RE
 .PP
 
-.SS "static struct bitmask * hwloc_cpuset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)\fC [inline]\fP, \fC [static]\fP"
+.SS "struct bitmask * hwloc_cpuset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)\fC [inline]\fP"
 
 .PP
 Convert hwloc CPU set \fCcpuset\fP into the returned libnuma bitmask\&. The returned bitmask should later be freed with numa_bitmask_free\&.
@@ -62,7 +62,7 @@ newly allocated struct bitmask, or \fCNULL\fP on error\&.
 .RE
 .PP
 
-.SS "static int hwloc_nodeset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const struct bitmask * bitmask)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_nodeset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const struct bitmask * bitmask)\fC [inline]\fP"
 
 .PP
 Convert libnuma bitmask \fCbitmask\fP into hwloc NUMA node set \fCnodeset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&.
@@ -75,7 +75,7 @@ Convert libnuma bitmask \fCbitmask\fP into hwloc NUMA node set \fCnodeset\fP\&. 
 .RE
 .PP
 
-.SS "static struct bitmask * hwloc_nodeset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)\fC [inline]\fP, \fC [static]\fP"
+.SS "struct bitmask * hwloc_nodeset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)\fC [inline]\fP"
 
 .PP
 Convert hwloc NUMA node set \fCnodeset\fP into the returned libnuma bitmask\&. The returned bitmask should later be freed with numa_bitmask_free\&.

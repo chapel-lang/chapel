@@ -337,8 +337,6 @@ convert it to the non-nilable borrowed type. For example:
 
    *Example (nilable-classes-bang.chpl)*.
 
-   
-
    .. code-block:: chapel
 
       class C {
@@ -380,8 +378,6 @@ value.  For similar reasons, associative and sparse arrays of
 non-nilable classes are not currently supported.
 
    *Example (declaration.chpl)*.
-
-   
 
    .. code-block:: chapel
 
@@ -2096,39 +2092,79 @@ Additionally, it is possible to explicitly request an ``owned`` class instance
 
 .. code-block:: chapel
 
- class MyClass { }
+   class MyClass { }
 
- var myOwnedObject = new MyClass();
- // or, equivalently
- var myOwnedObject = new owned MyClass();
+   var myOwnedObject = new MyClass();
+   // or, equivalently
+   var myOwnedObject = new owned MyClass();
 
 When ``myOwnedObject`` goes out of scope, the class instance it refers to will
 be deleted. It is possible to transfer the ownership to another
 :type:`~OwnedObject.owned` variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
-:type:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
-and transfer the owned class instance to the other value.
+:type:`~OwnedObject.owned` will leave ``myOwnedObject`` dead
+and transfer the ``owned`` class instance to the other value.
 
-.. code-block:: chapel
+   *Example (transferOwnership.chpl)*.
 
- var otherOwnedObject = myOwnedObject;
- // now myOwnedObject stores nil
- // the value it stored earlier has moved to otherOwnedObject
+   .. BLOCK-test-chapelpre
 
- myOwnedObject = otherOwnedObject;
- // this assignment moves the value from the right-hand-side
- // to the left-hand-side, leaving the right-hand-side empty.
- // after the assignment, otherOwnedObject stores nil
- // and myOwnedObject stores a value that will be deleted
- // when myOwnedObject goes out of scope.
+      class MyClass { }
+      proc main() {
+      var myOwnedObject = new MyClass();
 
+   .. code-block:: chapel
+
+      var otherOwnedObject = myOwnedObject;
+      // now myOwnedObject is dead and no longer stores a value
+      // the value it stored earlier has moved to otherOwnedObject
+      // when otherOwnedObject goes out of scope, the instance will be deleted
+
+   .. BLOCK-test-chapelpost
+
+      writeln(otherOwnedObject);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      {}
+
+Copy initializing from a nilable :type:`~OwnedObject.owned` object or assigning
+to another :type:`~OwnedObject.owned` will leave the first object storing
+``nil`` and transfer the ``owned`` class instance to the second object.
+
+   *Example (transferOwnershipNilable.chpl)*.
+
+   .. BLOCK-test-chapelpre
+
+      class MyClass { }
+
+   .. code-block:: chapel
+
+      var myNilableOwnedObject = new MyClass?();
+      var otherOwnedObject: owned MyClass?;
+
+      otherOwnedObject = myNilableOwnedObject;
+      // this assignment moves the value from the right-hand-side
+      // to the left-hand-side, leaving the right-hand-side empty.
+      // after the assignment, nilableOwnedObject stores nil
+      // and otherOwnedObject stores a value that will be deleted
+      // when otherOwnedObject goes out of scope.
+
+   .. BLOCK-test-chapelpost
+
+      writeln((otherOwnedObject, myNilableOwnedObject));
+
+   .. BLOCK-test-chapeloutput
+
+      ({}, nil)
 
 :type:`~OwnedObject.owned` forms part of a type and can be used in type expressions:
 
 .. code-block:: chapel
 
- var emptyOwnedObject: owned MyClass;
+   var ownedObject: owned MyClass;
 
 .. index::
    single: owned classes; borrowing
@@ -2145,16 +2181,35 @@ The compiler includes a component called the lifetime checker that
 can, in many cases, check that a `borrow` does not refer to an object
 that could be deleted before the `borrow`. For example:
 
-.. code-block:: chapel
+   *Example (lifetimeCheckOnBorrow.chpl)*.
 
- proc test() {
-   var a: owned MyClass = new owned MyClass();
-   // the instance referred to by a is deleted at end of scope
-   var c: borrowed MyClass = a.borrow();
-   // c "borrows" to the instance managed by a
-   return c; // lifetime checker error! returning borrow from local variable
-   // a is deleted here
- }
+   .. BLOCK-test-chapelpre
+
+      class MyClass { }
+
+   .. code-block:: chapel
+
+      proc test() {
+        var a: owned MyClass = new owned MyClass();
+        // the instance referred to by a is deleted at end of scope
+        var c: borrowed MyClass = a.borrow();
+        // c "borrows" to the instance managed by a
+        return c; // lifetime checker error! returning borrow from local variable
+        // a is deleted here
+      }
+
+   .. BLOCK-test-chapelpost
+
+      var res = test();
+
+   .. BLOCK-test-chapeloutput
+
+      lifetimeCheckOnBorrow.chpl:2: In function 'test':
+      lifetimeCheckOnBorrow.chpl:7: error: Illegal return of dead value
+      lifetimeCheckOnBorrow.chpl:7: note: 'a' is dead due to deinitialization here
+      lifetimeCheckOnBorrow.chpl:7: error: Scoped variable c cannot be returned
+      lifetimeCheckOnBorrow.chpl:3: note: consider scope of a
+
 
 .. index::
    single: owned classes; implicit conversions
@@ -2167,30 +2222,58 @@ The compiler includes support for introducing automatic coercions
 from :type:`~OwnedObject.owned` to the borrow type. This is equivalent
 to calling the :proc:`~OwnedObject.owned.borrow` method. For example:
 
-.. code-block:: chapel
+   *Example (implicitBorrowCoercion.chpl)*.
 
- proc f(arg: borrowed MyClass) {
-   writeln(arg);
- }
+   .. BLOCK-test-chapelpre
 
- var myOwned = new owned MyClass();
- f(myOwned); // compiler coerces to borrowed MyClass via borrow()
+      class MyClass { }
 
+   .. code-block:: chapel
+
+      proc f(arg: borrowed MyClass) {
+        writeln(arg);
+      }
+
+      var myOwned = new owned MyClass();
+      f(myOwned); // compiler coerces to borrowed MyClass via borrow()
+
+   .. BLOCK-test-chapeloutput
+
+      {}
 
 Additionally, the compiler includes support for coercing a value
 of type ``owned T`` to ``owned U`` when ``T`` is a subclass of ``U``.
 For example:
 
-.. code-block:: chapel
+   *Example (implicitOwnedCoercion.chpl)*.
 
- class Person { }
- class Student : Person { }
+   .. code-block:: chapel
 
- var myStudent = new owned Student();
- var myPerson:owned Person = myStudent;
- // relies on coercion from owned Student to owned Person
- // moves the instance from myStudent to myPerson, leaving
- // myStudent containing nil.
+      class Person { }
+      class Student : Person { }
+
+      proc main() {
+        var myStudent = new owned Student();
+        var myPerson:owned Person = myStudent;
+        // relies on coercion from owned Student to owned Person
+        // moves the instance from myStudent to myPerson, leaving
+        // myStudent dead.
+      }
+
+   .. BLOCK-test-chapelpost
+
+      proc Person.deinit() {
+        writeln("Goodbye, Person!");
+      }
+      proc Student.deinit() {
+        writeln("Goodbye, Student!");
+      }
+
+
+   .. BLOCK-test-chapeloutput
+
+      Goodbye, Student!
+      Goodbye, Person!
 
 
 .. index::
@@ -2247,18 +2330,35 @@ Copy initializing or assigning from mySharedObject will make
 other variables refer to the same class instance. The class instance
 will be deleted after all of these references go out of scope.
 
-.. code-block:: chapel
+   *Example (sharedReferenceCount.chpl)*.
 
- var globalSharedObject:shared MyClass;
+   .. BLOCK-test-chapelpre
 
- proc makeGlobalSharedObject() {
-   var mySharedObject = new shared MyClass(...);
-   globalSharedObject = mySharedObject;
-   // the reference count is decremented when mySharedObject
-   // goes out of scope. Since it's not zero after decrementing, the
-   // MyClass instance is not deleted until globalSharedObject
-   // goes out of scope.
- }
+      class MyClass { }
+
+   .. code-block:: chapel
+
+      var globalSharedObject: shared MyClass?;
+
+      proc makeGlobalSharedObject() {
+        var mySharedObject = new shared MyClass();
+        globalSharedObject = mySharedObject;
+        // the reference count is decremented when mySharedObject
+        // goes out of scope. Since it's not zero after decrementing, the
+        // MyClass instance is not deleted until globalSharedObject
+        // goes out of scope.
+      }
+
+   .. BLOCK-test-chapelpost
+
+      writeln(globalSharedObject);
+      makeGlobalSharedObject();
+      writeln(globalSharedObject);
+
+   .. BLOCK-test-chapeloutput
+
+      nil
+      {}
 
 .. index::
    single: shared classes; borrowing

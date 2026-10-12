@@ -660,6 +660,12 @@ const char *fi_no_av_straddr(struct fid_av *av, const void *addr, char *buf,
 	return "unknown";
 }
 
+int fi_no_av_set(struct fid_av *av_fid, struct fi_av_set_attr *attr,
+			     struct fid_av_set **av_set_fid, void *context)
+{
+	return -FI_ENOSYS;
+}
+
 int fi_no_av_set_union(struct fid_av_set *dst, const struct fid_av_set *src)
 {
 	return -FI_ENOSYS;

@@ -58,40 +58,37 @@
 
 static __inline__ void ips_clear_bit(int nr, volatile unsigned long *addr)
 {
-	asm volatile (LOCK_PREFIX "btrl %1,%0" : "=m"(*addr) : "dIr"(nr));
+	asm volatile(LOCK_PREFIX "btrl %1,%0" : "=m"(*addr) : "dIr"(nr));
 }
 
 static __inline__ void ips_change_bit(int nr, volatile unsigned long *addr)
 {
-	asm volatile (LOCK_PREFIX "btcl %1,%0" : "=m"(*addr) : "dIr"(nr));
+	asm volatile(LOCK_PREFIX "btcl %1,%0" : "=m"(*addr) : "dIr"(nr));
 }
 
 static __inline__ int ips_test_and_set_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	asm volatile (LOCK_PREFIX "btsl %2,%1\n\tsbbl %0,%0" : "=r"(oldbit),
-		      "=m"(*addr) : "dIr"(nr) : "memory");
+	asm volatile(LOCK_PREFIX "btsl %2,%1\n\tsbbl %0,%0" : "=r"(oldbit), "=m"(*addr) : "dIr"(nr) : "memory");
 	return oldbit;
 }
 
 static __inline__ void ips___clear_bit(int nr, volatile unsigned long *addr)
 {
-	asm volatile ("btrl %1,%0" : "=m" (*addr) : "dIr"(nr));
+	asm volatile("btrl %1,%0" : "=m"(*addr) : "dIr"(nr));
 }
 
 static __inline__ void ips___change_bit(int nr, volatile unsigned long *addr)
 {
-	asm volatile ("btcl %1,%0" : "=m" (*addr) : "dIr"(nr));
+	asm volatile("btcl %1,%0" : "=m"(*addr) : "dIr"(nr));
 }
 
-static __inline__ int ips___test_and_set_bit(int nr,
-					     volatile unsigned long *addr)
+static __inline__ int ips___test_and_set_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	asm volatile ("btsl %2,%1\n\tsbbl %0,%0" : "=r" (oldbit),
-		      "=m"(*addr) : "dIr"(nr) : "memory");
+	asm volatile("btsl %2,%1\n\tsbbl %0,%0" : "=r"(oldbit), "=m"(*addr) : "dIr"(nr) : "memory");
 	return oldbit;
 }
 

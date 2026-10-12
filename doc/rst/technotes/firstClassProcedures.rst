@@ -33,11 +33,11 @@ syntax for named procedure definition.
 To construct the type of a procedure which takes two integers and
 returns an integer, users may write the following:
 
-.. code-block:: chapel
-
-  type T = proc(x: int, y: int): int;
-  writeln(T:string); // 'proc(x: int, y: int): int'
-
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
+   :dedent:
 
 .. note::
   Currently ``proc(`` must be written without any spaces occurring between
@@ -51,14 +51,10 @@ in typing such that two procedures that vary only by their formal names
 have different types. In the below example, assignment of two procedure
 values will fail because the formal names are different:
 
-.. code-block:: chapel
-
-  proc foo(x: int, y: int): int { return x + y; }
-  proc bar(a: int, b: int): int { return a + b; }
-  writeln(foo.type:string);   // 'proc(x: int, y: int): int'
-  var x = foo;                // 'x' is typed 'proc(x: int, y: int): int'
-  writeln(bar.type:string);   // 'proc(a: int, b: int): int'
-  x = bar;                    // Error!
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresInvalidAssignment.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 There are scenarios where a user may want to pass around procedures
 without regard for their formal names. Anonymous ``_`` formals are a
@@ -71,13 +67,11 @@ Anonymous Procedures
 The syntax for constructing anonymous procedures also mirrors named
 procedure definition.
 
-.. code-block:: chapel
-
-  // The procedure named 'foo' is not an anonymous procedure.
-  proc foo(x: int, y: int): int { return x + y; }
-
-  // Define an anonymous procedure bound to the constant variable 'bar'.
-  const bar = proc(a: int, b: int): int { return a + b; };
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
+   :dedent:
 
 The Formals of Procedure Types May Be Anonymous
 -----------------------------------------------
@@ -95,19 +89,10 @@ tuple elements when de-tupling.
 If a procedure type `T` declares a formal at position `N` to be anonymous,
 then a value of type `T` may use any name for its formal at position `N`.
 
-.. code-block:: chapel
-
-  proc foo(x: int, y: int): int { return x + y; }
-  proc bar(a: int, b: int): int { return a + b; }
-
-  // Here the formals of 'T' are anonymous.
-  type T = proc(_: int, _: int): int;
-
-  var x: T = foo;             // OK, T's formals are anonymous '_'.
-  writeln(foo.type:string);   // 'proc(x: int, y: int): int'
-  writeln(x.type:string);     // 'proc(_: int, _: int): int'
-  writeln(bar.type:string);   // 'proc(a: int, b: int): int'
-  x = bar;                    // OK!
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresCastOffFormalName.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 In the above example, two procedures are declared with different formal
 names, but otherwise identical types. A local variable `x` is declared
@@ -124,10 +109,10 @@ Procedure definitions may declare anonymous formals as well. When a formal
 is declared anonymous, it cannot be referenced within the body of the
 procedure.
 
-.. code-block:: chapel
-
-  // The second formal of 'baz' is anonymous and cannot be used.
-  proc baz(x: int, _: int): int { return x + 1; }
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresAnonymousFormal.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 .. _Capturing_First_Class_Procedures:
 
@@ -138,19 +123,20 @@ Procedures may be captured as values by referring to them by name.
 
 For example:
 
-.. code-block:: chapel
-
-  proc myfunc(x:int) { return x + 1; }
-  const p = myfunc;
-  writeln(p(3));  // outputs: 4
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
+   :dedent:
 
 Anonymous procedures may be captured as though they are named procedures,
 by substituting them in places where a procedure name may also appear:
 
-.. code-block:: chapel
-
-  const p = proc(x: int) { return x + 1; };
-  writeln(p(3));  // outputs: 4
+.. literalinclude:: ../../../test/technotes/doc-examples/FirstClassProceduresExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
+   :dedent:
 
 Today, only procedures (defined with the ``proc`` keyword) may be
 captured. Additionally, a captured procedure must not:

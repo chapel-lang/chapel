@@ -3,7 +3,7 @@ module MyMod {
   config param usePoi = true;
 
   pragma "no gpu codegen"
-  proc doSomethingElse(x) {}
+  proc doSomethingElse(x) { return 1; }
 
   proc doSomething(x) {
     doSomethingElse(x);

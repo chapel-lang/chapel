@@ -1,0 +1,8 @@
+echo_and_run mason clean
+echo_and_run mason build --example
+echo_and_run mason run --example depExample.chpl
+echo_and_run mason run --example example.chpl
+echo_and_run mason run --example nomodule.chpl
+echo_and_run mason run --example examplesubdir/subdirExample.chpl
+echo_and_run mason run --example withOpts.chpl
+echo_and_run CHPL_RT_UNWIND=0 mason run --example badExit.chpl

@@ -85,13 +85,14 @@
 #define RXD_INLINE		(1 << 5)
 #define RXD_MULTI_RECV		(1 << 6)
 
-#define RXD_IDX_OFFSET(x)	(x + 1)	
+#define RXD_IDX_OFFSET(x)	(x + 1)
 
 struct rxd_env {
 	int spin_count;
 	int retry;
 	int max_peers;
 	int max_unacked;
+	int rescan;
 };
 
 extern struct rxd_env rxd_env;
@@ -158,7 +159,7 @@ struct rxd_av {
 
 	int dg_av_used;
 	size_t dg_addrlen;
-	struct indexer fi_addr_idx;	
+	struct indexer fi_addr_idx;
 	struct indexer rxdaddr_dg_idx;
 	struct index_map rxdaddr_fi_idm;
 };

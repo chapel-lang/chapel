@@ -131,7 +131,7 @@ usd_alloc_mr(
     base_addr = mmap(NULL, true_size, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (base_addr == NULL || base_addr == MAP_FAILED) {
-        usd_err("Failed to mmap region of size %lu\n", true_size);
+        usd_err("Failed to mmap region of size %zu\n", true_size);
         return -errno;
     }
     mr = base_addr;
@@ -155,7 +155,7 @@ usd_alloc_mr(
      */
     ret = madvise(vaddr, madv_size, MADV_DONTFORK);
     if (ret != 0) {
-        usd_err("Failed to disable child's access to memory %p size %lu\n",
+        usd_err("Failed to disable child's access to memory %p size %zu\n",
                 vaddr, size);
         ret = errno;
         goto err_unmap;
@@ -163,7 +163,7 @@ usd_alloc_mr(
 
     ret = usd_ib_cmd_reg_mr(dev, vaddr, size, mr);
     if (ret != 0) {
-        usd_err("Failed to register memory region %p, size %lu\n",
+        usd_err("Failed to register memory region %p, size %zu\n",
                 vaddr, size);
         goto err_madvise;
     }

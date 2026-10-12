@@ -8,7 +8,6 @@ packageModules.chpl:XX: warning: ChplFormat module is considered unstable pendin
 packageModules.chpl:XX: warning: Collection is unstable
 packageModules.chpl:XX: warning: ConcurrentMap is unstable
 packageModules.chpl:XX: warning: CopyAggregation is unstable
-packageModules.chpl:XX: warning: Crypto is unstable
 packageModules.chpl:XX: warning: Curl is unstable
 packageModules.chpl:XX: warning: DistributedBag is unstable
 packageModules.chpl:XX: warning: DistributedDeque is unstable

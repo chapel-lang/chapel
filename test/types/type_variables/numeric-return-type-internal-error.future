@@ -1,0 +1,2 @@
+bug: numeric return type hits internal error
+#27952

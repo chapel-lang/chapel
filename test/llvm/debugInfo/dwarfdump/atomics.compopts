@@ -1,0 +1,2 @@
+# atomics require DWARF 5
+--ccflags -gdwarf-5

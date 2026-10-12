@@ -6,6 +6,12 @@
 
 #include <assert.h> /* for assert() */
 
+#if __STDC_VERSION__ < 202311L
+#define qt_static_assert _Static_assert
+#else
+#define qt_static_assert static_assert
+#endif
+
 #ifdef qassert
 #undef qassert
 #endif

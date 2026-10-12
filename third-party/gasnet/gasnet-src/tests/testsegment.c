@@ -70,8 +70,8 @@ static void pong_handler(gex_Token_t token, void *buf, size_t nbytes) {
 
 // handler table
 gex_AM_Entry_t htable[] = {
-  { hidx_ping, ping_handler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, PTR_NARGS },
-  { hidx_pong, pong_handler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,  0 }
+  { hidx_ping, (gex_AM_Fn_t)ping_handler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, PTR_NARGS },
+  { hidx_pong, (gex_AM_Fn_t)pong_handler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,  0 }
  };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 

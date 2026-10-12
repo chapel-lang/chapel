@@ -1,6 +1,6 @@
 #!/bin/sh
 
-yum -y install git gcc gcc-c++ m4 perl tcsh bash gcc gcc-c++ perl python3 bash make gawk cmake
+yum -y install git gcc gcc-c++ m4 perl tcsh bash gcc gcc-c++ perl python3 bash make gawk cmake libunwind-devel
 
 # install LLVM
 yum -y install llvm-devel clang clang-devel

@@ -49,6 +49,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "ofi.h"
 #include "ofi_osd.h"
@@ -116,7 +117,7 @@ int ofi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 	if (timeout_ms < 0)
 		return pthread_cond_wait(cond, mut);
 
-	t = ofi_gettime_ms() + timeout_ms;
+	t = ofi_get_realtime_ms() + timeout_ms;
 	ts.tv_sec = t / 1000;
 	ts.tv_nsec = (t % 1000) * 1000000;
 	return pthread_cond_timedwait(cond, mut, &ts);
@@ -166,7 +167,7 @@ int ofi_shm_map(struct util_shm *shm, const char *name, size_t size,
 	}
 
 	FI_DBG(&core_prov, FI_LOG_CORE,
-		"Creating shm segment :%s (size: %lu)\n", fname, size);
+		"Creating shm segment :%s (size: %zu)\n", fname, size);
 
 	shm->shared_fd = shm_open(fname, flags, S_IRUSR | S_IWUSR);
 	if (shm->shared_fd < 0) {

@@ -421,8 +421,10 @@ ssize_t rxd_ep_generic_sendmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,
 
 	tx_entry = rxd_tx_entry_init_msg(rxd_ep, rxd_addr, op, iov, iov_count,
 					 tag, data, rxd_flags, context);
-	if (!tx_entry)
+	if (!tx_entry) {
+		ret = -FI_EAGAIN;
 		goto out;
+	}
 
 	if (rxd_peer(rxd_ep, rxd_addr)->peer_addr == RXD_ADDR_INVALID)
 		goto out;

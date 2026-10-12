@@ -75,6 +75,67 @@ static gex_RankInfo_t *nbrhdinfo;
   MACRO(I64) MACRO(U64)  \
   MACRO(FLT) MACRO(DBL)
 
+// Randomizes coverage over NB and NBI
+#define _TEST_OP_BLOCKING(_tcode,_ad,_result,_tgt_rank,_tgt_addr,_op,_op1,_op2,_flags) do {\
+    if (TEST_RAND_ONEIN(2)) {                                        \
+      gex_Event_Wait(gex_AD_OpNB_##_tcode(_ad,_result,_tgt_rank,_tgt_addr,_op,_op1,_op2,_flags)); \
+    } else {                                                         \
+      gex_AD_OpNBI_##_tcode(_ad,_result,_tgt_rank,_tgt_addr,_op,_op1,_op2,_flags); \
+      gex_EC_t ec;                                                   \
+      switch (_op) {                                                 \
+        case GEX_OP_SET: ec = GEX_EC_PUT; break;                     \
+        case GEX_OP_GET: ec = GEX_EC_GET; break;                     \
+        default:         ec = GEX_EC_RMW; break;                     \
+      }                                                              \
+      gex_NBI_Wait(ec,0);                                            \
+    }                                                                \
+  } while (0)
+
+// This is mostly for improved legibility (omitting both unused args)
+#define _TEST_OP_GET(_tcode,_ad,_result,_tgt_rank,_tgt_addr,_flags) \
+  _TEST_OP_BLOCKING(_tcode,_ad,_result,_tgt_rank,_tgt_addr,GEX_OP_GET,911,911,_flags)
+
+// To ensure good coverage of offloaded atomics, we provide an emulated SET
+// (via GET+RMW) when inclusion of GEX_OP_SET (typically used only for
+// initialization) might otherwise prevent selection of offload for other
+// operations in an AD.
+// This is a blocking operation, intended for initialization, and in general is
+// only correct when there are no other concurrent access to the target
+// location.
+// TODO: (F)XOR would work for integer types (only), if there is ever need.
+#define _TEST_OP_SET_OPS ( GEX_OP_SET | \
+                           GEX_OP_ADD | GEX_OP_FADD | \
+                           GEX_OP_CAS | GEX_OP_FCAS )
+#define _TEST_OP_SET(_tcode,_ops,_ad,_tgt_rank,_tgt_addr,_val,_flags) do { \
+    if (_ops & GEX_OP_SET) {                                         \
+      _TEST_OP_BLOCKING(_tcode,_ad,NULL,_tgt_rank,_tgt_addr,GEX_OP_SET,_val,0,_flags); \
+    } else if (_ops & _TEST_OP_SET_OPS) {                            \
+      assert(ops & GEX_OP_GET);                                      \
+      _tcode##_type tmp_get;                                         \
+      _TEST_OP_BLOCKING(_tcode,_ad,&tmp_get,_tgt_rank,_tgt_addr,GEX_OP_GET,0,0,_flags); \
+      /* fetching before non-fetching to favor checking of result */ \
+      if (_ops & GEX_OP_FADD) {                                      \
+        _tcode##_type tmp_fetch;                                     \
+        _tcode##_type tmp_op = _val - tmp_get;                       \
+        _TEST_OP_BLOCKING(_tcode,_ad,&tmp_fetch,_tgt_rank,_tgt_addr,GEX_OP_FADD,tmp_op,0,_flags); \
+        assert(tmp_fetch == tmp_get);                                \
+      } else if (_ops & GEX_OP_FCAS) {                               \
+        _tcode##_type tmp_fetch;                                     \
+        _TEST_OP_BLOCKING(_tcode,_ad,&tmp_fetch,_tgt_rank,_tgt_addr,GEX_OP_FCAS,tmp_get,_val,_flags); \
+        assert(tmp_fetch == tmp_get);                                \
+      } else if (_ops & GEX_OP_ADD) {                               \
+        _tcode##_type tmp_fetch;                                     \
+        _tcode##_type tmp_op = _val - tmp_get;                       \
+        _TEST_OP_BLOCKING(_tcode,_ad,NULL,_tgt_rank,_tgt_addr,GEX_OP_ADD,tmp_op,0,_flags); \
+      } else if (_ops & GEX_OP_CAS) {                                \
+        _tcode##_type tmp_fetch;                                     \
+        _TEST_OP_BLOCKING(_tcode,_ad,NULL,_tgt_rank,_tgt_addr,GEX_OP_CAS,tmp_get,_val,_flags); \
+      }                                                              \
+    } else {                                                         \
+      assert_always(0 && "no SET operation");                        \
+    }                                                                \
+  } while (0)
+
 /* Blocking atomic via either NB or NBI (chosen at random) */
 /* With or without IMMEDIATE (also at random) */
 /* With or without RANK_IS_JOBRANK (also at random) */
@@ -99,7 +160,13 @@ static gex_RankInfo_t *nbrhdinfo;
         assert_always(flags & GEX_FLAG_IMMEDIATE);                                         \
         flags &= ~GEX_FLAG_IMMEDIATE;                                                      \
       }                                                                                    \
-      gex_NBI_Wait(GEX_EC_ALL,0);                                                          \
+      gex_EC_t ec;                                                                         \
+      switch (_opcode) {                                                                   \
+        case GEX_OP_SET: ec = GEX_EC_PUT; break;                                           \
+        case GEX_OP_GET: ec = GEX_EC_GET; break;                                           \
+        default:         ec = GEX_EC_RMW; break;                                           \
+      }                                                                                    \
+      gex_NBI_Wait(ec,0);                                                                  \
     }                                                                                      \
   } while (0)
 
@@ -108,7 +175,7 @@ static gex_RankInfo_t *nbrhdinfo;
 #define _TEST_ROP_MIRROR(_tcode, _newval) do { \
     _tcode##_mirror = _newval;                 \
     if_pf (prev_fail) {                        \
-      gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,peer,peerseg,GEX_OP_SET,_tcode##_mirror,0,0)); \
+      _TEST_OP_SET(_tcode,ops,ad,peer,peerseg,_tcode##_mirror,0); \
     }                                          \
     prev_fail = 0;                             \
   } while (0)
@@ -162,11 +229,13 @@ static _type _tcode##_fetch, mirror, unused, x, y; \
 GASNETT_NEVER_INLINE(test_rand1_##_tcode, \
 void test_rand1_##_tcode(gex_AD_t ad, gex_OP_t ops, int64_t lo, int64_t hi)) {\
     SUBTEST("SET(x)");                                        \
-      TEST_ROP(_tcode, GEX_OP_SET, x, unused, x);             \
+      _TEST_OP_SET(_tcode,ops,ad,peer,peerseg,x,0);           \
+      _tcode##_mirror = x;                                    \
     SUBTEST("GET(x)");                                        \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
     SUBTEST("SET(0)");                                        \
-      TEST_ROP(_tcode, GEX_OP_SET, 0, unused, 0);             \
+      _TEST_OP_SET(_tcode,ops,ad,peer,peerseg,0,0);           \
+      _tcode##_mirror = 0;                                    \
     SUBTEST("GET(0)");                                        \
       TEST_ROP_FETCH_NC(_tcode, GEX_OP_GET, unused, unused);  \
 } \
@@ -354,13 +423,13 @@ FORALL_DT(TEST_FLAGS_DECL)
 GASNETT_NEVER_INLINE(test_cntr_##_tcode, \
 void test_cntr_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
+  gex_OP_t ops = gex_AD_QueryOps(ad);                                     \
   MSG0("    Central-counter concurrent updates test (FADD/ADD/FINC/INC)");   \
   _tcode##_type unused = 911; /* garbage */                                  \
   int goal = MIN(iters, max_goal);                                           \
   int my_share = (goal / numranks) + ((myrank < (goal % numranks)) ? 1 : 0); \
   if (!myrank) {                                                             \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,0,TEST_MYSEG(),GEX_OP_SET,   \
-                                        0,unused,GEX_FLAG_AD_MY_RANK));      \
+    _TEST_OP_SET(_tcode,ops,ad,0,TEST_MYSEG(),0,GEX_FLAG_AD_MY_RANK);\
   }                                                                          \
   BARRIER();                                                                 \
   _tcode##_type result;                                                      \
@@ -399,8 +468,7 @@ void test_cntr_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   }                                                                          \
   BARRIER();                                                                 \
   if (!myrank) {                                                             \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,&result,0,TEST_MYSEG(),GEX_OP_GET,\
-                                        unused,unused,GEX_FLAG_AD_MY_RANK)); \
+    _TEST_OP_GET(_tcode,ad,&result,0,TEST_MYSEG(),GEX_FLAG_AD_MY_RANK);      \
     assert_always(result == goal);                                           \
   }                                                                          \
 }
@@ -411,13 +479,13 @@ FORALL_DT(TEST_CNTR_DECL)
 GASNETT_NEVER_INLINE(test_fcas_##_tcode, \
 void test_fcas_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
+  gex_OP_t ops = gex_AD_QueryOps(ad);                                        \
   MSG0("    Central-counter concurrent updates test (FCAS)");                \
   _tcode##_type unused = 911; /* garbage */                                  \
   int goal = MIN(iters, max_goal);                                           \
   int my_share = (goal / numranks) + ((myrank < (goal % numranks)) ? 1 : 0); \
   if (!myrank) {                                                             \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,0,TEST_MYSEG(),GEX_OP_SET,   \
-                                        0,unused,GEX_FLAG_AD_MY_RANK));      \
+    _TEST_OP_SET(_tcode,ops,ad,0,TEST_MYSEG(),0,GEX_FLAG_AD_MY_RANK);        \
   }                                                                          \
   BARRIER();                                                                 \
   _tcode##_type result;                                                      \
@@ -442,8 +510,7 @@ void test_fcas_##_tcode(gex_AD_t ad, int max_goal)) {                        \
   }                                                                          \
   BARRIER();                                                                 \
   if (!myrank) {                                                             \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,&result,0,TEST_MYSEG(),GEX_OP_GET,\
-                                        unused,unused,GEX_FLAG_AD_MY_RANK)); \
+    _TEST_OP_GET(_tcode,ad,&result,0,TEST_MYSEG(),GEX_FLAG_AD_MY_RANK);      \
     assert_always(result == goal);                                           \
   }                                                                          \
 }
@@ -453,9 +520,13 @@ FORALL_DT(TEST_FCAS_DECL)
 #define _TEST_RING_DECL(_tcode,_op) \
 GASNETT_NEVER_INLINE(_test_ring_##_op##_##_tcode, \
 void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd)) {  \
-  gex_TM_t testtm = gex_AD_QueryTM(ad);                                      \
-  MSG0("    Producer/consumer %s ring test (" #_op ")",                   \
-       (nbrhd ? "multiple" : "single"));                                  \
+  gex_TM_t testtm = gex_AD_QueryTM(ad);                                   \
+  gex_OP_t ops = gex_AD_QueryOps(ad);                                     \
+  int have_set = !!(ops & GEX_OP_SET);                                    \
+  int set_added = have_set && (GEX_OP_##_op != GEX_OP_SET);               \
+  MSG0("    Producer/consumer %s ring test (" #_op "%s)",                 \
+       (nbrhd ? "multiple" : "single"),                                   \
+       (set_added ? " + SET" : ""));                                      \
   const gex_Flags_t flags = nbrhd ? GEX_FLAG_AD_MY_NBRHD : 0;             \
   const gex_Rank_t tgt = nbrhd ? neighbor : peer;                         \
   const int wrap = (tgt <= myrank);                                       \
@@ -470,12 +541,10 @@ void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd)) {  \
   uint64_t step = max_val / (limit + 1);                                  \
   /* ... subject to a constraint that low half cannot be zero */          \
   step -= (step & ((((uint64_t)1)<<(4*sizeof(step)))-1)) ? 0 : 1;         \
-  /* start at 0, except first rank in each ring will start at 1 */        \
+  /* start at 0, except first rank in each ring will start at step */     \
   { const _tcode##_type init = step * (nbrhd ? !nbrhdrank : !myrank);     \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,myrank,myX,GEX_OP_SET,    \
-                                        init,0,GEX_FLAG_AD_MY_RANK));     \
-    gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,NULL,myrank,myY,GEX_OP_SET,    \
-                                        init,0,GEX_FLAG_AD_MY_RANK));     \
+    _TEST_OP_SET(_tcode,ops,ad,myrank,myX,init,GEX_FLAG_AD_MY_RANK);      \
+    _TEST_OP_SET(_tcode,ops,ad,myrank,myY,init,GEX_FLAG_AD_MY_RANK);      \
   }                                                                       \
   BARRIER();                                                              \
   for (unsigned int i = 0; i < limit; ++i) {                              \
@@ -485,13 +554,23 @@ void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd)) {  \
     /* CONSUMER: First OP uses ACQ */                                     \
     while (1) {                                                           \
       _TEST_RING_CONSUME_##_op(_tcode);                                   \
-      if (readY == expect) break;                                         \
+      if (readY == expect) {                                              \
+        if (readX < readY) {                                              \
+          static int once = 0;                                            \
+          if (!once) {                                                    \
+            ERR("Read Y value %" PRIu64 " newer than Read X value"        \
+                " %" PRIu64, (uint64_t)readY, (uint64_t)readX);           \
+            once = 1;                                                     \
+          }                                                               \
+        }                                                                 \
+        break;                                                            \
+      }                                                                   \
       if (readY != (expect - step)) {                                     \
         static int once = 0;                                              \
         if (!once) {                                                      \
           ERR("Read Y value %" PRIu64 " did not match expected %" PRIu64  \
-              " nor previous expected value %" PRIu64, (uint64_t)readY,   \
-              (uint64_t)(expect - step), (uint64_t)expect);               \
+              " nor previous expected value %" PRIu64 " at iteration %u", \
+              (uint64_t)readY, (uint64_t)(expect - step), (uint64_t)expect, i); \
           once = 1;                                                       \
         }                                                                 \
       }                                                                   \
@@ -501,8 +580,8 @@ void _test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd)) {  \
     if (readX != expect) {                                                \
       static int once = 0;                                                \
       if (!once) {                                                        \
-        ERR("Read X value %" PRIu64 " did not match expected %" PRIu64,   \
-            (uint64_t)readX, (uint64_t)expect);                           \
+        ERR("Read X value %" PRIu64 " did not match expected %" PRIu64 " at iteration %u",   \
+            (uint64_t)readX, (uint64_t)expect, i);                        \
         once = 1;                                                         \
       }                                                                   \
     }                                                                     \
@@ -526,21 +605,12 @@ void test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd) { \
     const _tcode##_type op1B = (_tcode##_type)(_op1B);                                       \
     const _tcode##_type op2 = (_tcode##_type)(next);                                         \
     _tcode##_type tmp;                                                                       \
-    if (TEST_RAND_ONEIN(2)) {                                                                \
-      gex_Event_Wait(                                                                        \
-          gex_AD_OpNB_##_tcode(ad,&tmp,tgt,tgtX,GEX_OP_##_opA,op1A,op2,flags));              \
-      gex_Event_Wait(                                                                        \
-          gex_AD_OpNB_##_tcode(ad,&tmp,tgt,tgtY,GEX_OP_##_opB,op1B,op2,flags|GEX_FLAG_AD_REL));\
-    } else {                                                                                 \
-      gex_AD_OpNBI_##_tcode(ad,&tmp,tgt,tgtX,GEX_OP_##_opA,op1A,op2,flags);                  \
-      gex_NBI_Wait(GEX_EC_ALL,0);                                                            \
-      gex_AD_OpNBI_##_tcode(ad,&tmp,tgt,tgtY,GEX_OP_##_opB,op1B,op2,flags|GEX_FLAG_AD_REL);  \
-      gex_NBI_Wait(GEX_EC_ALL,0);                                                            \
-    }                                                                                        \
+    _TEST_OP_BLOCKING(_tcode,ad,&tmp,tgt,tgtX,GEX_OP_##_opA,op1A,op2,flags);                 \
+    _TEST_OP_BLOCKING(_tcode,ad,&tmp,tgt,tgtY,GEX_OP_##_opB,op1B,op2,flags|GEX_FLAG_AD_REL); \
   } while (0)
 #define _TEST_RING_PRODUCE1(_tcode,_op,_op1) _TEST_RING_PRODUCE(_tcode,_op,_op1,_op,_op1)
 #define _TEST_RING_PRODUCE2(_tcode,_op,_op1) \
-  switch (TEST_RAND(0,3)) {                                      \
+  switch (have_set ? TEST_RAND(0,3) : 3) {                       \
     case 0: _TEST_RING_PRODUCE(_tcode,SET,next,SET,next); break; \
     case 1: _TEST_RING_PRODUCE(_tcode,SET,next,_op,_op1); break; \
     case 2: _TEST_RING_PRODUCE(_tcode,_op,_op1,SET,next); break; \
@@ -560,19 +630,8 @@ void test_ring_##_op##_##_tcode(gex_AD_t ad, uint64_t max_val, int nbrhd) { \
 // When producer uses XOR, consumer mixes GET with a no-op FXOR(0).
 //
 #define _TEST_RING_CONSUME(_tcode,_opA,_opB) do { \
-    if (TEST_RAND_ONEIN(2)) {                                                     \
-      gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,&readY,myrank,myY,GEX_OP_##_opA,0,0, \
-                                          GEX_FLAG_AD_MY_RANK|GEX_FLAG_AD_ACQ));  \
-      gex_Event_Wait(gex_AD_OpNB_##_tcode(ad,&readX,myrank,myX,GEX_OP_##_opB,0,0, \
-                                          GEX_FLAG_AD_MY_RANK));                  \
-    } else {                                                                      \
-      gex_AD_OpNBI_##_tcode(ad,&readY,myrank,myY,GEX_OP_##_opA,0,0,               \
-                            GEX_FLAG_AD_MY_RANK|GEX_FLAG_AD_ACQ);                 \
-      gex_NBI_Wait(GEX_EC_ALL,0);                                                 \
-      gex_AD_OpNBI_##_tcode(ad,&readX,myrank,myX,GEX_OP_##_opB,0,0,               \
-                            GEX_FLAG_AD_MY_RANK);                                 \
-      gex_NBI_Wait(GEX_EC_ALL,0);                                                 \
-    }                                                                             \
+    _TEST_OP_BLOCKING(_tcode,ad,&readY,myrank,myY,GEX_OP_##_opA,0,0,GEX_FLAG_AD_MY_RANK|GEX_FLAG_AD_ACQ); \
+    _TEST_OP_BLOCKING(_tcode,ad,&readX,myrank,myX,GEX_OP_##_opB,0,0,GEX_FLAG_AD_MY_RANK); \
   } while (0)
 #define _TEST_RING_CONSUME1(_tcode) _TEST_RING_CONSUME(_tcode,GET,GET)
 #define _TEST_RING_CONSUME2(_tcode,_op) \
@@ -618,6 +677,28 @@ void doit(gex_TM_t testtm, gex_DT_t dt)) {
     case GEX_DT_##dtcode: MSG0("  Tests for type " _STRINGIFY(dtcode##_type)); break;
   switch (dt) { FORALL_DT(MSG_CASE) }
 
+  // Conduit- and type-specific op to use for initializing using _TEST_OP_SET().
+  // Valid values are SET, FCAS, or FADD.
+  gex_OP_t test_op_set = GEX_OP_SET;
+  #if GASNET_CONDUIT_IBV
+    // For 64-bit types, ibv-conduit can offload FCAS and integer FADD, but not SET.
+    // Do not randomize since selection must be single-valued.
+    switch (dt) {
+      case GEX_DT_U64:
+        test_op_set = GEX_OP_FADD;
+        break;
+      case GEX_DT_I64:
+      case GEX_DT_DBL:
+        test_op_set = GEX_OP_FCAS;
+        break;
+      default:
+        test_op_set = GEX_OP_SET;
+        break;
+    }
+  #else
+    test_op_set = GEX_OP_SET;
+  #endif
+
   // Test of AD-specific flags
   {
     gex_AD_t ad;
@@ -662,31 +743,44 @@ void doit(gex_TM_t testtm, gex_DT_t dt)) {
   // Tests of ACQ/REL signaling on a ring, using several different ops to signal
   // Only run per-neighborhood rings on team0, and when there are multiple neighborhoods
   const int nbrhd = (testtm == myteam) && multinbrhd;
-  #define RING_TEST(op1,op2,bitwise) \
+  #define RING_TEST(op1,op2,add_set,bitwise) \
   if (!bitwise || (dt!=GEX_DT_FLT && dt!=GEX_DT_DBL)) {  \
     gex_AD_t ad;                                         \
-    gex_AD_Create(&ad, testtm, dt,                       \
-                  (GEX_OP_SET   | GEX_OP_GET |           \
-                   GEX_OP_##op1 | GEX_OP_##op2), 0);     \
+    gex_OP_t test_ops = GEX_OP_##op1 | GEX_OP_##op2 |    \
+                        (add_set ? GEX_OP_SET : 0);      \
+    /* set_op will be non-zero if only if an "extra" op is needed by _TEST_OP_SET() */ \
+    gex_OP_t set_op = (test_ops & _TEST_OP_SET_OPS) ? 0 : test_op_set; \
+    gex_AD_Create(&ad, testtm, dt, (test_ops | set_op | GEX_OP_GET), 0); \
     BARRIER();                                           \
     switch (dt) { FORALL_DT(RING_##op1##_CASE) }         \
     gex_AD_Destroy(ad);                                  \
   }
   #define RING_SET_CASE(dtcode)   case GEX_DT_##dtcode: test_ring_SET_##dtcode(ad, max_u64, nbrhd); break;
-  RING_TEST(SET,SET,0)
   #define RING_SWAP_CASE(dtcode)  case GEX_DT_##dtcode: test_ring_SWAP_##dtcode(ad, max_u64, nbrhd); break;
-  RING_TEST(SWAP,SWAP,0)
-  #define RING_FCAS_CASE(dtcode) case GEX_DT_##dtcode: test_ring_FCAS_##dtcode(ad, max_u64, nbrhd); break;
-  RING_TEST(FCAS,FCAS,0)
+  #define RING_FCAS_CASE(dtcode)  case GEX_DT_##dtcode: test_ring_FCAS_##dtcode(ad, max_u64, nbrhd); break;
   #define RING_ADD_CASE(dtcode)   case GEX_DT_##dtcode: test_ring_ADD_##dtcode(ad, max_u64, nbrhd); break;
-  RING_TEST(ADD,FADD,0)
   #define RING_XOR_CASE(dtcode)   case GEX_DT_##dtcode: test_ring_XOR_##dtcode(ad, max_u64, nbrhd); break;
-  RING_TEST(XOR,FXOR,1)
+  // 1. SET
+  RING_TEST(SET,SET,0,0)
+  // 2. (F)OP w/o SET
+  RING_TEST(FCAS,FCAS,0,0)
+  RING_TEST(ADD,FADD,0,0)
+  if (test_op_set != GEX_OP_SET) {
+    // Not different from #3 unless we're avoiding use of GEX_OP_SET,
+    // such as for a (conduit,type) for which SET would prelude offload.
+    RING_TEST(SWAP,SWAP,0,0)
+    RING_TEST(XOR,FXOR,0,1)
+  }
+  // 3. (F)OP w/ SET
+  RING_TEST(FCAS,FCAS,1,0)
+  RING_TEST(ADD,FADD,1,0)
+  RING_TEST(SWAP,SWAP,1,0)
+  RING_TEST(XOR,FXOR,1,1)
 
   // Test of contended (F)ADD/(F)INC (central counter)
   {
     gex_AD_t ad;
-    gex_AD_Create(&ad, testtm, dt, GEX_OP_SET | GEX_OP_GET  |
+    gex_AD_Create(&ad, testtm, dt, GEX_OP_GET |
                                    GEX_OP_ADD | GEX_OP_FADD |
                                    GEX_OP_INC | GEX_OP_FINC, 0);
 
@@ -702,7 +796,7 @@ void doit(gex_TM_t testtm, gex_DT_t dt)) {
   // Test of contended FCAS (central counter)
   {
     gex_AD_t ad;
-    gex_AD_Create(&ad, testtm, dt, GEX_OP_SET | GEX_OP_GET | GEX_OP_FCAS, 0);
+    gex_AD_Create(&ad, testtm, dt, GEX_OP_GET | GEX_OP_FCAS, 0);
 
     BARRIER();
 
@@ -801,8 +895,18 @@ void doit(gex_TM_t testtm, gex_DT_t dt)) {
         ops &= ~(GEX_OP_MULT | GEX_OP_FMULT |
                  GEX_OP_MIN  | GEX_OP_FMIN  |
                  GEX_OP_MAX  | GEX_OP_FMAX);
+      #elif GASNET_CONDUIT_IBV
+        if ((dt == GEX_DT_U64) || (dt == GEX_DT_I64)) {
+          ops = (GEX_OP_ADD | GEX_OP_FADD | GEX_OP_SUB | GEX_OP_FSUB |
+                 GEX_OP_INC | GEX_OP_FINC | GEX_OP_DEC | GEX_OP_FDEC |
+                 GEX_OP_GET | /* NO SET */  GEX_OP_CAS | GEX_OP_FCAS );
+        } else if (dt == GEX_DT_DBL) {
+          ops = (GEX_OP_GET | /* NO SET */  GEX_OP_CAS | GEX_OP_FCAS);
+        } else {
+          continue;  // No open-box testing for other types
+        }
       #else
-        continue;  // No whitebox testing
+        continue;  // No open-box testing
       #endif
     }
 

@@ -52,14 +52,11 @@ noinst_LTLIBRARIES += \
 	prov/psm3/psm3/libptl_self.la \
 	prov/psm3/psm3/libhal_verbs.la \
 	prov/psm3/psm3/libhal_sockets.la \
+	prov/psm3/psm3/libgpu.la \
 	prov/psm3/psm3/libpsm3i.la
 
 prov_psm3_psm3_libptl_am_la_SOURCES = \
 	prov/psm3/psm3/ptl_am/am_config.h \
-	prov/psm3/psm3/ptl_am/am_cuda_memhandle_cache.c \
-	prov/psm3/psm3/ptl_am/am_cuda_memhandle_cache.h \
-	prov/psm3/psm3/ptl_am/am_oneapi_memhandle_cache.c \
-	prov/psm3/psm3/ptl_am/am_oneapi_memhandle_cache.h \
 	prov/psm3/psm3/ptl_am/am_reqrep.c \
 	prov/psm3/psm3/ptl_am/am_reqrep_shmem.c \
 	prov/psm3/psm3/ptl_am/cmarw.h \
@@ -101,10 +98,6 @@ prov_psm3_psm3_libptl_ips_la_SOURCES = \
 	prov/psm3/psm3/ptl_ips/ips_recvq.h \
 	prov/psm3/psm3/ptl_ips/ips_scb.c \
 	prov/psm3/psm3/ptl_ips/ips_scb.h \
-	prov/psm3/psm3/ptl_ips/ips_tid.c \
-	prov/psm3/psm3/ptl_ips/ips_tid.h \
-	prov/psm3/psm3/ptl_ips/ips_tidcache.c \
-	prov/psm3/psm3/ptl_ips/ips_tidcache.h \
 	prov/psm3/psm3/ptl_ips/ips_tidflow.c \
 	prov/psm3/psm3/ptl_ips/ips_tidflow.h \
 	prov/psm3/psm3/ptl_ips/ptl.c \
@@ -195,6 +188,17 @@ prov_psm3_psm3_libhal_sockets_la_CPPFLAGS = \
 prov_psm3_psm3_libhal_sockets_la_CFLAGS = \
 	$(AM_CFLAGS) $(psm3_CFLAGS) $(_psm3_cflags)
 
+prov_psm3_psm3_libgpu_la_SOURCES = \
+	prov/psm3/psm3/gpu/psm_gpu_hal.c \
+	prov/psm3/psm3/gpu/psm_gpu_hal.h \
+	prov/psm3/psm3/gpu/psm_gpu_cuda.c \
+	prov/psm3/psm3/gpu/psm_gpu_oneapi_ze.c
+prov_psm3_psm3_libgpu_la_CPPFLAGS = \
+	-I$(top_srcdir)/prov/psm3/psm3/gpu/ \
+	$(AM_CPPFLAGS) $(psm3_CPPFLAGS) $(_psm3_cppflags)
+prov_psm3_psm3_libgpu_la_CFLAGS = \
+	$(AM_CFLAGS) $(psm3_CFLAGS) $(_psm3_cflags)
+
 prov_psm3_psm3_libpsm3i_la_SOURCES = \
 	prov/psm3/psm3/psm.c \
 	prov/psm3/psm3/psm_am.c \
@@ -222,7 +226,6 @@ prov_psm3_psm3_libpsm3i_la_SOURCES = \
 	prov/psm3/psm3/psm_netutils.h \
 	prov/psm3/psm3/psm_nic_select.c \
 	prov/psm3/psm3/psm_nic_select.h \
-	prov/psm3/psm3/psm_oneapi_ze.c \
 	prov/psm3/psm3/psm_perf.c \
 	prov/psm3/psm3/psm_perf.h \
 	prov/psm3/psm3/psm_rndv_mod.c \
@@ -267,6 +270,7 @@ prov_psm3_psm3_libpsm3i_la_LIBADD = \
 	prov/psm3/psm3/libptl_ips.la \
 	prov/psm3/psm3/libptl_self.la \
 	prov/psm3/psm3/libhal_verbs.la \
+	prov/psm3/psm3/libgpu.la \
 	prov/psm3/psm3/libhal_sockets.la
 
 prov_psm3_psm3_libpsm3i_la_DEPENDENCIES = \
@@ -275,6 +279,7 @@ prov_psm3_psm3_libpsm3i_la_DEPENDENCIES = \
 	prov/psm3/psm3/libptl_ips.la \
 	prov/psm3/psm3/libptl_self.la \
 	prov/psm3/psm3/libhal_verbs.la \
+	prov/psm3/psm3/libgpu.la \
 	prov/psm3/psm3/libhal_sockets.la
 
 # Mirror EXTRA_DIST to end of file
@@ -292,6 +297,7 @@ chksum_srcs += \
 	$(prov_psm3_psm3_libutils_la_SOURCES) \
 	$(prov_psm3_psm3_libhal_verbs_la_SOURCES) \
 	$(prov_psm3_psm3_libhal_sockets_la_SOURCES) \
+	$(prov_psm3_psm3_libgpu_la_SOURCES) \
 	$(prov_psm3_psm3_libpsm3i_la_SOURCES) \
 	$(prov_psm3_extra_dist)
 

@@ -25,7 +25,9 @@ diff.wait();
 
 if diff.exitCode != 0 {
   writeln();
-  writeln("diff failed. You may need to run ", genScript,
-          " to regenerate ", completeScript, ". Try:");
+  writeln("diff failed. You may need to run ",
+          genScript, " to regenerate ", completeScript, ". Try:");
+  writeln("make chpl-completion");
+  writeln("OR");
   writeln(genScript, " > ", completeScript);
 }

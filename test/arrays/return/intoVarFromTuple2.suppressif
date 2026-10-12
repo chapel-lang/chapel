@@ -1,0 +1,2 @@
+# an explicit tuple type with arrays leaks
+EXECOPTS <= --memLeaks

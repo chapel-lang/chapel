@@ -11,4 +11,6 @@ proc packageName() throws {
   }
 }
 
-packageName();
+proc main() {
+  packageName();
+}

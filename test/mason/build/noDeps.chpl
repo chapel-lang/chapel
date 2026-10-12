@@ -7,5 +7,5 @@ proc main() {
   const package = '_noDeps';
   here.chdir(package);
   const args = ["build"];
-  masonBuild(args, checkProj=false);
+  masonBuild(args);
 }

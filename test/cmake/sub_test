@@ -108,8 +108,11 @@ def run_build(subdir, build_type):
             finally:
                 print(f"[Finished installing {subdir} with {build_type}]")
 
-
-    print("[Success matching build process for {} with {}]".format(subdir, build_type))
+    print(
+        "[Success matching build process for {} with {}]".format(
+            subdir, build_type
+        )
+    )
     return 0
 
 

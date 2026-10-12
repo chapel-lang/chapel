@@ -14,10 +14,10 @@ outfile = sys.argv[2]
 memleaksWarn = "warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future"
 memleaksLogWarn = "warning: The variable 'memLeaksLog' is unstable and its interface is subject to change in the future"
 
-with open(outfile, 'r', newline='') as outR:
-     myLines = outR.readlines()
+with open(outfile, "r", newline="") as outR:
+    myLines = outR.readlines()
 
-with open(outfile, 'w', newline='') as overwrite:
-     for line in myLines:
-          if line.find(memleaksWarn) == -1 and line.find(memleaksLogWarn) == -1:
-               overwrite.write(line)
+with open(outfile, "w", newline="") as overwrite:
+    for line in myLines:
+        if line.find(memleaksWarn) == -1 and line.find(memleaksLogWarn) == -1:
+            overwrite.write(line)

@@ -1,0 +1,1 @@
+stencilOfOwned-non-nil.chpl:7: error: 'stencilDist'-distributed arrays of non-nilable 'owned' classes are not currently supported

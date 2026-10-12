@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -95,6 +95,16 @@ class OpCall final : public Call {
   bool isBinaryOp() const { return children_.size() == 2; }
   /** Returns true if this is a unary operator */
   bool isUnaryOp() const { return children_.size() == 1; }
+
+  const AstNode* lhs() const {
+    CHPL_ASSERT(isBinaryOp());
+    return this->actual(0);
+  }
+
+  const AstNode* rhs() const {
+    CHPL_ASSERT(isBinaryOp());
+    return this->actual(1);
+  }
 };
 
 // Returns true if the given string is an operator name

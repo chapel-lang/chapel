@@ -6,7 +6,7 @@ From: ubuntu:jammy
 
 %post
     /provision-scripts/apt-get-deps.sh
-    /provision-scripts/apt-get-llvm.sh
+    /provision-scripts/apt-get-llvm-15.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

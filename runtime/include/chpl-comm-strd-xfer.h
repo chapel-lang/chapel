@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,13 +72,13 @@ static inline
 void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
                                                     size_t,
                                                     int32_t,
-                                                    int, int32_t),
+                                                    int32_t, int32_t),
                     void* localAddr, int32_t remoteLocale, void* remoteAddr,
                     size_t cnt,
                     chpl_comm_nb_handle_t* handles, size_t* pCurrHandles,
                     size_t maxOutstandingXfers,
                     void (yieldFn)(void),
-                    int32_t commID, int ln, int32_t fn)
+                    int32_t commID, int32_t ln, int32_t fn)
 {
   size_t currHandles = *pCurrHandles;
 
@@ -140,8 +140,11 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                      void* srcaddr_arg, size_t* srcstrides,
                      size_t* count, int32_t stridelevels, size_t elemSize,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
-                     int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int32_t ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
@@ -149,8 +152,8 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
 
   int *srcdisp, *dstdisp;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -286,16 +289,19 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                      void* srcaddr_arg, size_t* srcstrides,
                      size_t* count, int32_t stridelevels, size_t elemSize,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
-                     int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int32_t ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -441,16 +447,19 @@ void strd_common_call(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                                       /* ctx */ void*,
                                       /* commID */ int32_t,
                                       /* ln */ int, /* fn */ int32_t),
-                      int32_t commID, int ln, int32_t fn) {
+                      int32_t commID, int32_t ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   //Only count[0] and strides are measured in number of bytes.

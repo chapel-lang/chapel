@@ -100,7 +100,8 @@ API_FUNC int qlfqueue_enqueue(qlfqueue_t *q, void *elem) {
 
     next = tail->next;
     if (next != NULL) { /* tail not pointing to last node */
-      (void)qthread_cas_ptr((void **)&(q->tail), (void *)tail, next);
+      atomic_store_explicit(
+        (void *_Atomic *)&q->tail, next, memory_order_relaxed);
       continue;
     }
     /* tail must be pointing to the last node */
@@ -108,7 +109,7 @@ API_FUNC int qlfqueue_enqueue(qlfqueue_t *q, void *elem) {
       break; /* success! */
     }
   }
-  (void)qthread_cas_ptr((void **)&(q->tail), (void *)tail, node);
+  atomic_store_explicit((void *_Atomic *)&q->tail, node, memory_order_relaxed);
   hazardous_ptr(0,
                 NULL); // release the ptr (avoid hazardptr resource exhaustion)
   return QTHREAD_SUCCESS;
@@ -139,7 +140,8 @@ API_FUNC void *qlfqueue_dequeue(qlfqueue_t *q) {
     if (next_ptr == NULL) { return NULL; } /* queue is empty */
     if (head == tail) {                    /* tail is falling behind! */
       /* advance tail ptr... */
-      (void)qthread_cas_ptr((void **)&(q->tail), (void *)tail, next_ptr);
+      atomic_store_explicit(
+        (void *_Atomic *)&q->tail, next_ptr, memory_order_relaxed);
       continue;
     }
     /* read value before CAS, otherwise another dequeue might free the next node

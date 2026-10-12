@@ -65,7 +65,7 @@ AMMPI has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
-AMMPI 2.11 (PENDING)
+AMMPI 2.11 (08/2025)
 - Allow zero-byte Long AMs without validation of address against segment bounds,
   aligning the behavior with the GASNet-EX specification where the AM-2
   specification leaves the behavior in such cases unspecified.

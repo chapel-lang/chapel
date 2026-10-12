@@ -52,6 +52,7 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 	struct sm2_cma_data *cma_data =
 		((struct sm2_cma_data *) xfer_entry->user_data);
 	struct ipc_info *ipc_info;
+	size_t base_length;
 	void *device_ptr, *base;
 	int ret;
 
@@ -72,8 +73,7 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 	ipc_info->device = mr[0]->device;
 
 	ret = ofi_hmem_get_base_addr(ipc_info->iface, device_ptr,
-				     xfer_entry->hdr.size, &base,
-				     &ipc_info->base_length);
+				     xfer_entry->hdr.size, &base, &base_length);
 	if (ret) {
 		FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
 			"Failed to get device memory base address. Error code: "
@@ -81,6 +81,8 @@ static int sm2_cma_send_ipc_handle(struct sm2_ep *ep,
 			ret);
 		return ret;
 	}
+
+	ipc_info->base_length = (uint64_t) base_length;
 
 	ret = ofi_hmem_get_handle(ipc_info->iface, base, ipc_info->base_length,
 				  (void **) &ipc_info->ipc_handle);
@@ -430,7 +432,7 @@ static int sm2_alloc_xfer_entry_ctx(struct sm2_ep *ep,
 	memcpy(&xfer_ctx->xfer_entry, xfer_entry, sizeof(*xfer_entry));
 	xfer_ctx->ep = ep;
 
-	rx_entry->size = xfer_entry->hdr.size;
+	rx_entry->msg_size = xfer_entry->hdr.size;
 	rx_entry->flags |= xfer_entry->hdr.op_flags & FI_REMOTE_CQ_DATA;
 	rx_entry->cq_data = xfer_entry->hdr.cq_data;
 
@@ -462,7 +464,7 @@ sm2_progress_cma_host_to_dev(struct sm2_ep *ep,
 		return;
 	}
 
-	ret = sm2_complete_tx(ep, (void *) xfer_entry->hdr.context,
+	ret = sm2_complete_tx(ep, (void *) (uintptr_t) xfer_entry->hdr.context,
 			      xfer_entry->hdr.op, xfer_entry->hdr.op_flags);
 
 	if (ret) {
@@ -519,9 +521,9 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 				 struct sm2_xfer_entry *xfer_entry)
 {
 	struct fid_peer_srx *peer_srx = sm2_get_peer_srx(ep);
+	struct fi_peer_match_attr attr;
 	struct fi_peer_rx_entry *rx_entry;
 	struct sm2_av *sm2_av;
-	fi_addr_t addr;
 	int ret = 0;
 
 	/* TODO - Switch on protocol before switching on op to avoid messy
@@ -538,11 +540,12 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 	}
 
 	sm2_av = container_of(ep->util_ep.av, struct sm2_av, util_av);
-	addr = sm2_av->reverse_lookup[xfer_entry->hdr.sender_gid];
+	attr.addr = sm2_av->reverse_lookup[xfer_entry->hdr.sender_gid];
+	attr.msg_size = xfer_entry->hdr.size;
+	attr.tag = xfer_entry->hdr.tag;
 
 	if (xfer_entry->hdr.op == ofi_op_tagged) {
-		ret = peer_srx->owner_ops->get_tag(
-			peer_srx, addr, xfer_entry->hdr.tag, &rx_entry);
+		ret = peer_srx->owner_ops->get_tag(peer_srx, &attr, &rx_entry);
 		if (ret == -FI_ENOENT) {
 			xfer_entry->hdr.proto_flags |= SM2_UNEXP;
 			ret = sm2_alloc_xfer_entry_ctx(ep, rx_entry,
@@ -557,8 +560,7 @@ static int sm2_progress_recv_msg(struct sm2_ep *ep,
 			goto out;
 		}
 	} else {
-		ret = peer_srx->owner_ops->get_msg(
-			peer_srx, addr, xfer_entry->hdr.size, &rx_entry);
+		ret = peer_srx->owner_ops->get_msg(peer_srx, &attr, &rx_entry);
 		if (ret == -FI_ENOENT) {
 			xfer_entry->hdr.proto_flags |= SM2_UNEXP;
 			ret = sm2_alloc_xfer_entry_ctx(ep, rx_entry,
@@ -673,7 +675,7 @@ static int sm2_progress_atomic(struct sm2_ep *ep,
 		if (ret)
 			break;
 
-		ioc[i].addr = (void *) ioc_ptr->addr;
+		ioc[i].addr = (void *) (uintptr_t) ioc_ptr->addr;
 		ioc[i].count = ioc_ptr->count;
 	}
 
@@ -741,9 +743,9 @@ static inline void sm2_progress_return(struct sm2_ep *ep,
 	}
 
 	if (xfer_entry->hdr.proto_flags & SM2_GENERATE_COMPLETION) {
-		ret = sm2_complete_tx(ep, (void *) xfer_entry->hdr.context,
-				      xfer_entry->hdr.op,
-				      xfer_entry->hdr.op_flags);
+		ret = sm2_complete_tx(
+			ep, (void *) (uintptr_t) xfer_entry->hdr.context,
+			xfer_entry->hdr.op, xfer_entry->hdr.op_flags);
 		if (ret)
 			FI_WARN(&sm2_prov, FI_LOG_EP_CTRL,
 				"Unable to process FI_DELIVERY_COMPLETE "

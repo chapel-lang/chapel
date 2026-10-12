@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# force minimum threads on small core systems, otherwise comm counts are unstable
+min_threads=4
+num_cores=$(python3 -c 'import multiprocessing as mp; print(mp.cpu_count())')
+if [ $num_cores -le $min_threads ]; then
+  echo "--dataParTasksPerLocale=$min_threads"
+fi

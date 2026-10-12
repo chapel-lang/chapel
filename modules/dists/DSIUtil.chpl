@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -143,7 +143,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
   // Caller's responsibility.
   assert(1 <= myChunk && myChunk <= numChunks);
 
-  if myChunk <= rem then {
+  if myChunk <= rem {
     // (div+1) elements per chunk
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
@@ -308,7 +308,7 @@ proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
   _densiIdxCheck(s.idxType, IT, (s,w).type);
 
   proc ensure(cond, args...) {
-    if userErrors then { if !cond then halt((...args)); }
+    if userErrors { if !cond then halt((...args)); }
     else                               assert(cond, (...args));
   }
 
@@ -352,7 +352,7 @@ proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideK
   const s = sArg:range(IT,B,S);
 
   proc ensure(cond) {
-    if userErrors then { if !cond then halt(); }
+    if userErrors { if !cond then halt(); }
     else                               assert(cond);
   }
 
@@ -801,5 +801,101 @@ record chpl_PrivatizedDistHelper : writeSerializable {
   */
   proc targetLocales() const ref {
     return _value.dsiTargetLocales();
+  }
+}
+
+/*
+   a utility wrapper record for turning old rectangular layout classes
+   into values, similar to chpl_PrivatizedDistHelper for distributions
+*/
+record chpl__rectLayoutHelper {
+  forwarding var _value;
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+
+    x.definedConst = definedConst;
+
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    var ranges: rank*range(idxType, boundKind.both, strides);
+    return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    compilerError("sparse domains not supported by this distribution");
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    compilerError("associative domains not supported by this distribution");
+  }
+
+  proc deinit() {
+    on _value {
+      // Count the number of domains that refer to this distribution.
+      // and mark the distribution to be freed when that number reaches 0.
+      // If the number is 0, .remove() returns the distribution
+      // that should be freed.
+      var distToFree = _value.remove();
+      if distToFree != nil {
+        _delete_dist(distToFree!, false);
+      }
+    }
+  }
+}
+
+/*
+   a utility wrapper record for turning old associative layout classes
+   into values, similar to chpl_PrivatizedDistHelper for distributions
+*/
+record chpl__assocLayoutHelper {
+  forwarding var _value;
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    compilerError("rectangular domains not supported by this distribution");
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    compilerError("rectangular domains not supported by this distribution");
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    compilerError("sparse domains not supported by this distribution");
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+  }
+
+  proc deinit() {
+    on _value {
+      // Count the number of domains that refer to this distribution.
+      // and mark the distribution to be freed when that number reaches 0.
+      // If the number is 0, .remove() returns the distribution
+      // that should be freed.
+      var distToFree = _value.remove();
+      if distToFree != nil {
+        _delete_dist(distToFree!, false);
+      }
+    }
   }
 }

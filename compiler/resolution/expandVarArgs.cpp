@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -149,17 +149,13 @@ static int       varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
   bool      isQueryVariable = false;
-  FnSymbol* retval          = NULL;
+  FnSymbol* retval          = nullptr;
 
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
-      if (isDefExpr(formal->variableExpr->body.tail) == true) {
-        isQueryVariable = true;
-      } else if (SymExpr* se = toSymExpr(formal->variableExpr->body.tail)) {
-        if (se->symbol() == gUninstantiated) {
-          isQueryVariable = true;
-        }
-      }
+    if (formal->variableExpr != nullptr) {
+      isQueryVariable |= isDefExpr(formal->variableExpr->body.tail);
+      auto se = toSymExpr(formal->variableExpr->body.tail);
+      isQueryVariable |= se && se->symbol() == gUninstantiated;
 
       numVarArgs = numVarArgs + 1;
     }
@@ -268,7 +264,14 @@ static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
     retval = nVar->immediate->int_value();
 
   } else {
-    INT_FATAL(formal, "unexpected non-VarSymbol");
+    // Generate user-facing error for non-integral vararg counts
+    if (isBoolType(nVar->type)) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type, not bool");
+    } else if (!isIntType(nVar->type) || nVar->immediate == NULL) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type");
+    } else {
+      INT_FATAL(formal, "unexpected non-VarSymbol");
+    }
   }
 
   return retval;
@@ -443,7 +446,7 @@ static void moveInitializeVarArgsTuple(FnSymbol* fn, ArgSymbol* formal,
 
   // Now we finish up by moving the formals into the tuple.
   for (size_t i = 0; i < formals.size(); i++) {
-    size_t fieldIdx = i + 2;
+    size_t fieldIdx = i + 1;
     CallExpr* to = new CallExpr(PRIM_FIELD_NUM_TO_NAME, var,
                                 new_IntSymbol(fieldIdx));
     Symbol* from = formals[i];
@@ -860,13 +863,13 @@ static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
 *                                                                             *
 ************************************** | *************************************/
 
-typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
+typedef std::map<FnSymbol*, std::vector<FnSymbol*>*, AstIdLess> ExpandVarArgsMap;
 
 static ExpandVarArgsMap sCache;
 
 static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
-  ExpandVarArgsMap::iterator it     = sCache.find(fn);
-  FnSymbol*                  retval = NULL;
+  auto it = sCache.find(fn);
+  FnSymbol* retval = NULL;
 
   if (it != sCache.end()) {
     std::vector<FnSymbol*>* fns = it->second;
@@ -882,7 +885,7 @@ static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
 }
 
 static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
-  ExpandVarArgsMap::iterator it = sCache.find(fn);
+  auto it = sCache.find(fn);
 
   if (it != sCache.end()) {
     it->second->push_back(expansion);

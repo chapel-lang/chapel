@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -231,7 +231,9 @@ bool InitNormalize::inOnInForall() const {
 ************************************** | *************************************/
 
 void InitNormalize::completePhase1(CallExpr* initStmt) {
-  if        (isThisInit(initStmt)  == true) {
+  bool isUnion = toAggregateType(mFn->_this->type)->isUnion();
+
+  if (isThisInit(initStmt)  == true || isUnion) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {
@@ -261,7 +263,12 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
-  if (mCurrField != NULL && mCurrField != endField) {
+  AggregateType* at = toAggregateType(mFn->_this->type);
+
+  // unions don't initialize fields automatically
+  if (at->isUnion()) {
+    return;
+  } else if (mCurrField != NULL && mCurrField != endField) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
     block->insertAtTail(noop);
@@ -274,6 +281,11 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) 
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
                                            DefExpr* endField) {
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    INT_FATAL("initializeFieldsBefore() unexpectedly called on a union type");
+  }
+
   while (mCurrField != NULL && mCurrField != endField) {
     DefExpr* field = mCurrField;
 
@@ -663,14 +675,22 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 ************************************** | *************************************/
 
 bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
-  const DefExpr* ptr    = mCurrField;
-  bool           retval = true;
+  bool retval = true;
 
-  while (ptr != NULL && retval == true) {
-    if (ptr == field) {
-      retval = false;
-    } else {
-      ptr = toConstDefExpr(ptr->next);
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    // for unions, if we've set mCurrField to NULL then a field has
+    // been initialized, which means we consider them all to be
+    retval = (mCurrField == NULL);
+  } else {
+    const DefExpr* ptr = mCurrField;
+
+    while (ptr != NULL && retval == true) {
+      if (ptr == field) {
+        retval = false;
+      } else {
+        ptr = toConstDefExpr(ptr->next);
+      }
     }
   }
 
@@ -994,6 +1014,8 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
           USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
         } else if (state->type()->isRecord()) {
           USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
+        } else if (state->type()->isUnion()) {
+          USR_FATAL_CONT(node, "cannot pass a union to a function before \"init this\"");
         }
       }
 
@@ -1004,9 +1026,18 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   } else if (DefExpr* local = state->type()->toLocalField(node)) {
     field = local;
     if (state->isFieldInitialized(field) == false) {
-      USR_FATAL_CONT(node,
-                     "field \"%s\" used before it is initialized",
-                     field->sym->name);
+      AggregateType* at = toAggregateType(state->theFn()->_this->type);
+
+      // Why skip unions here?  We get false positives from 'var x, y:
+      // int;' cases because y is defined in terms of `x.type` where
+      // `x` is not, and need not, be initialized.  Open Q: Will
+      // skipping unions here sweep any actually important cases under
+      // the rug?
+      if (!at->isUnion()) {
+        USR_FATAL_CONT(node,
+                       "field \"%s\" used before it is initialized",
+                       field->sym->name);
+      }
     }
   } else if (DefExpr* super = state->type()->toSuperField(node)) {
     field = super;
@@ -1077,6 +1108,9 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
     } else if (type->isRecord()) {
       USR_FATAL_CONT(node, "cannot call a method on a record before \"init this\"");
       return false;
+    } else if (type->isUnion()) {
+      USR_FATAL_CONT(node, "cannot call a method on a union before \"init this\"");
+      return false;
     } else {
       Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
       const char*    methodName = imm->string_value();
@@ -1115,8 +1149,10 @@ void InitNormalize::processThisUses(Expr* expr) const {
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
   Expr* retval = NULL;
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  bool isUnion = at->isUnion();
 
-  if (field != mCurrField) {
+  if (field != mCurrField && !isUnion) {
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
@@ -1127,13 +1163,31 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     }
   }
 
+  if (isUnion) {
+    // since we're initializing, rather than assigning, a union field,
+    // we need to manually set the active field ID
+    //
+    initStmt->insertBefore(new CallExpr(PRIM_SET_UNION_ID,
+                                        mFn->_this,
+                                        new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                     at->symbol,
+                                                     new_CStringSymbol(field->sym->name))));
+  }
+
   Expr* initExpr = initStmt->get(2)->remove();
   retval         = initStmt->next;
 
   initializeField(initStmt, field, initExpr);
   initStmt->remove();
 
-  mCurrField = toDefExpr(mCurrField->next);
+  if (isUnion) {
+    // If this is a union, initializing any field is like initializing
+    // all of them since only one can be active at a time
+    mCurrField = NULL;
+  } else {
+    // Otherwise, advance to the next field
+    mCurrField = toDefExpr(mCurrField->next);
+  }
 
   return retval;
 }

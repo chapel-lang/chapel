@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -797,7 +797,7 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
 // If 'sym' is the receiver and 'fs' has a shadow var for the receiver,
 // return that shadow var.
 static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol* sym) {
-  if (sym->name == astrThis)
+  if (sym->name == astrThis && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     for_shadow_vars(SV, TEMP, fs)
       if (SV->name == astrThis)
         return SV;
@@ -806,7 +806,7 @@ static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol*
 
 // Helper: if this is a 'this' that needs our attention, return its type.
 static AggregateType* isRecordReceiver(Symbol* sym) {
-  if (sym->hasFlag(FLAG_ARG_THIS))
+  if (sym->hasFlag(FLAG_ARG_THIS) && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     if (Type* type = sym->type->getValType())
       if (isUserRecord(type))
         return toAggregateType(type);
@@ -1041,7 +1041,7 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
 static void doConvertFieldsOfThis(LoopWithShadowVarsInterface* fs, AggregateType* recType,
                                   ShadowVarSymbol* svar, Symbol* ovar)
 {
-  std::map<Symbol*, ShadowVarSymbol*> fieldVars;
+  std::map<Symbol*, ShadowVarSymbol*, AstIdLess> fieldVars;
 
   // This traversal covers the loop body as well as IB/DB.
   for_SymbolSymExprs(se, svar) {
@@ -1146,7 +1146,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   ArgSymbol* thisArg = enclosingRecordThisArg(fn);
   if (! thisArg) return; // not in a method on a record
   AggregateType* thisType = toAggregateType(thisArg->type->getValType());
-  std::map<Symbol*, ArgSymbol*> fieldArgs;
+  std::map<Symbol*, ArgSymbol*, AstIdLess> fieldArgs;
 
   // If the source code contains an explicit intent on `this`,
   // all references to `thisArg` within the task construct have been replaced

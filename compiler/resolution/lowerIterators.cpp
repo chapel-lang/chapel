@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -215,21 +215,21 @@ static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool markYields
 }
 
 static bool isCallVectorHazard(CallExpr* call,
-                               std::map<FnSymbol*, bool> &fnHasVectorHazard);
+                               std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard);
 
 namespace {
   class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
-      VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
+      VectorHazardVisitor (std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard);
 
       bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;
-      std::map<FnSymbol*, bool> &fnHasVectorHazard;
+      std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard;
   };
 
-  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool>
+  VectorHazardVisitor::VectorHazardVisitor(std::map<FnSymbol*, bool, AstIdLess>
       &fnHasVectorHazard) : hazard(false), reason(NULL), fnHasVectorHazard(fnHasVectorHazard)
   {
   }
@@ -244,7 +244,7 @@ namespace {
 };
 
 static bool doesFnHaveVectorHazard(FnSymbol* fn,
-                                   std::map<FnSymbol*, bool> &fnHasVectorHazard)
+                                   std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard)
 {
   if (fnHasVectorHazard.count(fn) != 0)
     return fnHasVectorHazard[fn];
@@ -315,7 +315,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
 }
 
 static bool isCallVectorHazard(CallExpr* call,
-                               std::map<FnSymbol*, bool> &fnHasVectorHazard)
+                               std::map<FnSymbol*, bool, AstIdLess> &fnHasVectorHazard)
 {
   bool hazard = false;
   if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
@@ -330,7 +330,7 @@ static bool isCallVectorHazard(CallExpr* call,
 
 static void markVectorizableForallLoops()
 {
-  std::map<FnSymbol*, bool> fnHasVectorHazard;
+  std::map<FnSymbol*, bool, AstIdLess> fnHasVectorHazard;
 
   // The --force-vectorize flag exists mainly for testing and
   // disables this logic. Instead of disabling vectorization for
@@ -406,11 +406,11 @@ static void markVectorizableForallLoops()
           Type* opType = op->type;
           bool ok = false;
           // Only vectorize + reductions on numbers
-          if (is_int_type(accumType) ||
-              is_uint_type(accumType) ||
-              is_imag_type(accumType) ||
-              is_real_type(accumType)
-              // TODO: is_complex_type
+          if (isIntType(accumType) ||
+              isUIntType(accumType) ||
+              isImagType(accumType) ||
+              isRealType(accumType)
+              // TODO: isComplexType
              ) {
             if (startsWith(opType->symbol->name, "SumReduceScanOp"))
               ok = true;
@@ -1061,7 +1061,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   rts->addFlag(FLAG_NO_OBJECT);
   rts->addFlag(FLAG_REF);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(rts));
-  rct->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ct)));
+  rct->fields.insertAtTail(new DefExpr(newTemp("_val", ct)));
   ct->refType = rct;
 
   // Create the argument bundle.

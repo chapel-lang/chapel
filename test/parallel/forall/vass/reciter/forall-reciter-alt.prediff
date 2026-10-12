@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Ignore line numbers in modules.
-
-sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
-mv $2.tmp $2

@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -25,11 +25,6 @@
 
 ifneq ($(CHPL_MAKE_SANITIZE), none)
   # Configuration checks
-  ifeq ($(CHPL_MAKE_TASKS), qthreads)
-    ifeq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
-      $(error CHPL_TASKS=fifo is required for sanitizers)
-    endif
-  endif
   ifneq ($(CHPL_MAKE_TARGET_MEM), cstdlib)
     $(error CHPL_TARGET_MEM=cstdlib is required for sanitizers)
   endif
@@ -42,6 +37,20 @@ ifneq ($(CHPL_MAKE_SANITIZE), none)
   # enable sanitizers
   SANITIZER_CFLAGS += -fsanitize=$(CHPL_MAKE_SANITIZE)
   SANITIZER_LDFLAGS += -fsanitize=$(CHPL_MAKE_SANITIZE)
+
+  # Chapel relies heavily on function calls through function pointers of the wrong type
+  # (e.g., we reinterpret 'void (*)(void *)' for almost all indirect calls)
+  # this is actually undefined behavior, but it hasn't caused a problem so far
+  # and so its probably not worth fixing. However, the undefined behavior
+  # sanitizer will complain about it, so we disable it. GCC doesn't seem to
+  # flag for this (or have a 'function' option), but clang does, so we disable
+  # it for clang only.
+  ifeq ($(CHPL_MAKE_SANITIZE), undefined)
+  ifeq ($(CHPL_MAKE_COMPILER), clang)
+  SANITIZER_CFLAGS += -fno-sanitize=function
+  SANITIZER_LDFLAGS += -fno-sanitize=function
+  endif
+  endif
 
   # If debugging with optimizations, lower optimization level and enable
   # frame pointers for better stack traces

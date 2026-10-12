@@ -1,0 +1,4 @@
+x is not nil
+nil
+x is a c_int pointer
+x is a const c_int pointer

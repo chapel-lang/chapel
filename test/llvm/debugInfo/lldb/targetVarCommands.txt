@@ -1,4 +1,4 @@
-b targetVar.chpl:5
+b targetVar.chpl:8
 b bar
 r
 target var

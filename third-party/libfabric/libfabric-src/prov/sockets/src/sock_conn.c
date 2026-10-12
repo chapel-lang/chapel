@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2014 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2017 DataDirect Networks, Inc. All rights reserved.
+ * Copyright (c) VDURA, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -364,7 +365,7 @@ static void *sock_conn_listener_thread(void *arg)
 		}
 
 		for (i = 0; i < num_fds; i++) {
-			conn_handle = events[i].data.ptr;
+			conn_handle = OFI_EPOLL_EVT_DATA(events[i]);
 
 			if (conn_handle == NULL) { /* signal event */
 				fd_signal_reset(&conn_listener->signal);

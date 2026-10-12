@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,5 +51,6 @@
 #define P_prim_sqrt           chpl::uast::primtags::PRIM_SQRT
 #define P_prim_get_imag       chpl::uast::primtags::PRIM_GET_IMAG
 #define P_prim_get_real       chpl::uast::primtags::PRIM_GET_REAL
+#define P_prim_build_complex  chpl::uast::primtags::PRIM_BUILD_COMPLEX
 
 #endif

@@ -1,1 +1,1 @@
---print-passes
+--print-passes --print-passes-memory

@@ -1,4 +1,4 @@
-mismatchedArgsS64-L64-F8.chpl:6: error: unresolved call 'foo(arg=int(64), tag=iterKind, followThis=int(64))'
+mismatchedArgsS64-L64-F8.chpl:6: error: unresolved call 'mismatchedArgsS64-L64-F8.foo(arg=int(64), tag=iterKind, followThis=int(64))'
 mismatchedArgsS64-L64-F8.chpl:3: note: this candidate did not match: foo(param tag: iterKind, arg: int(8) = 1, followThis)
 mismatchedArgsS64-L64-F8.chpl:6: note: because actual argument #1 with type 'int(64)'
 mismatchedArgsS64-L64-F8.chpl:3: note: is passed to formal 'arg: int(8)'

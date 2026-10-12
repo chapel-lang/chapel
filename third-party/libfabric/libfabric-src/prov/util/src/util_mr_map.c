@@ -199,10 +199,10 @@ int ofi_mr_map_init(const struct fi_provider *prov, int mode,
 		return -FI_ENOMEM;
 
 	switch (mode) {
-	case FI_MR_BASIC:
+	case OFI_MR_BASIC:
 		map->mode = OFI_MR_BASIC_MAP;
 		break;
-	case FI_MR_SCALABLE:
+	case OFI_MR_SCALABLE:
 		map->mode = 0;
 		break;
 	default:
@@ -222,16 +222,19 @@ void ofi_mr_map_close(struct ofi_mr_map *map)
 int ofi_mr_close(struct fid *fid)
 {
 	struct ofi_mr *mr;
-	int ret;
+	int ret = 0;
 
 	mr = container_of(fid, struct ofi_mr, mr_fid.fid);
+
+	if (mr->key == FI_KEY_NOTAVAIL)
+		goto free_mr;
 
 	ofi_genlock_lock(&mr->domain->lock);
 	ret = ofi_mr_map_remove(&mr->domain->mr_map, mr->key);
 	ofi_genlock_unlock(&mr->domain->lock);
 	if (ret)
 		return ret;
-
+free_mr:
 	ofi_atomic_dec32(&mr->domain->ref);
 	free(mr);
 	return 0;
@@ -279,6 +282,19 @@ void ofi_mr_update_attr(uint32_t user_version, uint64_t caps,
 		cur_abi_attr->iface = FI_HMEM_SYSTEM;
 		cur_abi_attr->device.reserved = 0;
 		cur_abi_attr->hmem_data = NULL;
+	}
+
+	if (FI_VERSION_GE(user_version, FI_VERSION(1, 22)))
+		cur_abi_attr->page_size = user_attr->page_size;
+	else
+		cur_abi_attr->page_size = 0;
+
+	if (FI_VERSION_GE(user_version, FI_VERSION(2, 0))) {
+		cur_abi_attr->base_mr = user_attr->base_mr;
+		cur_abi_attr->sub_mr_cnt = user_attr->sub_mr_cnt;
+	} else {
+		cur_abi_attr->base_mr = NULL;
+		cur_abi_attr->sub_mr_cnt = 0;
 	}
 }
 
@@ -330,10 +346,14 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	mr->device = cur_abi_attr.device.reserved;
 	mr->hmem_data = cur_abi_attr.hmem_data;
 
-	ret = ofi_mr_map_insert(&domain->mr_map, &cur_abi_attr, &key, mr, flags);
-	if (ret) {
-		free(mr);
-		goto out;
+	if (cur_abi_attr.access & (FI_REMOTE_READ | FI_REMOTE_WRITE)) {
+		ret = ofi_mr_map_insert(&domain->mr_map, &cur_abi_attr, &key, mr, flags);
+		if (ret) {
+			free(mr);
+			goto out;
+		}
+	} else {
+		key = FI_KEY_NOTAVAIL;
 	}
 
 	mr->mr_fid.key = mr->key = key;

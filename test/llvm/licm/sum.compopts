@@ -1,0 +1,1 @@
+--llvm-print-ir sum1,sum2,sum3,sum4 --llvm-print-ir-stage basic --llvm-print-ir-file sum.ll --ccflags -fno-discard-value-names --no-checks

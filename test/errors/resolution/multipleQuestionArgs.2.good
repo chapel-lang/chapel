@@ -24,6 +24,14 @@
       |            ⎺
       |
 
-─── error in multipleQuestionArgs.chpl:4 ───
-  Cannot resolve call: no matching candidates
+─── error in multipleQuestionArgs.chpl:4 [NoMatchingCandidates] ───
+  Unable to resolve call to 'test': no matching candidates.
+      |
+    4 | test(?, ?, ?);
+      |
+  
+  The following candidate didn't match because it expects 3 actuals, but none were provided.
+      |
+    1 | proc test(a, b, c) {
+      |
 

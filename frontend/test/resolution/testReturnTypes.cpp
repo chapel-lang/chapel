@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,11 +114,7 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
     requiredKind = kind;
   }
   auto commonTypeResult = chpl::resolution::commonType(context, types, requiredKind);
-#if LLVM_VERSION_MAJOR >= 15
   auto qt = commonTypeResult.value_or(QualifiedType());
-#else
-  auto qt = commonTypeResult.getValueOr(QualifiedType());
-#endif
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;

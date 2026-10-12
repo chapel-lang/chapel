@@ -1,0 +1,7 @@
+inf okay.
+-inf okay.
+nan okay.
+inf32 okay.
+-inf32 okay.
+nan32 okay.
+Finite test passes.

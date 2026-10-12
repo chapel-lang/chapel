@@ -44,6 +44,6 @@
     13 | var f = aliasToRecord;
        |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
        |
-  the initialization expression is the type 'aliasToRecord' (an alias for the type 'MyRecord').
-  If you're trying to create a new value of type 'aliasToRecord', try writing 'new aliasToRecord()' instead
+  the initialization expression is the type 'MyRecord'.
+  If you're trying to create a new value of type 'MyRecord', try using the 'new' keyword
 

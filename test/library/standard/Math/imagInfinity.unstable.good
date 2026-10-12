@@ -1,0 +1,26 @@
+imagInfinity.chpl:8: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:9: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:10: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:12: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:13: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:14: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:16: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:17: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:18: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:20: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:21: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:22: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:24: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:25: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:26: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:28: warning: isInf is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:29: warning: isFinite is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:30: warning: isNan is unstable pending review and will be stabilized in a future edition
+imagInfinity.chpl:32: warning: isFinite is unstable pending review and will be stabilized in a future edition
+inf okay.
+-inf okay.
+nan okay.
+inf32 okay.
+-inf32 okay.
+nan32 okay.
+Finite test passes.

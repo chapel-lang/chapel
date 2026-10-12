@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,10 @@ target_include_directories(ChplFrontend-obj PUBLIC
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
-target_include_directories(ChplFrontend-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ChplFrontend-obj PRIVATE
+                           ${CMAKE_CURRENT_SOURCE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../runtime/include/encoding # support for sharing unicode support between compiler and runtime
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../third-party/utf8-decoder) # support for sharing unicode support between compiler and runtime
 
 # SHELL: is needed here to remove unwanted quotes from the list of arguments
 # COMPILE_LANGUAGE:CXX is needed here to make sure we only set the flags
@@ -100,13 +103,6 @@ target_include_directories(ChplFrontendShared PUBLIC ${CHPL_FRONTEND_INCLUDES})
 
 if (CHPL_LLVM_STATIC_DYNAMIC STREQUAL "static")
   if(APPLE)
-    if (CHPL_LLVM_VERSION VERSION_LESS 14.0)
-      # we see problems with statically linking and using PUBLIC
-      # here because we are building a shared object & that would
-      # include some of the LLVM libraries. But this pattern seems
-      # to work OK with LLVM 14.
-      message(FATAL_ERROR "LLVM >= 14.0 required for MacOS builds")
-    endif()
     # link the LLVM dependencies with the generated .dylib
     # (we get linker errors on Mac OS X here if it uses INTERFACE)
     # an alternative would be to add link option -undefined dynamic_lookup

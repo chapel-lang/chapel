@@ -15,3 +15,13 @@ project(hello LANGUAGES CHPL)
 
 add_executable(hello hello.chpl)
 ```
+
+## Language Server Integration
+
+To enable Chapel Language Server integration, set `CMAKE_EXPORT_CHPL_COMMANDS` to `ON`:
+
+```cmake
+set(CMAKE_EXPORT_CHPL_COMMANDS ON)
+```
+
+This will generate a `.cls-commands.json` file in your build directory that the Chapel Language Server can use to understand your project's module paths and source files.

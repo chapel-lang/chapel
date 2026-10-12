@@ -16,7 +16,7 @@ BUILDDIR      = ../build/doc
 BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 
 # Explicitly set author
-export CHPLDOC_AUTHOR=Hewlett Packard Enterprise Development LP
+export CHPLDOC_AUTHOR=Chapel a Series of LF Projects, LLC
 
 # User-friendly check for sphinx-build
 SPHINXERROR="Error - The '$(SPHINXBUILD)' command was not found. Make sure you \

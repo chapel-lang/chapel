@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,9 +160,9 @@ struct GenInfo {
 
   // Information for no-alias metadata generation
   llvm::MDNode* noAliasDomain;
-  std::map<Symbol*, llvm::MDNode*> noAliasScopes;
-  std::map<Symbol*, llvm::MDNode*> noAliasScopeLists;
-  std::map<Symbol*, llvm::MDNode*> noAliasLists;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasScopes;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasScopeLists;
+  std::map<Symbol*, llvm::MDNode*, AstIdLess> noAliasLists;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate
@@ -172,12 +172,7 @@ struct GenInfo {
   // on them back into wide pointers and puts/gets.
   GlobalToWideInfo globalToWideInfo;
 
-  // Optimizations to apply immediately after code-generating a fn
-  // (this one is only set for LLVM_USE_OLD_PASSES)
-  llvm::legacy::FunctionPassManager* FPM_postgen = nullptr;
-
   // Managers to optimize immediately after code-generating a fn
-  // (these ones are used ifndef LLVM_USE_OLD_PASSES)
   llvm::LoopAnalysisManager* LAM = nullptr;
   llvm::FunctionAnalysisManager* FAM = nullptr;
   llvm::CGSCCAnalysisManager* CGAM = nullptr;
@@ -246,6 +241,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 GenRet codegenCallExprWithArgs(const char* fnName,
                                std::vector<GenRet> & args,
                                FnSymbol* fnSym = nullptr,
+                               astlocT callLoc = astlocT::unknownLoc(),
                                ClangFunctionDeclPtr FD = nullptr,
                                bool defaultToValues = true);
 GenRet codegenGetLocaleID(void);
@@ -269,5 +265,33 @@ void registerPrimitiveCodegens();
 void linkInDynoFiles();
 
 void closeCodegenFiles();
+
+struct FunctionTypeCodegenInfo {
+#ifdef HAVE_LLVM
+  // If we are generating LLVM, we need not only the type, but also a
+  // standard set of attributes that we generate for indirect calls.
+  // These attributes are responsible for setting things like the
+  // correct calling convention, so they can't be omitted.
+  llvm::FunctionType* llvmType = nullptr;
+  llvm::AttributeList llvmAttrs;
+#endif
+  // For C code, this will contain the string representing the local type
+  // of the function. For LLVM code, it will contain a 'llvm::Type*' set
+  // to the function type that was computed above. In both cases the Chapel
+  // type will be set to the corresponding local function type.
+  GenRet gen;
+};
+
+// This can be called to produce a backend-appropriate translation of the
+// 'local' function type for 'ft' that is suitable for use when issuing
+// an indirect call.
+//
+// The actual wideness of 'ft' is ignored, as backend procedure pointer
+// types are always local.
+//
+// This exists in addition to 'FunctionType::codegenDef()' because that
+// method produces an opaque type (an 'int64_t' for 'wide' and a 'void*'
+// for 'local') in order to simplify translation.
+const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft1);
 
 #endif //CODEGEN_H

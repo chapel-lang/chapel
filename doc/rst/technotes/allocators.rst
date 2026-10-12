@@ -47,26 +47,10 @@ blocks.
 
 For example, here is a Chapel program that uses the Chapel allocator from C:
 
-.. code-block:: chapel
-
-  extern {
-    #include "chpl-mem.h"
-    static int64_t* mymalloc(void) {
-      int64_t *ret = (int64_t*) chpl_malloc(1024);
-      ret[0] = 5;
-      return ret;
-    }
-    static void myfree(int64_t *x) {
-      chpl_free(x);
-    }
-  }
-
-
-  var x = mymalloc();
-
-  writeln(x.deref());
-
-  myfree(x);
+.. literalinclude:: ../../../test/technotes/doc-examples/AllocatorsExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 The Chapel runtime includes ``chpl_calloc``, ``chpl_malloc``,
 ``chpl_memalign``, ``chpl_realloc``, ``chpl_free``,
@@ -96,33 +80,8 @@ allocation functions:
 
   chpl myprogram.chpl -lchplmalloc
 
-.. code-block:: chapel
-
-  extern {
-    #include <stdlib.h>
-    static int64_t* mymalloc(void) {
-      // If this pointer is to be freed by the Chapel free function,
-      // it's much better to use chpl_malloc instead!
-      int64_t *ret = (int64_t*) malloc(1024);
-      ret[0] = 5;
-      return ret;
-    }
-  }
-
-  // CTypes provides allocate and deallocate to call the Chapel allocator
-  // directly for C interoperability purposes
-  use CTypes;
-
-  // Allocate using the system allocator (malloc)
-  var x = mymalloc();
-
-  writeln(x.deref());
-
-  // Free using the Chapel allocator - deallocate calls the Chapel free function
-  // directly.
-  // This will generally cause a core dump unless:
-  //   * you have configured Chapel to use the system allocator, or
-  //   * you link this program with -lchplmalloc
-  deallocate(x);
-
+.. literalinclude:: ../../../test/technotes/doc-examples/AllocatorsMallocReplacement.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 

@@ -1,4 +1,4 @@
-:title: Mason Guide: *Manifest*
+.. _mason-manifest-file:
 
 The Manifest File
 =================
@@ -9,7 +9,7 @@ directory of the package.
 
 For example, ``Mason.toml``:
 
-.. code-block:: text
+.. code-block:: toml
 
     [brick]
     authors = ["Sam Partee <Sam@Partee.com>"]
@@ -53,10 +53,10 @@ Mason understands specific fields in the TOML file, which are described below.
    * ``chplVersion``: Indicates Chapel releases compatible with this
      package. There are a number of accepted formats:
 
-        .. code-block:: text
+        .. code-block:: toml
 
-           "2.1.0"         # 2.1.0 or later
-           "2.1"           # 2.1.0 or later
+           "2.1.0"        # 2.1.0 or later
+           "2.1"          # 2.1.0 or later
            "2.1.0..2.4.0" # 2.1 through 2.4, inclusive
 
      By default, ``chplVersion`` is set to represent the current Chapel release or
@@ -67,6 +67,24 @@ Mason understands specific fields in the TOML file, which are described below.
      distributed. Any of the licenses available at the
      `SPDX License List <https://spdx.org/licenses/>`_ can be used for
      Mason packages. The license field defaults to ``None``.
+
+    * ``copyrightYear``: An optional string indicating the copyright year
+      for the package.
+
+    * ``source``: An optional string indicating the URL for the source code of
+      the package. This is required for publishing packages to a registry, but is optional for local applications.
+
+   * ``compopts``: Indicates default compile-time options to be used when
+     building the package. ``compopts`` can either be a single string or an
+     array of strings. If its a single string, ``mason`` will attempt to split
+     it into multiple options based on whitespace. If this is not desired, use
+     an array of strings.
+
+   * ``docopts``: Indicates default options to be passed to ``chpldoc`` when
+     generating documentation for the package. ``docopts`` can either be a single
+     string or an array of strings. If its a single string, ``mason`` will
+     attempt to split it into multiple options based on whitespace. If this is
+     not desired, use an array of strings.
 
    * ``tests``: A list of test files that are part of the package. These files
      will be run when a user executes `mason test`.
@@ -85,7 +103,7 @@ Mason understands specific fields in the TOML file, which are described below.
    * Git dependencies are specified as an inline subtable with the name of
      the dependency, for example:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            myDep = { git = "https://github.com/username/myDep" }
 
@@ -94,7 +112,7 @@ Mason understands specific fields in the TOML file, which are described below.
      specific revision of the git repository by adding `branch` or `rev` keys,
      respectively. For example:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            myDep = { git = "https://github.com/username/myDep", branch = "main" }
            myDep = { git = "https://github.com/username/myDep", rev = "43d462682851dd2fed6edf123e8fb699db124183" }
@@ -102,7 +120,7 @@ Mason understands specific fields in the TOML file, which are described below.
      Instead of using the inline subtable syntax, you can also use the subtable
      syntax to specify git dependencies:
 
-        .. code-block:: text
+        .. code-block:: toml
 
            [dependencies.myDep]
            git = "https://github.com/username/myDep"
@@ -115,7 +133,7 @@ Mason understands specific fields in the TOML file, which are described below.
   pairs, where the key is the name of the system dependency and the value is
   the version or other relevant information. For example:
 
-    .. code-block:: text
+    .. code-block:: toml
 
        [system]
        cmake = "3.18"
@@ -141,6 +159,13 @@ Mason understands specific fields in the TOML file, which are described below.
    * ``execopts``: A list of runtime arguments to be passed to the example when
      it is run.
 
+   .. note::
+
+      ``compopts`` and ``execopts`` can either be a single string or an array
+      of strings. If its a single string, ``mason`` will attempt to split it
+      into multiple options based on whitespace. If this is not desired, use an
+      array of strings.
+
   See :ref:`mason-examples` for more information.
 
 
@@ -157,7 +182,7 @@ change, removing ``Mason.lock`` from your ``.gitignore`` could be a good idea. A
 a lock file is written below as if generated from the earlier example of a ``Mason.toml``:
 
 
-.. code-block:: text
+.. code-block:: toml
 
      [root]
      authors = ["Sam Partee <Sam@Partee.com>"]

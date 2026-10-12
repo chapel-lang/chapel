@@ -3,7 +3,7 @@
   The throwaway variable is used here:
       |
     3 | var _ = 42;
-      |     ⎺⎺⎺⎺⎺⎺
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
 

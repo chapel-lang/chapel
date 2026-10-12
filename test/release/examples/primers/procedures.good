@@ -2,7 +2,7 @@ A simple procedure
 6! is 720
 
 Another simple procedure
-33! is 3400198294675128320
+17! is 355687428096000
 6! is 720
 
 Using operator overloading

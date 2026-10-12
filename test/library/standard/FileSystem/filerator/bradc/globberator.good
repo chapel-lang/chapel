@@ -1,8 +1,11 @@
+MyWalkDirs.chpl
 findfiles-par.chpl
 findfiles.chpl
 globberator-par.chpl
 globberator-zip.chpl
 globberator.chpl
+mywalk-par.chpl
+mywalk.chpl
 testboth.chpl
 testemptyglob.chpl
 walk-par.chpl

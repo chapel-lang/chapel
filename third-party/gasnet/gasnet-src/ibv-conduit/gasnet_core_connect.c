@@ -173,7 +173,17 @@ gasnetc_parse_filename(const char *filename)
   return filename;
 }
 /* ------------------------------------------------------------------------------------ */
+// Wrapper to use the most "capable" variant of create_qp()
 
+#if HAVE_IBV_CREATE_QP_EX
+  typedef struct ibv_qp_init_attr_ex gasnetc_qp_init_attr_t;
+  #define gasnetc_create_qp(hca, attr) ibv_create_qp_ex((hca)->handle, attr)
+#else
+  typedef struct ibv_qp_init_attr gasnetc_qp_init_attr_t;
+  #define gasnetc_create_qp(hca, attr) ibv_create_qp((hca)->pd, attr)
+#endif
+
+/* ------------------------------------------------------------------------------------ */
 #if GASNETC_IBV_XRC
 typedef struct gasnetc_xrc_snd_qp_s {
   struct ibv_qp * handle;
@@ -221,13 +231,13 @@ gasnetc_xrc_create_qp(gasnetc_cep_t *cep, gex_Rank_t node, int qpi) {
   retry:
 #if GASNETC_IBV_XRC_OFED
   if (gasneti_atomic32_compare_and_swap(rcv_qpn_p, 0, 1, 0)) {
-    struct ibv_qp_init_attr_ex init_attr;
-    memset(&init_attr, 0, sizeof(struct ibv_qp_init_attr_ex));
+    gasnetc_qp_init_attr_t init_attr;
+    memset(&init_attr, 0, sizeof(gasnetc_qp_init_attr_t));
     init_attr.qp_type = IBV_QPT_XRC_RECV;
     init_attr.comp_mask = IBV_QP_INIT_ATTR_XRCD;
     init_attr.xrcd = xrc_domain;
-    xrc_recv_qp = ibv_create_qp_ex(hca->handle, &init_attr);
-    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from ibv_create_qp_ex(xrc_rcv)" GASNETC_XRC_HELP_MSG);
+    xrc_recv_qp = gasnetc_create_qp(hca, &init_attr);
+    GASNETC_IBV_CHECK_PTR(xrc_recv_qp, "from gasnetc_create_qp(xrc_rcv)" GASNETC_XRC_HELP_MSG);
     gasneti_atomic32_set(rcv_qpn_p, xrc_recv_qp->qp_num, GASNETI_ATOMIC_REL);
   } else {
     struct ibv_qp_open_attr attr;
@@ -586,37 +596,27 @@ gasnetc_check_inline_limit(int port_num, int send_wr)
   struct ibv_qp * qp_handle;
 
   {
-  #if GASNETC_IBV_XRC_OFED
-    struct ibv_qp_init_attr_ex qp_init_attr;
-  #else
-    struct ibv_qp_init_attr qp_init_attr;
-  #endif
+    gasnetc_qp_init_attr_t qp_init_attr;
+    memset(&qp_init_attr, 0, sizeof(qp_init_attr));
 
     qp_init_attr.cap.max_send_wr     = send_wr;
     qp_init_attr.cap.max_recv_wr     = gasnetc_use_srq ? 0 : gasnetc_am_oust_pp * 2;
     qp_init_attr.cap.max_send_sge    = GASNETC_MAX_SEND_SGE;
     qp_init_attr.cap.max_recv_sge    = 1;
     qp_init_attr.qp_context          = NULL; /* XXX: Can/should we use this? */
-  #if GASNETC_IBV_XRC_OFED
+  #if HAVE_IBV_CREATE_QP_EX
     qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC_SEND : IBV_QPT_RC;
     qp_init_attr.comp_mask           = IBV_QP_INIT_ATTR_PD;
     qp_init_attr.pd                  = hca->pd;
-  #elif GASNETC_IBV_XRC_MLNX
-    qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC : IBV_QPT_RC;
   #else
-    qp_init_attr.qp_type             = IBV_QPT_RC;
+    qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC : IBV_QPT_RC;
   #endif
     qp_init_attr.sq_sig_all          = !GASNETC_USE_SEND_SIGNALLED;
     qp_init_attr.srq                 = NULL; /* Should not influence inline data */
     qp_init_attr.send_cq             = hca->snd_cq;
     qp_init_attr.recv_cq             = hca->rcv_cq;
 
-  #if GASNETC_IBV_XRC_OFED && 0
-    if (gasnetc_use_xrc) {
-      qp_init_attr.comp_mask |= IBV_QP_INIT_ATTR_XRCD;
-      qp_init_attr.xrcd       = hca->xrc_domain;
-    }
-  #elif GASNETC_IBV_XRC_MLNX
+  #if GASNETC_IBV_XRC_MLNX
     if (gasnetc_use_xrc) {
       qp_init_attr.xrc_domain = hca->xrc_domain;
     }
@@ -625,19 +625,17 @@ gasnetc_check_inline_limit(int port_num, int send_wr)
     /* TODO: Binary search? */
     while (1) { /* No query for max_inline_data limit */
       qp_init_attr.cap.max_inline_data = gasnetc_inline_limit;
-    #if GASNETC_IBV_XRC_OFED
-      qp_handle = ibv_create_qp_ex(hca->handle, &qp_init_attr);
-    #else
-      qp_handle = ibv_create_qp(hca->pd, &qp_init_attr);
-    #endif
+      errno = 0;
+      qp_handle = gasnetc_create_qp(hca, &qp_init_attr);
       if (qp_handle != NULL) break;
       if (qp_init_attr.cap.max_inline_data == -1) {
         /* Automatic max not working, fall back on manual search */
         gasnetc_inline_limit = 1024;
         continue;
       }
-      if ((errno != EINVAL) || (gasnetc_inline_limit == 0)) {
-        GASNETC_IBV_CHECK_PTR(qp_handle, "from ibv_create_qp(inline probe)");
+      if ((errno && errno != EINVAL) || (gasnetc_inline_limit == 0)) {
+        gasneti_fatalerror("failed gasnetc_create_qp(inline probe) with errno=%d at gasnetc_inline_limit=%d",
+                           errno, (int)gasnetc_inline_limit);
         /* NOT REACHED */
       }
       gasnetc_inline_limit = MIN(1024, gasnetc_inline_limit - 1);
@@ -660,11 +658,7 @@ gasnetc_qp_create(gasnetc_conn_info_t *conn_info)
     gasnetc_cep_t *cep;
     int qpi;
 
-  #if GASNETC_IBV_XRC_OFED
-    struct ibv_qp_init_attr_ex  qp_init_attr;
-  #else
-    struct ibv_qp_init_attr     qp_init_attr;
-  #endif
+    gasnetc_qp_init_attr_t      qp_init_attr;
     const int                   max_recv_wr = gasnetc_use_srq ? 0 : gasnetc_am_oust_pp * 2;
     int                         max_send_wr = gasnetc_op_oust_pp;
   #if GASNETC_IBV_XRC
@@ -678,13 +672,11 @@ gasnetc_qp_create(gasnetc_conn_info_t *conn_info)
     qp_init_attr.cap.max_send_sge    = GASNETC_MAX_SEND_SGE;
     qp_init_attr.cap.max_recv_sge    = 1;
     qp_init_attr.qp_context          = NULL; /* XXX: Can/should we use this? */
-  #if GASNETC_IBV_XRC_OFED
+  #if HAVE_IBV_CREATE_QP_EX
     qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC_SEND : IBV_QPT_RC;
     qp_init_attr.comp_mask           = IBV_QP_INIT_ATTR_PD;
-  #elif GASNETC_IBV_XRC_MLNX
-    qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC : IBV_QPT_RC;
   #else
-    qp_init_attr.qp_type             = IBV_QPT_RC;
+    qp_init_attr.qp_type             = gasnetc_use_xrc ? IBV_QPT_XRC : IBV_QPT_RC;
   #endif
     qp_init_attr.sq_sig_all          = !GASNETC_USE_SEND_SIGNALLED;
     qp_init_attr.srq                 = NULL;
@@ -700,7 +692,7 @@ gasnetc_qp_create(gasnetc_conn_info_t *conn_info)
     #endif
       cep->sq_sema_p = &gasnetc_zero_sema;
 
-    #if GASNETC_IBV_XRC_OFED
+    #if HAVE_IBV_CREATE_QP_EX
       qp_init_attr.pd              = hca->pd;
     #endif
       qp_init_attr.send_cq         = hca->snd_cq;
@@ -731,22 +723,15 @@ gasnetc_qp_create(gasnetc_conn_info_t *conn_info)
             goto finish;
         }
   
-      #if GASNETC_IBV_XRC_OFED && 0
-        qp_init_attr.comp_mask |= IBV_QP_INIT_ATTR_XRCD;
-        qp_init_attr.xrcd       = hca->xrc_domain;
-      #elif GASNETC_IBV_XRC_MLNX
+      #if GASNETC_IBV_XRC_MLNX
         qp_init_attr.xrc_domain = hca->xrc_domain;
       #endif
         qp_init_attr.srq        = NULL;
       }
     #endif
   
-    #if GASNETC_IBV_XRC_OFED
-      hndl = ibv_create_qp_ex(hca->handle, &qp_init_attr);
-    #else
-      hndl = ibv_create_qp(hca->pd, &qp_init_attr);
-    #endif
-      GASNETC_IBV_CHECK_PTR(hndl, "from ibv_create_qp()");
+      hndl = gasnetc_create_qp(hca, &qp_init_attr);
+      GASNETC_IBV_CHECK_PTR(hndl, "from gasnetc_create_qp()");
       gasneti_assert(qp_init_attr.cap.max_recv_wr >= max_recv_wr);
       gasneti_assert(qp_init_attr.cap.max_send_wr >= max_send_wr);
       gasneti_assert(qp_init_attr.cap.max_inline_data >= gasnetc_inline_limit);

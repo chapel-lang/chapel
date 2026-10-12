@@ -143,7 +143,7 @@ module SHA256Implementation {
   }
 
   // Set the bit numbered `bit` in `msg`.
-  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(1)
+  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(0)
   // and bit 0 is the most-significant.
   private
   proc set_bit(ref msg:16*uint(32), bit:uint) {
@@ -154,7 +154,7 @@ module SHA256Implementation {
   }
 
   // Clear the bits after bit `nbits` in `msg`.
-  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(1)
+  // Bit numbering starts with 0. Bit numbers 0-31 are in msg(0)
   // and bit 0 is the most-significant.
   private
   proc clear_bits_after(ref msg:16*uint(32), nbits:uint) {
@@ -277,12 +277,12 @@ module SHA256Implementation {
     msg = ones;
     clear_bits_after(msg, 33);
     assert(msg[0] == 0xffffffff && msg[1] == 0x80000000 &&
-           msg[3] == 0 && msg[15] == 0);
+           msg[2] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 34);
     assert(msg[0] == 0xffffffff && msg[1] == 0xc0000000 &&
-           msg[3] == 0 && msg[15] == 0);
+           msg[2] == 0 && msg[15] == 0);
 
     msg = zeros;
     set_bit(msg, 0);
@@ -302,11 +302,11 @@ module SHA256Implementation {
 
     msg = zeros;
     set_bit(msg, 32);
-    assert(msg[0] == 0 && msg[1] == 0x80000000 && msg[3] == 0);
+    assert(msg[0] == 0 && msg[1] == 0x80000000 && msg[2] == 0);
 
     msg = zeros;
     set_bit(msg, 33);
-    assert(msg[0] == 0 && msg[1] == 0x40000000 && msg[3] == 0);
+    assert(msg[0] == 0 && msg[1] == 0x40000000 && msg[2] == 0);
 
 
     var startingState:SHA256State;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, re
+import sys, re, subprocess, os
 
 testname = sys.argv[1]
 outfile =  sys.argv[2]
@@ -16,3 +16,7 @@ for l in lines:
 
 f.close()
 
+env = os.environ.copy()
+env["EXPECTED_MSG"]='1 + 9223372036854775807 cannot be represented'
+prediff_script = os.path.join(env["CHPL_HOME"], "util", "test", "prediff-for-ok-param-overflow")
+subprocess.run([prediff_script] + sys.argv[1:], env=env)

@@ -34,3 +34,14 @@ struct forwardDeclStruct2;
 struct forwardDeclStruct2 { int x; };
 
 void printForwardDeclStruct2(const struct forwardDeclStruct2*);
+
+typedef struct {
+  struct {
+    int x;
+    int y;
+  };
+  int z;
+} nestedStruct;
+
+void nestedStruct_init(nestedStruct* n, int x, int y, int z);
+void nestedStruct_print(nestedStruct n);

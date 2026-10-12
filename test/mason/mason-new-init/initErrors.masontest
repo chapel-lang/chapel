@@ -1,0 +1,39 @@
+echo_and_run mason init IDontExist || echo "expected failure"
+
+
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+echo_and_run mason init
+echo_and_run mason init || echo "expected failure for existing mason package"
+echo_and_run mason init --light || echo "expected failure for existing mason package"
+rm Mason.toml
+echo_and_run mason init || echo "expected failure for existing src/ directory"
+echo_and_run mason init --light # this should succeed since --light doesn't create a src/ directory
+cd ..
+
+
+rm -rf testingPkg && mkdir testingPkg
+echo_and_run mason init testingPkg
+echo_and_run mason init testingPkg --name foobar || echo "expected failure for existing mason package"
+
+
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+echo_and_run mason init --no-vcs
+echo_and_run mason init --no-vcs || echo "expected failure for existing mason package"
+cd ..
+
+
+rm -rf testing-pkg/foo-bar && mkdir -p testing-pkg/foo-bar
+echo_and_run mason init testing-pkg/foo-bar || echo "expected failure for invalid package name"
+echo_and_run mason init testing-pkg/foo-bar --name foo-bar || echo "expected failure for invalid package name"
+rm -rf testing-pkg
+
+
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+git init -b main
+echo_and_run mason init || echo "expected failure for existing mason package"
+rm -rf .git
+echo "foo" > .gitignore
+echo 'MASON_LOG_LEVEL=warn mason init'
+MASON_LOG_LEVEL=warn mason init | grep ".gitignore already exists"
+echo_and_run cat .gitignore
+echo_and_run cat Mason.toml | sed '/chplVersion/d'

@@ -193,15 +193,17 @@ int main() {
 }
 """
 
+
 def missing_llvm(chplenv):
     """
     Check if LLVM is missing or not
     if CHPL_LLVM is bundled, return True if its has not been built
     if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, return True if has not been built
     """
-    if (chplenv.get("CHPL_LLVM") == "bundled" or
-        (chplenv.get("CHPL_LLVM") == "none" and
-        chplenv.get("CHPL_LLVM_SUPPORT") == "bundled")):
+    if chplenv.get("CHPL_LLVM") == "bundled" or (
+        chplenv.get("CHPL_LLVM") == "none"
+        and chplenv.get("CHPL_LLVM_SUPPORT") == "bundled"
+    ):
         llvm_config = chplenv.get("CHPL_LLVM_CONFIG")
         if not llvm_config or not os.path.exists(llvm_config):
             return True
@@ -211,9 +213,12 @@ def missing_llvm(chplenv):
 class TestTargetCompile(TestCompile):
 
     def skipif(self):
-        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm" and missing_llvm(self.chplenv):
+        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm" and missing_llvm(
+            self.chplenv
+        ):
             return True
         return super().skipif()
+
 
 class TestTargetCompileCC(TestTargetCompile):
     """
@@ -286,12 +291,14 @@ class TestHostCanFindLLVM(TestCompile):
 
     def _compiler_args(self):
         comp_args = (
-            self.chplenv.get("CHPL_HOST_BUNDLED_COMPILE_ARGS", "") + " " +
-            self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
+            self.chplenv.get("CHPL_HOST_BUNDLED_COMPILE_ARGS", "")
+            + " "
+            + self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
         )
         link_args = (
-            self.chplenv.get("CHPL_HOST_BUNDLED_LINK_ARGS", "") + " " +
-            self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
+            self.chplenv.get("CHPL_HOST_BUNDLED_LINK_ARGS", "")
+            + " "
+            + self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
         )
 
         # strip out jemalloc to avoid linker warnings on some systems
@@ -305,37 +312,46 @@ class TestHostCanFindLLVM(TestCompile):
         )
 
     def _program(self):
+        llvm_version = self.chplenv.get("CHPL_LLVM_VERSION", "0")
         if self.chplenv.get("CHPL_LLVM") != "none":
-            return """
+            return f"""
 #include "clang/Basic/Version.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Config/llvm-config.h"
 #include <iostream>
-int main() {
+#if LLVM_VERSION_MAJOR != {llvm_version}
+#error Mismatched LLVM version
+#endif
+int main() {{
     std::cout << clang::getLLVMRevision() << std::endl;
     llvm::LLVMContext Context;
     llvm::Module M("mymod", Context);
     return 0;
-}
+}}
 """
         else:
-            return """
+            return f"""
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Config/llvm-config.h"
 #include <iostream>
-int main() {
+#if LLVM_VERSION_MAJOR != {llvm_version}
+#error Mismatched LLVM version
+#endif
+int main() {{
     std::cout << "Hello, World!" << std::endl;
     llvm::outs() << "Hello, LLVM!\\n";
     return 0;
-}
+}}
 """
-
 
     def explain(self):
         compiler = self._compiler()
         if not compiler:
             return "No compiler found"
         return "{}{}{} cannot find LLVM headers".format(
-            super().explain(), os.linesep, compiler[0])
+            super().explain(), os.linesep, compiler[0]
+        )
 
 
 passes = [

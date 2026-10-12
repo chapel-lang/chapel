@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2021 Inria.  All rights reserved.
+ * Copyright © 2013-2024 Inria.  All rights reserved.
  * Copyright (c) 2020, Advanced Micro Devices, Inc. All rights reserved.
  * Written by Advanced Micro Devices,
  * See COPYING in top-level directory.
@@ -79,6 +79,7 @@ rsmi_status_t rsmi_dev_name_get(uint32_t dv_ind, char *name, size_t len);
 rsmi_status_t rsmi_dev_serial_number_get(uint32_t dv_ind, char *serial_num, uint32_t len);
 rsmi_status_t rsmi_dev_unique_id_get(uint32_t dv_ind, uint64_t *id);
 rsmi_status_t rsmi_dev_pci_bandwidth_get(uint32_t dv_ind, rsmi_pcie_bandwidth_t *bandwidth);
+rsmi_status_t rsmi_dev_partition_id_get(uint32_t dv_ind, uint32_t *partition_id);
 rsmi_status_t rsmi_dev_xgmi_hive_id_get(uint32_t dv_ind, uint64_t *hive_id);
 rsmi_status_t rsmi_topo_get_link_type(uint32_t dv_ind_src, uint32_t dv_ind_dst,
                                       uint64_t *hops, RSMI_IO_LINK_TYPE *type);

@@ -10,7 +10,7 @@
     MYPROC, #cond, __FILE__,__LINE__); fflush(stderr); \
   } } while(0)
 
-volatile int false = 0;
+volatile int zero = 0;
 /* ------------------------------------------------------------------------------------ */
 ep_t check_ep;
 en_t check_en;
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
   memset(VMseg, 0, VMsegsz);
   AM_Safe(AM_SetSeg(ep, VMseg, VMsegsz));
 
-  if (false) { /* don't actually call these, just ensure they link properly */
+  if (zero) { /* don't actually call these, just ensure they link properly */
     static char *ignore;
     AMX_SPMDSetExitCallback(NULL);
     ignore += ignore - AMX_SPMDgetenvMaster("PATH");

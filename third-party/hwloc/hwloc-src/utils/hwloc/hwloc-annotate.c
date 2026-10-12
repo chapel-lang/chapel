@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2023 Inria.  All rights reserved.
+ * Copyright © 2012-2024 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -811,7 +811,7 @@ int main(int argc, char *argv[])
 	    } else {
 		size_t typelen;
 		typelen = hwloc_calc_parse_level_size(location);
-		if (typelen && (location[typelen] == ':' || location[typelen] == '=' || location[typelen] == '[')) {
+		if (typelen && (location[typelen] == ':' || location[typelen] == '=')) {
 			struct hwloc_calc_location_context_s lcontext;
 			lcontext.topology = topology;
 			lcontext.topodepth = topodepth;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,12 +58,15 @@ void codegenStmt(Expr* stmt) {
       info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
-    if (debug_info && stmt->linenum() > 0) {
+    if (debugInfo &&
+        stmt->linenum() > 0 &&
+        (!stmt->parentSymbol ||
+          debugInfo->shouldAddDebugInfoFor(stmt->parentSymbol))) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 
-      if(stmt->inTree() && stmt->parentSymbol->astTag == E_FnSymbol) {
-        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
+      if (auto fn = toFnSymbol(stmt->parentSymbol); stmt->inTree()) {
+        scope = debugInfo->getFunction(fn);
       } else {
         scope = info->irBuilder->getCurrentDebugLocation().getScope();
       }
@@ -239,7 +242,24 @@ CondStmt::codegen() {
       //
       Expr* firstStmt = elseStmt->body.head;
       if (elseStmt->length() == 1 && isCondStmt(firstStmt)) {
+        size_t mark = info->cStatements.size();
         firstStmt->codegen();
+
+        // Evaluating the nested condition may have emitted statements
+        // ahead of its 'if (', which would cause the body of the 'else' to be
+        // the statement emitted ahead of the 'if', which is incorrect.
+        // Only comments may precede it; otherwise wrap in braces after
+        // the fact.
+        bool needBraces = false;
+        for (size_t i = mark; i < info->cStatements.size(); i++) {
+          const std::string& s = info->cStatements[i];
+          if (s.compare(0, 4, "if (") == 0) break;
+          if (s.compare(0, 2, "/*") != 0) { needBraces = true; break; }
+        }
+        if (needBraces) {
+          info->cStatements.insert(info->cStatements.begin() + mark, "{\n");
+          info->cStatements.push_back("}\n");
+        }
       } else {
         elseStmt->codegen();
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -211,8 +211,19 @@ optional<Immediate> paramToImmediate(Context* context,
         CHPL_ASSERT(et);
 
         if (ep) {
-          auto numericValueOpt =
-            computeNumericValueOfEnumElement(context, ep->value().id);
+          optional<QualifiedType> numericValueOpt = empty;
+          if (context->isQueryRunning(computeNumericValuesOfEnumElements, std::make_tuple(et->id()))) {
+            // we're still determining the numeric values of the enum elements.
+            // This can happen if one enum element's declaration is trying to
+            // cast another, preceding declaration to its numeric type. E.g.:
+            //
+            //   enum A { red = 1; green = red:int + 2 }
+            //
+            // Use the "initial guess".
+            numericValueOpt = initialNumericValueOfEnumElement(context, ep->value().id).first;
+          } else {
+            numericValueOpt = computeNumericValueOfEnumElement(context, ep->value().id);
+          }
 
           if (!numericValueOpt) {
             auto eltAst = parsing::idToAst(context, ep->value().id)->toEnumElement();
@@ -492,9 +503,9 @@ static QualifiedType enumParamFromNumericValue(Context* context,
   return numericValue;
 }
 
-static bool paramCastAllowed(Context* context,
-                             const QualifiedType& a,
-                             const QualifiedType& b) {
+bool Param::castAllowed(Context* context,
+                        const QualifiedType& a,
+                        const QualifiedType& b) {
   auto at = a.type();
   auto bt = b.type();
 
@@ -541,7 +552,7 @@ static QualifiedType handleParamCast(Context* context,
                                      const AstNode* astForErr,
                                      QualifiedType a,
                                      QualifiedType b) {
-  if (!paramCastAllowed(context, a, b)) {
+  if (!Param::castAllowed(context, a, b)) {
     CHPL_REPORT(context, InvalidParamCast, astForErr, a, b);
     return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }

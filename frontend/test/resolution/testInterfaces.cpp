@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -681,7 +681,7 @@ static void testBasicReturnTypesIter() {
 static void testMismatchedFnKind() {
   auto i1 = InterfaceSource("myInterface", "iter Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "proc")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;", "proc")
     .addInterfaceConstraint(i1);
   testSingleInterface(i1, r1, ErrorType::General /* InterfaceInvalidReturnType */);
 

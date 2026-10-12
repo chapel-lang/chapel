@@ -1,14 +1,20 @@
 Running Sphinx vN.N.N
+loading translations [en]... done
 building [mo]: targets for 0 po files that are out of date
 building [html]: targets for 2 source files that are out of date
 updating environment: [new config] 2 added, 0 changed, 0 removed
+
 looking for now-outdated files... none found
 pickling environment... done
 checking consistency... done
 preparing documents... done
-copying assets... copying static files... done
-copying extra files... done
-done
+copying assets... 
+copying static files... 
+copying static files: done
+copying extra files... 
+copying extra files: done
+copying assets: done
+
 generating indices... genindex chpl-modindex done
 writing additional pages... search done
 dumping search index in English (code: en)... done

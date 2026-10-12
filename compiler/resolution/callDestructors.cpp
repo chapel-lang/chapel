@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,8 @@ public:
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
 
-  static void             returnByRefCollectCalls(RefMap& calls);
+  static void             returnByRefCollectCalls(RefMap& calls,
+                                                  std::vector<CallExpr*>& indirectMoves);
   static bool             isTransformableFunction(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
@@ -109,36 +110,96 @@ private:
   void                    addCall(CallExpr* call);
 
   void                    transform();
-  void                    transformMove(CallExpr* moveExpr);
+  static void             transformMove(CallExpr* moveExpr);
 
   FnSymbol*               mFunction;
   std::vector<CallExpr*>  mCalls;
 };
 
-void ReturnByRef::apply()
-{
-  RefMap           map;
-  RefMap::iterator iter;
+void ReturnByRef::apply() {
+  RefMap                 map;
+  std::vector<CallExpr*> indirectMoves;
 
-  returnByRefCollectCalls(map);
+  returnByRefCollectCalls(map, indirectMoves);
 
-  for (iter = map.begin(); iter != map.end(); iter++)
+  for (auto iter = map.begin(); iter != map.end(); iter++)
     iter->second->transform();
 
-  for (int i = 0; i < virtualMethodTable.n; i++)
-  {
-    if (virtualMethodTable.v[i].key)
-    {
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key) {
       int  numFns = virtualMethodTable.v[i].value->n;
 
-      for (int j = 0; j < numFns; j++)
-      {
+      for (int j = 0; j < numFns; j++) {
         FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
 
         if (isTransformableFunction(fn))
           transformFunction(fn);
       }
     }
+  }
+
+  // Transform FnSymbols that are used as procedure pointers. Such functions
+  // may have no direct call sites and therefore would not appear in the
+  // RefMap collected above. We also build a mapping from old to new
+  // FunctionType so that the types stored on procedure-pointer variables can
+  // be updated to reflect the new signature (e.g., retarg formal).
+  //
+  // Note: transformFunction is a no-op when FLAG_FN_RETARG is already
+  // set, so functions that were already handled via a direct call site
+  // in the loop above are skipped here without double-transformation.
+  std::map<FunctionType*, FunctionType*, AstIdLess> ftUpdateMap;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) &&
+        isTransformableFunction(fn))
+    {
+      FunctionType* oldFT = toFunctionType(fn->type);
+
+      transformFunction(fn);
+
+      // Recompute fn->type to incorporate the retarg formal and void
+      // return that transformFunction introduced.
+      FunctionType* newFT = fn->computeAndSetType();
+
+      if (oldFT != NULL && newFT != NULL && oldFT != newFT)
+        ftUpdateMap[oldFT] = newFT;
+    }
+  }
+
+  // Update the stored FunctionType on every VarSymbol and ArgSymbol
+  // that holds a reference to one of the now-transformed functions.
+  // Without this step the indirect call sites would be compiled using
+  // the stale (pre-retarg) signature.
+  if (!ftUpdateMap.empty())
+  {
+    forv_Vec(VarSymbol, var, gVarSymbols)
+    {
+      if (FunctionType* ft = toFunctionType(var->type))
+      {
+        auto it = ftUpdateMap.find(ft);
+        if (it != ftUpdateMap.end())
+          var->type = it->second;
+      }
+    }
+
+    forv_Vec(ArgSymbol, arg, gArgSymbols)
+    {
+      if (FunctionType* ft = toFunctionType(arg->type))
+      {
+        auto it = ftUpdateMap.find(ft);
+        if (it != ftUpdateMap.end())
+          arg->type = it->second;
+      }
+    }
+  }
+
+  // Transform the indirect call sites collected by returnByRefCollectCalls.
+  // Each element is a PRIM_MOVE/PRIM_ASSIGN whose RHS is an indirect call
+  // returning a record type that requires the retarg transformation.
+  for (CallExpr* moveExpr : indirectMoves)
+  {
+    if (moveExpr->inTree())
+      transformMove(moveExpr);
   }
 }
 
@@ -147,12 +208,9 @@ void ReturnByRef::apply()
 // and all calls to these functions.
 //
 
-void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
-{
-  RefMap::iterator iter;
-
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
+void ReturnByRef::returnByRefCollectCalls(RefMap&                 calls,
+                                          std::vector<CallExpr*>& indirectMoves) {
+  forv_Vec(CallExpr, call, gCallExprs) {
     // Only transform calls that are still in the AST tree
     // (defer statement bodies have been removed at this point
     //  in this pass)
@@ -162,22 +220,38 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
       // The common case is a user-level call to a resolved function
       // Also handle the PRIMOP for a virtual method call
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-       if (isTransformableFunction(fn)) {
-        RefMap::iterator iter = calls.find(fn->id);
-        ReturnByRef*     info = NULL;
+        if (isTransformableFunction(fn)) {
+          auto iter = calls.find(fn->id);
+          ReturnByRef* info = NULL;
 
-        if (iter == calls.end())
-        {
-          info          = new ReturnByRef(fn);
-          calls[fn->id] = info;
-        }
-        else
-        {
-          info          = iter->second;
-        }
+          if (iter == calls.end()) {
+            info = new ReturnByRef(fn);
+            calls[fn->id] = info;
+          } else {
+            info = iter->second;
+          }
 
-        info->addCall(call);
-       }
+          info->addCall(call);
+        }
+      }
+
+      // Collect indirect calls (through a procedure pointer) whose
+      // return type requires the retarg transformation. These cannot
+      // be paired with a specific FnSymbol at this point, so they are
+      // gathered independently and transformed later in apply().
+      // We only handle the PRIM_MOVE / PRIM_ASSIGN parent pattern here,
+      // mirroring the direct-call path in transform().
+      if (call->isIndirectCall()) {
+        if (FunctionType* ft = call->functionType()) {
+          if (typeNeedsCopyInitDeinit(ft->returnType())) {
+            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+              if (parentCall->isPrimitive(PRIM_MOVE) ||
+                  parentCall->isPrimitive(PRIM_ASSIGN)) {
+                indirectMoves.push_back(parentCall);
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -268,6 +342,7 @@ ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
   // Note: other code does strcmps against the name _retArg
   ArgSymbol*     formal  = new ArgSymbol(INTENT_REF, "_retArg", refType);
   formal->addFlag(FLAG_RETARG);
+  formal->qual = formal->qualType().getQual();
 
   fn->insertFormalAtTail(formal);
   fn->addFlag(FLAG_FN_RETARG);
@@ -761,7 +836,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         // will need to deep-copy the result in non-'ref' situations
         // e.g., var B = A[2..n-1]; or var B = A.reshape(2..n-1) so
         // will need to autodestroy the result at the end of the scope
-        // and recgonize it as an array view in other situations.  Mark
+        // and recognize it as an array view in other situations.  Mark
         // it as an array view to help with this in later passes.
         //
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
@@ -1010,6 +1085,7 @@ void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
 
   if (!deinitFn) {
     deinitFn = new FnSymbol(astr("chpl__deinit_", mod->name));
+    deinitFn->addFlag(FLAG_MODULE_DEINIT);
 
     mod->block->insertAtTail(new DefExpr(deinitFn));
 
@@ -1033,7 +1109,7 @@ static void cleanupModuleDeinitAnchor(Expr*& anchor) {
 static void noteGlobalInitialization(ModuleSymbol* mod,
                                      VarSymbol* var,
                                      std::vector<VarSymbol*>& inited,
-                                     std::set<VarSymbol*>& initedSet) {
+                                     std::set<VarSymbol*, AstIdLess>& initedSet) {
   // Only consider module-scope variables needing destruction
   if (isAutoDestroyedVariable(var) && var->defPoint->parentSymbol == mod) {
     // Try to insert into the initedSet
@@ -1052,7 +1128,7 @@ static void noteGlobalInitialization(ModuleSymbol* mod,
 static void collectGlobals(ModuleSymbol* mod,
                            BlockStmt* block,
                            std::vector<VarSymbol*>& inited,
-                           std::set<VarSymbol*>& initedSet) {
+                           std::set<VarSymbol*, AstIdLess>& initedSet) {
 
   for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
 
@@ -1097,7 +1173,7 @@ static void collectGlobals(ModuleSymbol* mod,
 
 static void insertGlobalAutoDestroyCalls() {
   std::vector<VarSymbol*> inited;
-  std::set<VarSymbol*> initedSet;
+  std::set<VarSymbol*, AstIdLess> initedSet;
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (isAlive(mod)) {
@@ -1300,19 +1376,19 @@ class GatherGlobalsReferredTo final : public AstVisitorTraverse {
   public:
     // these are set and "returned" by visiting a function
     FnSymbol* thisFunction;
-    std::set<FnSymbol*> calledThisFunction;     // calls from this function
-    std::set<VarSymbol*> mentionedThisFunction; // globals mentioned directly
+    std::set<FnSymbol*, AstIdLess> calledThisFunction;     // calls from this function
+    std::set<VarSymbol*, AstIdLess> mentionedThisFunction; // globals mentioned directly
 
     // this is global state storing results of analysis
-    std::set<FnSymbol*> visited;
-    std::map<FnSymbol*, std::set<VarSymbol*> > directGlobalMentions;
-    std::map<FnSymbol*, std::set<FnSymbol*> > callGraph;
+    std::set<FnSymbol*, AstIdLess> visited;
+    std::map<FnSymbol*, std::set<VarSymbol*, AstIdLess>, AstIdLess> directGlobalMentions;
+    std::map<FnSymbol*, std::set<FnSymbol*, AstIdLess>, AstIdLess> callGraph;
 
     GatherGlobalsReferredTo()
       : thisFunction(NULL)
     { }
-    bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*>& globals);
-    bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*>& globals);
+    bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*, AstIdLess>& globals);
+    bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*, AstIdLess>& globals);
     bool enterFnSym(FnSymbol* fn) override;
     void visitSymExpr(SymExpr* se) override;
     void exitFnSym(FnSymbol* fn) override;
@@ -1393,8 +1469,8 @@ void GatherGlobalsReferredTo::visitSymExpr(SymExpr* se) {
 void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
   INT_ASSERT(fn == thisFunction);
   // update the global maps based on calledThisFunction / mentionedThisFunction
-  std::set<FnSymbol*>& fnCalls = callGraph[thisFunction];
-  std::set<VarSymbol*>& directMentions = directGlobalMentions[thisFunction];
+  std::set<FnSymbol*, AstIdLess>& fnCalls = callGraph[thisFunction];
+  std::set<VarSymbol*, AstIdLess>& directMentions = directGlobalMentions[thisFunction];
 
   for_set(FnSymbol, called, calledThisFunction) {
     fnCalls.insert(called);
@@ -1411,8 +1487,8 @@ void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
 class FindInvalidGlobalUses final : public AstVisitorTraverse {
   public:
     GatherGlobalsReferredTo& gatherVisitor;
-    std::set<VarSymbol*> invalidGlobals;
-    std::map<VarSymbol*, CallExpr*> copyElidedGlobals;
+    std::set<VarSymbol*, AstIdLess> invalidGlobals;
+    std::map<VarSymbol*, CallExpr*, AstIdLess> copyElidedGlobals;
     std::vector<VarSymbol*> errorGlobalVariables;
 
     FindInvalidGlobalUses(GatherGlobalsReferredTo& gatherVisitor)
@@ -1425,7 +1501,7 @@ class FindInvalidGlobalUses final : public AstVisitorTraverse {
     // stores in errorGlobalVariables the invalid variables that were used
     bool checkIfFnUsesInvalid(FnSymbol* fn);
     bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
-                              std::set<FnSymbol*>& visited);
+                              std::set<FnSymbol*, AstIdLess>& visited);
     bool enterCallExpr(CallExpr* call) override;
     bool enterCondStmt(CondStmt* cond) override;
 };
@@ -1465,7 +1541,7 @@ bool FindInvalidGlobalUses::checkIfCalledUsesInvalid(CallExpr* c, bool error) {
 
     if (checkIfFnUsesInvalid(calledFn)) {
       if (error) {
-        std::set<FnSymbol*> visited;
+        std::set<FnSymbol*, AstIdLess> visited;
         errorIfFnUsesInvalid(calledFn, c, visited);
       }
       return true;
@@ -1477,7 +1553,7 @@ bool FindInvalidGlobalUses::checkIfCalledUsesInvalid(CallExpr* c, bool error) {
         forv_Vec(FnSymbol*, childFn, *children) {
           if (checkIfFnUsesInvalid(childFn)) {
             if (error) {
-              std::set<FnSymbol*> visited;
+              std::set<FnSymbol*, AstIdLess> visited;
               errorIfFnUsesInvalid(childFn, c, visited);
             }
             return true;
@@ -1493,7 +1569,7 @@ bool FindInvalidGlobalUses::checkIfCalledUsesInvalid(CallExpr* c, bool error) {
 // returns true if there was any intersection
 // returns intersecting elements in outVector
 static
-bool computeIntersection(std::set<VarSymbol*>& a, std::set<VarSymbol*>& b,
+bool computeIntersection(std::set<VarSymbol*, AstIdLess>& a, std::set<VarSymbol*, AstIdLess>& b,
                          std::vector<VarSymbol*>& outVector)
 {
   outVector.clear();
@@ -1506,12 +1582,12 @@ bool computeIntersection(std::set<VarSymbol*>& a, std::set<VarSymbol*>& b,
 
 // This function is intended to be relatively optimized
 bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
-  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
+  std::map<FnSymbol*, std::set<VarSymbol*, AstIdLess>, AstIdLess>& directGlobalMentions =
     gatherVisitor.directGlobalMentions;
-  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
+  std::map<FnSymbol*, std::set<FnSymbol*, AstIdLess>, AstIdLess>& callGraph =
     gatherVisitor.callGraph;
 
-  std::set<FnSymbol*> everBeenInWork;
+  std::set<FnSymbol*, AstIdLess> everBeenInWork;
   std::vector<FnSymbol*> work;
 
   everBeenInWork.insert(startFn);
@@ -1536,7 +1612,7 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
     }
 
     // add called functions to the work queue
-    std::set<FnSymbol*>& fnCalls = callGraph[fn];
+    std::set<FnSymbol*, AstIdLess>& fnCalls = callGraph[fn];
     for_set (FnSymbol, called, fnCalls) {
       if (everBeenInWork.insert(called).second) {
         // 1st time visiting called; already added it to everBeenInWork
@@ -1551,10 +1627,10 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
 // This function is slow but handles the case in which an error needs
 // to be reported. In that event it gives a stack trace.
 bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
-                                                 std::set<FnSymbol*>& visited) {
-  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
+                                                 std::set<FnSymbol*, AstIdLess>& visited) {
+  std::map<FnSymbol*, std::set<VarSymbol*, AstIdLess>, AstIdLess>& directGlobalMentions =
     gatherVisitor.directGlobalMentions;
-  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
+  std::map<FnSymbol*, std::set<FnSymbol*, AstIdLess>, AstIdLess>& callGraph =
     gatherVisitor.callGraph;
   std::vector<VarSymbol*> inV;
 
@@ -1577,7 +1653,7 @@ bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
   }
 
   // check the call graph
-  std::set<FnSymbol*>& fnCalls = callGraph[fn];
+  std::set<FnSymbol*, AstIdLess>& fnCalls = callGraph[fn];
   for_set (FnSymbol, called, fnCalls) {
     if (checkIfFnUsesInvalid(called)) {
       BaseAST* useLoc = findSymExprFor(fn, called);
@@ -1672,8 +1748,8 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
 
 bool FindInvalidGlobalUses::enterCondStmt(CondStmt* cond) {
   if (cond->elseStmt) {
-    std::set<VarSymbol*> saveInvalidGlobals = invalidGlobals;
-    std::map<VarSymbol*, CallExpr*> saveElidedGlobals = copyElidedGlobals;
+    std::set<VarSymbol*, AstIdLess> saveInvalidGlobals = invalidGlobals;
+    std::map<VarSymbol*, CallExpr*, AstIdLess> saveElidedGlobals = copyElidedGlobals;
 
     cond->elseStmt->accept(this);
 
@@ -1770,8 +1846,8 @@ static SymExpr* getActualBeforeCopyInit(CallExpr* call, ArgSymbol* formal) {
 // initialized with calls to initCopy().
 static void checkForErroneousInitCopies() {
 
-  std::map<FnSymbol*, const char*> errors;
-  std::set<ArgSymbol*> errorOnCopyFormals;
+  std::map<FnSymbol*, const char*, AstIdLess> errors;
+  std::set<ArgSymbol*, AstIdLess> errorOnCopyFormals;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
@@ -1969,7 +2045,7 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn);
 
 static void adjustCoforallIndexVariables() {
 
-  std::set<ArgSymbol*> handledFormals;
+  std::set<ArgSymbol*, AstIdLess> handledFormals;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {

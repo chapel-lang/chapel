@@ -1,0 +1,1 @@
+type-method-param-field.chpl:7: error: parenless proc redeclares the field 'x'

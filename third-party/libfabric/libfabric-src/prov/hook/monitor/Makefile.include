@@ -1,0 +1,32 @@
+if HAVE_MONITOR
+
+_monitorhook_files = \
+        prov/hook/monitor/src/hook_monitor.c
+
+_monitorhook_headers = \
+        prov/hook/monitor/include/hook_monitor.h
+
+if HAVE_MONITOR_DL
+pkglib_LTLIBRARIES += libmonitor-fi.la
+libmonitor_fi_la_SOURCES = $(_monitorhook_files) \
+        $(_monitorhook_headers) \
+        $(common_hook_srcs) \
+        $(common_srcs)
+libmonitor_fi_la_CPPFLAGS = $(AM_CPPFLAGS) \
+        -I$(top_srcdir)/prov/hook/include  \
+        -I$(top_srcdir)/prov/hook/perf/include \
+        -I$(top_srcdir)/prov/hook/monitor/include
+libmonitor_fi_la_LIBADD = $(linkback) $(monitorhook_shm_LIBS)
+libmonitor_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libmonitor_fi_la_DEPENDENCIES = $(linkback)
+
+else !HAVE_MONITOR_DL
+
+src_libfabric_la_SOURCES += $(_monitorhook_files) $(_monitorhook_headers)
+src_libfabric_la_LIBADD	+=	$(monitorhook_shm_LIBS)
+
+endif !HAVE_MONITOR_DL
+
+src_libfabric_la_CPPFLAGS += -I$(top_srcdir)/prov/hook/monitor/include
+
+endif HAVE_MONITOR

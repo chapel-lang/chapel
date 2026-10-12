@@ -39,11 +39,11 @@
 #include "rdma/fabric.h"
 
 struct fi_context {
-	void			*internal[4];
+	void *internal[4];
 };
 
 struct fi_context2 {
-	void			*internal[8];
+	void *internal[8];
 };
 #endif /* FABRIC_DIRECT */
 

@@ -1,0 +1,2 @@
+move-over-scalar-out.chpl:1: error: cannot promote function 'move' while keeping the formal 'out rhs' scalar
+move-over-scalar-out.chpl:1: note: 'out' actuals will be written to by each iteration of the promoted function, which can lead to races.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,13 +36,13 @@
 #include <utility>
 #include <vector>
 
-static std::map<FnSymbol*, FnSymbol*> wrapperMap;
-static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
-static std::map<FnSymbol*, Type*> wrapperRetTypeMap;
+static std::map<FnSymbol*, FnSymbol*, AstIdLess> wrapperMap;
+static std::map<ArgSymbol*, ArgSymbol*, AstIdLess> wrapperArgMap;
+static std::map<FnSymbol*, Type*, AstIdLess> wrapperRetTypeMap;
 
 Type* exportTypeChplByteBuffer = NULL;
 
-std::set<FnSymbol*> exportedStrRets;
+std::set<FnSymbol*, AstIdLess> exportedStrRets;
 
 static void resolveExportWrapperTypeAliases(void);
 static void attemptFixups(FnSymbol* fn);
@@ -65,24 +65,24 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 // generating code in later passes.
 //
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
-  std::map<FnSymbol*, FnSymbol*>::iterator it;
-  if ((it = wrapperMap.find(wrapper)) != wrapperMap.end()) {
+  auto it = wrapperMap.find(wrapper);
+  if (it != wrapperMap.end()) {
     return it->second;
   }
   return NULL;
 }
 
 ArgSymbol* getUnwrappedArg(ArgSymbol* arg) {
-  std::map<ArgSymbol*, ArgSymbol*>::iterator it;
-  if ((it = wrapperArgMap.find(arg)) != wrapperArgMap.end()) {
+  auto it = wrapperArgMap.find(arg);
+  if (it != wrapperArgMap.end()) {
     return it->second;
   }
   return NULL;
 }
 
 Type* getUnwrappedRetType(FnSymbol* fn) {
-  std::map<FnSymbol*, Type*>::iterator it;
-  if ((it = wrapperRetTypeMap.find(fn)) != wrapperRetTypeMap.end()) {
+  auto it = wrapperRetTypeMap.find(fn);
+  if (it != wrapperRetTypeMap.end()) {
     return it->second;
   }
   return NULL;
@@ -102,9 +102,6 @@ static void resolveExportWrapperTypeAliases(void) {
 }
 
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
-
-  if (fMinimalModules)
-    return;
 
   //
   // We have to resolve type aliases for export wrapper types even if we
@@ -213,7 +210,7 @@ static void attemptFixups(FnSymbol* fn) {
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
     if (wrapper == NULL) { wrapper = createWrapper(fn); }
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       exportedStrRets.insert(wrapper);
     }
     changeRetType(wrapper);
@@ -259,7 +256,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
                    || t == dtExternalArray || isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
-    bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
+    bool multiloc = fClientServerLibrary || strcmp(CHPL_COMM, "none");
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?

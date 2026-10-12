@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,15 +148,16 @@ BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
+BlockStmt* buildMatchStmt(
+  Expr* cond,
+  const std::vector<std::pair<VarSymbol*, BlockStmt*>>& casestmts,
+  BlockStmt* otherwise);
 
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 
-std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
-                                  Flag flag2 = FLAG_UNKNOWN);
-BlockStmt* buildVarDecls(BlockStmt* stmts,
-                         std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
+BlockStmt* buildVarDecls(BlockStmt* stmts);
 
 DefExpr*  buildClassDefExpr(const char*               name,
                             const char*               cname,
@@ -204,8 +205,7 @@ BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName,
                              Symbol*& outStoredResource);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
-                           ModTag modTag);
+Expr* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);

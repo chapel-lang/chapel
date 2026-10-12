@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+OUTPUT=$2
+
+grep -v 'lldb-server exiting' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
+grep -v 'Connection established' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
+grep -v 'Attached to process' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
+grep -v 'lldb-server-local_build' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT
+
+grep -v 'SIGINT(2)' $OUTPUT > $OUTPUT.tmp
+mv $OUTPUT.tmp $OUTPUT

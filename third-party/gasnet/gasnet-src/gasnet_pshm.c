@@ -1587,6 +1587,31 @@ void ampshm_commit(gasneti_AM_SrcDesc_t sd,
   ampshm_commit_inner(sd, 0, isReq, category, handler, nbytes, dest_addr, argptr);
 }
 
+// After sd, remaining params (isReq, category) will be manifest constants
+// which should lead to specialization of the code upon inlining.
+GASNETI_INLINE(ampshm_cancel)
+int ampshm_cancel(gasneti_AM_SrcDesc_t sd,
+                   const int isReq,
+                   const gasneti_category_t category)
+{
+  gasneti_assert(sd);
+
+  // Check for loopback
+  // TODO-EX: TBD: move outward to "nbrhd" layer or leave here?
+  if (sd->_pshm._loopback) {
+    return gasnetc_loopback_Cancel(sd, isReq, category);
+  }
+
+  // Release buffer without sending (normally done by the recipient)
+  gasneti_pshmnet_recv_release(NULL /*unused*/, sd->_void_p);
+
+  if (sd->_tofree) {
+    gasneti_free_npam_buffer(sd);
+  }
+
+  return GASNET_OK;
+}
+
 //
 // AM Request/Reply external interface
 //
@@ -1754,6 +1779,34 @@ void gasnetc_AMPSHM_CommitReplyLong(
                 size_t nbytes, void *dest_addr, va_list argptr)
 {
   ampshm_commit(sd, 0, gasneti_Long, handler, nbytes, dest_addr, argptr);
+}
+
+int gasnetc_AMPSHM_CancelRequestMedium(
+                gasneti_AM_SrcDesc_t sd,
+                gex_Flags_t          flags)
+{
+  return ampshm_cancel(sd, 1, gasneti_Medium);
+}
+
+int gasnetc_AMPSHM_CancelReplyMedium(
+                gasneti_AM_SrcDesc_t sd,
+                gex_Flags_t          flags)
+{
+  return ampshm_cancel(sd, 0, gasneti_Medium);
+}
+
+int gasnetc_AMPSHM_CancelRequestLong(
+                gasneti_AM_SrcDesc_t sd,
+                gex_Flags_t          flags)
+{
+  return ampshm_cancel(sd, 1, gasneti_Long);
+}
+
+int gasnetc_AMPSHM_CancelReplyLong(
+                gasneti_AM_SrcDesc_t sd,
+                gex_Flags_t          flags)
+{
+  return ampshm_cancel(sd, 0, gasneti_Long);
 }
 
 #endif /* GASNET_PSHM */

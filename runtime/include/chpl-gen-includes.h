@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,8 +29,8 @@
 //
 
 #include "chpl-comm-compiler-macros.h"
-#include "chplcgfns.h"
 #include "chpl-locale-model.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 
@@ -43,11 +43,12 @@ extern "C" {
 // one argument.
 //
 static inline
-void chpl_ftable_call(chpl_fn_int_t fid, void* bundle)
-{
-  (*chpl_ftable[fid])(bundle);
+void chpl_rt_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                         void* bundle) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
+  const chpl_fn_p on_fn = chpl_ftable[fid];
+  on_fn(bundle);
 }
-
 
 // used for converting between the Chapel idea of a locale ID: chpl_localeID_t
 // and the runtime idea of a locale ID: c_localeid_t.
@@ -64,7 +65,7 @@ chpl_localeID_t id_rt2pub(c_localeid_t i)
 {
   return chpl_rt_buildLocaleID(i >> 32, i & 0xffffffff);
 }
-extern void chpl_getLocaleID (chpl_localeID_t* localeID,  int64_t _ln, int32_t _fn);
+extern void chpl_getLocaleID (chpl_localeID_t* localeID, int32_t _ln, int32_t _fn);
 static inline
 chpl_localeID_t chpl_gen_getLocaleID(void)
 {

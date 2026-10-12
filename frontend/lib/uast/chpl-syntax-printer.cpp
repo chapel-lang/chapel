@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,6 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::PROC: return "proc";
     case Function::Kind::ITER: return "iter";
     case Function::Kind::OPERATOR: return "operator";
-    case Function::Kind::LAMBDA: return "lambda";
   }
   CHPL_ASSERT(false);
   return "";
@@ -1178,6 +1177,24 @@ struct ChplSyntaxVisitor {
     printAst(node->expr());
     ss_ << " ";
     interpose(node->whenStmts(), "\n", "{\n", "\n}", ";", true);
+  }
+
+  void visit(const Match* node) {
+    ss_ << "union select ";
+    printAst(node->expr());
+    ss_ << " ";
+    interpose(node->allCaseStmts(), "\n", "{\n", "\n}", ";", true);
+  }
+
+  void visit(const MatchCase* node) {
+    if (node->isOtherwise()) {
+      ss_ << "otherwise ";
+    } else {
+      ss_ << "when ";
+      printAst(node->expr());
+      ss_ << " ";
+    }
+    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
   }
 
   void visit(const Serial* node) {

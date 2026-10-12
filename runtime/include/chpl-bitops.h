@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,7 +47,7 @@ extern "C" {
 // the same assembly as the builtin under clang
 // Returns: number of bits set in the provided integer
 
-MAYBE_GPU static inline uint32_t chpl_bitops_popcount_32(unsigned int x) {
+MAYBE_GPU static inline uint32_t chpl_bitops_popcount_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - gcc4.3's doesn't have support for popcnt and the like
@@ -62,12 +62,12 @@ MAYBE_GPU static inline uint32_t chpl_bitops_popcount_32(unsigned int x) {
 #endif
 }
 
-MAYBE_GPU static inline uint64_t chpl_bitops_popcount_64(unsigned long long x) {
+MAYBE_GPU static inline uint64_t chpl_bitops_popcount_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // Assumes 'long long's are 64bit
   return __builtin_popcountll(x);
 #else
-#define T unsigned long long
+#define T uint64_t
   x = x - ((x >> 1) & (T)~(T)0/3);
   x = (x & (T)~(T)0/15*3) + ((x >> 2) & (T)~(T)0/15*3);
   x = (x + (x >> 4)) & (T)~(T)0/255*15;
@@ -84,7 +84,7 @@ MAYBE_GPU static inline uint64_t chpl_bitops_popcount_64(unsigned long long x) {
 
 // TODO: find a better bit hack to do this? the popcount at the end makes it
 //       roughly twice as slow as the others
-MAYBE_GPU static inline uint32_t chpl_bitops_clz_32(unsigned int x) {
+MAYBE_GPU static inline uint32_t chpl_bitops_clz_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - __builtin_clz(0) is undefined, return 32 when 0, these conditionals
@@ -107,7 +107,7 @@ MAYBE_GPU static inline uint32_t chpl_bitops_clz_32(unsigned int x) {
 #endif
 }
 
-MAYBE_GPU static inline uint64_t chpl_bitops_clz_64(unsigned long long x) {
+MAYBE_GPU static inline uint64_t chpl_bitops_clz_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'long long's are 64bit
   // - Same as above, __builtin_clzll(0) is undefined, return 64 when 0
@@ -135,7 +135,7 @@ MAYBE_GPU static inline uint64_t chpl_bitops_clz_64(unsigned long long x) {
 // Lookup table for the C implementation
 extern const uint8_t chpl_bitops_debruijn32[32];
 
-MAYBE_GPU static inline uint32_t chpl_bitops_ctz_32(unsigned int x) {
+MAYBE_GPU static inline uint32_t chpl_bitops_ctz_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // - Assumes 'int's are 32bit
   // - __builtin_ctz(0) is undefined, return 0 when 0
@@ -154,7 +154,7 @@ MAYBE_GPU static inline uint32_t chpl_bitops_ctz_32(unsigned int x) {
 // Lookup table for the C implementation
 extern const uint8_t chpl_bitops_debruijn64[64];
 
-MAYBE_GPU static inline uint64_t chpl_bitops_ctz_64(unsigned long long x) {
+MAYBE_GPU static inline uint64_t chpl_bitops_ctz_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // Assumes 'long long's are 64bit
   // __builtin_ctzll(0) is undefined, return 0 when 0
@@ -173,7 +173,7 @@ MAYBE_GPU static inline uint64_t chpl_bitops_ctz_64(unsigned long long x) {
 // Returns: 0 if an even number of bits are set
 //          1 if an odd number of bits are set
 
-MAYBE_GPU static inline uint32_t chpl_bitops_parity_32(unsigned int x) {
+MAYBE_GPU static inline uint32_t chpl_bitops_parity_32(uint32_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   // This will expand to (confirmed w/ GCC):
   // When`popcnt` is supported:    Otherwise:
@@ -195,7 +195,7 @@ MAYBE_GPU static inline uint32_t chpl_bitops_parity_32(unsigned int x) {
 #endif
 }
 
-MAYBE_GPU static inline uint64_t chpl_bitops_parity_64(unsigned long long x) {
+MAYBE_GPU static inline uint64_t chpl_bitops_parity_64(uint64_t x) {
 #if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
   return __builtin_parityll(x);
 #else
@@ -235,7 +235,7 @@ CHPL_BITOPS_ROTL(64)
 //     http://blog.regehr.org/archives/1063
 // These should be recognized by the backend C compiler and turned into a ror
 //
-// Returns: x rotated left by n
+// Returns: x rotated right by n
 
 #define CHPL_BITOPS_ROTR(size) \
 MAYBE_GPU static inline UI(size) chpl_bitops_rotr_##size(UI(size) x, UI(size) n) { \

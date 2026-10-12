@@ -6,6 +6,7 @@ From: amazonlinux:2023
     ../../provision-scripts/* /provision-scripts/
 
 %post
+    /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-deps.sh
     # this installs clang 14 / llvm 14
     dnf -y install clang clang-devel llvm-devel

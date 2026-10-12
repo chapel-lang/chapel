@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,11 @@
 #include "python-type-helper.h"
 
 template <typename ObjectType>
-struct PerTypeMethods;
+struct PerTypeMethods {
+  static constexpr PyMethodDef methods[] = {
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
 
 struct ContextObject;
 

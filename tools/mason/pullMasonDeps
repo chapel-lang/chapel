@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+
+MASON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+MASON_THIRD_PARTY_DIRECTORY=${MASON_THIRD_PARTY_DIRECTORY:-$MASON_DIR/ThirdParty}
+MASON_THIRD_PARTY_DEPS_LIST=${MASON_THIRD_PARTY_DEPS_LIST:-$MASON_THIRD_PARTY_DIRECTORY/masonDeps.txt}
+
+# if masonDeps does not exist, skip
+if [ ! -f "$MASON_THIRD_PARTY_DEPS_LIST" ]; then
+  echo "No masonDeps.txt found, skipping dependency download"
+  exit 0
+fi
+
+# clear downloaded files before trying to download more
+rm -f $MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
+rm -f $MASON_THIRD_PARTY_DIRECTORY/*.chpl
+
+while IFS= read -r line; do
+  # skip empty lines and comments
+  [[ -z "$line" || "$line" == \#* ]] && continue
+
+  # FORMAT: FILENAME@URL@SHA
+  filename=$(echo "$line" | cut -d '@' -f 1)
+  url=$(echo "$line" | cut -d '@' -f 2)
+  sha=$(echo "$line" | cut -d '@' -f 3)
+
+  rm -f $MASON_THIRD_PARTY_DIRECTORY/$filename
+  if command -v curl > /dev/null; then
+    # use curl if available
+    curl -sSfL "$url" -o "$MASON_THIRD_PARTY_DIRECTORY/$filename"
+  else
+    # fall back to python
+    python3 -c "import urllib.request; urllib.request.urlretrieve('$url', '$MASON_THIRD_PARTY_DIRECTORY/$filename')"
+  fi
+  if [ ! -f "$MASON_THIRD_PARTY_DIRECTORY/$filename" ]; then
+    echo "Failed to download $filename from $url"
+    exit 1
+  fi
+
+  # verify the sha256
+  (cd $MASON_THIRD_PARTY_DIRECTORY/ && echo "$sha  $filename" | shasum -a 256 -c -)
+  if [ $? -ne 0 ]; then
+    echo "SHA256 verification failed for $filename"
+    exit 1
+  fi
+
+  echo "Downloaded $filename"
+done < "$MASON_THIRD_PARTY_DEPS_LIST"
+
+echo "this file indicates a successful run">$MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
+
+echo "Patching includes to be relative..."
+# because we have shoved these dependencies into a submodule, we need to fix the
+# includes to be relative.
+for dep in $MASON_THIRD_PARTY_DIRECTORY/*.chpl; do
+  modName=$(basename $dep .chpl)
+  for other in $MASON_THIRD_PARTY_DIRECTORY/*.chpl; do
+  otherName=$(basename $other .chpl)
+    if grep -q "import $modName" $other; then
+      if [ "$otherName" != "$modName" ]; then
+        sed "s/import $modName/import super.$modName/g" $other > $other.tmp && mv $other.tmp $other
+      else
+        # relative imports to ourselves need to use the parent module name
+        sed "s/import $modName/import ThirdParty.${modName}/g" $other > $other.tmp && mv $other.tmp $other
+      fi
+    fi
+  done
+done

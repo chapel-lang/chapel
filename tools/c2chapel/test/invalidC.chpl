@@ -1,1 +1,1 @@
-Unable to parse file: invalidC.h:2:6: before: foo
+Unable to parse file: invalidC.h:2:1: Invalid function definition

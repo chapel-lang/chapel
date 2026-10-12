@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,7 +56,6 @@ AggregateType::AggregateType(AggregateTag initTag) :
   initializerResolved = false;
   iteratorInfo        = NULL;
   thunkInvoke         = NULL;
-  doc                 = NULL;
 
   instantiatedFrom    = NULL;
 
@@ -303,13 +302,13 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
 
 static bool doFieldIsGeneric(Symbol* field,
                              bool &hasDefault,
-                             std::set<AggregateType*>& visited);
+                             std::set<AggregateType*, AstIdLess>& visited);
 
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
 static bool isFieldTypeExprGeneric(Expr* typeExpr,
-                                   std::set<AggregateType*>& visited) {
+                                   std::set<AggregateType*, AstIdLess>& visited) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
 
@@ -346,10 +345,17 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
         // If it's a generic type that has default values
         // for all of it's generic attributes, it won't
         // make this type generic.
+        //
+        // Create a new 'visited' for each recursive call here to avoid
+        // polluting subsequent fields that oughtn't be marked recursive.
+        // Only types we've seen "on the path" to the current type should
+        // be in the visited set.
         bool foundGenericWithoutInit = false;
         for_fields(field, at) {
           bool hasDefault = false;
-          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visited);
+
+          auto visitedHere = visited;
+          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visitedHere);
           if (fieldGeneric && !hasDefault)
             foundGenericWithoutInit = true;
         }
@@ -365,7 +371,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
 
 static bool doFieldIsGeneric(Symbol* field,
                              bool &hasDefault,
-                             std::set<AggregateType*>& visited) {
+                             std::set<AggregateType*, AstIdLess>& visited) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -403,7 +409,7 @@ static bool doFieldIsGeneric(Symbol* field,
 }
 
 bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
-  std::set<AggregateType*> visited;
+  std::set<AggregateType*, AstIdLess> visited;
 
   return doFieldIsGeneric(field, hasDefault, visited);
 }
@@ -574,6 +580,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+    forwarding->parentSymbol = symbol;
+
   } else if (isEndOfStatementMarker(expr)) {
     // drop it
   } else {
@@ -626,12 +634,10 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
                                                        dtMethodToken)));
     }
 
-    if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
-      arg->type = this;
-      // workaround: clear the typeExpr
-      // (it is confusing the production scope resolver)
-      arg->typeExpr = nullptr;
-    }
+    arg->type = this;
+    // workaround: clear the typeExpr
+    // (it is confusing the production scope resolver)
+    arg->typeExpr = nullptr;
 
     if (fn->name == astrInitEquals) {
       if (fn->numFormals() != 3) { // mt, this, other
@@ -1083,7 +1089,7 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
 static void checkValidPartial(Expr* expr, Expr* errExpr, const char* errTypeString) {
   std::vector<SymExpr*> ses;
   collectSymExprs(expr, ses);
-  std::set<Symbol*> syms;
+  std::set<Symbol*, AstIdLess> syms;
   for_vector(SymExpr, se, ses) {
     syms.insert(se->symbol());
   }
@@ -1571,12 +1577,12 @@ static const char* buildValueName(Symbol* field, bool cname) {
         ret += buf;
       }
 
-      if (is_int_type(type) ||
-          is_uint_type(type) ||
-          is_bool_type(type) ||
-          is_real_type(type) ||
-          is_imag_type(type) ||
-          is_complex_type(type)) {
+      if (isIntType(type) ||
+          isUIntType(type) ||
+          isBoolType(type) ||
+          isRealType(type) ||
+          isImagType(type) ||
+          isComplexType(type)) {
         if (!isNumericParamDefaultType(type)) {
           if (!cname) {
             ret += ":";
@@ -1585,7 +1591,7 @@ static const char* buildValueName(Symbol* field, bool cname) {
             // TODO: The result of this is kind of weird. For example, if I have
             // a param uint(8) of '100' the string will be '1008'.
             char buf[16];
-            snprintf(buf, sizeof(buf), "%i", get_width(type));
+            snprintf(buf, sizeof(buf), "%i", getWidthOfType(type));
             ret += buf;
           }
         }
@@ -1757,7 +1763,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
       // See param/ferguson/mismatched-param-type-error.chpl for an example
       // where this check is necessary.
       //
-      if (expected != NULL && expected != symType) {
+      if (expected != NULL && expected != symType && expected != dtUnknown) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
@@ -2163,7 +2169,6 @@ void AggregateType::processGenericFields() {
     }
   }
 
-  std::set<AggregateType*> visited;
 
   foundGenericFields = true;
   bool anyDefaultedGenericFields = false;
@@ -2191,6 +2196,8 @@ void AggregateType::processGenericFields() {
   for_fields(field, this) {
     if (field->hasFlag(FLAG_SUPER_CLASS)) continue;
 
+    std::set<AggregateType*, AstIdLess> visited;
+
     if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE)) {
       if (isTypeSymbol(field) == false) {
         genericFields.push_back(field);
@@ -2200,7 +2207,8 @@ void AggregateType::processGenericFields() {
           anyDefaultedGenericFields = true;
         }
       }
-    } else if (field->defPoint->init == NULL) {
+    } else if (field->defPoint->init == NULL &&
+        !this->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
         allDefaultedGenericFields = false;
@@ -2233,28 +2241,61 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
   return retval;
 }
 
+// start building a compiler-generated init method; after this, its
+// arguments and body should be defined
+//
+static FnSymbol* startBuildingInitFn(AggregateType* agg) {
+  FnSymbol*  fn    = new FnSymbol("init");
+  ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", agg);
+
+  fn->cname = fn->name;
+  fn->_this = _this;
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+  _this->addFlag(FLAG_ARG_THIS);
+
+  fn->insertFormalAtTail(_mt);
+  fn->insertFormalAtTail(_this);
+
+  return fn;
+}
+
+// wrap up the building of a compiler-generated init method once its
+// arguments and body have been defined
+//
+static void finalizeInitFn(AggregateType* agg, FnSymbol* fn) {
+  DefExpr* def = new DefExpr(fn);
+  agg->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  preNormalizeInitMethod(fn);
+
+  normalize(fn);
+
+  // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+  // that we would emit two use-before-def errors for classes because of
+  // the generated _new function.
+  checkUseBeforeDefs(fn);
+
+  agg->methods.add(fn);
+}
+
+
+
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
-
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+    FnSymbol* fn = startBuildingInitFn(this);
     fn->addFlag(FLAG_DEFAULT_INIT);
 
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
-
-    if (this->isUnion() == false) {
+    if (!this->isUnion()) {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
@@ -2269,40 +2310,63 @@ void AggregateType::buildDefaultInitializer() {
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
 
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
-        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
-        // that we would emit two use-before-def errors for classes because of
-        // the generated _new function.
-        checkUseBeforeDefs(fn);
-
-        methods.add(fn);
+        finalizeInitFn(this, fn);
 
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
-    } else {
-      DefExpr* def = new DefExpr(fn);
-      symbol->defPoint->insertBefore(def);
-
-      fn->setMethod(true);
-      fn->addFlag(FLAG_METHOD_PRIMARY);
-
+    } else {  // Handle unions
+      /* 0-arg initializer */
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new_IntSymbol(0)));
+                                    new_IntSymbol(-1)));
 
-      normalize(fn);
+      finalizeInitFn(this, fn);
 
-      methods.add(fn);
+      /* 1-arg initializers */
+      for_fields(fieldDefExpr, this) {
+        SET_LINENO(this);
+        FnSymbol* fn = startBuildingInitFn(this);
+
+        {
+          SET_LINENO(fieldDefExpr);
+          VarSymbol* field = toVarSymbol(fieldDefExpr);
+          if (!field) {
+            INT_FATAL("unexpected: fieldDefExpr can't be made a VarSymbol");
+          }
+          INT_ASSERT(!field->hasFlag(FLAG_SUPER_CLASS));
+
+          DefExpr* defPoint = field->defPoint;
+          const char* name = field->name;
+          ArgSymbol* arg = new ArgSymbol(INTENT_IN, name, dtUnknown);
+
+          if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+            USR_FATAL(arg, "union types don't currently support `type` or `param` fields");
+          }
+
+          {
+            SET_LINENO(field);
+
+            if (field->hasFlag(FLAG_UNSAFE))
+              arg->addFlag(FLAG_UNSAFE);
+
+            if (defPoint->exprType == NULL) {
+              USR_FATAL(field, "currently, union fields must have a declared type");
+            } else if (defPoint->init == NULL) {
+              fieldToArgType(defPoint, arg);
+            } else {
+              USR_FATAL(field, "currently, union fields cannot have initializer expressions");
+            }
+            fn->insertFormalAtTail(arg);
+            fn->insertAtTail(new CallExpr("=", new CallExpr(".",
+                                                            fn->_this,
+                                                            new_CStringSymbol(name)),
+                                          arg));
+          }
+        }
+
+        finalizeInitFn(this, fn);
+      }
     }
 
     builtDefaultInit = true;
@@ -2310,9 +2374,9 @@ void AggregateType::buildDefaultInitializer() {
 }
 
 static bool hasFullyGenericField(AggregateType* at) {
-  std::set<AggregateType*> visited;
 
   for_fields(field, at) {
+    std::set<AggregateType*, AstIdLess> visited;
     DefExpr* defExpr = field->defPoint;
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM) &&
         !field->hasFlag(FLAG_SUPER_CLASS)) {
@@ -2361,9 +2425,7 @@ void AggregateType::buildReaderInitializer() {
   if (builtReaderInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+    FnSymbol* fn = startBuildingInitFn(this);
 
     ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
     ArgSymbol* deser  = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
@@ -2373,21 +2435,10 @@ void AggregateType::buildReaderInitializer() {
     fn->where = new BlockStmt(new CallExpr("chpl__isFileReader",
                               new CallExpr(PRIM_TYPEOF, reader)));
 
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(reader);
     fn->insertFormalAtTail(deser);
 
-    if (this->isUnion() == false) {
+    if (!this->isUnion()) {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
@@ -2417,17 +2468,7 @@ void AggregateType::buildReaderInitializer() {
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
-
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
+        finalizeInitFn(this, fn);
 
         // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
         // that we would emit two use-before-def errors for classes because of
@@ -2459,8 +2500,6 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
   int fieldNum = isClass() ? -1 : 0;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
-    fieldNum += 1;
-
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
 
@@ -2511,7 +2550,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         //
         // A generic field.  Could be type/param/variable
         //
-        if        (defPoint->exprType == NULL && defPoint->init == NULL) {
+        if (defPoint->exprType == NULL && defPoint->init == NULL) {
           arg->type = dtAny;
 
 
@@ -2598,6 +2637,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         }
       }
     }
+    fieldNum += 1;
   }
 }
 
@@ -2783,11 +2823,11 @@ void AggregateType::buildCopyInitializer() {
       fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
 
     } else if (aggregateTag == AGGREGATE_UNION) {
-      // set field ID to 0 and then rely on field accessor
+      // set field ID to -1 and then rely on field accessor
       // call below to set it to the right value (and default init)
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new_IntSymbol(0)));
+                                    new_IntSymbol(-1)));
 
       for_fields(fieldDefExpr, this) {
         if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
@@ -2908,7 +2948,7 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
 ************************************** | *************************************/
 
 void AggregateType::addClassToHierarchy() {
-  std::set<AggregateType*> localSeen; // classes in potential cycle
+  std::set<AggregateType*, AstIdLess> localSeen; // classes in potential cycle
 
   addClassToHierarchy(localSeen);
 }
@@ -2928,9 +2968,9 @@ static BlockStmt* getEnclosingBlockForImplements(Symbol* sym) {
   }
 }
 
-void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
+void AggregateType::addClassToHierarchy(std::set<AggregateType*, AstIdLess>& localSeen) {
   // classes already in hierarchy
-  static std::set<AggregateType*> globalSeen;
+  static std::set<AggregateType*, AstIdLess> globalSeen;
 
   if (localSeen.find(this)  != localSeen.end())  {
     USR_FATAL(this, "Class hierarchy is cyclic");
@@ -3006,12 +3046,14 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     if (isClass() == true) {
       SET_LINENO(this);
 
-      // For a class, just add a super class pointer.
-      VarSymbol* super = new VarSymbol("super", pt);
+      if (!this->wasResolvedEarly() ) {
+        // For a class, just add a super class pointer.
+        VarSymbol* super = new VarSymbol("super", pt);
 
-      super->addFlag(FLAG_SUPER_CLASS);
+        super->addFlag(FLAG_SUPER_CLASS);
 
-      fields.insertAtHead(new DefExpr(super));
+        fields.insertAtHead(new DefExpr(super));
+      }
 
     } else {
       SET_LINENO(this);
@@ -3096,18 +3138,18 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
     USR_FATAL(storesName, "Illegal super class %s", ts->name);
   }
 
-  if (isUnion() == true && pt->isUnion() == true) {
+  if (isUnion() && pt->isUnion()) {
     USR_FATAL(storesName, "Illegal inheritance involving union type");
   }
 
-  if (isRecord() == true && pt->isClass() == true) {
+  if (isRecord() && pt->isClass()) {
     USR_FATAL(storesName,
               "Record %s inherits from class %s",
               symbol->name,
               pt->symbol->name);
   }
 
-  if (isClass() == true && pt->isRecord() == true) {
+  if (isClass() && pt->isRecord()) {
     USR_FATAL(storesName,
               "Class %s inherits from record %s",
               symbol->name,
@@ -3118,9 +3160,10 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
-  bool isInit = (strcmp(fn->name, "init")   == 0);
+  bool isInit = (strcmp(fn->name, "init") == 0);
+  bool isInitEquals = (strcmp(fn->name, "init=") == 0);
 
-  if (isInit) {
+  if (isInit || isInitEquals) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
@@ -3132,7 +3175,15 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
       USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
 
-    if (ct->hasUserDefinedInit == false) {
+    // For a user-defined union initializer to work properly, the active
+    // field indicator must be initialized to -1
+    if (ct->isUnion()) {
+      fn->insertAtHead(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new_IntSymbol(-1)));
+    }
+
+    if (isInit && ct->hasUserDefinedInit == false) {
       // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
       if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
@@ -3152,7 +3203,11 @@ void AggregateType::addRootType() {
     if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
       SET_LINENO(this);
 
-      VarSymbol* super = new VarSymbol("super", dtObject);
+      if (!symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        VarSymbol* super = new VarSymbol("super", dtObject);
+        super->addFlag(FLAG_SUPER_CLASS);
+        fields.insertAtHead(new DefExpr(super));
+      }
 
       dispatchParents.add(dtObject);
 
@@ -3160,10 +3215,6 @@ void AggregateType::addRootType() {
       if (dtObject->dispatchChildren.add_exclusive(this) == false) {
         INT_ASSERT(false);
       }
-
-      super->addFlag(FLAG_SUPER_CLASS);
-
-      fields.insertAtHead(new DefExpr(super));
     }
   }
 }
@@ -3333,6 +3384,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     tsDec->copyFlags(at->symbol);
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->unstableMsg = at->symbol->unstableMsg;
+    tsDec->firstEdition = at->symbol->firstEdition;
+    tsDec->lastEdition = at->symbol->lastEdition;
     tsDec->addFlag(FLAG_NO_OBJECT);
     // this flag avoids scope resolve considering it duplicative
     tsDec->addFlag(FLAG_TEMP);
@@ -3403,4 +3456,8 @@ Type* AggregateType::finalArrayElementType() const {
     arrayType = toAggregateType(ret);
   } while (arrayType && arrayType->symbol->hasFlag(FLAG_ARRAY));
   return ret;
+}
+
+void AggregateType::addInstantiation(AggregateType* at) {
+  instantiations.push_back(at);
 }

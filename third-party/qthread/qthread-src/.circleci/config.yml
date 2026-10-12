@@ -8,32 +8,35 @@ jobs:
         type: string
       topology:
         type: string
-    machine:
-      image: ubuntu-2404:edge
+    #machine:
+    #  image: ubuntu-2504:edge
+    docker:
+      - image: ubuntu:25.04
     resource_class: arm.medium
     environment:
-      CC: gcc-14
-      CXX: g++-14
+      CC: gcc-15
+      CXX: g++-15
     steps:
       - run: |
+          apt-get update --quiet=2 || apt-get update --quiet=2 || apt-get update --quiet=2
+          apt-get install -y sudo
+          sudo apt-get install -y git # Updating and installing sudo and git is only neccesary in a container.
+          # Installing sudo is just so that the later commands using sudo can be the same whether in a container or not.
           export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
           git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
       - run: |
-          sudo apt-add-repository -y universe
-          sudo apt-get install -y gcc-14 g++-14
+          sudo apt-get install -y gcc-15 g++-15
           sudo apt-get install -y cmake
           sudo apt-get install -y hwloc libhwloc-dev
       - run: |
           mkdir build
-          pushd build
+          cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
           make -j2 VERBOSE=1
-          popd
       - run:
           command: |
-              pushd build
+              cd build
               CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 2m make test VERBOSE=1
-              popd
           no_output_timeout: 180s
 
   arm_clang:
@@ -42,35 +45,42 @@ jobs:
         type: string
       topology:
         type: string
-    machine:
-      image: ubuntu-2404:edge
+    #machine:
+    #  image: ubuntu-2504:edge
+    docker:
+      - image: ubuntu:25.04
     resource_class: arm.medium
     environment:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
     steps:
       - run: |
+          apt-get update --quiet=2 || apt-get update --quiet=2 || apt-get update --quiet=2
+          apt-get install -y sudo
+          sudo apt-get install -y git # Updating and installing sudo and git is only neccesary in a container.
+          # Installing sudo is just so that the later commands using sudo can be the same whether in a container or not.
           export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
           git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
       - run: |
-          sudo apt-add-repository -y universe
-          sudo apt-get install -y gcc-14 g++-14
+          # tzdata is required by clang and software-properties-common and has to be installed carefully to avoid user prompts stalling the script.
+          ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends tzdata
+          sudo apt-get install -y wget software-properties-common # Only needed in container.
+          sudo apt-get install -y gcc-15 g++-15
           sudo apt-get install -y cmake
           sudo apt-get install -y hwloc libhwloc-dev
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository -y 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main'
-          sudo apt-get install -y clang-19
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo apt-add-repository -y 'deb https://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main'
+          sudo apt-get install -y clang-21
       - run: |
           mkdir build
-          pushd build
+          cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
           make -j2 VERBOSE=1
-          popd
       - run:
           command: |
-              pushd build
+              cd build
               CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 2m make test VERBOSE=1
-              popd
           no_output_timeout: 180s
 
   arm_sanitizers:
@@ -81,12 +91,14 @@ jobs:
         type: string
       sanitizer:
         type: string
-    machine:
-      image: ubuntu-2404:edge
+    #machine:
+    #  image: ubuntu-2504:edge
+    docker:
+      - image: ubuntu:25.04
     resource_class: arm.medium
     environment:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       CFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
       CXXFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
       LDFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
@@ -94,25 +106,31 @@ jobs:
       ASAN_OPTIONS: "check_initialization_order=1"
     steps:
       - run: |
+          apt-get update --quiet=2 || apt-get update --quiet=2 || apt-get update --quiet=2
+          apt-get install -y sudo
+          sudo apt-get install -y git # Updating and installing sudo and git is only neccesary in a container.
+          # Installing sudo is just so that the later commands using sudo can be the same whether in a container or not.
           export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
           git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
       - run: |
-          sudo apt-add-repository -y universe
-          sudo apt-get install -y gcc-14 g++-14
+          # tzdata is required by clang and software-properties-common and has to be installed carefully to avoid user prompts stalling the script.
+          ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends tzdata
+          sudo apt-get install -y wget software-properties-common # Only needed in container.
+          sudo apt-get install -y gcc-15 g++-15
           sudo apt-get install -y cmake
           sudo apt-get install -y hwloc libhwloc-dev
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository -y 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main'
-          sudo apt-get install -y clang-19
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo apt-add-repository -y 'deb https://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main'
+          sudo apt-get install -y clang-21
       - run: |
           mkdir build
-          pushd build
+          cd build
           cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
           make -j2 VERBOSE=1
-          popd
       - run:
           command: |
-              pushd build
+              cd build
               if [[ "<< parameters.sanitizer >>" == "thread" ]]; then cd test/basics; fi
               CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 4m make test VERBOSE=1
           no_output_timeout: 180s
@@ -190,13 +208,12 @@ jobs:
           if [ ${MACHINE_TYPE} == 'x86_64' ]; then echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list; fi
           if [ ${MACHINE_TYPE} == 'aarch64' ]; then echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/arm64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list; fi
           sudo apt-get update -y
-          sudo apt-get install -y nvhpc-24-9
-          sudo apt-get install -y cmake
-          sudo apt-get install -y hwloc libhwloc-dev
+          sudo apt-get install -y cmake gcc g++ gfortran hwloc libhwloc-dev
+          sudo apt-get install -y nvhpc-26-1
       - run: |
           export MACHINE_TYPE=`uname -m`
-          if [ ${MACHINE_TYPE} == 'x86_64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_x86_64/24.9/compilers/bin"; fi
-          if [ ${MACHINE_TYPE} == 'aarch64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_aarch64/24.9/compilers/bin"; fi
+          if [ ${MACHINE_TYPE} == 'x86_64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_x86_64/26.1/compilers/bin"; fi
+          if [ ${MACHINE_TYPE} == 'aarch64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_aarch64/26.1/compilers/bin"; fi
           nvc --version
           mkdir build
           pushd build
@@ -229,7 +246,7 @@ jobs:
           export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
           git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
       - run: |
-          apk add --no-cache --no-progress bash make musl-dev hwloc-dev cmake gcc g++
+          apk add --no-cache --no-progress bash make musl-dev hwloc-dev cmake gcc g++ linux-headers
           if [ "<< parameters.compiler >>" == "clang" ]; then apk add clang; fi
       - run: |
           if [ "<< parameters.compiler >>" == "clang" ]; then export CC=clang && export CXX=clang++; fi

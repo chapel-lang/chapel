@@ -1,0 +1,2 @@
+FirstClassProceduresAnonymousFormal.chpl:7: In function 'baz':
+FirstClassProceduresAnonymousFormal.chpl:7: error: formals in a procedure definition must be named

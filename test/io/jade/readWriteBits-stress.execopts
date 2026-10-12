@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+
+import os
+
+small = "--n=100_000"
+skips = [
+    ("--baseline", "COMPOPTS"),
+    ("--memLeaks", "EXECOPTS"),
+    ("--memLeaksLog", "EXECOPTS"),
+    ("address", "CHPL_SANITIZE_EXE"),
+    ("on", "CHPL_TEST_VGRND_EXE"),
+]
+if any(flag in os.getenv(env, "") for flag, env in skips):
+    print(small)
+else:
+    print(" ")

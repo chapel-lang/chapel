@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include "efa_rdm_protocol.h"
+#include "efa_rdm_peer.h"
 
 /**
  * @brief information of a REQ packet type
@@ -115,6 +115,38 @@ bool efa_rdm_pkt_type_is_longcts_req(int pkt_type)
 	case EFA_RDM_DC_LONGCTS_MSGRTM_PKT:
 	case EFA_RDM_DC_LONGCTS_TAGRTM_PKT:
 	case EFA_RDM_DC_LONGCTS_RTW_PKT:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+/**
+ * @brief determine whether a req pkt type is RTM
+ *
+ * @param[in]		pkt_type		REQ packet type
+ * @return		a boolean
+ */
+static inline
+bool efa_rdm_pkt_type_is_rtm(int pkt_type)
+{
+	switch(pkt_type) {
+	case EFA_RDM_EAGER_MSGRTM_PKT:
+	case EFA_RDM_EAGER_TAGRTM_PKT:
+	case EFA_RDM_DC_EAGER_MSGRTM_PKT:
+	case EFA_RDM_DC_EAGER_TAGRTM_PKT:
+	case EFA_RDM_MEDIUM_MSGRTM_PKT:
+	case EFA_RDM_MEDIUM_TAGRTM_PKT:
+	case EFA_RDM_DC_MEDIUM_MSGRTM_PKT:
+	case EFA_RDM_DC_MEDIUM_TAGRTM_PKT:
+	case EFA_RDM_LONGCTS_MSGRTM_PKT:
+	case EFA_RDM_LONGCTS_TAGRTM_PKT:
+	case EFA_RDM_DC_LONGCTS_MSGRTM_PKT:
+	case EFA_RDM_DC_LONGCTS_TAGRTM_PKT:
+	case EFA_RDM_LONGREAD_MSGRTM_PKT:
+	case EFA_RDM_LONGREAD_TAGRTM_PKT:
+	case EFA_RDM_RUNTREAD_MSGRTM_PKT:
+	case EFA_RDM_RUNTREAD_TAGRTM_PKT:
 		return 1;
 	default:
 		return 0;

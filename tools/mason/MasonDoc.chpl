@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,12 +18,21 @@
  * limitations under the License.
  */
 
+/**/
+module MasonDoc {
+
 use ArgumentParser;
 use FileSystem;
 use IO;
 use MasonHelp;
 use MasonUtils;
+import MasonLogger;
 use List only list;
+
+import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
+
+private var log = MasonLogger.getLogger("mason doc");
 
 proc masonDoc(args: [] string) throws {
 
@@ -31,47 +40,87 @@ proc masonDoc(args: [] string) throws {
   var passArgs = parser.addPassThrough();
   parser.parseArgs(args);
 
-  try! {
-    const tomlName = 'Mason.toml';
-    const cwd = here.cwd();
+  const tomlName = "Mason.toml";
+  const projectHome = getProjectHome(path.cwd(), tomlName);
+  const tomlPath = projectHome / tomlName;
 
-    const projectHome = getProjectHome(cwd, tomlName);
-    const tomlPath = projectHome + "/" + tomlName;
+  const toParse = open(tomlPath, ioMode.r);
+  var tomlFile = parseToml(toParse);
 
-    const toParse = open(projectHome + "/" + tomlName, ioMode.r);
-    var tomlFile = parseToml(toParse);
+  const projectName = tomlFile["brick.name"]!.s;
+  const projectFile = projectName + ".chpl";
 
-    const projectName = tomlFile["brick"]!["name"]!.s;
-    const projectFile = projectName + '.chpl';
+  const version = tomlFile["brick.version"]!.s;
 
-    if isDir(projectHome + '/src/') &&
-       isFile(projectHome + '/src/' + projectFile) {
-      // Must use relative paths with chpldoc to prevent baking in abs paths
-      here.chdir(projectHome);
-
-      var command = new list([
-        "chpldoc",
-        "src/" + projectFile,
-        "-o",
-        "doc/",
-        "--process-used-modules"
-      ]);
-      command.pushBack(passArgs.values());
-      const commandArr = command.toArray();
-      const commandStr = " ".join(commandArr);
-      writeln(commandStr);
-      runCommand(commandArr);
+  var authors: string;
+  if const authorsToml = tomlFile.get["brick.authors"] {
+    if !isStringOrStringArray(authorsToml) {
+      throw new MasonError("unable to parse authors");
     }
-    else {
-      writeln('Mason could not find the project to document!');
-      var command = new list([
-        "chpldoc",
-      ]);
-      command.pushBack(passArgs.values());
-      runCommand(command.toArray());
+    if authorsToml.tomlType == "string" {
+      authors = authorsToml.s;
+    } else if authorsToml.tomlType == "array" {
+      authors = ", ".join(authorsToml.arr!.s);
     }
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
+  var copyrightYear: string;
+  if const copyrightToml = tomlFile.get["brick.copyrightYear"] {
+    copyrightYear = copyrightToml.s;
   }
+
+  const srcDir = "src":path;
+  const absSrcDir = projectHome / "src";
+  if absSrcDir.isDir() && (absSrcDir / projectFile).isFile() {
+    // Must use relative paths with chpldoc to prevent baking in abs paths
+    projectHome.chdir();
+
+    var command = new list([
+      "chpldoc",
+      "--project-name=" + projectName,
+      "--project-version=" + version,
+    ]);
+    if authors != "" {
+      command.pushBack("--author=" + authors);
+    }
+    if copyrightYear != "" {
+      command.pushBack("--project-copyright-year=" + copyrightYear);
+    }
+    const srcFiles = [f in srcDir.findFiles(recursive=true)]
+                        if f.suffix == ".chpl" then f:string;
+    command.pushBack(srcFiles);
+    command.pushBack([
+      "-o",
+      "doc/",
+    ]);
+    command.pushBack(getTomlDocopts(tomlFile));
+    command.pushBack(passArgs.values());
+    const commandArr = command.toArray();
+    const commandStr = " ".join(commandArr);
+    writeln(commandStr);
+    runCommand(commandArr);
+  } else {
+    log.warn("Mason could not find the project to document!");
+    var command = new list([
+      "chpldoc",
+    ]);
+    command.pushBack(passArgs.values());
+    runCommand(command.toArray());
+  }
+}
+
+proc getTomlDocopts(lock: borrowed Toml): list(string) throws {
+  var docopts: list(string);
+
+  // Checks for compilation options are present in Mason.toml
+  if const docoptsToml = lock.get("brick.docopts") {
+    try {
+      docopts.pushBack(parseCompilerOptions(docoptsToml));
+    } catch {
+      throw new MasonError("unable to parse docopts");
+    }
+  }
+
+  return docopts;
+}
+
 }

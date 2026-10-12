@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,9 +146,7 @@ Instruction* postponeDependentInstructions(
   Instruction *LastMemopUse = NULL;
 
   // Gather any instructions using the result of a load
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();
-       ++BI)
+  for (auto BI = First->getIterator(); !BI->isTerminator(); ++BI)
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -176,8 +174,7 @@ Instruction* postponeDependentInstructions(
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();)
+  for (auto BI = First->getIterator(); !BI->isTerminator();)
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -239,14 +236,13 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   typedef std::list<MemOpRange>::iterator range_iterator;
   const DataLayout &DL;
   MemOpRanges(const DataLayout &td) : DL(td) { }
-  typedef std::list<MemOpRange>::const_iterator const_iterator;
-  const_iterator begin() const { return Ranges.begin(); }
-  const_iterator end() const { return Ranges.end(); }
+  auto begin() const { return Ranges.begin(); }
+  auto end() const { return Ranges.end(); }
   bool empty() const { return Ranges.empty(); }
   bool moreThanOneOp() const {
     if( Ranges.size() > 1 ) return true;
-    MemOpRanges::const_iterator I = begin();
-    MemOpRanges::const_iterator E = end();
+    auto I = begin();
+    auto E = end();
     if( I != E ) {
       const MemOpRange &Range = *I;
       if( Range.TheStores.size() > 1 ) return true;
@@ -269,11 +265,7 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
 
     addRange(OffsetFromFirst, StoreSize, Slack,
              SI->getPointerOperand(),
-#if HAVE_LLVM_VER >= 150
              SI->getAlign().value(),
-#else
-             SI->getAlignment(),
-#endif
              SI);
   }
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
@@ -283,11 +275,7 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
 
     addRange(OffsetFromFirst, LoadSize, Slack,
              LI->getPointerOperand(),
-#if HAVE_LLVM_VER >= 150
              LI->getAlign().value(),
-#else
-             LI->getAlignment(),
-#endif
              LI);
   }
   // CUSTOM adds Slack
@@ -431,9 +419,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   Module* M = StartInst->getParent()->getParent()->getParent();
   LLVMContext& Context = StartInst->getContext();
 
-  Type* int8Ty = Type::getInt8Ty(Context);
-  Type* sizeTy = DL->getIntPtrType(Context, 0);
-  Type* globalInt8PtrTy = llvm::PointerType::get(int8Ty, globalSpace);
+  auto int8Ty = Type::getInt8Ty(Context);
+  auto sizeTy = DL->getIntPtrType(Context, 0);
+  auto globalInt8PtrTy = getPointerType(int8Ty, globalSpace);
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
   Instruction *lastAddedInsn = NULL;
@@ -507,8 +495,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Print out debugging information before reordering
   if (DebugThis) {
-    for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-         I != E; ++I) {
+    for (auto I = Ranges.begin(), E = Ranges.end(); I != E; ++I) {
       const MemOpRange &Range = *I;
 
       if (Range.TheStores.size() == 1) continue;
@@ -522,9 +509,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
 
       if( isStore ) {
-        for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+        for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
           StoreInst* oldStore = cast<StoreInst>(*SI);
 
           if( DebugThis ) {
@@ -536,9 +521,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
 
       if( isLoad ) {
-        for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+        for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
           LoadInst* oldLoad = cast<LoadInst>(*SI);
           if( DebugThis ) {
             dbgs() << "have load in range:";
@@ -552,8 +535,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Now that we have full information about ranges, loop over the ranges and
   // emit memcpy's for anything big enough to be worthwhile.
-  for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-       I != E; ++I) {
+  for (auto I = Ranges.begin(), E = Ranges.end(); I != E; ++I) {
     const MemOpRange &Range = *I;
 
     if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
@@ -563,9 +545,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     SmallSet<Instruction*, 8> toAggregate;
     Instruction *First = NULL;
     Instruction *Last = NULL;
-    for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+    for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
       Instruction* insn = *SI;
       if (First == NULL || bbPos[insn] < bbPos[First])
         First = insn;
@@ -625,9 +605,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
-      for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+      for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         int64_t offset = 0;
@@ -647,9 +625,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                                                    offsets);
         trackLLVMValue(i8Dst);
 
-        Type* StoreType = oldStore->getValueOperand()->getType();
-        Type* PtrType = llvm::PointerType::getUnqual(StoreType);
-        Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
+        auto StoreType = oldStore->getValueOperand()->getType();
+        auto PtrType = getPointerType(StoreType);
+        auto* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
         trackLLVMValue(Dst);
 
         StoreInst* newStore =
@@ -674,8 +652,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     if( isLoad ) addrSpaceSrc = globalSpace;
 
     Type *types[3];
-    types[0] = llvm::PointerType::get(int8Ty, addrSpaceDst);
-    types[1] = llvm::PointerType::get(int8Ty, addrSpaceSrc);
+    types[0] = getPointerType(int8Ty, addrSpaceDst);
+    types[1] = getPointerType(int8Ty, addrSpaceSrc);
     types[2] = sizeTy;
 
 #if LLVM_VERSION_MAJOR >= 20
@@ -712,9 +690,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // If loading, load from the memcpy'd region
     if( isLoad ) {
-      for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+      for (auto SI = Range.TheStores.begin(), SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
 
@@ -733,8 +709,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                                                    offsets);
         trackLLVMValue(i8Src);
 
-        Type* LoadType = oldLoad->getType();
-        Type* PtrType = llvm::PointerType::getUnqual(LoadType);
+        auto LoadType = oldLoad->getType();
+        auto PtrType = getPointerType(LoadType);
 
         Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
         trackLLVMValue(Src);
@@ -750,9 +726,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     }
 
     // Zap all the old loads/stores
-    for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+    for (auto SI = Range.TheStores.begin(),
+              SE = Range.TheStores.end(); SI != SE; ++SI) {
       (*SI)->eraseFromParent();
     }
   }
@@ -776,7 +751,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
-  for (Function::iterator BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
+  for (auto BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
 
     bool ChangedBB = false;
 
@@ -786,7 +761,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
       dbgs() << '\n';
     }
 
-    for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
+    for (auto BI = BB->begin(), BE = BB->end(); BI != BE;) {
       // Avoid invalidating the iterator.
       Instruction& insnRef = *BI;
       Instruction *I = &insnRef;

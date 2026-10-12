@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,33 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
+#if defined(CHPL_CUDA_VERSION) && CHPL_CUDA_VERSION >= 129
+#define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream) {\
+  CUdeviceptr result_val; \
+  CUdeviceptr result_idx; \
+  CUDA_CALL(cuMemAlloc(&result_val, sizeof(data_type))); \
+  CUDA_CALL(cuMemAlloc(&result_idx, sizeof(int))); \
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data,\
+                              (data_type*)result_val, (int*)result_idx, n,\
+                              (CUstream)stream));\
+  CUDA_CALL(cuMemAlloc(((CUdeviceptr*)&temp), temp_bytes)); \
+  CUDA_CALL(cub::DeviceReduce::cub_kind(temp, temp_bytes, data,\
+                              (data_type*)result_val, (int*)result_idx, n,\
+                              (CUstream)stream));\
+  CUDA_CALL(cuMemcpyDtoHAsync(val, result_val, sizeof(data_type),\
+                              (CUstream)stream)); \
+  CUDA_CALL(cuMemcpyDtoHAsync(idx, result_idx, sizeof(int),\
+                              (CUstream)stream)); \
+  CUDA_CALL(cuMemFree(result_val)); \
+  CUDA_CALL(cuMemFree(result_idx)); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
+}
+#else
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -87,6 +114,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   CUDA_CALL(cuMemFree(result)); \
   CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
+#endif
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)

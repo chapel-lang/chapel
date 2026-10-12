@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+import os
+# Training on a lot of data is too slow under memleaks; lower the load.
+if os.getenv('CHPL_MEM_LEAK_TESTING') == 'true':
+    print('--numTrainImages=1 --numTestImages=1')
+else:
+    print('')

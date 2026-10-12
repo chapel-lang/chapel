@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+rm -rf dummyRegistry/.git
+rm -rf mason_home

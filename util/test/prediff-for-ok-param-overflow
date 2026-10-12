@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+chpl_sanitize=$($chpl_home/util/chplenv/chpl_sanitizers.py)
+chpl_host_compiler=$($chpl_home/util/chplenv/chpl_compiler.py --host)
+
+if [[ $chpl_sanitize == "undefined" ]]; then
+  # some tests rely on overflow at compile time in a way thats expected
+  # (.e.g., to compute the range type)
+  # squash the single error message about overflow that occurs in UBsan testing
+  EXPECTED_MSG="${EXPECTED_MSG:-cannot be represented}"
+  sed "0,\|frontend/lib/immediates/num\.cpp.*$EXPECTED_MSG.*|{//d;}" "$2" > "$2.tmp"
+  mv "$2.tmp" "$2"
+
+  if [[ $chpl_host_compiler == "clang" ]]; then
+    # with clang, there is an extra 'SUMMARY: UndefinedBehaviorSanitizer' message
+    # drop it too
+    sed '0,\|SUMMARY: UndefinedBehaviorSanitizer:.*frontend/lib/immediates/num\.cpp|{//d;}' "$2" > "$2.tmp"
+    mv "$2.tmp" "$2"
+  fi
+
+fi

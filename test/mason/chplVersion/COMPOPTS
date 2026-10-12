@@ -1,1 +1,7 @@
--M ../../../tools/mason/
+#!/usr/bin/env bash
+
+if [ -d mydeps ]; then
+  echo "-M ../../../tools/mason mydeps/ThirdParty.chpl"
+else
+  echo "-M ../../../tools/mason"
+fi

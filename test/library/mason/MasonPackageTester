@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BRICK_NAME=$(basename $DIR)
+BRICK_SOURCE=$(cat $DIR/source.txt)
+subtest_start_time=$(date +%s)
+echo "[Starting subtest - $(date)]"
+function subtest_end() {
+  local subtest_end_time=$(date +%s)
+  local elapsed=$(( $subtest_end_time - $subtest_start_time ))
+  echo "[Finished subtest \"$BRICK_NAME\" - $elapsed seconds]"
+}
+function test_end() {
+  local elapsed=$(( $(date +%s) - $subtest_start_time ))
+  echo "[Elapsed time to compile and execute all versions of \"$BRICK_NAME\" - $elapsed.000 seconds]"
+}
+
+
+
+# make sure chpl and mason are in the PATH
+CHPL_HOST_BIN_SUBDIR=$($CHPL_HOME/util/printchplenv --only CHPL_HOST_BIN_SUBDIR --value)
+export PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH
+# check for mason, and skip if not found
+which mason &>/dev/null
+if [[ $? -ne 0 ]]; then
+  echo "Skipping $BRICK_NAME - mason not found in PATH"
+  subtest_end
+  exit 0
+fi
+
+echo "[test: \"$BRICK_NAME\"]"
+
+git clone --depth 1 $BRICK_SOURCE brick &>$DIR/mason.exec.log
+if [[ $? -eq 0 ]]; then
+  rm -f $DIR/mason.exec.log
+else
+  echo "[Error cloning $BRICK_SOURCE]"
+  test_end
+  subtest_end
+  exit 0
+fi
+
+
+# cd into the directory and run the unit tests
+(cd brick && mason test --show --parallel &>$DIR/mason.exec.log)
+if [[ $? -eq 0 ]]; then
+  rm -f $DIR/mason.exec.log
+  echo "[Success matching unit tests for $BRICK_NAME]"
+else
+  echo "[Error running unit tests for $BRICK_NAME]"
+  echo "[Output from mason test for $BRICK_NAME]"
+  cat $DIR/mason.exec.log
+fi
+test_end
+
+subtest_end

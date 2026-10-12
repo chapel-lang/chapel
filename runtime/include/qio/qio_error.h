@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ struct qio_err_s {
   // for debugging purposes.
   const char* const_fn;
   const char* const_file;
-  int lineno;
+  int32_t lineno;
 };
 // qioerr is meant to store either an error code directly
 // or a pointer to a struct err_s. There are several ways

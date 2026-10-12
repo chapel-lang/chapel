@@ -5,4 +5,8 @@ normal_args=""
 ccflags=$(pkg-config --cflags yaml-0.1)
 ldflags=$(pkg-config --libs yaml-0.1)
 
+# The YAML module itself should be passing '-lyaml' via 'require'
+# on macOS we get warnings about duplicate libraries, so remove it here
+ldflags=${ldflags//-lyaml/}
+
 echo "${ccflags:+--ccflags '$ccflags'} ${ldflags:+--ldflags '$ldflags'} ${normal_args}"

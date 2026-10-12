@@ -40,7 +40,7 @@ ifneq (, $(filter %32,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_ABI_ARG = ABI=32
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 CXXFLAGS += $(SHARED_LIB_CFLAGS)
 endif

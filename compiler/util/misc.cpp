@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -230,7 +230,7 @@ static void print_error(const char* format, ...) {
 }
 
 static void print_user_internal_error() {
-  char error[20];
+  char error[21];
 
   const char* filename_start = strrchr(err_filename, '/');
   const char* filename_end = NULL;
@@ -275,8 +275,8 @@ static void print_user_internal_error() {
   }
 
   error[idx++] = '-';
-  // next 4 characters are the line number
-  snprintf(&error[idx], 5 * sizeof(char), "%04d", err_lineno);
+  // next 5 characters are the line number
+  snprintf(&error[idx], 6 * sizeof(char), "%05d", err_lineno);
 
   // now make the error string upper case
   for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
@@ -332,7 +332,7 @@ static FnSymbol* findNonTaskFn(FnSymbol* fn) {
 }
 
 static void gatherFunctionsCalledTransitively(FnSymbol* fn,
-                                              std::set<FnSymbol*>& fns) {
+                                              std::set<FnSymbol*, AstIdLess>& fns) {
   if (fns.count(fn) == 0) {
     fns.insert(fn);
 
@@ -348,7 +348,7 @@ static void gatherFunctionsCalledTransitively(FnSymbol* fn,
   }
 }
 
-static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
+static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*, AstIdLess> ignoreFns) {
   for_SymbolSymExprs(se, fn) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (se == call->baseExpr) {
@@ -408,7 +408,7 @@ static bool isInternalFunction(FnSymbol* fn) {
 }
 
 static Expr* findBestCallSite(FnSymbol* errFn,
-                              std::set<FnSymbol*>& currentFns) {
+                              std::set<FnSymbol*, AstIdLess>& currentFns) {
   // Gather functions called, transitively, so that we can rule out
   // recursive calls when showing a stack trace.
   gatherFunctionsCalledTransitively(errFn, currentFns);
@@ -439,7 +439,7 @@ static Expr* findBestCallSite(FnSymbol* errFn,
 
 // Note - this function is recursive.
 static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
-                           std::set<FnSymbol*>& currentFns,
+                           std::set<FnSymbol*, AstIdLess>& currentFns,
                            bool& printedUnderline,
                            bool& lastHidden) {
 
@@ -541,7 +541,7 @@ void printCallstackForLastError() {
       printStack = fPrintCallStackOnError;
 
     if (printStack) {
-      std::set<FnSymbol*> currentFns;
+      std::set<FnSymbol*, AstIdLess> currentFns;
       bool printedUnderline = false;
       bool lastHidden = false;
       printCallstack(fn, NULL, currentFns,
@@ -839,7 +839,7 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
   Expr* next;
   const char* err = getErroneousCopyError(fn);
 
-  std::set<FnSymbol*> currentFns;
+  std::set<FnSymbol*, AstIdLess> currentFns;
 
   while (true) {
     fn = cur->getFunction();

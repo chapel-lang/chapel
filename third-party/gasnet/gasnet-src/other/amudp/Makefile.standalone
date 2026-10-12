@@ -20,8 +20,8 @@ include Makefile.$(HOSTSYSTEM)
 
 set_debug_ccflags  = -DAMUDP_DEBUG=1 $(ccdebugflags)  $(MANUAL_CFLAGS) $(apputils_flags)
 set_debug_cxxflags = -DAMUDP_DEBUG=1 $(cxxdebugflags) $(MANUAL_CXXFLAGS)
-set_opt_ccflags    = -DAMUDP_NDEBUG=1 $(ccoptflags)   $(MANUAL_CFLAGS) $(apputils_flags)
-set_opt_cxxflags   = -DAMUDP_NDEBUG=1 $(cxxoptflags)  $(MANUAL_CXXFLAGS)
+set_opt_ccflags    = -DAMUDP_NDEBUG=1 -DNDEBUG $(ccoptflags)   $(MANUAL_CFLAGS) $(apputils_flags)
+set_opt_cxxflags   = -DAMUDP_NDEBUG=1 -DNDEBUG $(cxxoptflags)  $(MANUAL_CXXFLAGS)
 
 VPATH = $(srcdir)
 includes = -I$(srcdir) -I$(altincdir)

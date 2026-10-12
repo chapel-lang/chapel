@@ -514,7 +514,7 @@ void psm3_dump_buf(uint8_t *buf, uint32_t len)
 	}
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len)
 {
 	int i, j, print_len;

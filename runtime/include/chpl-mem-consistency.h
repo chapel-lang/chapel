@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,7 +65,7 @@ extern "C" {
 // task.
 
 static inline
-void chpl_rmem_consist_release(int ln, int32_t fn)
+void chpl_rmem_consist_release(int32_t ln, int32_t fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_release(ln, fn);
@@ -76,7 +76,7 @@ void chpl_rmem_consist_release(int ln, int32_t fn)
 }
 
 static inline
-void chpl_rmem_consist_acquire(int ln, int32_t fn)
+void chpl_rmem_consist_acquire(int32_t ln, int32_t fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_acquire(ln, fn);
@@ -92,8 +92,8 @@ void chpl_rmem_consist_acquire(int ln, int32_t fn)
 // operations/fences.
 
 static inline
-//void chpl_atomic_rmem_fence_pre(chpl_memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_maybe_release(chpl_memory_order order, int ln, int32_t fn) {
+//void chpl_atomic_rmem_fence_pre(chpl_memory_order order, int32_t ln, int32_t fn) {
+void chpl_rmem_consist_maybe_release(chpl_memory_order order, int32_t ln, int32_t fn) {
   if(order==chpl_memory_order_acquire || order==chpl_memory_order_relaxed) {
     // do nothing
   } else {
@@ -102,8 +102,8 @@ void chpl_rmem_consist_maybe_release(chpl_memory_order order, int ln, int32_t fn
   }
 }
 static inline
-//void chpl_atomic_rmem_fence_post(chpl_memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_maybe_acquire(chpl_memory_order order, int ln, int32_t fn) {
+//void chpl_atomic_rmem_fence_post(chpl_memory_order order, int32_t ln, int32_t fn) {
+void chpl_rmem_consist_maybe_acquire(chpl_memory_order order, int32_t ln, int32_t fn) {
   if(order==chpl_memory_order_release || order==chpl_memory_order_relaxed) {
     // do nothing
   } else {
@@ -113,8 +113,8 @@ void chpl_rmem_consist_maybe_acquire(chpl_memory_order order, int ln, int32_t fn
 }
 
 static inline
-//void chpl_atomic_rmem_fence(chpl_memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_fence(chpl_memory_order order, int ln, int32_t fn) {
+//void chpl_atomic_rmem_fence(chpl_memory_order order, int32_t ln, int32_t fn) {
+void chpl_rmem_consist_fence(chpl_memory_order order, int32_t ln, int32_t fn) {
   if(order==chpl_memory_order_relaxed) {
     // do nothing
   } else {

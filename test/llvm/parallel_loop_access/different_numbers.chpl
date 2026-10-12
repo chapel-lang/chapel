@@ -1,11 +1,11 @@
-proc start_loop1() {}
-proc end_loop1() {}
+proc start_loop1() { return 1; }
+proc end_loop1() { return 2; }
 
-proc start_loop2() {}
-proc end_loop2() {}
+proc start_loop2() { return 3; }
+proc end_loop2() { return 4; }
 
-proc start_loop3() {}
-proc end_loop3() {}
+proc start_loop3() { return 5; }
+proc end_loop3() { return 6; }
 
 //Check whether we generate different metadata number for loops
 proc loop (A, B, n) {

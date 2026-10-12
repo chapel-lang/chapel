@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -267,10 +267,6 @@ operator =(ref a: dimensionalDist2D(?), b: dimensionalDist2D(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead")
-type DimensionalDist2D = dimensionalDist2D;
 
 
 class DimensionalDist2DImpl : BaseDist, writeSerializable {

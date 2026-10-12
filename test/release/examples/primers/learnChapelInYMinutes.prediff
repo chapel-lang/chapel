@@ -48,11 +48,11 @@ good_serial = [ 'Hello, World!',
                 '(10,-1)',
                 '(5, 1.928, -1000.0 + 5.0i)',
                 'true',
-                '(276813856, false, 5678, 1234, false, true)',
+                '(5576, false, 17, 12, false, true)',
                 'All is well',
-		'Continuing to believe reality',
-                '276813856 is even.',
-                '276813856 is divided by 3 with a remainder of 1.',
+                'Continuing to believe reality',
+                '5576 is even.',
+                '5576 is divided by 3 with a remainder of 2.',
                 'Chose \'anOption\'',
                 '500500',
                 '50005000',
@@ -174,7 +174,7 @@ try:
   for value in good_parallel_1:
     count = test_parallel_1.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 1 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 1 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-5 )
 
 except IndexError:
@@ -190,7 +190,7 @@ try:
   for value in good_parallel_2:
     count = test_parallel_2.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 2 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 2 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-5 )
 
 except IndexError:
@@ -204,7 +204,7 @@ try:
   for value in [ "Hello from task# "+str(i) for i in range(1,11) ]:
     count = test_parallel_3.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 3 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 3 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-6 )
 
 except IndexError:
@@ -214,14 +214,14 @@ except IndexError:
 # list 1..100 section
 try:
   # pop one, split the line into a list by the separator
-  test_parallel_4 = test_parallel.pop(0).split(', ') 
+  test_parallel_4 = test_parallel.pop(0).split(', ')
   # in the separation process, there will be exacty one empty element at the end
-  # because of the output's terminating ', ', add and empty element to the good 
+  # because of the output's terminating ', ', add and empty element to the good
   # list to account for this
   for value in  ([ str(v) for v in range(1,101)]+[ '' ] ):
     count =test_parallel_4.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 4 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 4 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-7 )
 
 except IndexError:
@@ -242,16 +242,16 @@ try:
   if serial_time <= 0.0 :
     writeOutput( "FAILED! Section 4 of parallel test: Serial experiment ran for a non-positive amount of time: "+ str( serial_time ) )
     exit( -1-len(test_serial)-9  )
-  
+
   if not test_parallel_parallel.startswith( "Parallel: " ):
     writeOutput( "FAILED! Section 4 of parallel test: Supposed parallel experiment line does not begin with \"Parallel: \": "+ str( test_parallel_parallel ) )
     exit( -1-len(test_serial)-10 )
-   
+
   parallel_time = float( test_parallel_parallel.replace( "Parallel: ", "").strip() )
   if parallel_time <= 0.0 :
     writeOutput( "FAILED! Section 4 of parallel test: Parallel experiment ran for a non-positive amount of time: " + str( parallel_time ) )
     exit( -1-len(test_serial)-11  )
-   
+
 except IndexError:
   writeOutput( "FAILED! Section 4 of parallel test: Missing lines." )
   exit( 1 )
@@ -268,17 +268,17 @@ try:
   if uraniumPreVal != "238":
     writeOutput( "FAILED! Section 5 of parallel test: \"" + uraniumPreVal + "\" not equal to 238" )
     exit( -1-len(test_serial)-12 )
-  
+
   uraniumPostVal = test_parallel.pop(0)
   if uraniumPostVal != "235":
     writeOutput( "FAILED! Section 5 of parallel test: \"" + uraniumPostVal + "\" not equal to 235" )
     exit( -1-len(test_serial)-13 )
-  
+
   uraniumReplace = test_parallel.pop(0)
   if uraniumReplace != "uranium was 235 but is now 239":
     writeOutput( "FAILED! Section 5 of parallel test: \"" + uraniumReplace + "\" not equal to \"uranium was 235 but is now 239\"" )
     exit( -1-len(test_serial)-14 )
-  
+
   uraniumCompareExchange= test_parallel.pop(0)
   if uraniumCompareExchange != "uranium was not equal to 235 so value stays the same...  whatever it was":
     writeOutput( "FAILED! Section 5 of parallel test: \"" + uraniumCompareExchange + "\" not equal to \"uranium was not equal to 235 so value stays the same...  whatever it was\"" )
@@ -293,12 +293,12 @@ except IndexError:
 good_parallel_6 = [ 'Reader: waiting for uranium to be 235', 'Writer: will set uranium to the value 235 in...', '3', '2', '1', 'Reader: uranium was set (by someone) to 235' ]
 
 try:
-  
+
   test_parallel_6 = [ test_parallel.pop(0) for i in range(6) ]
   for value in good_parallel_6:
     count = test_parallel_6.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 6 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 6 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-16 )
 
 except IndexError:
@@ -310,12 +310,12 @@ except IndexError:
 good_parallel_7 = [ 'Reader: waiting to read.', 'Writer: will write in...', '3', '2', '1', 'Reader: value is 123' ]
 
 try:
-  
+
   test_parallel_7 = [ test_parallel.pop(0) for i in range(6) ]
   for value in good_parallel_7:
     count = test_parallel_7.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 7 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 7 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-17 )
 
 except IndexError:
@@ -327,14 +327,14 @@ except IndexError:
 good_parallel_9 = [ "Task #" + str(i) + " doing work." for i in range(1,5) ]
 
 try:
-  
+
   test_parallel_9 = [ test_parallel.pop(0) for i in range(5) ]
   for value in good_parallel_9:
     count = test_parallel_9.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 9 of parallel test: There are exactly " + str( count ) + " occurences of \"" + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 9 of parallel test: There are exactly " + str( count ) + " occurrences of \"" + str( value ) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-19 )
-  
+
 
 except IndexError:
   writeOutput( "FAILED! Section 9 of parallel test: Missing lines." )
@@ -344,14 +344,13 @@ except IndexError:
 good_parallel_10 = [ "(1666, 678, 9, 678)", "15 72 426 462 507 522 978 986 1664 1666", "15 57 354 354 354 354 456 456 678 678" ]
 
 try:
-  
   test_parallel_10 = [ test_parallel.pop(0) for i in range(3) ]
   for value in good_parallel_10:
     count = test_parallel_10.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 10 of parallel test: There are exactly " + str( count ) + " occurences of \"" + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 10 of parallel test: There are exactly " + str( count ) + " occurrences of \"" + str( value ) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-20 )
-  
+
 
 except IndexError:
   writeOutput( "FAILED! Section 10 of parallel test: Missing lines." )
@@ -362,7 +361,6 @@ if len( test_parallel ) > 0:
   fails = ""
   for l in test_parallel:
     fails += l + "\n"
-    
   writeOutput( "FAILED! Extra lines at end of parallel sections:\n" + fails )
   exit( 1 )
 

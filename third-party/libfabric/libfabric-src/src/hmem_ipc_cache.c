@@ -65,7 +65,7 @@ static int ipc_cache_add_region(struct ofi_mr_cache *cache, struct ofi_mr_entry 
 	}
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"Failed to open hmem handle, addr: %p, len: %lu\n",
+			"Failed to open hmem handle, addr: %p, len: %zu\n",
 			entry->info.iov.iov_base, entry->info.iov.iov_len);
 	}
 	return ret;
@@ -75,7 +75,8 @@ static void ipc_cache_delete_region(struct ofi_mr_cache *cache,
 				     struct ofi_mr_entry *entry)
 {
 	ofi_hmem_close_handle(entry->info.iface,
-			      entry->info.mapped_addr);
+			      entry->info.mapped_addr,
+			      (void **) &entry->info.handle);
 }
 
 /**
@@ -93,11 +94,13 @@ int ofi_ipc_cache_open(struct ofi_mr_cache **cache,
 	int ret;
 
 	if (!ofi_hmem_is_ipc_enabled(FI_HMEM_CUDA) &&
-		!ofi_hmem_is_ipc_enabled(FI_HMEM_ROCR))
+		!ofi_hmem_is_ipc_enabled(FI_HMEM_ROCR) &&
+		!ofi_hmem_is_ipc_enabled(FI_HMEM_ZE))
 		return FI_SUCCESS;
 
 	memory_monitors[FI_HMEM_CUDA] = cuda_ipc_monitor;
 	memory_monitors[FI_HMEM_ROCR] = rocr_ipc_monitor;
+	memory_monitors[FI_HMEM_ZE] = ze_ipc_monitor;
 
 	*cache = calloc(1, sizeof(*(*cache)));
 	if (!*cache) {

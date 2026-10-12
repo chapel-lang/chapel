@@ -60,29 +60,6 @@
 #ifndef _PSM_NIC_SELECT_H
 #define _PSM_NIC_SELECT_H
 
-// PSM3_NIC_SELECTION_ALG choices
-/*
- * round robin contexts across HFIs, then
- * ports; this is the default.
- * This option spreads the HFI selection within the local socket.
- * If it is preferred to spread job over over entire set of
- * HFIs within the system, see ALG_ACROSS_ALL below.
- */
-#define PSMI_UNIT_SEL_ALG_ACROSS     PSM_HAL_ALG_ACROSS
-
-#define PSMI_UNIT_SEL_ALG_ACROSS_ALL PSM_HAL_ALG_ACROSS_ALL
-
-/*
- * use all contexts on an HFI (round robin
- * active ports within), then next HFI
- */
-#define PSMI_UNIT_SEL_ALG_WITHIN     PSM_HAL_ALG_WITHIN
-
-#define PSMI_UNIT_SEL_ALG_CPU_CENTRIC     PSM_HAL_ALG_CPU_CENTRIC
-#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
-#define PSMI_UNIT_SEL_ALG_GPU_CENTRIC     PSM_HAL_ALG_GPU_CENTRIC
-#endif
-
 struct multirail_config {
     int num_rails;
     uint32_t units[PSMI_MAX_RAILS];
@@ -90,18 +67,15 @@ struct multirail_config {
     int addr_indexes[PSMI_MAX_RAILS];
 };
 
-// return set of units to consider and which to start at.
-// caller will use 1st active unit which can be opened.
-// caller will wrap around so it's valid for start >= end
-// Note: When using multiple rails per PSM process, higher level code will
-// walk through desired units and unit_param will specify a specific unit
-// if unit_param is PSM3_NIC_ANY, this will pick starting point for nic search
-psm2_error_t
-psm3_compute_start_and_end_unit(long unit_param, long addr_index,
-				int nunitsactive,int nunits,
-				psm2_uuid_t const job_key,
-				long *unit_start,long *unit_end);
+// Autoselect one unit for non-multirail operation.
+// caller will select 1st active port and an addr_index within unit
+// returns the unit number or -1 if unable to find an active unit
+int
+psm3_autoselect_one(long addr_index, int nunits, psm2_uuid_t const job_key);
 
+// determine if PSM3_MULTIRAIL is enabled, and if so select the rails
+// and place the list in multirail_config.  If multirail is not enabled
+// multirail_config.num_rails will be set to 0
 psm2_error_t
 psm3_ep_multirail(struct multirail_config *multirail_config);
 

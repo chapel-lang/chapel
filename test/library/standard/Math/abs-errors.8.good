@@ -1,0 +1,1 @@
+abs-errors.chpl:28: error: halt reached - abs(-128) is not representable as a int(8)

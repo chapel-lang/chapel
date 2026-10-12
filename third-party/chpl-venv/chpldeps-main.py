@@ -25,20 +25,26 @@ import sys
 import importlib.util
 import importlib.metadata
 
+
 def missing_subcommand():
     print("chpldeps requires a subcommand", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     sys.exit(-1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     # leave out a python3 call if present
     starti = 1
     if starti >= len(sys.argv):
         missing_subcommand()
 
-    if (sys.argv[1] == 'python3' or sys.argv[1] == 'python' or
-        sys.argv[1].endswith('/python3') or sys.argv[1].endswith('/python')):
+    if (
+        sys.argv[1] == "python3"
+        or sys.argv[1] == "python"
+        or sys.argv[1].endswith("/python3")
+        or sys.argv[1].endswith("/python")
+    ):
 
         starti = 2
 
@@ -54,37 +60,41 @@ if __name__ == '__main__':
     argv.extend(sys.argv[starti:])
     sys.argv = argv
 
-    if subcommand == 'sphinx-build':
+    if subcommand == "sphinx-build":
         # copied from sphinx-build's body
         from sphinx.cmd.build import main
+
         sys.exit(main())
 
-    elif subcommand == 'rst2man.py':
+    elif subcommand == "rst2man.py":
         # copied from rst2man.py's body
         import locale
+
         try:
-            locale.setlocale(locale.LC_ALL, '')
+            locale.setlocale(locale.LC_ALL, "")
         except:
             pass
 
         from docutils.core import publish_cmdline, default_description
         from docutils.writers import manpage
 
-        description = ("Generates plain unix manual documents.  " + default_description)
+        description = (
+            "Generates plain unix manual documents.  " + default_description
+        )
 
         publish_cmdline(writer=manpage.Writer(), description=description)
 
-    elif subcommand == 'register-python-argcomplete':
+    elif subcommand == "register-python-argcomplete":
 
         # Run the argument as a program within bin/
         # just by exec'ing it
         # (can't import something with dashes)
-        my_bin_dir = os.path.join(os.path.dirname(__file__), 'bin')
+        my_bin_dir = os.path.join(os.path.dirname(__file__), "bin")
         subcommand_path = os.path.join(my_bin_dir, subcommand)
 
         exec(open(subcommand_path).read())
 
-    elif subcommand == 'version':
+    elif subcommand == "version":
         arg = sys.argv[1]
         print(importlib.metadata.version(arg))
         sys.exit(0)
@@ -102,7 +112,9 @@ if __name__ == '__main__':
         sys.exit(mod.main())
 
     else:
-        print("Unknown chpldeps subcommand {0}".format(subcommand),
-              file=sys.stderr)
+        print(
+            "Unknown chpldeps subcommand {0}".format(subcommand),
+            file=sys.stderr,
+        )
         print(__doc__, file=sys.stderr)
         sys.exit(-1)

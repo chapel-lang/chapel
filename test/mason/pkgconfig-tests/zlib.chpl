@@ -1,3 +1,5 @@
 use pcTest;
 
-test(goodLock="zlib.good", tf="zlib.toml");
+proc main() {
+  test(goodLock="zlib.good", tf="zlib.toml");
+}

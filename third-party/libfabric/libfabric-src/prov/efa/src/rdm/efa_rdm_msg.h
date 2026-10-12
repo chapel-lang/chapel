@@ -16,21 +16,24 @@ void efa_rdm_msg_construct(struct fi_msg *msg, const struct iovec *iov, void **d
 /**
  * functions to allocate rxe for two sided operations
  */
-struct efa_rdm_ope *efa_rdm_msg_alloc_rxe(struct efa_rdm_ep *ep,
+struct efa_rdm_ope *efa_rdm_msg_alloc_rxe_zcpy(struct efa_rdm_ep *ep,
 					    const struct fi_msg *msg,
 					    uint32_t op, uint64_t flags,
 					    uint64_t tag, uint64_t ignore);
 
-struct efa_rdm_ope *efa_rdm_msg_alloc_rxe_for_msgrtm(struct efa_rdm_ep *ep,
-						     struct efa_rdm_pke **pkt_entry_ptr);
+struct efa_rdm_ope *
+efa_rdm_msg_alloc_rxe_for_msgrtm(struct efa_rdm_ep *ep,
+				 struct efa_rdm_pke **pkt_entry_ptr);
 
-struct efa_rdm_ope *efa_rdm_msg_alloc_rxe_for_tagrtm(struct efa_rdm_ep *ep,
-						     struct efa_rdm_pke **pkt_entry_ptr);
+struct efa_rdm_ope *
+efa_rdm_msg_alloc_rxe_for_tagrtm(struct efa_rdm_ep *ep,
+				 struct efa_rdm_pke **pkt_entry_ptr);
 
 struct efa_rdm_ope *efa_rdm_msg_split_rxe(struct efa_rdm_ep *ep,
 					    struct efa_rdm_ope *posted_entry,
 					    struct efa_rdm_ope *consumer_entry,
 					    struct efa_rdm_pke *pkt_entry);
+ssize_t efa_rdm_msg_post_rtm(struct efa_rdm_ep *ep, struct efa_rdm_ope *txe);
 /*
  * The following 2 OP structures are defined in efa_rdm_msg.c and is
  * used by #efa_rdm_ep_open()

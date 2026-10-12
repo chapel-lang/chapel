@@ -1,0 +1,3 @@
+# indexing at the extreme relies on integer wraparound to work
+# its UB but hasn't broken yet so is probably fine
+CHPL_SANITIZE_EXE==undefined

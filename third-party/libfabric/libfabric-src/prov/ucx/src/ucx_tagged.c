@@ -81,6 +81,9 @@ static ssize_t ucx_tagged_recvmsg(struct fid_ep *ep,
 				  const struct fi_msg_tagged *msg,
 				  uint64_t flags)
 {
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
+
+	flags |= u_ep->ep.rx_msg_flags;
 	if (flags & FI_REMOTE_CQ_DATA)
 		return -FI_EBADFLAGS;
 
@@ -101,6 +104,8 @@ static ssize_t ucx_tagged_sendmsg(struct fid_ep *ep,
 				  const struct fi_msg_tagged *msg,
 				  uint64_t flags)
 {
+	struct ucx_ep *u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
+
 	if(flags & FI_REMOTE_CQ_DATA)
 		return -FI_EBADFLAGS;
 
@@ -111,7 +116,7 @@ static ssize_t ucx_tagged_sendmsg(struct fid_ep *ep,
 	}
 #endif
 
-	return ucx_do_sendmsg(ep, msg, flags, UCX_TAGGED);
+	return ucx_do_sendmsg(ep, msg, flags | u_ep->ep.tx_msg_flags, UCX_TAGGED);
 }
 
 static ssize_t ucx_tagged_inject(struct fid_ep *ep, const void *buf,

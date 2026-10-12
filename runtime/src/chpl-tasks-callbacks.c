@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,7 @@
 #include "chplrt.h"
 
 #include "chpl-comm.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-tasks-callbacks.h"
 #include "chpl-tasks-callbacks-internal.h"
 
@@ -106,7 +106,7 @@ int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t event_kind,
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t event_kind,
                                      chpl_fn_int_t fid,
                                      int32_t filename,
-                                     int lineno,
+                                     int32_t lineno,
                                      uint64_t id,
                                      int is_executeOn) {
   struct cb_info* cbp;

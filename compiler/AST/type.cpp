@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -298,7 +298,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
       retval = "c_fn_ptr";
     } else if (vt == dtStringC) {
       // present dtStringC type as familiar 'c_string' instead of the internal
-      // name 'chpl_c_string' or cname, 'c_string_rehook'.
+      // name 'chpl_c_string'
       retval = "c_string";
     }
 
@@ -325,7 +325,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 *                                                                             *
 ************************************** | *************************************/
 
-const char* qualifierToStr(Qualifier q) {
+const char* QualifiedType::qualifierToStr(Qualifier q) {
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
@@ -342,15 +342,11 @@ const char* qualifierToStr(Qualifier q) {
 
       case QUAL_VAL:
         return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
       case QUAL_WIDE_REF:
         return "wide-ref";
 
       case QUAL_CONST_VAL:
         return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
       case QUAL_CONST_WIDE_REF:
         return "const-wide-ref";
     }
@@ -359,12 +355,47 @@ const char* qualifierToStr(Qualifier q) {
     return "UNKNOWN-QUAL";
 }
 
+Qualifier QualifiedType::qualifierForArgIntent(IntentTag intent) {
+  switch (intent) {
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_PARAM;   // TODO
+    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
+    // no default to get compiler warning if other intents are added
+  }
+  INT_FATAL("unknown intent");
+  return QUAL_UNKNOWN;
+}
+
+Qualifier QualifiedType::qualifierForRetTag(RetTag retTag) {
+  switch (retTag) {
+    case RET_VALUE:       return QUAL_VAL;
+    case RET_REF:         return QUAL_REF;
+    case RET_CONST_REF:   return QUAL_CONST_REF;
+    case RET_PARAM:       return QUAL_PARAM;    // TODO
+    case RET_TYPE:        return QUAL_UNKNOWN;  // TODO
+    // no default to get compiler warning if other intents are added
+  }
+
+  INT_FATAL("unknown return tag");
+  return QUAL_UNKNOWN;
+}
+
 bool QualifiedType::isRefType() const {
-  return _type->symbol->hasFlag(FLAG_REF);
+  return _type && _type->symbol->hasFlag(FLAG_REF);
 }
 
 bool QualifiedType::isWideRefType() const {
-  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+  return _type && _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 const char* QualifiedType::qualStr() const {
@@ -536,8 +567,7 @@ bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL),
-  doc(NULL)
+  constants(), integerType(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -605,6 +635,31 @@ bool EnumType::isConcrete() {
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
   return integerType;
+}
+
+llvm::SmallDenseMap<Symbol*, VarSymbol*> EnumType::getConstantMap() {
+  if (_constantMap.empty()) {
+    // Convert enums to constants with the user-specified immediate,
+    // sized appropriately, when it exists.  When it doesn't, give
+    // it the semi-arbitrary 0-based ordinal value (similar to what
+    // C would do itself).  Note that once some enum
+    // has a non-NULL constant->init, all subsequent ones should as
+    // well.
+    int order = 0;
+    for_enums(constant, this) {
+      if (constant->init) {
+        auto var = toVarSymbol(toSymExpr(constant->init)->symbol());
+        INT_ASSERT(var && var->immediate);
+        _constantMap.insert(std::make_pair(constant->sym, var));
+      } else {
+        auto var = new_IntSymbol(order, INT_SIZE_64);
+        INT_ASSERT(var && var->immediate);
+        _constantMap.insert(std::make_pair(constant->sym, var));
+      }
+      order++;
+    }
+  }
+  return _constantMap;
 }
 
 
@@ -684,7 +739,9 @@ FunctionType::~FunctionType() {
 void FunctionType::verify() {
   Type::verify();
 
-  if (!returnType()->symbol->inTree()) {
+  bool isUsed = symbol->isUsed();
+
+  if (isUsed && !returnType()->symbol->inTree()) {
     INT_FATAL(this->symbol, "The function type %s is used but has a return "
                             "type %s that is no longer in the tree",
                             typeToString(this),
@@ -695,13 +752,15 @@ void FunctionType::verify() {
     for (int i = 0; i < numFormals(); i++) {
       auto name = formal(i)->name();
       auto type = formal(i)->type();
-      if (!type->inTree()) {
+      if (isUsed && !type->inTree()) {
         INT_FATAL(this->symbol, "The function type %s is used but has a "
                                 "formal %s with a type %s that is no "
                                 "longer in the tree",
                                 typeToString(this), name,
                                 typeToString(type));
       }
+
+      INT_ASSERT(name != nullptr);
     }
   }
 }
@@ -743,16 +802,12 @@ FunctionType::buildUserTypeString(FunctionType::Kind kind,
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
 
-    INT_ASSERT(info.name());
-
     if (info.intent() != INTENT_BLANK) {
-      oss << intentToString(info.intent());
-      if (info.name()) oss << " ";
+      oss << intentToString(info.intent()) << " ";
     }
 
-    if (info.name()) oss << info.name();
-    if (info.name() && info.type() != dtAny) oss << ": ";
-    if (info.type() != dtAny) oss << typeToString(info.type());
+    oss << info.name();
+    if (info.type() != dtAny) oss << ": " << typeToString(info.type());
     if ((i+1) != formals.size()) oss << ", ";
   }
 
@@ -830,10 +885,16 @@ static const char* builtinTypeName(Type* vt) {
 }
 
 const char* FunctionType::typeToString(Type* t) {
-  // Use the value type when printing out the user type to hide '_ref'.
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->name;
+  if (!developer) {
+    // Use the value type when printing out the user type to hide '_ref'.
+    auto vt = t->getValType();
+    if (auto builtinName = builtinTypeName(vt)) return builtinName;
+    return vt->symbol->name;
+
+  } else {
+    // As a developer, display the type exactly as given.
+    return t->symbol->name;
+  }
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -852,13 +913,19 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
-    // Call 'makeRefType' if it's likely needed to avoid problems later.
-    bool isRef = formal.qual() == QUAL_CONST_REF ||
-                 formal.qual() == QUAL_REF ||
-                 formal.intent() & INTENT_REF;
-    if (isRef) makeRefType(formal.type());
+    bool isRefIntent = formal.qual() == QUAL_CONST_REF ||
+                       formal.qual() == QUAL_REF ||
+                       formal.intent() & INTENT_REF;
+    bool isRefType = formal.qualType().isRefType();
+    bool isWideRefType = formal.qualType().isWideRefType();
 
-    isAnyFormalNamed |= formal.name() != nullptr;
+    if (isRefIntent && !isRefType && !isWideRefType) {
+      // Call 'makeRefType' if it's needed to avoid problems later.
+      // It should not be called if the type is already a 'ref' type.
+      makeRefType(formal.type());
+    }
+
+    isAnyFormalNamed |= formal.isNamed();
   }
 
   // TODO: We could delay computing this until it's actually needed.
@@ -923,7 +990,7 @@ FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
 static FormalVec collectFormals(FnSymbol* fn) {
   FormalVec ret;
   for_formals(f, fn) {
-    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
+    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name, f->flags };
     ret.push_back(std::move(info));
   }
   return ret;
@@ -980,7 +1047,17 @@ FunctionType* FunctionType::getAsExtern() const {
 
 FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
   auto t = getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
-  return { QUAL_REF, t, INTENT_REF, "error_out" };
+  return { QUAL_REF, t, INTENT_REF, "error_out", 0 };
+}
+
+std::array<FunctionType::Formal, 2>
+FunctionType::constructLineFileInfoFormals() {
+  std::array<Formal, 2> ret = {{
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, astr__ln, 0),
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, astr__fn, 0),
+  }};
+
+  return ret;
 }
 
 FunctionType* FunctionType::getWithLoweredErrorHandling() const {
@@ -996,6 +1073,170 @@ FunctionType* FunctionType::getWithLoweredErrorHandling() const {
              returnIntent_,
              returnType_,
              newThrowsFlag);
+}
+
+FunctionType* FunctionType::getWithLineFileInfo() const {
+  auto newFormals = formals_;
+  auto lineFileFormals = constructLineFileInfoFormals();
+
+  newFormals.push_back(lineFileFormals[0]);
+  newFormals.push_back(lineFileFormals[1]);
+
+  SET_LINENO(this->symbol);
+
+  return get(kind_, width_, linkage_, std::move(newFormals),
+             returnIntent_,
+             returnType_,
+             throws_);
+}
+
+static Qualifier
+functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
+  Qualifier ret = QUAL_UNKNOWN;
+  auto qt = f.qualType();
+
+  // TODO: Do this or call 'concreteIntent' as is done in resolve?
+  auto qualForIntent = QualifiedType::qualifierForArgIntent(f.intent());
+  bool isConst = QualifiedType::qualifierIsConst(qualForIntent) ||
+                 QualifiedType::qualifierIsConst(qt.getQual());
+
+  if (QualifiedType::qualifierIsAbstract(qualForIntent)) {
+    // Clear this abstract intent. Use the type to make decisions.
+    qualForIntent = QUAL_UNKNOWN;
+  }
+
+  if (qt.isWideRef()) {
+    // If 'wide ref' is specified in any fashion, it should be preserved.
+    ret = QUAL_WIDE_REF;
+
+  } else if (qt.isRef()) {
+    // If 'ref' is specified in any fashion, preserve it...
+    ret = QUAL_REF;
+
+  } else if (qualForIntent != QUAL_UNKNOWN) {
+    // Otherwise, defer to the intent.
+    ret = qualForIntent;
+
+  } else {
+    // If nothing else, assume a value type.
+    ret = QUAL_VAL;
+  }
+
+  // Make const if needed.
+  if (isConst) ret = QualifiedType::qualifierToConst(ret);
+
+  // Should not appear at this point.
+  INT_ASSERT(!QualifiedType::qualifierIsAbstract(ret));
+
+  return ret;
+}
+
+// Map backwards from qualifier to intent.
+static IntentTag functionTypeStreamlineIntent(Qualifier qual) {
+  // TODO: Do we have to do this or can we just drop to INTENT_BLANK?
+  switch (qual) {
+    case QUAL_VAL: return INTENT_IN;
+    case QUAL_CONST_VAL: return INTENT_CONST_IN;
+    case QUAL_REF: return INTENT_REF;
+    case QUAL_CONST_REF: return INTENT_CONST_REF;
+    case QUAL_WIDE_REF: return INTENT_REF;
+    case QUAL_CONST_WIDE_REF: return INTENT_REF;
+    default: INT_FATAL("Not handled!");
+  }
+
+  return INTENT_BLANK;
+}
+
+static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
+  Type* ret = t;
+  auto qt = QualifiedType(qual, t);
+
+  if (auto ft = toFunctionType(t->getValType())) {
+    ret = ft->getWithStreamlinedComponents();
+    qt = { qt.getQual(), ret };
+  }
+
+  auto q = qt.getQual();
+  switch (q) {
+    case QUAL_REF:
+    case QUAL_CONST_REF: {
+      // A combo of e.g., 'QUAL_CONST_REF' and 'wide(ref)' type can happen
+      // for return intents, so just let the wide-ref type persist.
+      if (!qt.isWideRefType() && !qt.isRefType()) {
+        ret = ret->refType;
+        INT_ASSERT(ret);
+      }
+    } break;
+
+    case QUAL_WIDE_REF:
+    case QUAL_CONST_WIDE_REF: {
+      // The qualifier was specified as wide-ref, so it must be a wide type.
+      if (!qt.isWideRefType()) {
+        ret = ret->getWideRefType();
+        INT_ASSERT(ret);
+      }
+    } break;
+
+    default: {
+      // Otherwise, assume it must be a value type.
+      ret = ret->getValType();
+    } break;
+  }
+
+  return ret;
+}
+
+static FunctionType::Formal
+functionTypeStreamlineFormal(const FunctionType::Formal& f) {
+  auto qual = functionTypeStreamlineFormalQualifier(f);
+  auto intent = functionTypeStreamlineIntent(qual);
+  auto type = functionTypeStreamlineType(qual, f.type());
+  const char* name = "";
+
+  return { qual, type, intent, name, f.flags() };
+}
+
+static void
+functionTypeVerifyReturnIntent(RetTag returnIntent, Type* returnType) {
+  if (!fVerify) return;
+
+  if (returnType->isRefOrWideRef()) {
+    INT_ASSERT(returnIntent == RET_REF || returnIntent == RET_CONST_REF);
+  } else {
+    INT_ASSERT(returnIntent == RET_VALUE);
+  }
+}
+
+// The order of authority is: qualifier -> intent -> type. If the 'qual()'
+// is not given, first the 'intent()' is consulted. If the 'intent()' is not
+// given, then the 'type()' is consulted.
+//
+// The type is adjusted to match the "refness" of the streamlined qualifier.
+//
+// The name is discarded as we no longer need it.
+//
+// TODO: How do wide-class types play into this determination?
+FunctionType* FunctionType::getWithStreamlinedComponents() const {
+  std::vector<Formal> newFormals;
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto newFormal = functionTypeStreamlineFormal(*formal(i));
+    newFormals.push_back(std::move(newFormal));
+  }
+
+  SET_LINENO(this->symbol);
+
+  auto returnQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  auto newReturnType = functionTypeStreamlineType(returnQual, returnType_);
+
+  functionTypeVerifyReturnIntent(returnIntent_, newReturnType);
+
+  auto ret = get(kind_, width_, linkage_, std::move(newFormals),
+                 returnIntent_,
+                 newReturnType,
+                 throws_);
+
+  return ret;
 }
 
 FunctionType*
@@ -1022,6 +1263,63 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   }
 
   outMaskConflicts = maskConflicts;
+
+  return ret;
+}
+
+// Linked in from 'insertWideReferences.cpp'.
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal);
+
+static QualifiedType widenType(QualifiedType qt) {
+  // Create and set a temporary as a workaround for passing in a 'Symbol*'.
+  auto temp = newTemp();
+  temp->type = qt.type();
+  temp->qual = qt.getQual();
+
+  // True as in 'setWide' in 'insertWideReferences.cpp'.
+  bool mustBeWide = true;
+  bool wideVal = true;
+
+  auto ret = computeWidenedType(temp, mustBeWide, wideVal);
+
+  return ret;
+}
+
+FunctionType* FunctionType::getWithWidenedComponents() const {
+  FunctionType* ret = (FunctionType*) this;
+
+  std::vector<Formal> newFormals;
+  Type* newReturnType = returnType_;
+  bool change = false;
+
+  // Set now as 'widenType' may create a temp.
+  SET_LINENO(this->symbol);
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    auto qt1 = f->qualType();
+    auto qt2 = widenType(qt1);
+
+    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name(), f->flags() };
+    newFormals.push_back(std::move(newFormal));
+    change = change || qt1 != qt2;
+  }
+
+  Qualifier retTagQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  QualifiedType qtReturnType1 = { retTagQual, returnType() };
+  QualifiedType qtReturnType2 = widenType(qtReturnType1);
+
+  change = change || qtReturnType1 != qtReturnType2;
+
+  // TODO: Check to make sure intents still map?
+  newReturnType = qtReturnType2.type();
+
+  if (change) {
+    return get(kind_, width_, linkage_, std::move(newFormals),
+               returnIntent_,
+               newReturnType,
+               throws_);
+  }
 
   return ret;
 }
@@ -1074,6 +1372,10 @@ FunctionType::formalByOrdinal(Expr* actual, int* outIdx) const {
   return nullptr;
 }
 
+const FunctionType::Formals& FunctionType::formals() const {
+  return formals_;
+}
+
 RetTag FunctionType::returnIntent() const {
   return this->returnIntent_;
 }
@@ -1119,17 +1421,85 @@ const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
     case QUAL_CONST_REF: return "qcr";
     case QUAL_PARAM: return "qp";
     case QUAL_VAL: return "qv";
-    case QUAL_NARROW_REF: return "qnr";
     case QUAL_WIDE_REF: return "qwr";
     case QUAL_CONST_VAL: return "qcv";
-    case QUAL_CONST_NARROW_REF: return "qcnr";
     case QUAL_CONST_WIDE_REF: return "qcwr";
   }
   return nullptr;
 }
 
+static const char*
+functionTypeDecoratorMnemonicMangled(DecoratedClassType* dct) {
+  auto d = dct->getDecorator();
+
+  if (isManagedPtrType(dct)) {
+    // Set the manager mnemonic for use when printing out managed types.
+    auto mgr = getManagedPtrManagerType(dct);
+
+    const char* mgrMnemonic = mgr ? mgr->symbol->cname : nullptr;
+    if (mgr == dtOwned) {
+      mgrMnemonic = "o";
+    } else if (mgr == dtShared) {
+      mgrMnemonic = "s";
+    }
+
+    std::ostringstream oss;
+
+    switch (d) {
+      case ClassTypeDecorator::MANAGED: {
+        return mgrMnemonic;
+      } break;
+      case ClassTypeDecorator::MANAGED_NONNIL: {
+        oss << mgrMnemonic << "n";
+        return astr(oss.str());
+      } break;
+      case ClassTypeDecorator::MANAGED_NILABLE: {
+        oss << mgrMnemonic << "x";
+        return astr(oss.str());
+      } break;
+      default: INT_FATAL("Not possible!");
+    }
+  }
+
+  switch (d) {
+    case ClassTypeDecorator::BORROWED: return "b";
+    case ClassTypeDecorator::BORROWED_NONNIL: return "bn";
+    case ClassTypeDecorator::BORROWED_NILABLE: return "bx";
+    case ClassTypeDecorator::UNMANAGED: return "u";
+    case ClassTypeDecorator::UNMANAGED_NILABLE: return "bn";
+    case ClassTypeDecorator::UNMANAGED_NONNIL: return "bn";
+    case ClassTypeDecorator::GENERIC: return "g";
+    case ClassTypeDecorator::GENERIC_NONNIL: return "gn";
+    case ClassTypeDecorator::GENERIC_NILABLE: return "gx";
+    default: INT_FATAL("Not possible!");
+  }
+
+  INT_FATAL("Should not reach here!");
+  return nullptr;
+}
+
+static const char*
+functionTypeDecoratedClassTypeToStringMangled(DecoratedClassType* dct) {
+  std::ostringstream oss;
+
+  // We cannot use the 'cname' alone for decorated class types because of
+  // restrictions for ref types (they are mapped using their 'cname'
+  // currently) which require each ref type to have a unique cname.
+  oss << functionTypeDecoratorMnemonicMangled(dct);
+  oss << dct->symbol->cname;
+
+  auto ret = astr(oss.str());
+
+  return ret;
+}
+
 const char* FunctionType::typeToStringMangled(Type* t) {
   INT_ASSERT(t->symbol->cname);
+
+  if (auto dct = toDecoratedClassType(t)) {
+    return functionTypeDecoratedClassTypeToStringMangled(dct);
+  }
+
   return t->symbol->cname;
 }
 
@@ -1157,7 +1527,11 @@ const char* FunctionType::toStringMangledForCodegen() const {
     auto f = this->formal(i);
     oss << qualifierMnemonicMangled(f->qual());
     oss << intentTagMnemonicMangled(f->intent());
-    oss << typeToStringMangled(f->type()) << "_";
+    if (f->isGeneric()) {
+      oss << "unknown";
+    } else {
+      oss << typeToStringMangled(f->type()) << "_";
+    }
     if (f->name()) oss << f->name();
     oss << "_";
   }
@@ -1200,9 +1574,9 @@ size_t FunctionType::hash() const {
 }
 
 FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
-                             const char* name)
-    : qual_(qual), type_(type), intent_(intent) {
-  name_ = name ? astr(name) : nullptr;
+                             const char* name, FlagSet flags)
+    : qual_(qual), type_(type), intent_(intent), name_(nullptr), flags_(flags) {
+  name_ = (name && 0 != strcmp(name, "")) ? astr(name) : astr("_");
 }
 
 bool
@@ -1248,6 +1622,17 @@ QualifiedType FunctionType::Formal::qualType() const {
 
 bool FunctionType::Formal::isRef() const {
   return qualType().isRef();
+}
+
+bool FunctionType::Formal::isRetArg() const {
+  return flags_[FLAG_RETARG];
+}
+FlagSet FunctionType::Formal::flags() const {
+  return flags_;
+}
+
+bool FunctionType::Formal::isNamed() const {
+  return name_ && 0 != strcmp(name_, "") && 0 != strcmp(name_, "_");
 }
 
 bool FunctionType::Formal::isGeneric() const {
@@ -1397,8 +1782,8 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(                    \
                                   "_chpl_complex" #width "(0.0, 0.0)",                    \
                                    0.0, 0.0, COMPLEX_SIZE_ ## width);                     \
-  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("re", 0)); \
-  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("im", 1));
+  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::make_pair(astr("re"), 0)); \
+  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::make_pair(astr("im"), 1));
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
@@ -1424,10 +1809,7 @@ void initPrimitiveTypes() {
   // C type is 'c_string' which is defined in the runtime as an alias for
   // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
   // it can easily be deprecated.
-  // Note that we actually map to the type 'c_string_rehook' to avoid a
-  // collision with the type alias when '--no-munge-user-idents' is thrown.
-  // TODO: a better solution than renaming c_string to avoid the collision would be preferred
-  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
+  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
@@ -1519,10 +1901,10 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // Map to runtime type 'c_fn_ptr' to avoid collision with name of
   // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
   // thrown.
-  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr_rehook");
+  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
@@ -1552,6 +1934,9 @@ void initPrimitiveTypes() {
   dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
+  dtAnyUnion = createInternalType ("union", "union");
+  dtAnyUnion->symbol->addFlag(FLAG_GENERIC);
+
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
   dtAnyImag->symbol->addFlag(FLAG_GENERIC);
 
@@ -1560,6 +1945,9 @@ void initPrimitiveTypes() {
 
   dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
   dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyProc = createInternalType("chpl_anyProc", "_proc");
+  dtAnyProc->symbol->addFlag(FLAG_GENERIC);
 
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
@@ -1723,85 +2111,80 @@ void initCompilerGlobals() {
   initForTaskIntents();
 }
 
-bool is_nothing_type(Type* t) {
-  return t == dtNothing;
-}
-
-bool is_bool_type(Type* t) {
+bool isBoolType(Type* t) {
   return t == dtBool;
 }
 
-
-bool is_int_type(Type *t) {
+bool isIntType(Type *t) {
   return
-    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_8] ||
     t == dtInt[INT_SIZE_16] ||
+    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_64];
 }
 
-
-bool is_uint_type(Type *t) {
+bool isUIntType(Type *t) {
   return
-    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_8] ||
     t == dtUInt[INT_SIZE_16] ||
+    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_64];
 }
 
-bool is_signed(Type *t) {
-  if( is_int_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t) ||
-      is_complex_type(t) ) return true;
-  if( is_uint_type(t) ) return false;
-  if( is_enum_type(t) ) {
-    return is_signed(toEnumType(t)->getIntegerType());
+bool isIntegralByteType(Type* t) {
+  return t == dtInt[INT_SIZE_8] ||
+         t == dtUInt[INT_SIZE_8];
+}
+
+bool isSignedType(Type *t) {
+  if (isIntType(t) ||
+      isRealType(t) ||
+      isImagType(t) ||
+      isComplexType(t)) return true;
+  if (isUIntType(t)) return false;
+  if (isEnumType(t)) {
+    return isSignedType(toEnumType(t)->getIntegerType());
   }
   return false;
 }
 
-bool is_real_type(Type *t) {
+bool isRealType(Type *t) {
   return
     t == dtReal[FLOAT_SIZE_64] ||
     t == dtReal[FLOAT_SIZE_32];
 }
 
-
-bool is_imag_type(Type *t) {
+bool isImagType(Type *t) {
   return
     t == dtImag[FLOAT_SIZE_64] ||
     t == dtImag[FLOAT_SIZE_32];
 }
 
-
-bool is_complex_type(Type *t) {
+bool isComplexType(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
     t == dtComplex[COMPLEX_SIZE_64];
 }
 
-
-bool is_enum_type(Type *t) {
+bool isEnumType(Type *t) {
   return toEnumType(t);
 }
 
-
 bool isLegalParamType(Type* t) {
-  return (is_bool_type(t) ||
-          is_int_type(t) ||
-          is_uint_type(t) ||
-          is_real_type(t) ||
-          is_imag_type(t) ||
-          is_complex_type(t) ||
-          is_enum_type(t) ||
+  return (isBoolType(t) ||
+          isIntType(t) ||
+          isUIntType(t) ||
+          isRealType(t) ||
+          isImagType(t) ||
+          isComplexType(t) ||
+          isEnumType(t) ||
           isString(t) ||
           isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
 
-int get_width(Type *t) {
+int getWidthOfType(Type *t) {
   if (t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
@@ -1825,11 +2208,11 @@ int get_width(Type *t) {
   return 0;
 }
 
-int get_component_width(Type *t) {
-  if (is_complex_type(t)) {
-    return get_width(t) / 2;
+int getComponentWidthOfType(Type *t) {
+  if (isComplexType(t)) {
+    return getWidthOfType(t) / 2;
   }
-  return get_width(t);
+  return getWidthOfType(t);
 }
 
 // numbers between -2**width .. 2**width
@@ -1946,10 +2329,12 @@ bool isBuiltinGenericType(Type* t) {
   return isBuiltinGenericClassType(t) ||
          t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
          t == dtAnyEnumerated ||
+         t == dtAnyUnion ||
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
          t == dtThunkRecord ||
          t == dtAnyPOD ||
+         t == dtAnyProc ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||
          t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
@@ -1986,9 +2371,13 @@ bool isCPtrConstChar(Type* t) {
 }
 
 bool isCVoidPtr(Type* t) {
-  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
-         t == dtCVoidPtr;
+  if (t == dtCVoidPtr) return true;
+  if (t->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dtVoid;
+    }
+  }
+  return false;
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -2000,6 +2389,11 @@ bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
   return false;
+}
+
+bool isCPtrToRecord(Type* t) {
+  return t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+         isRecord(getDataClassType(t->symbol)->typeInfo());
 }
 
 bool isUserRecord(Type* t) {
@@ -2331,13 +2725,13 @@ bool typeNeedsCopyInitDeinit(Type* type) {
 bool needsCapture(Type* t) {
   INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
 
-  if (is_bool_type(t) ||
-      is_int_type(t) ||
-      is_uint_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t) ||
-      is_complex_type(t) ||
-      is_enum_type(t) ||
+  if (isBoolType(t) ||
+      isIntType(t) ||
+      isUIntType(t) ||
+      isRealType(t) ||
+      isImagType(t) ||
+      isComplexType(t) ||
+      isEnumType(t) ||
       t == dtStringC ||
       isClassLikeOrPtr(t) ||
       isRecord(t) ||

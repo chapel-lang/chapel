@@ -1,0 +1,2 @@
+# test intentionally does use-after-free
+--ccflags -Wno-unknown-warning-option --ccflags -Wno-use-after-free

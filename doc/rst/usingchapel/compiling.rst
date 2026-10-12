@@ -55,16 +55,16 @@ Flags                   Description
                         module is used (minus its ``.chpl`` extension).
 ``--no-checks``         turns off runtime semantic checks like bounds
                         checking and nil class instance dereferencing
-``-O``                  turns on optimization of the generated C code
+``-O``                  turns on backend optimization of the generated code
 ``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
 ``-s <name[=expr]>``    set a config declaration with the given expression
                         as its default value (config params must be set
                         to values that are known at compile time)
 ``-M <dir>``            add the specified directory to the module search path
-``--savec <dir>``       saves the generated C code in the specified
+``--savec <dir>``       saves the generated code in the specified
                         directory
-``-g``                  support debugging of the generated C code
+``-g``                  support debugging of the generated code
 ``--ccflags <flags>``   specify flags that should be used when invoking
                         the back-end C compiler
 ``--ldflags <flags>``   specify flags that should be used when invoking
@@ -241,3 +241,16 @@ code:
    add_executable(myChapelProgram main.chpl)
    target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
    target_link_libraries(myChapelProgram PRIVATE myCCode)
+
+To enable use of CMake-based projects with the :ref:`language server <readme-chpl-language-server>`,
+the CMake integration provides a special variable ``CMAKE_EXPORT_CHPL_COMMANDS``.
+When set to ``ON``, CMake will generate a file named ``.cls-commands.json`` in
+the build directory. This file can be read by the language server to understand
+the module structure of the project. For example:
+
+.. code-block:: sh
+
+   mkdir build && cd build
+   cmake .. -CMAKE_EXPORT_CHPL_COMMANDS=ON
+   cmake --build .
+   cd .. && ln -s build/.cls-commands.json .cls-commands.json

@@ -1,0 +1,4 @@
+Helpers.chpl:2: In function 'testInit':
+Helpers.chpl:3: error: cannot initialize 'x' of type 'int(8)' from '"a"'
+Helpers.chpl:3: note: did you mean to call '.toByte()'?
+  testInit.chpl:14: called as testInit(param strBytes = "a", type toType = int(8))

@@ -112,7 +112,5 @@ int psm3_verbs_get_unit_active(int unit, enum verbs_init_max_speed init_max_spee
    returns <= 0 if no port on any of the units is active. */
 int psm3_hfp_verbs_have_active_unit(int num_units);
 
-/* get the number of contexts from the unit id. */
-int psm3_verbs_get_num_contexts(int unit);
 #endif /* PSM_HAL_VERBS_SERVICE_H */
 #endif /* PSM_VERBS */

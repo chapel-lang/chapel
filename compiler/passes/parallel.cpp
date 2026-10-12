@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -108,8 +108,7 @@ static void insertEndCounts();
 static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
 static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn);
-static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
+static void findHeapVarsAndRefs(Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
 static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg, FnSymbol* fn);
 
 static void replaceRecordWrappedRefs();
@@ -717,6 +716,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   allocated_sz->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(allocated_sz);
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "c", ctype);
+  wrap_c->addFlag(FLAG_NO_USER_DEBUG_INFO);
   //wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
@@ -927,11 +927,7 @@ buildHeapType(Type* type) {
 //   Otherwise, if it is a record-wrapped type, replicate it.
 //   Otherwise,
 //    Add it to varSet and varVec, so it will be put on the heap.
-static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
-
-                                Vec<Symbol*>& varSet,
-                                Vec<Symbol*>& varVec)
-{
+static void findHeapVarsAndRefs(Vec<Symbol*>& varSet, Vec<Symbol*>& varVec) {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
@@ -944,13 +940,13 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
         !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type)    ||
-           is_enum_type(def->sym->type)    ||
-           is_int_type(def->sym->type)     ||
-           is_uint_type(def->sym->type)    ||
-           is_real_type(def->sym->type)    ||
-           is_imag_type(def->sym->type)    ||
-           is_complex_type(def->sym->type) ||
+          (isBoolType(def->sym->type)    ||
+           isEnumType(def->sym->type)    ||
+           isIntType(def->sym->type)     ||
+           isUIntType(def->sym->type)    ||
+           isRealType(def->sym->type)    ||
+           isImagType(def->sym->type)    ||
+           isComplexType(def->sym->type) ||
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&
@@ -1001,9 +997,10 @@ makeHeapAllocations() {
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
 
-  findHeapVarsAndRefs(defMap, varSet, varVec);
+  findHeapVarsAndRefs(varSet, varVec);
+
+  buildDefUseMaps(varSet, defMap, useMap);
 
   forv_Vec(Symbol, var, varVec) {
     // MPF: I'm disabling the below assert because PR #5692
@@ -1146,7 +1143,7 @@ makeHeapAllocations() {
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
           if (call->isPrimitive(PRIM_ZERO_VARIABLE)) {
-            // aftering zeroing the value, we need to set it back
+            // after zeroing the value, we need to set it back
             // otherwise its a dead store
             call->getStmtExpr()->insertAfter(
               new CallExpr(PRIM_SET_MEMBER, use->symbol(), heapType->getField(1), tmp));
@@ -1159,6 +1156,8 @@ makeHeapAllocations() {
     var->type = heapType;
     var->qual = QUAL_VAL;
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
@@ -1359,7 +1358,7 @@ static void insertEndCounts()
 // if ( chpl_doDirectExecuteOn( targetLocale ) )
 //     call un-wrapped task function
 // else
-//     proceed as with chpl_executeOn/chpl_executeOnFast
+//     proceed as with chpl_localeModelExecuteOn/chpl_localeModelExecuteOnFast
 //     fid call to wrapper function on a remote local
 //     (possibly just a different sublocale)
 //
@@ -1469,6 +1468,12 @@ static void passArgsToNestedFns() {
   }
 }
 
+// prevent issues like
+// extern "t" myType;
+// extern "t" myOtherType;
+// this will result in two definitions of `_ref_t`, which can cause problems
+// with wide pointers with the C backend
+static std::unordered_map<const char*, AggregateType*> refMap;
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
@@ -1485,16 +1490,25 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
 
   refType = type->refType;
   if( ! refType ) {
-    SET_LINENO(type->symbol);
-    AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
-    refTs->addFlag(FLAG_REF);
-    refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
-    refTs->addFlag(FLAG_NO_OBJECT);
-    theProgram->block->insertAtTail(new DefExpr(refTs));
-    ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
-    refType = ref;
-    type->refType = ref;
+    auto cname = astr(type->symbol->cname);
+    auto it = refMap.find(cname);
+    if (it != refMap.end()) {
+      refType = it->second;
+      type->refType = it->second;
+    } else {
+      SET_LINENO(type->symbol);
+      AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
+      TypeSymbol* refTs = new TypeSymbol(astr("ref(", type->symbol->name, ")"), ref);
+      refTs->cname = astr("_ref_", type->symbol->cname);
+      refTs->addFlag(FLAG_REF);
+      refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
+      refTs->addFlag(FLAG_NO_OBJECT);
+      theProgram->block->insertAtTail(new DefExpr(refTs));
+      ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+      refType = ref;
+      type->refType = ref;
+      refMap.insert(it, std::make_pair(cname, ref));
+    }
   }
   return refType;
 }
@@ -1503,22 +1517,25 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
 // exist to cause it to be code generated even though it was not
 // needed by earlier passes.
 Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
-  Type* wideType;
+  bool isActualRefType = refType->symbol->hasFlag(FLAG_REF);
+
   INT_ASSERT(refType == dtNil ||
              isClass(refType) ||
-             refType->symbol->hasFlag(FLAG_REF));
+             isActualRefType);
+
   // First, check if the wide type already exists.
-  if( isClass(refType) ) {
-    wideType = wideClassMap.get(refType);
-    if( wideType ) return wideType;
+  if(!isActualRefType && isClass(refType)) {
+    // For a ref to a class, isClass seems to return true...
+    // TODO: I don't think this is right...?
+    if (auto wideType = wideClassMap.get(refType)) return wideType;
   }
-  // For a ref to a class, isClass seems to return true...
-  wideType = wideRefMap.get(refType);
-  if( wideType ) return wideType;
+
+  if (auto wideType = wideRefMap.get(refType)) return wideType;
 
   // Now, create a wide pointer type.
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
+  TypeSymbol* wts = new TypeSymbol(astr("wide(", refType->symbol->name, ")"), wide);
+  wts->cname = astr("chpl____wide_", refType->symbol->cname);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
     wts->addFlag(FLAG_WIDE_REF);
   else
@@ -1526,10 +1543,12 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
-  if( isClass(refType) ) {
+
+  if(!isActualRefType && isClass(refType)) {
     wideClassMap.put(refType, wide);
   } else {
     wideRefMap.put(refType, wide);
   }
+
   return wide;
 }

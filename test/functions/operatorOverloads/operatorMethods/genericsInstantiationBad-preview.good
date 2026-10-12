@@ -1,0 +1,2 @@
+genericsInstantiationBad-preview.chpl:14: In function 'main':
+genericsInstantiationBad-preview.chpl:17: error: Cannot compare records of type Foo(int(64)) and Foo(real(64)) using '=='

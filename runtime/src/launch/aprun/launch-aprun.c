@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,7 @@
 #include <errno.h>
 #include "chpllaunch.h"
 #include "chpl-mem.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "aprun-utils.h"
 
 #define CHPL_CC_ARG "-cc"

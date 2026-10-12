@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -378,7 +378,7 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
 
     snprint_imm(imm, bufSize, *var->immediate);
 
-    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(var->type) ? "i" : "");
+    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, isImagType(var->type) ? "i" : "");
 
   } else {
     writeSymbol(sym, false);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ struct CalledFnCollector {
   // input
   Context* context;
   const AstNode* symbol = nullptr; // Module* or Function*
-  const ResolvedFunction* resolvedFunction = nullptr; // set if not module
+  std::vector<const ResolvedFunction*>& fnStack; // for each function along the way
   CalledFnOrder order;
 
   // output
@@ -52,12 +52,12 @@ struct CalledFnCollector {
 
   CalledFnCollector(Context* context,
                     const AstNode* symbol,
-                    const ResolvedFunction* resolvedFunction,
+                    std::vector<const ResolvedFunction*>& fnStack,
                     CalledFnOrder order,
                     CalledFnsSet& called)
     : context(context),
       symbol(symbol),
-      resolvedFunction(resolvedFunction),
+      fnStack(fnStack),
       order(order),
       called(called)
   {
@@ -83,7 +83,17 @@ struct CalledFnCollector {
   }
 
   bool enter(const Function* fn, RV& rv) {
-    return fn == symbol; // only proceed if it's the function requested
+    // only proceed if it's the function requested
+    if (fn == symbol) {
+      return true;
+    }
+
+    // If it's an export function, we should queue it up
+    if (fn->linkage() == Function::Linkage::EXPORT) {
+      collect(resolveConcreteFunction(context, fn->id()));
+    }
+
+    return false;
   }
   void exit(const Function* fn, RV& rv) {
   }
@@ -91,6 +101,34 @@ struct CalledFnCollector {
   bool enter(const AstNode* ast, RV& rv) {
     if (auto re = rv.byPostorder().byAstOrNull(ast)) {
       collectCalls(re);
+
+      // Look for uses of module-scope variables in internal/standard modules,
+      // which we will need to convert. Currently call graph traversal does not
+      // enter into modules when module-scope variables are used, so we have
+      // to explicitly do that here because internal modules are not visited
+      // elsewhere.
+      //
+      // TODO: this is a temporary workaround while the typed resolver is
+      // still in development. Eventually we will resolve the module
+      // initialization of internal/standard modules and pick up these calls
+      // normally.
+      if (ast->isIdentifier() &&
+          !re->toId().isEmpty() &&
+          parsing::idIsModuleScopeVar(context, re->toId()) &&
+          parsing::idIsInBundledModule(context, re->toId())) {
+        auto var = parsing::idToAst(context, re->toId())->toVariable();
+        CHPL_ASSERT(var && var->isVariable());
+
+        if (var->kind() != Variable::Kind::TYPE &&
+            var->kind() != Variable::Kind::PARAM) {
+          CalledFnOrder newOrder = {order.depth + 1, 0};
+          std::vector<const ResolvedFunction*> emptyFnStack;
+          auto v = CalledFnCollector(context, var, emptyFnStack, newOrder, called);
+          v.process();
+
+          order.index += v.order.index;
+        }
+      }
     }
     return true;
   }
@@ -105,9 +143,10 @@ struct CalledFnCollector {
                            const PoiScope* poiScope) {
     chpl::resolution::ResolutionContext rcval(context);
     const ResolvedFunction* fn = nullptr;
-    if (resolvedFunction) {
-      if (auto stored = resolvedFunction->getNestedResult(sig, poiScope)) {
+    for (auto it = fnStack.rbegin(); it != fnStack.rend(); it++) {
+      if (auto stored = (*it)->getNestedResult(sig, poiScope)) {
         fn = stored;
+        break;
       }
     }
 
@@ -121,12 +160,19 @@ struct CalledFnCollector {
 
 
 void CalledFnCollector::process() {
-  if (resolvedFunction) {
+  if (fnStack.size() > 0) {
     CHPL_ASSERT(symbol && symbol->isFunction());
     // we are handling a function, so visit based on the ResolvedFunction.
     chpl::resolution::ResolutionContext rcval(context);
     const ResolutionResultByPostorderID& byPostorder =
-      resolvedFunction->resolutionById();
+      fnStack.back()->resolutionById();
+    ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
+    symbol->traverse(rv);
+  } else if (symbol && symbol->isVariable()) {
+    CHPL_ASSERT(parsing::idIsModuleScopeVar(context, symbol->id()));
+    chpl::resolution::ResolutionContext rcval(context);
+    const ResolutionResultByPostorderID& byPostorder =
+      resolveModuleStmt(context, symbol->id());
     ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
     symbol->traverse(rv);
   } else {
@@ -153,7 +199,9 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
   // consider the return-intent overloads
   for (const auto& candidate : re->mostSpecific()) {
     if (const TypedFnSignature* sig = candidate.fn()) {
-      if (sig->untyped()->idIsFunction()) {
+      if (sig->untyped()->idIsExternBlockFunction()) {
+        // can't resolve extern block functions ourselves, so don't.
+      } else if (sig->untyped()->idIsFunction()) {
         auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
@@ -165,7 +213,9 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
     // TODO: handle copy-init called by default copy-init, etc.
     // Ideally, that would work by generating uAST for them.
     if (const TypedFnSignature* sig = action.fn()) {
-      if (sig->untyped()->idIsFunction()) {
+      if (sig->untyped()->idIsExternBlockFunction()) {
+        // can't resolve extern block functions ourselves, so don't.
+      } else if (sig->untyped()->idIsFunction()) {
         auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
@@ -174,42 +224,58 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
 }
 
 int gatherFnsCalledByFn(Context* context,
-                        const ResolvedFunction* fn,
+                        std::vector<const ResolvedFunction*>& fnStack,
                         CalledFnOrder order,
                         CalledFnsSet& called) {
-  const AstNode* symbol = parsing::idToAst(context, fn->id());
+  CHPL_ASSERT(fnStack.size() > 0);
+  const AstNode* symbol = parsing::idToAst(context, fnStack.back()->id());
   CHPL_ASSERT(symbol && symbol->isFunction());
-  auto v = CalledFnCollector(context, symbol, fn, order, called);
+  auto v = CalledFnCollector(context, symbol, fnStack, order, called);
   v.process();
   return v.order.index - order.index;
 }
 
 int gatherTransitiveFnsCalledByFn(Context* context,
+                                  std::vector<const ResolvedFunction*>& fnStack,
                                   const ResolvedFunction* fn,
                                   CalledFnOrder order,
                                   CalledFnsSet& called) {
+  fnStack.push_back(fn);
+
   // gather the direct calls into a set
   CalledFnsSet directCalls;
-  int directCount = gatherFnsCalledByFn(context, fn, order, directCalls);
+  int directCount = gatherFnsCalledByFn(context, fnStack, order, directCalls);
+
+  // Sort the direct calls by their index in the call graph, so that we can
+  // more reliably iterate over them later. This helps with debugging in
+  // the production compiler by making it easier to break on an AST ID.
+  auto sorted = std::vector<std::pair<const ResolvedFunction*, CalledFnOrder>>(
+      directCalls.begin(), directCalls.end());
+  std::sort(sorted.begin(), sorted.end(), [](auto& a, auto& b) {
+    return a.second.index < b.second.index;
+  });
 
   // used for recording the order value for transitive calls
   CalledFnOrder newOrder = {order.depth + 1, directCount};
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
-  for (auto kv : directCalls) {
+  for (auto kv : sorted) {
     if (kv.first == nullptr) continue;
 
     auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
                                             newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;
     }
   }
+
+  fnStack.pop_back();
+
   return newOrder.index;
 }
 
@@ -218,6 +284,7 @@ int gatherTransitiveFnsForFnId(Context* context,
                                CalledFnsSet& called) {
   const ResolvedFunction* fn = resolveConcreteFunction(context, fnId);
 
+  std::vector<const ResolvedFunction*> fnStack;
   if (fn != nullptr) {
     CalledFnOrder order = {0, 0};
     auto pair = called.insert({fn, order});
@@ -226,7 +293,7 @@ int gatherTransitiveFnsForFnId(Context* context,
       order.index++;
       // gather the transitive calls
       order.depth = 1;
-      return 1 + gatherTransitiveFnsCalledByFn(context, fn, order, called);
+      return 1 + gatherTransitiveFnsCalledByFn(context, fnStack, fn, order, called);
     }
   }
 
@@ -239,8 +306,9 @@ int gatherFnsCalledByModInit(Context* context,
   const AstNode* symbol = parsing::idToAst(context, moduleId);
   CHPL_ASSERT(symbol && symbol->isModule());
   CalledFnOrder order = {0, 0};
+  std::vector<const ResolvedFunction*> emptyFnStack;
   auto v = CalledFnCollector(context, symbol,
-                             /* resolvedFunction */ nullptr,
+                             emptyFnStack,
                              order, called);
   v.process();
   return v.order.index - order.index;
@@ -257,12 +325,13 @@ int gatherTransitiveFnsCalledByModInit(Context* context,
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
+  std::vector<const ResolvedFunction*> fnStack;
   for (auto kv : directCalls) {
     auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
                                             newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;

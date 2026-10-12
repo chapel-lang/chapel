@@ -1,3 +1,4 @@
-error in multipleQuestionArgs.chpl:4: cannot have '?' more than once in a call
-error in multipleQuestionArgs.chpl:4: cannot have '?' more than once in a call
-error in multipleQuestionArgs.chpl:4: Cannot resolve call: no matching candidates
+multipleQuestionArgs.chpl:4: error: cannot have '?' more than once in a call
+multipleQuestionArgs.chpl:4: error: cannot have '?' more than once in a call
+multipleQuestionArgs.chpl:4: error: unable to resolve call to 'test': no matching candidates
+multipleQuestionArgs.chpl:1: note: the following candidate didn't match because it expects 3 actuals, but none were provided

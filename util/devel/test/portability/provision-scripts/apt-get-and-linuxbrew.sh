@@ -25,7 +25,9 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" #hide
 brew install gcc #hide
 
 # install some dependencies in homebrew
-brew install cmake python gmp llvm #unsudo
+brew install cmake python gmp #unsudo
+# Pin LLVM 22 since we don't support the latest LLVM yet
+brew install llvm@22 #unsudo
 
 # we could use Homebrew's gcc if that becomes important in the future:
 # # link the homebrew-installed gcc-* to gcc

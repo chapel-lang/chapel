@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,14 +141,14 @@ static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
 // for rhs.
 // Substituting the value for the key uses the original value (i.e. symbol) in
 // place of the alias.
-typedef std::map<Symbol*, Symbol*> AvailableMap;
+typedef std::map<Symbol*, Symbol*, AstIdLess> AvailableMap;
 typedef AvailableMap::value_type AvailableMapElem;
 typedef std::pair<Symbol*, Symbol*> AvailablePair;
 
 // ReverseAvailableMap: rhs --> lhs*
 // The reverse of the available map, used to accelerate the removal of pairs
 // invalidated because the value of the RHS has changed.
-typedef std::map<Symbol*, std::vector<Symbol*> > ReverseAvailableMap;
+typedef std::map<Symbol*, std::vector<Symbol*>, AstIdLess> ReverseAvailableMap;
 typedef ReverseAvailableMap::mapped_type ReverseMapList;
 
 
@@ -172,7 +172,7 @@ static unsigned debug = 0;
 // isRefUse() for that case.
 // To be conservative, the routine should return true by default and then
 // select the cases where we are sure nothing has changed.
-static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
+static bool needsKilling(SymExpr* se, std::set<Symbol*, AstIdLess>& liveRefs)
 {
   INT_ASSERT(se->isRef() == false);
   if (toGotoStmt(se->parentExpr)) {
@@ -196,22 +196,43 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
   // Skip the "base" symbol.
   if (call && se == call->baseExpr) return false;
 
-  if (FnSymbol* fn = call->resolvedFunction())
-  {
-    INT_ASSERT(se->symbol() != fn);
+  if (call->resolvedFunction() || call->isIndirectCall()) {
+    auto fn = call->resolvedFunction();
 
-    ArgSymbol* arg = actual_to_formal(se);
+    // TODO: Isn't this assert redundant with the above?
+    INT_ASSERT(!fn || se->symbol() != fn);
 
-    if (arg->intent == INTENT_OUT   ||
-        arg->intent == INTENT_INOUT ||
-        arg->intent == INTENT_REF   ||
-        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
-    {
+    bool isArgReceiver = false;
+    IntentTag argIntent = INTENT_BLANK;
+    Type* argType = nullptr;
+
+    if (fn) {
+      // TODO: I avoid computing fresh function types here. If we stopped
+      //       caring about that we could collapse these two branches.
+      ArgSymbol* arg = actual_to_formal(se);
+
+      argType = arg->type;
+      argIntent = arg->intent;
+      isArgReceiver = arg->hasFlag(FLAG_ARG_THIS);
+
+    } else if (auto ft = call->functionType()) {
+      if (auto formal = ft->formalByOrdinal(se)) {
+        argType = formal->type();
+        argIntent = formal->intent();
+        // TODO: Can this change?
+        isArgReceiver = false;
+      }
+    }
+
+    if (argIntent == INTENT_OUT   ||
+        argIntent == INTENT_INOUT ||
+        argIntent == INTENT_REF   ||
+        isArgReceiver) {
       liveRefs.insert(se->symbol());
       return true;
     }
 
-    if (isRecordWrappedType(arg->type))
+    if (isRecordWrappedType(argType))
     {
       return true;
     }
@@ -348,6 +369,19 @@ static bool isUse(SymExpr* se)
     if (arg->intent == INTENT_OUT ||
         (arg->intent & INTENT_FLAG_REF))
       return false;
+  }
+  else if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+
+    if (auto formal = ft->formalByOrdinal(se)) {
+      auto qt = formal->qualType();
+      if (qt.isRefOrWideRef()) return false;
+      if (formal->intent() == INTENT_OUT ||
+          formal->intent() & INTENT_FLAG_REF) {
+        return false;
+      }
+    }
   }
   else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
   {
@@ -515,7 +549,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     if (isUse(se))
     {
       // See if there is an (alias,def) pair.
-      AvailableMap::iterator alias_def_pair = available.find(se->symbol());
+      auto alias_def_pair = available.find(se->symbol());
       // If so, replace the alias with its definition.
       if (alias_def_pair != available.end())
       {
@@ -539,25 +573,21 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
   std::vector<Symbol*> to_kill;
 
   // Remove the pair (sym, ?).
-  AvailableMap::iterator ami = available.find(sym);
-  if (ami != available.end())
-  {
+  auto ami = available.find(sym);
+  if (ami != available.end()) {
     DEBUG_COPYPROP("Removing (%s[%d], %s[%d])\n",
       ami->first->name, ami->first->id, ami->second->name, ami->second->id);
     available.erase(ami);
   }
 
   // Look up the pairs whose RHSs match sym.
-  ReverseAvailableMap::iterator rami = ravailable.find(sym);
-  if (rami != ravailable.end())
-  {
+  auto rami = ravailable.find(sym);
+  if (rami != ravailable.end()) {
     // Traverse the list of LHSs stored in the reverse map, and remove them.
     ReverseMapList& rml = rami->second;
-    for (ReverseMapList::iterator i = rml.begin(); i != rml.end(); ++i)
-    {
-      AvailableMap::iterator ami = available.find(*i);
-      if (ami != available.end())
-      {
+    for (auto i = rml.begin(); i != rml.end(); ++i) {
+      auto ami = available.find(*i);
+      if (ami != available.end()) {
         DEBUG_COPYPROP("Removing (%s[%d], %s[%d])\n",
           ami->first->name, ami->first->id, ami->second->name, ami->second->id);
         available.erase(ami);
@@ -574,7 +604,7 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
 static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
                                 AvailableMap& available,
                                 ReverseAvailableMap& ravailable,
-                                std::set<Symbol*>& liveRefs)
+                                std::set<Symbol*, AstIdLess>& liveRefs)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -628,7 +658,7 @@ static bool maybeVolatile(SymExpr* se)
 static void extractCopies(Expr* expr,
                           AvailableMap& available,
                           ReverseAvailableMap& ravailable,
-                          std::set<Symbol*>& liveRefs)
+                          std::set<Symbol*, AstIdLess>& liveRefs)
 {
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
@@ -686,7 +716,7 @@ static void
 localCopyPropagationCore(BasicBlock*          bb,
                          AvailableMap&        available,
                          ReverseAvailableMap& ravailable,
-                         std::set<Symbol*>& liveRefs)
+                         std::set<Symbol*, AstIdLess>& liveRefs)
 {
   std::vector<SymExpr*> symExprs;
   symExprs.reserve(16);
@@ -715,7 +745,7 @@ localCopyPropagationCore(BasicBlock*          bb,
 size_t localCopyPropagation(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
-  std::set<Symbol*> liveRefs;
+  std::set<Symbol*, AstIdLess> liveRefs;
 
   s_repl_count     = 0;
 
@@ -758,21 +788,16 @@ static void destroyPairSet(std::vector<BitVec*> set)
 // The ending index for each block is stored in ends[i].
 static void extractAvailablePairs(FnSymbol* fn,
                                   std::vector<AvailablePair>& availablePairs,
-                                  std::vector<size_t>& ends)
-{
-  std::set<Symbol*> liveRefs;
-  for_vector(BasicBlock, bb1, *fn->basicBlocks)
-  {
+                                  std::vector<size_t>& ends) {
+  std::set<Symbol*, AstIdLess> liveRefs;
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
     // Run local copy propagation to extract live pairs at the end of each block.
     AvailableMap available;
     ReverseAvailableMap ravailable;
     localCopyPropagationCore(bb1, available, ravailable, liveRefs);
 
     // Record those live pairs in successive elements in availablePairs.
-    for (AvailableMap::iterator i = available.begin();
-         i != available.end();
-         ++i)
-    {
+    for (auto i = available.begin(); i != available.end(); ++i) {
       AvailablePair pair = AvailablePair(i->first, i->second);
       availablePairs.push_back(pair);
     }
@@ -790,25 +815,21 @@ static void extractAvailablePairs(FnSymbol* fn,
 static void computeKillSets(FnSymbol* fn,
                             std::vector<AvailablePair>& availablePairs,
                             std::vector<BitVec*>& KILL,
-                            std::set<Symbol*>& liveRefs)
-{
+                            std::set<Symbol*, AstIdLess>& liveRefs) {
   std::vector<SymExpr*> symExprs;
   llvm::SmallPtrSet<Symbol*, 32> killSet;
 
   size_t nbbs = fn->basicBlocks->size();
-  for (size_t i = 0; i < nbbs; ++i)
-  {
+  for (size_t i = 0; i < nbbs; ++i) {
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
     killSet.clear();
-    for_vector(Expr, expr, bb2->exprs)
-    {
+    for_vector(Expr, expr, bb2->exprs) {
       symExprs.clear();
       collectSymExprs(expr, symExprs);
 
-      for_vector(SymExpr, se, symExprs)
-      {
+      for_vector(SymExpr, se, symExprs) {
         if (se->isRef()) continue;
         // Invalidate a symbol if it is redefined.
         if (needsKilling(se, liveRefs))
@@ -904,7 +925,7 @@ static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 //
 size_t globalCopyPropagation(FnSymbol* fn) {
   BasicBlock::buildBasicBlocks(fn);
-  std::set<Symbol*> liveRefs;
+  std::set<Symbol*, AstIdLess> liveRefs;
 
   size_t                     nbbs = fn->basicBlocks->size();
 

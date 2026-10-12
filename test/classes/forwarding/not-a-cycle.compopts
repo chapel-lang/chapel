@@ -1,0 +1,3 @@
+-stest=testCase.OWNED
+-stest=testCase.SHARED
+-stest=testCase.UNMANAGED

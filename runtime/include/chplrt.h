@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,10 +35,14 @@
 
 #include "sys_basic.h"
 
+#ifdef LAUNCHER
+  #ifdef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Macro should not be set when building launcher!"
+  #endif
+#endif
+
 #ifndef LAUNCHER
-
-#define _noop(x)
-
-#endif // LAUNCHER
+  #define _noop(x)
+#endif
 
 #endif

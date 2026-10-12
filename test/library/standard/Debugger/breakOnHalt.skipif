@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+if ! command -v gdb >/dev/null ; then
+  if ! command -v lldb /dev/null ; then
+    echo "True"
+    exit 0
+  fi
+fi
+
+if [[ "$($CHPL_HOME/util/chplenv/chpl_comm.py)" != "none" ]]; then
+  echo "True"
+  exit 0
+fi
+
+
+echo "False"

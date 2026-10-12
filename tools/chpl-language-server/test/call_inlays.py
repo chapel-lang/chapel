@@ -23,6 +23,7 @@ from util.config import CLS_PATH
             "--literal-arg-inlays",
             "--no-type-inlays",
             "--no-param-inlays",
+            "--no-return-type-inlays",
             "--end-markers=none",
         ],
         client_factory=get_base_client,
@@ -182,7 +183,6 @@ async def test_call_inlays_generic(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_call_inlays_in_range(client: LanguageClient):
     """
     Call inlays should only be generated in the requested range
@@ -210,3 +210,23 @@ async def test_call_inlays_in_range(client: LanguageClient):
         )
         # check no inlays
         await check_inlay_hints(client, doc, rng((0, 0), pos((1, 0))), [])
+
+
+@pytest.mark.asyncio
+async def test_call_inlays_method(client: LanguageClient):
+    """
+    Ensure that call inlays are shown for complex literals in call expressions.
+    """
+
+    file = """
+           proc int.bar(x) {}
+           proc int.baz() {
+             bar("hello");
+           }
+           12.bar("bye");
+           """
+
+    inlays = [(pos((2, 6)), "x = ", None), (pos((4, 7)), "x = ", None)]
+
+    async with source_file(client, file) as doc:
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)

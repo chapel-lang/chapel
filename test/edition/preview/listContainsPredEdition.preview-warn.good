@@ -1,0 +1,4 @@
+listContainsPredEdition.chpl:8: warning: use of routines as values is unstable
+listContainsPredEdition.chpl:9: warning: use of routines as values is unstable
+true
+1

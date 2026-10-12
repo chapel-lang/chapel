@@ -13,7 +13,7 @@ proc helper(param name : string) {
   var f = openMemFile();
   var x : U;
 
-  __primitive("set_union_id", x, getFieldIndex(U, name) + 1);
+  __primitive("set_union_id", x, getFieldIndex(U, name));
   ref field = getFieldRef(x, name);
   if field.type == int then field = 5;
   else if field.type == real then field = 42.0;

@@ -12,7 +12,7 @@
 # the pass groups. It is also used by this test to let you know if you broke
 # compiler performance testing. Prior to this, compiler performance tracking quickly
 # became out of date with missing passes and timings being associated with the
-# wrong pass. Note that you should _not_ be modifying compilerPerformance.perfkeys 
+# wrong pass. Note that you should _not_ be modifying compilerPerformance.perfkeys
 # to fix compiler performance testing (at the very least, the fix would
 # require updating .dat and .graph files, but as mentioned above, the whole
 # purpose of the three pass groups is to avoid doing this in the future).
@@ -31,17 +31,20 @@ with open(logfile, 'r') as f:
 # '<passname> : <time for pass>' and we want to remove <time for pass>
 with open(logfile, 'w') as f:
     for line in loglines:
-      splitline = line.split(':')[0].strip() + ' :'
-      # Only look at the pass groups (front-end, middle-end, back-end) and
-      # overall total time. Skip lines without ':' to exclude the 'total time'
-      # line at the bottom of pass timing tables, which isn't in the perfkeys.
-      if line.strip().startswith('total time') and ':' in line.strip():
-          f.write(splitline + '\n')
-      # --print-passes prints detailed output after printing the total
-      # time for each pass. This just strips all that output which
-      # occurs after the total is printed.
-      if line.strip().startswith('total time :') :
-        break
+        splitline = line.split(":")[0].strip() + " :"
+        # Only look at the pass groups (front-end, middle-end, back-end) and
+        # overall total time. Skip lines without ':' to exclude the 'total time'
+        # line at the bottom of pass timing tables, which isn't in the perfkeys.
+        if (
+            line.strip().startswith("total time")
+            or line.strip().startswith("total memory")
+        ) and ":" in line.strip():
+            f.write(splitline + "\n")
+        # --print-passes prints detailed output after printing the total
+        # time for each pass. This just strips all that output which
+        # occurs after the total is printed.
+        if line.strip().startswith("total memory :"):
+            break
 
 
 # copy the compilerPerformance perf keys as the .good file for this test. That

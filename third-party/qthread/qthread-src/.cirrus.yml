@@ -1,6 +1,6 @@
 osx_m1_task:
   macos_instance:
-    image: ghcr.io/cirruslabs/macos-sequoia-xcode:latest
+    image: ghcr.io/cirruslabs/macos-tahoe-xcode:latest
   timeout_in: 5m
   matrix:
     env:
@@ -38,21 +38,19 @@ osx_m1_task:
     export CXXFLAGS="-g -I$(brew --prefix)/include $CXXFLAGS"
     export LDFLAGS="-g -L$(brew --prefix)/lib $LDFLAGS"
     mkdir build
-    pushd build
+    cd build
     cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
     make -j$CIRRUS_CPU VERBOSE=1
-    popd
   test_script: |
     # commented example for how to get a backtrace from CI usign lldb on OSX:
     #echo "settings set target.process.stop-on-exec false" > ~/.lldbinit
     #QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1 lldb bash --batch --one-line 'process launch' --one-line-on-crash 'bt' --one-line-on-crash 'quit' -- test/basics/hello_world
-    pushd build
+    cd build
     CTEST_OUTPUT_ON_FAILURE=1 gtimeout --foreground 3m make test VERBOSE=1
-    popd
 
 freebsd_task:
   freebsd_instance:
-    image_family: freebsd-14-2
+    image_family: freebsd-15-0-amd64-ufs
   timeout_in: 5m
   matrix:
     env:
@@ -70,11 +68,12 @@ freebsd_task:
     cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=no -DQTHREADS_CONTEXT_SWAP_IMPL=system ..
     make -j$CIRRUS_CPU VERBOSE=1
   test_script: |
+    cd build
     CTEST_OUTPUT_ON_FAILURE=1 gtimeout --foreground -k 10s 2m make test VERBOSE=1
 
 arm_linux_task:
   arm_container:
-    image: gcc:14-bookworm
+    image: gcc:15-bookworm
   timeout_in: 5m
   matrix:
     env:
@@ -98,43 +97,41 @@ arm_linux_task:
     apt-get install -y hwloc libhwloc-dev
   build_script: |
     mkdir build
-    pushd build
+    cd build
     cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
     make -j$CIRRUS_CPU VERBOSE=1
-    popd
   test_script: |
-    pushd build
+    cd build
     CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 5m make test VERBOSE=1
-    popd
 
 arm_linux_clang_task:
   arm_container:
-    image: gcc:14-bookworm
+    image: gcc:15-bookworm
   timeout_in: 5m
   matrix:
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       QTHREADS_SCHEDULER: nemesis
       QTHREADS_TOPOLOGY: no
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       QTHREADS_SCHEDULER: nemesis
       QTHREADS_TOPOLOGY: hwloc
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       QTHREADS_SCHEDULER: nemesis
       QTHREADS_TOPOLOGY: binders
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       QTHREADS_SCHEDULER: sherwood
       QTHREADS_TOPOLOGY: no
     env:
-      CC: clang-19
-      CXX: clang++-19
+      CC: clang-21
+      CXX: clang++-21
       QTHREADS_SCHEDULER: distrib
       QTHREADS_TOPOLOGY: no
   install_deps_script: |
@@ -145,19 +142,17 @@ arm_linux_clang_task:
     gpg --no-default-keyring --keyring ./tmp.gpg --export --output llvm-snapshot.gpg
     rm tmp.gpg
     cp llvm-snapshot.gpg /etc/apt/trusted.gpg.d/llvm-snapshot.gpg # This is for CI so no need to do something more complicated to restrict key use to a specific repo.
-    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main'
-    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main' # Something's buggy upstream but running this twice fixes it.
-    apt-get install -y clang-19
+    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-21 main'
+    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-21 main' # Something's buggy upstream but running this twice fixes it.
+    apt-get install -y clang-21
     apt-get install -y cmake
     apt-get install -y hwloc libhwloc-dev
   build_script: |
     mkdir build
-    pushd build
+    cd build
     cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
     make -j$CIRRUS_CPU VERBOSE=1
-    popd
   test_script: |
-    pushd build
+    cd build
     CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 5m make test VERBOSE=1
-    popd
 

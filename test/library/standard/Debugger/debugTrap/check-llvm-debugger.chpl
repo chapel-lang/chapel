@@ -1,9 +1,9 @@
 use Debugger;
 
-proc begin_print() {}
-proc end_print() {}
-proc begin_loop() {}
-proc end_loop() {}
+proc begin_print() { return 1; }
+proc end_print() { return 2; }
+proc begin_loop() { return 3; }
+proc end_loop() { return 4; }
 
 proc main() {
   // CHECK: @begin_print

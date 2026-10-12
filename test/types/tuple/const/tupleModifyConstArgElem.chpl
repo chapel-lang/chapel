@@ -62,7 +62,7 @@ proc modifyConstArgElement(const tup: (u,)) {
 }
 
 proc modifyConstArgElement(const tup: (?t,)) where isDmapType(t) {
-  // TODO: dmap
+  // TODO: domain map
 }
 
 proc modifyConstArgElement(const tup: (?t,)) where isDomainType(t) {
@@ -140,7 +140,7 @@ proc test() {
   // union, OK
   run(new u());
 
-  // TODO: dmap
+  // TODO: domain map
 
   // domain, OK
   run({0..0});

@@ -1,0 +1,17 @@
+TestResolves.chpl:16: In function 'main':
+TestResolves.chpl:18: warning: function 'other' is mentioned but not called, so it is being captured as a first-class function
+TestResolves.chpl:18: note: 'other' is a parenful function, so it needs '(...)' to be called
+TestResolves.chpl:18: warning: function 'helper' is mentioned but not called, so it is being captured as a first-class function
+TestResolves.chpl:18: note: 'helper' is a parenful function, so it needs '(...)' to be called
+helper: true
+stored: true
+caller: true
+caller: true
+anon: true
+
+--- failures ---
+helper: false
+stored: false
+caller: false
+caller: false
+anon: false

@@ -150,10 +150,22 @@ static int cxip_req_buf_process_ux(struct cxip_ptelist_buf *buf,
 				"rbuf=%p ux=%p sw_pending_ux_list_len=%u\n",
 				buf, ux, buf->rxc->sw_pending_ux_list_len);
 		} else {
-			dlist_insert_tail(&ux->rxc_entry, &rxc->sw_ux_list);
+			struct fid_peer_srx *owner_srx = cxip_get_owner_srx(&rxc->base);
 
-			RXC_DBG(buf->rxc, "rbuf=%p ux=%p sw_ux_list_len=%u\n",
-				buf, ux, buf->rxc->sw_ux_list_len);
+			if (owner_srx) {
+				union cxip_match_bits ux_mb;
+
+				ux_mb.raw = ux->put_ev.tgt_long.match_bits;
+
+				if (ux_mb.tagged)
+					owner_srx->owner_ops->queue_tag(ux->rx_entry);
+				else
+					owner_srx->owner_ops->queue_msg(ux->rx_entry);
+			} else {
+				dlist_insert_tail(&ux->rxc_entry, &rxc->sw_ux_list);
+				RXC_DBG(buf->rxc, "rbuf=%p ux=%p sw_ux_list_len=%u\n",
+					buf, ux, buf->rxc->sw_ux_list_len);
+			}
 		}
 		break;
 
@@ -303,7 +315,7 @@ int cxip_req_bufpool_init(struct cxip_rxc_hpc *rxc)
 	struct cxip_ptelist_bufpool_attr attr = {
 		.list_type = C_PTL_LIST_REQUEST,
 		.ptelist_cb = cxip_req_buf_cb,
-		.buf_size = cxip_env.req_buf_size,
+		.buf_size = rxc->base.domain->req_buf_size,
 		.min_space_avail = CXIP_REQ_BUF_HEADER_MAX_SIZE +
 				   rxc->max_eager_size,
 		.min_posted = cxip_env.req_buf_min_posted,

@@ -1,6 +1,6 @@
 dnl -*- Autoconf -*-
 dnl
-dnl Copyright © 2009-2024 Inria.  All rights reserved.
+dnl Copyright © 2009-2025 Inria.  All rights reserved.
 dnl Copyright © 2009-2012, 2015-2017, 2020, 2023 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
@@ -485,6 +485,7 @@ EOF])
                       CACHE_DESCRIPTOR,
                       LOGICAL_PROCESSOR_RELATIONSHIP,
                       RelationProcessorPackage,
+                      RelationProcessorDie,
                       GROUP_AFFINITY,
                       PROCESSOR_RELATIONSHIP,
                       NUMA_NODE_RELATIONSHIP,
@@ -939,7 +940,7 @@ return 0;
 
     AS_IF([test "x$hwloc_pthread_mutex_happy" != xyes -a "x$hwloc_windows" != xyes],
       [AC_MSG_WARN([pthread_mutex_lock not available, required for thread-safe initialization on non-Windows platforms.])
-       AC_MSG_WARN([Please report this to the hwloc-devel mailing list.])
+       AC_MSG_WARN([Please report this to the hwloc-users mailing list or at https://github.com/open-mpi/hwloc])
        AC_MSG_ERROR([Cannot continue])])
 
     dnl Don't check for valgrind in embedded mode because this may conflict
@@ -1314,8 +1315,9 @@ return rsmi_init(0);
                          hwloc_rsmi_warning=no],
                         [AC_MSG_RESULT([no])
                          hwloc_rsmi_warning=yes],
-                        [AC_MSG_RESULT([don't know (cross-compiling)])])],
-                      [hwloc_rsmi_happy=no])
+                        [AC_MSG_RESULT([don't know (cross-compiling)])])
+		      AC_CHECK_DECLS([rsmi_dev_partition_id_get],,[:],[[#include <rocm_smi/rocm_smi.h>]])
+		     ], [hwloc_rsmi_happy=no])
         LDFLAGS="$LDFLAGS_save"
         LIBS="$LIBS_save"
       ], [hwloc_rsmi_happy=no])
@@ -1420,10 +1422,9 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
       echo
       echo "**** LevelZero configuration"
 
-      HWLOC_PKG_CHECK_MODULES([LEVELZERO], [libze_loader], [zesDevicePciGetProperties], [level_zero/zes_api.h],
+      HWLOC_PKG_CHECK_MODULES([LEVELZERO], [libze_loader], [zesDriverGetDeviceByUuidExp], [level_zero/zes_api.h],
                               [hwloc_levelzero_happy=yes
                                HWLOC_LEVELZERO_REQUIRES=libze_loader
-			       AC_CHECK_LIB([ze_loader], [zesInit], [AC_DEFINE(HWLOC_HAVE_ZESINIT, 1, [Define to 1 if zesInit is available])])
 			       AC_CHECK_LIB([ze_loader], [zeDevicePciGetPropertiesExt], [AC_DEFINE(HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT, 1, [Define to 1 if zeDevicePciGetPropertiesExt is available])])
                               ], [hwloc_levelzero_happy=no])
       if test x$hwloc_levelzero_happy = xno; then
@@ -1432,9 +1433,8 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
           AC_CHECK_LIB([ze_loader], [zeInit], [
             AC_CHECK_HEADERS([level_zero/zes_api.h], [
               AC_CHECK_LIB([ze_loader],
-	                   [zesDevicePciGetProperties],
+	                   [zesDriverGetDeviceByUuidExp],
 	                   [HWLOC_LEVELZERO_LIBS="-lze_loader"
-			    AC_CHECK_LIB([ze_loader], [zesInit], [AC_DEFINE(HWLOC_HAVE_ZESINIT, 1, [Define to 1 if zesInit is available])])
 			    AC_CHECK_LIB([ze_loader], [zeDevicePciGetPropertiesExt], [AC_DEFINE(HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT, 1, [Define to 1 if zeDevicePciGetPropertiesExt is available])])
                            ], [hwloc_levelzero_happy=no])
             ], [hwloc_levelzero_happy=no])
@@ -1807,6 +1807,7 @@ AC_DEFUN([HWLOC_DO_AM_CONDITIONALS],[
         AM_CONDITIONAL([HWLOC_BUILD_STANDALONE], [test "$hwloc_mode" = "standalone"])
 
         AM_CONDITIONAL([HWLOC_HAVE_GCC], [test "x$GCC" = "xyes"])
+        AM_CONDITIONAL([HWLOC_HAVE_MSVC], [test "$hwloc_c_vendor" = "microsoft"])
         AM_CONDITIONAL([HWLOC_HAVE_MS_LIB], [test "x$HWLOC_MS_LIB" != "x"])
         AM_CONDITIONAL([HWLOC_HAVE_OPENAT], [test "x$hwloc_have_openat" = "xyes"])
         AM_CONDITIONAL([HWLOC_HAVE_SCHED_SETAFFINITY],

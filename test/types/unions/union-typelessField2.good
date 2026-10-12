@@ -1,0 +1,3 @@
+union-typelessField2.chpl:2: error: union fields must have an explicit type
+union-typelessField2.chpl:3: error: union fields must have an explicit type
+union-typelessField2.chpl:4: error: union fields must have an explicit type

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,6 +61,8 @@ void chpl_vdebug_tagname(const char* tagname, int tagno);
 
 //  mark the current task as a xxxVdebug() task and all children
 extern void chpl_vdebug_mark(void);
+
+extern const char* chpl_rt_finfo_name(int idx);
 
 #ifdef __cplusplus
 }

@@ -52,7 +52,7 @@ module I {
   @deprecated module InnerI { }
   module InnerI2 { }
 }
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated module J {

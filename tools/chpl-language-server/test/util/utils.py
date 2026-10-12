@@ -76,39 +76,74 @@ class SourceFilesContext:
     def __init__(
         self,
         client: LanguageClient,
+        tempdir: tempfile.TemporaryDirectory,
+    ):
+        self.client = client
+        self.tempdir = tempdir
+
+    @classmethod
+    def from_files(
+        cls,
+        client: LanguageClient,
         files: typing.Dict[str, str],
         build_cls_commands: bool = True,
     ):
-        self.tempdir = tempfile.TemporaryDirectory()
-        self.client = client
+        tempdir = tempfile.TemporaryDirectory()
+        instance = cls(client, tempdir)
+        if build_cls_commands:
+            instance._build_cls_commands(files)
+        else:
+            instance._add_files(files)
+        return instance
 
-        commands = {}
+    @classmethod
+    def from_explicit_files(
+        cls, client: LanguageClient, files: typing.Dict[str, str]
+    ):
+        tempdir = tempfile.TemporaryDirectory()
+        instance = cls(client, tempdir)
+        instance._add_explicit_files(files)
+        return instance
+
+    @staticmethod
+    def _create_file_at_path(path: str, contents: str):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(strip_leading_whitespace(contents))
+
+    def _add_files(self, files: typing.Dict[str, str]):
+        for name, contents in files.items():
+            filepath = os.path.join(self.tempdir.name, name + ".chpl")
+            SourceFilesContext._create_file_at_path(filepath, contents)
+
+    def _add_explicit_files(self, files: typing.Dict[str, str]):
+        for name, contents in files.items():
+            if not os.path.isabs(name):
+                filepath = os.path.join(self.tempdir.name, name)
+                SourceFilesContext._create_file_at_path(filepath, contents)
+            else:
+                SourceFilesContext._create_file_at_path(name, contents)
+
+    def _build_cls_commands(self, files: typing.Dict[str, str]):
+        commands = {"invocation": ["chpl", "--dummy", "--invocation"]}
         allfiles = []
         for name, contents in files.items():
-            # make the directory structure, last component is the name
-            dir_path = self.tempdir.name
-            components = os.path.normpath(name).split(os.sep)
-            name = components[-1]
-            for component in components[:-1]:
-                dir_path = os.path.join(dir_path, component)
-                os.makedirs(dir_path, exist_ok=True)
-
-            filepath = os.path.join(dir_path, name + ".chpl")
-            with open(filepath, "w") as f:
-                f.write(strip_leading_whitespace(contents))
+            filepath = os.path.join(self.tempdir.name, name + ".chpl")
+            SourceFilesContext._create_file_at_path(filepath, contents)
 
             allfiles.append(filepath)
             commands[filepath] = [{"module_dirs": [], "files": allfiles}]
 
         commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
-        if build_cls_commands:
-            with open(commandspath, "w") as f:
-                json.dump(commands, f)
+        with open(commandspath, "w") as f:
+            json.dump(commands, f)
 
     def _get_doc(self, name: str) -> TextDocumentIdentifier:
-        return TextDocumentIdentifier(
-            uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
-        )
+        if os.path.isabs(name):
+            filepath = name
+        else:
+            filepath = os.path.join(self.tempdir.name, name + ".chpl")
+        return TextDocumentIdentifier(uri=f"file://{filepath}")
 
     async def __aenter__(self):
         self.tempdir.__enter__()
@@ -135,7 +170,7 @@ class SourceFileContext:
         num_errors: typing.Optional[int],
     ):
         self.main_file = main_file
-        self.source_files_context = SourceFilesContext(client, files)
+        self.source_files_context = SourceFilesContext.from_files(client, files)
         self.num_errors = num_errors
 
     async def __aenter__(self):
@@ -162,7 +197,7 @@ def source_files(client: LanguageClient, **files: str):
     Also creates a .cls-commands.json file that can be used by the
     language server to connect the files together in the workspace.
     """
-    return SourceFilesContext(client, files)
+    return SourceFilesContext.from_files(client, files)
 
 
 def unrelated_source_files(client: LanguageClient, **files: str):
@@ -170,7 +205,18 @@ def unrelated_source_files(client: LanguageClient, **files: str):
     Same as 'source_files', but doesn't create a .cls-commands.json file that
     would cause the files to be treated as "connected" and resolved together.
     """
-    return SourceFilesContext(client, files, build_cls_commands=False)
+    return SourceFilesContext.from_files(
+        client, files, build_cls_commands=False
+    )
+
+
+def with_file_structure(client: LanguageClient, files: typing.Dict[str, str]):
+    """
+    Same as 'source_files', but requires an explicit file structure. relative
+    paths will be treated as relative to the temporary directory, and absolute
+    paths will be used as-is. No .cls-commands.json file will be created
+    """
+    return SourceFilesContext.from_explicit_files(client, files)
 
 
 def source_file(
@@ -195,7 +241,7 @@ def source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):
     Also creates a .cls-commands.json file that can be used by the
     language server to connect the files together in the workspace.
     """
-    return SourceFilesContext(client, files)
+    return SourceFilesContext.from_files(client, files)
 
 
 async def save_file(client: LanguageClient, *docs: TextDocumentIdentifier):
@@ -249,7 +295,7 @@ def endpos(text: str) -> Position:
     lines = text.splitlines()
     if len(lines) == 0:
         return pos((0, 0))
-    return pos((len(lines) - 1, len(lines[-1])))
+    return pos((len(lines), 0))
 
 
 def standard_module(name: str):
@@ -351,7 +397,7 @@ async def check_goto_decl_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -396,7 +442,7 @@ async def check_goto_type_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -530,6 +576,34 @@ async def check_inlay_hints(
         assert expected[2] == actual.kind
 
     return results
+
+
+async def check_enum_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
+) -> typing.List[InlayHint]:
+    standardized_inlays = [(i[0], i[1], None) for i in expected_inlays]
+    actual_inlays = await check_inlay_hints(
+        client, doc, rng, standardized_inlays
+    )
+
+    # Check that the '= bla' inlays are insertable
+    for inlay in actual_inlays:
+        label = inlay.label
+        if isinstance(label, list):
+            label = "".join([part.value for part in label])
+
+        if label.startswith(" = "):
+            # the list of inlay text edits should have one element and have the
+            # same text/range as the inlay
+            assert inlay.text_edits is not None
+            assert len(inlay.text_edits) == 1
+            assert inlay.text_edits[0].range.start == inlay.position
+            assert inlay.text_edits[0].new_text == label
+
+    return actual_inlays
 
 
 async def check_type_inlay_hints(
@@ -690,3 +764,57 @@ async def execute_command(client: LanguageClient, command: Command):
             command=command.command, arguments=command.arguments
         )
     )
+
+
+EXPECTED_INLAY = tuple[Position, str, typing.Optional[InlayHintKind]]
+EXPECTED_INLAYS = typing.Sequence[EXPECTED_INLAY]
+
+
+async def click_lenses_and_check_inlays(
+    client: LanguageClient,
+    expected_lens: tuple[Position, int],
+    all_inlays: typing.Sequence[EXPECTED_INLAYS],
+    expected_lens_file=None,
+    **files: str,
+):
+    if expected_lens_file is None:
+        assert len(files) == 1
+        expected_lens_file = next(iter(files.keys()))
+
+    async with source_files(client, **files) as docs:
+        doc = docs(expected_lens_file)
+        file = files[expected_lens_file]
+        actual_lenses = await check_generic_code_lenses(
+            client, doc, [expected_lens]
+        )
+        key = depos(expected_lens[0])
+        assert len(actual_lenses.keys()) == 1 and key in actual_lenses
+        lenses = actual_lenses[key]
+
+        # for each lens, apply the command and check the inlays
+        # cycle through this twice to ensure that the lenses are not being
+        # broken by other lenses
+        for _ in range(2):
+            for lens in lenses:
+                # each lens should have a command. The 3rd argument to the command is the index of the inlays to check
+                # apply the command, and then check the inlays
+                command = lens.command
+                assert command is not None
+                if command.title == "Show Generic":
+                    idx = 0
+                else:
+                    assert (
+                        command.arguments is not None
+                        and len(command.arguments) == 5
+                    )
+                    idx = command.arguments[2]
+                    assert idx is not None
+                    idx = int(idx) + 1
+                # apply the command and get the inlays to check
+                await execute_command(client, command)
+                inlays = all_inlays[idx]
+
+                # check the inlays
+                await check_inlay_hints(
+                    client, doc, rng((0, 0), endpos(file)), inlays
+                )

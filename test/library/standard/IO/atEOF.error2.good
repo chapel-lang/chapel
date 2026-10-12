@@ -1,0 +1,8 @@
+a bunch of stuff
+a bunch of stuff
+uncaught IoError: Input/output error (assert failed - Not at EOF with path "unknown" offset 1)
+  atEOF.chpl:42: thrown here
+  atEOF.chpl:42: called from here
+  atEOF.chpl:42: called from here
+  atEOF.chpl:42: called from here
+  atEOF.chpl:42: uncaught here

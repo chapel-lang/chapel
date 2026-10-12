@@ -1,0 +1,13 @@
+Hello!
+Hello!
+Hello!
+MultipleExternNoRename.chpl:3: error: halt reached - Triggering unwind!
+Stacktrace
+
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn
+foobarbaz() at MultipleExternNoRename.chpl:1
+test3() at MultipleExternNoRename.chpl:18
+test2() at MultipleExternNoRename.chpl:12
+test1() at MultipleExternNoRename.chpl:6
+main() at MultipleExternNoRename.chpl:23

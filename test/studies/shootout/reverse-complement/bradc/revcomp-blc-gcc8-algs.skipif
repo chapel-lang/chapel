@@ -1,0 +1,4 @@
+# relies on undefined behavior
+# reinterprets uint8_t* as uint16_t*, and makes misaligned loads/stores to it
+# the original revcomp this is based on relies on the same behavior
+CHPL_SANITIZE_EXE==undefined

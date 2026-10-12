@@ -90,7 +90,7 @@ ifeq (, $(MPI_CC))
 MPI_CC=mpicc
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 # MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
 MPI_CC += $(SHARED_LIB_CFLAGS)
@@ -110,17 +110,15 @@ endif
 CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp
 
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
-# If we are using LLVM 15+, it defaults to -fPIE, so use that here as well
+# If we are using LLVM 15+, it defaults to '-fPIE'. However, we cannot use
+# that to compile as it allows for some types of relocations that are not
+# acceptable when building the Chapel runtime as a '.so' shared library.
+#
+# E.g., I see 'relocation R_X86_64_TPOFF32' = thread-pointer offset.
+#
+# So, compile with '-fPIC' instead as that is more strict.
 ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
-GASNET_CFLAGS += -fPIE
-endif
-endif
-
-# Prevent fatal compile errors from GCC 15+ due to GASNet bug #4787
-# https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4787
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
-ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 15; echo "$$?"),0)
-GASNET_CFLAGS += -Wno-incompatible-pointer-types
+GASNET_CFLAGS += -fPIC
 endif
 endif
 

@@ -1,0 +1,4 @@
+bug: --baseline problem w/ bool reduce intents and uses of bool within forall
+
+Not quite sure what makes this case work worse than similar ones with
+ints, but...

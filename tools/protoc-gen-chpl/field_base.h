@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,8 +28,6 @@
 
 namespace chapel {
 
-  using namespace std;
-
   using namespace google::protobuf;
   using namespace google::protobuf::io;
   using namespace google::protobuf::internal;
@@ -40,21 +38,21 @@ namespace chapel {
     virtual ~FieldGeneratorBase();
 
     virtual void GenerateMembers(Printer* printer) = 0;
-    string name();
-    string type_name(const FieldDescriptor* descriptor);
-    string proto_type_name(const FieldDescriptor* descriptor);
-    string default_value(const FieldDescriptor* descriptor);
-    string number();
+    std::string name();
+    std::string type_name(const FieldDescriptor* descriptor);
+    std::string proto_type_name(const FieldDescriptor* descriptor);
+    std::string default_value(const FieldDescriptor* descriptor);
+    std::string number();
 
     const FieldDescriptor* descriptor_;
-    map<string, string> variables_;
+    std::map<std::string, std::string> variables_;
 
    protected:
-     void SetCommonOneofFieldVariables(std::map<string, string>* variables);
-     string oneof_name(const OneofDescriptor* descriptor);
+     void SetCommonOneofFieldVariables(std::map<std::string, std::string>* variables);
+     std::string oneof_name(const OneofDescriptor* descriptor);
 
    private:
-     void SetCommonFieldVariables(map<string, string>* variables);
+     void SetCommonFieldVariables(std::map<std::string, std::string>* variables);
   };
 
 }  // namespace chapel

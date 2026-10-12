@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ extern int chpl_task_callback_counts[chpl_task_cb_num_event_kinds];
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t,
                                      chpl_fn_int_t fid,
                                      int32_t filename,
-                                     int lineno,
+                                     int32_t lineno,
                                      uint64_t id,
                                      int is_executeOn);
 
@@ -56,7 +56,7 @@ static inline
 void chpl_task_do_callbacks(chpl_task_cb_event_kind_t event_kind,
                             chpl_fn_int_t fid,
                             int32_t filename,
-                            int lineno,
+                            int32_t lineno,
                             uint64_t id,
                             int is_executeOn) {
   if (chpl_task_have_callbacks(event_kind))

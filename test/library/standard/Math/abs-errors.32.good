@@ -1,0 +1,1 @@
+abs-errors.chpl:18: error: halt reached - abs(-2147483648) is not representable as a int(32)

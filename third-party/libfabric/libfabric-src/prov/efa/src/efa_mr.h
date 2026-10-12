@@ -12,12 +12,7 @@
  */
 struct efa_mr_peer {
 	enum fi_hmem_iface  iface;
-	union {
-	    uint64_t        reserved;
-	    uint64_t        cuda;
-	    int             neuron;
-	    int             synapseai;
-	} device;
+	uint64_t			device;
 	uint64_t            flags;
 	void                *hmem_data;
 };
@@ -54,10 +49,22 @@ void efa_mr_cache_entry_dereg(struct ofi_mr_cache *cache,
 
 static inline bool efa_mr_is_hmem(struct efa_mr *efa_mr)
 {
-	return efa_mr ? (efa_mr->peer.iface == FI_HMEM_CUDA ||
-			 efa_mr->peer.iface == FI_HMEM_NEURON ||
-			 efa_mr->peer.iface == FI_HMEM_SYNAPSEAI): false;
+	return efa_mr && (
+		efa_mr->peer.iface == FI_HMEM_CUDA ||
+		efa_mr->peer.iface == FI_HMEM_ROCR ||
+		efa_mr->peer.iface == FI_HMEM_NEURON ||
+		efa_mr->peer.iface == FI_HMEM_SYNAPSEAI);
 }
+
+int efa_mr_cache_regv(struct fid_domain *domain_fid, const struct iovec *iov,
+		      size_t count, uint64_t access, uint64_t offset,
+		      uint64_t requested_key, uint64_t flags,
+		      struct fid_mr **mr_fid, void *context);
+
+int efa_mr_internal_regv(struct fid_domain *domain_fid, const struct iovec *iov,
+		      size_t count, uint64_t access, uint64_t offset,
+		      uint64_t requested_key, uint64_t flags,
+		      struct fid_mr **mr_fid, void *context);
 
 static inline bool efa_mr_is_cuda(struct efa_mr *efa_mr)
 {
@@ -74,6 +81,11 @@ static inline bool efa_mr_is_synapseai(struct efa_mr *efa_mr)
 	return efa_mr ? (efa_mr->peer.iface == FI_HMEM_SYNAPSEAI) : false;
 }
 
+static inline bool efa_mr_is_rocr(struct efa_mr *efa_mr)
+{
+	return efa_mr && efa_mr->peer.iface == FI_HMEM_ROCR;
+}
+
 static inline void *efa_mr_get_shm_desc(struct efa_mr *efa_mr)
 {
 	if (!efa_mr)
@@ -82,12 +94,16 @@ static inline void *efa_mr_get_shm_desc(struct efa_mr *efa_mr)
 	return efa_mr->shm_mr ? fi_mr_desc(efa_mr->shm_mr) : NULL;
 }
 #define EFA_MR_IOV_LIMIT 1
-#define EFA_MR_SUPPORTED_PERMISSIONS (FI_SEND | FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE)
+#define EFA_MR_SUPPORTED_PERMISSIONS (FI_SEND | FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE | FI_READ | FI_WRITE)
 
 /*
  * Multiplier to give some room in the device memory registration limits
  * to allow processes added to a running job to bootstrap.
  */
 #define EFA_MR_CACHE_LIMIT_MULT (.9)
+
+int efa_mr_ofi_to_ibv_access(uint64_t ofi_access,
+			     bool device_support_rdma_read,
+			     bool device_support_rdma_write);
 
 #endif

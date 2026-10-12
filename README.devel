@@ -2,39 +2,14 @@
 Chapel developer's file map
 ===========================
 
-The README and README.files files in this directory are intended for
-the end-user whose directory and file structure differs somewhat from
-what a developer would see in their git tree.  This file is meant to
-provide similar information as README.files for developers, and to map
-between the developer directory structure and the release directory
-structure.
+The README.files file in this directory is intended for the end user, whose
+directory and file structure differs somewhat from what a developer would see
+in their git tree. This file is meant to provide similar information for
+developers, and to map between the developer directory structure and the
+release directory structure.
 
-The following files/directories are ones that are the same and in the
-same place for developers and end users.  See README.files for a
-description:
-
-./
-  ACKNOWLEDGEMENTS.md
-  CHANGES.md
-  CONTRIBUTORS.md
-  COPYRIGHT
-  LICENSE
-  LICENSE.chapel
-  QUICKSTART.rst
-  README.files
-  README.rst
-  Makefile
-  bin/
-  compiler/
-  highlight/
-  lib/
-  make/
-  modules/
-  runtime/
-  third-party/
-  tools/
-  util/
-
+Most files/directories are the same and in the same place for developers and end
+users. See README.files for a description of these.
 
 The following files/directories in the release are based on those in
 the git tree, but not exactly the same:
@@ -48,15 +23,16 @@ the git tree, but not exactly the same:
               from test/release/examples in the developer hierarchy
               (with outdated subdirectories pruned).
 
-  man/ :      for the developer, this directory contains the sources
+  man/      : for the developer, this directory contains the sources
               for our man page as well as for the man page itself, built
               using "make man" from the top-level directory.  For
               users, this directory only contains the resulting man
               page structure.
 
-
-
 The following files/directories are for developers only:
 
-  README.devel     : this file
-  test/            : the Chapel testing system in all its glory
+  CODE_OF_CONDUCT.md : Chapel contributor code of conduct
+  LICENSE.devel      : third-party licenses of code not appearing in release
+  Makefile.devel     : Makefile containing targets for dev use
+  README.devel       : this file
+  test/              : the Chapel testing system in all its glory

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -167,6 +167,9 @@ struct Converter final : UastConverter {
 
   void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) override {
     symbolsToIgnore.swap(ignore);
+  }
+  void eraseSymbolToIgnore(chpl::ID ignore) override {
+    symbolsToIgnore.erase(ignore);
   }
 
   void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
@@ -639,6 +642,35 @@ struct Converter final : UastConverter {
 
     return ret;
   }
+
+  BlockStmt* visit(const uast::Match* node) {
+    // this lowering is very focused on match for unions only
+    // if we expand this syntax, we probably should add a proper Ast type for Match
+    // rather than lowering to conditionals like this
+    Expr* cond = toExpr(convertAST(node->expr()));
+
+    std::vector<std::pair<VarSymbol*, BlockStmt*>> casePairs;
+    for (auto caseStmt: node->caseStmts()) {
+      INT_ASSERT(caseStmt->expr()->isVariable()); // post-parse should guarantee this
+      auto caseName = caseStmt->expr()->toVariable()->name().astr(context);
+      auto var = new VarSymbol(caseName);
+      noteConvertedSym(caseStmt->expr(), var);
+      auto block = createBlockWithStmts(caseStmt->body()->stmts(), caseStmt->blockStyle());
+      casePairs.push_back(std::make_pair(var, block));
+    }
+    BlockStmt* otherwiseBlock = nullptr;
+    if (node->otherwiseStmt()) {
+      otherwiseBlock = createBlockWithStmts(node->otherwiseStmt()->body()->stmts(),
+                                            node->otherwiseStmt()->blockStyle());
+    }
+
+    return buildMatchStmt(cond, casePairs, otherwiseBlock);
+  }
+  Expr* visit(const uast::MatchCase* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
 
   BlockStmt* visit(const uast::On* node) {
     Expr* expr = convertAST(node->destination());
@@ -1144,7 +1176,17 @@ struct Converter final : UastConverter {
           auto r = symStack.back().resolved;
           if (r != nullptr) {
             if (auto rr = r->byAstOrNull(expr)) {
-              noteConvertedSym(expr, findConvertedSym(rr->toId()));
+              if (!rr->toId().isEmpty() || rr->isBuiltin()) {
+                noteConvertedSym(expr, findConvertedSym(rr->toId()));
+              } else {
+                // we need to note this symbol as having been converted, but
+                // we have nothing to map it to. This will cause problems when
+                // we can't convert TemporaryConversionSymbols referring to this
+                // task intent later. Instead, issue a user-friendly error now.
+                USR_FATAL(svs,
+                          "could not find the outer variable for '%s'",
+                          svs->name);
+              }
             }
           }
         }
@@ -2455,11 +2497,13 @@ struct Converter final : UastConverter {
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
-    INT_ASSERT(symStack.size() > 0);
-    {
+    if (symStack.size() > 0) {
       SymStackEntry& last = symStack.back();
       INT_ASSERT(last.ast != nullptr);
       decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    } else {
+      decl = parsing::parentAst(context, node)->toAggregateDecl();
       INT_ASSERT(decl);
     }
     // TODO: use the resolved type for the contained declaration
@@ -2709,7 +2753,7 @@ struct Converter final : UastConverter {
         // ignore things like chpl_taskAddCoStmt
         !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
       CHPL_ASSERT(node->id().postOrderId() == -1);
-      fn->cname = astr(node->id().symbolPath());
+      fn->cname = astr(chpl::unescapeStringId(node->id().symbolPath().c_str()));
     }
 
     if (convertedReceiver) {
@@ -2745,9 +2789,6 @@ struct Converter final : UastConverter {
     } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
       fn->addFlag(FLAG_ANONYMOUS_FN);
-      if (node->kind() == uast::Function::LAMBDA) {
-        fn->addFlag(FLAG_LEGACY_LAMBDA);
-      }
     }
 
     Expr* retType = convertTypeExpressionOrNull(node->returnType());
@@ -2944,7 +2985,17 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
+    if (symbolsToIgnore.count(node->id()) != 0) {
+      if (parsing::idIsInBundledModule(context, node->id()) &&
+          parsing::idIsNestedFunction(context, node->id())) {
+        // nested functions in bundled modules need to be converted
+      } else if (node->name() == USTR(":")) {
+        // allow untyped conversion of cast operators, as the typed converter
+        // will strip out type formals, which cannot be used by production.
+      } else {
+        return nullptr;
+      }
+    }
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;
@@ -3582,7 +3633,14 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
+    if (auto it = syms.find(node->id()); isTypeVar && it != syms.end()) {
+      // Sometimes in the typed converter we manually convert untyped AST
+      // to use as a base for instantiation. E.g., dtCPointer
+      return nullptr;
+    }
+
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
 
     auto info = convertVariable(node, true);
     INT_ASSERT(info.entireExpr && info.variableDef);
@@ -3756,7 +3814,7 @@ struct Converter final : UastConverter {
     if (auto it = syms.find(node->id()); it != syms.end()) {
       // Sometimes in the typed converter we manually convert untyped AST
       // to use as a base for instantiation. E.g., dtCPointer
-      return nullptr;
+      return it->second->defPoint->remove();
     }
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3830,8 +3888,36 @@ struct Converter final : UastConverter {
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::AstNode* node) {
+  bool emptyModStack = modStack.empty();
+  ID modId;
+  if (emptyModStack) {
+    // This might happen if 'convertAST' is called by the typed converter,
+    // and we have not set a module.
+    modId = parsing::idToParentModule(context, node->id());
+    UniqueString unused;
+    bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
+    auto modNode = parsing::idToAst(context, modId)->toModule();
+    this->modStack.push_back(ModStackEntry(modNode, isFromLibraryFile));
+  } else if (fVerify) {
+    auto modId = parsing::idToParentModule(context, node->id());
+    INT_ASSERT(modStack.back().mod->id() == modId);
+  }
+
   astlocMarker markAstLoc(node->id());
-  return node->dispatch<Expr*>(*this);
+  auto ret = node->dispatch<Expr*>(*this);
+
+  if (emptyModStack) {
+    auto mod = modSyms[modId];
+    for (auto usedMod : modStack.back().usedModules) {
+      mod->moduleUseAdd(usedMod);
+    }
+    for (auto modId : modStack.back().usedModuleIds) {
+      noteModuleFixupNeeded(mod, modId);
+    }
+    modStack.pop_back();
+  }
+
+  return ret;
 }
 
 /// Calls convertAST with a specific modTag
@@ -3839,8 +3925,7 @@ Expr* Converter::convertAST(const uast::AstNode* node, ModTag modTag) {
   auto prev = topLevelModTag;
   topLevelModTag = modTag;
 
-  astlocMarker markAstLoc(node->id());
-  auto ret =  node->dispatch<Expr*>(*this);
+  auto ret = convertAST(node);
 
   topLevelModTag = prev;
   return ret;

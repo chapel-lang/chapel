@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -237,9 +237,11 @@ void ResolveScope::addBuiltIns() {
   extend(dtAny->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
+  extend(dtAnyUnion->symbol);
   extend(dtAnyImag->symbol);
   extend(dtAnyReal->symbol);
   extend(dtAnyPOD->symbol);
+  extend(dtAnyProc->symbol);
 
   extend(dtIntegral->symbol);
   extend(dtNumeric->symbol);
@@ -321,14 +323,7 @@ int ResolveScope::depth() const {
 }
 
 int ResolveScope::numBindings() const {
-  Bindings::const_iterator it;
-  int                      retval = 0;
-
-  for (it = mBindings.begin(); it != mBindings.end(); it++) {
-    retval = retval + 1;
-  }
-
-  return retval;
+  return mBindings.size();
 }
 
 BlockStmt* ResolveScope::asBlockStmt() const {
@@ -509,8 +504,8 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
 ************************************** | *************************************/
 
 Symbol* ResolveScope::lookupNameLocallyForImport(const char* name) const {
-  Bindings::const_iterator it     = mBindings.find(name);
-  Symbol*                  retval = NULL;
+  auto it = mBindings.find(name);
+  Symbol* retval = NULL;
 
   if (it != mBindings.end()) {
     retval = it->second;
@@ -1047,16 +1042,12 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
 
 // Returns true if the symbol is present in the vector, false otherwise
 bool ResolveScope::isRepeat(Symbol* toAdd, const SymList& symbols) const {
-  SymList::const_iterator it;
-  bool                    retval = false;
-
-  for (it = symbols.begin(); it != symbols.end() && retval == false; ++it) {
-    if (*it == toAdd) {
-      retval = true;
+  for (auto sym : symbols) {
+    if (sym == toAdd) {
+      return true;
     }
   }
-
-  return retval;
+  return false;
 }
 
 /************************************* | **************************************
@@ -1124,8 +1115,8 @@ Symbol* ResolveScope::getField(const char* fieldName) const {
 
 // 2017/06/02: Future updates will avoid returning PRIVATE fields
 Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
-  Bindings::const_iterator it     = mBindings.find(fieldName);
-  Symbol*                  retval = NULL;
+  auto it = mBindings.find(fieldName);
+  Symbol* retval = NULL;
 
   if (it != mBindings.end()) {
     retval = it->second;
@@ -1191,8 +1182,8 @@ bool ResolveScope::matchesTypeWithMethods(const char* name) const {
 
 // 2017/06/02 Used by scopeResolve.
 Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
-  Bindings::const_iterator it     = mBindings.find(name);
-  Symbol*                  retval = NULL;
+  auto it = mBindings.find(name);
+  Symbol* retval = NULL;
 
   if (it != mBindings.end()) {
     Symbol* sym = it->second;
@@ -1230,8 +1221,8 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
                                                    BaseAST *context) {
   if (!this->canReexport) return NULL;
 
-  std::map<Symbol *, astlocT *> renameLocs;
-  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  std::map<Symbol *, astlocT *, AstIdLess> renameLocs;
+  std::map<Symbol*, VisibilityStmt*, AstIdLess> reexportPts;
   Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs,
                                                 reexportPts, true);
   return retval;
@@ -1239,8 +1230,8 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 
 Symbol*
 ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-              BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
-              std::map<Symbol*, VisibilityStmt*>& reexportPts,
+              BaseAST *context, std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+              std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
               bool followUses) {
   if (!this->canReexport) return NULL;
 
@@ -1343,9 +1334,7 @@ void ResolveScope::getFields(const char* fieldName,
   }
 
   if (symbols.size() > 0) {
-    for (std::vector<Symbol*>::iterator it = symbols.begin();
-         it != symbols.end();
-         it++) {
+    for (auto it = symbols.begin(); it != symbols.end(); it++) {
       if (*it == mAstRef) {
         // Only and except lists should not return the original module name.
         symbols.erase(it);
@@ -1548,7 +1537,6 @@ bool ResolveScope::skipUse(UseImportMap& visited, const UseStmt* current) const 
 ************************************** | *************************************/
 
 void ResolveScope::describe() const {
-  Bindings::const_iterator it;
   const char*              blockParent = "";
   int                      index       = 0;
 
@@ -1560,7 +1548,7 @@ void ResolveScope::describe() const {
   printf("  Depth:       %19d\n", depth());
   printf("  NumBindings: %19d\n", numBindings());
 
-  for (it = mBindings.begin(); it != mBindings.end(); it++, index++) {
+  for (auto it = mBindings.begin(); it != mBindings.end(); it++, index++) {
     printf("    %3d: %s\n", index, it->first);
   }
 

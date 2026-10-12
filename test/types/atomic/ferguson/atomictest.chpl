@@ -9,8 +9,7 @@ proc test(type base_type, n_max:int) {
   const one  =  1: base_type;
   const zero =  0: base_type;
 
-  var n:uint = max(base_type):uint;
-  if isRealType(base_type) then n = max(uint);
+  var n:uint = if !isRealType(base_type) then max(base_type):uint else max(uint);
   n = min(n, n_max:uint);
 
   // single precision floats have 24 bits of precision (i.e. can only

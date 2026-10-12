@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+mason search --no-update caps
+echo '========================'
+mason search --no-update CAPS

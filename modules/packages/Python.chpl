@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -640,12 +640,6 @@ module Python {
     */
     proc importModule(modName: string): owned Module throws {
       return new Module(this, modName);
-    }
-
-    @deprecated("'importModule' with a 'moduleContents' argument is deprecated. Use :proc:`createModule` instead.")
-    proc importModule(modName: string, moduleContents): owned Module throws
-      where moduleContents.type == string || moduleContents.type == bytes {
-      return new Module(this, modName, moduleContents);
     }
 
     /*
@@ -1508,7 +1502,7 @@ module Python {
 
   /*
     Represents an isolated Python sub-interpreter. This is useful for running
-    truly parallel Python code, without the GIL interferring.
+    truly parallel Python code, without the GIL interfering.
   */
   class SubInterpreter: Interpreter {
     @chpldoc.nodoc
@@ -3422,7 +3416,7 @@ module Python {
       compilerError("docs only");
     //
     // TODO: these are meant to prevent users from calling .these on a PyArray
-    // when they probaby wanted .values. But the mere presence of these as
+    // when they probably wanted .values. But the mere presence of these as
     // compiler errors prevents any program using Value.these from
     // compiling. And we can't just make them throw instead because inheritance
     // prevents iterator inlining, which is not yet supported
@@ -3574,7 +3568,7 @@ module Python {
   /*
     Represents a handle to a Chapel array that is usable by Python code. This
     allows code to pass Chapel arrays to Python without copying the data. This
-    only works for 1D local rectangular arrays.
+    only works for local rectangular arrays.
 
     .. note::
 
@@ -3626,7 +3620,7 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, ref arr: [])
       where !isSupportedArrayType(arr) {
       super.init(interpreter, nil: PyObjectPtr, isOwned=false);
-      compilerError("Only 1D local rectangular arrays are currently supported");
+      compilerError("Only local rectangular arrays are currently supported");
       this.eltType = nothing;
     }
     @chpldoc.nodoc

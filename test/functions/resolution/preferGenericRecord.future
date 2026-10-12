@@ -1,0 +1,3 @@
+feature request: Overload resolution should prefer 'R(?)' over 'record'
+
+#28751

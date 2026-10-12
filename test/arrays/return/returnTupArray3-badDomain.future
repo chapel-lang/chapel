@@ -1,0 +1,4 @@
+bug: missing checking an expressions that return a type
+
+we look for specific patterns during normalize that miss cases like this
+we need proper resolution, not just pattern matching

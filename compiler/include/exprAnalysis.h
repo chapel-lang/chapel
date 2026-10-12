@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,10 +51,10 @@
 class SafeExprAnalysis {
 
   private:
-    std::map<Expr*,bool> safeExprCache;
-    std::map<FnSymbol*,bool> safeFnCache;
-    std::map<FnSymbol*,bool> globalManipFuncCache;
-    std::map<FnSymbol*,bool> externManipFuncCache;
+    std::map<Expr*,bool, AstIdLess> safeExprCache;
+    std::map<FnSymbol*,bool, AstIdLess> safeFnCache;
+    std::map<FnSymbol*,bool, AstIdLess> globalManipFuncCache;
+    std::map<FnSymbol*,bool, AstIdLess> externManipFuncCache;
   public:
     bool isNonEssentialPrimitive(CallExpr* ce);
 

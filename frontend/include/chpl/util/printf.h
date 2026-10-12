@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,8 +34,8 @@
 
 namespace chpl {
 
-std::string vprintToString(const char* format, ...);
-std::string vprintToString(const char* format, va_list vl);
+std::string vprintToString(const char* format, ...) DYNO_ATTR_PRINTF_FORMAT(1, 2);
+std::string vprintToString(const char* format, va_list vl) DYNO_ATTR_PRINTF_FORMAT(1, 0);
 
 } // end namespace chpl
 

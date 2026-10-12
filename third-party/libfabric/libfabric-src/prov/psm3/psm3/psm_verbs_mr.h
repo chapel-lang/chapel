@@ -191,8 +191,8 @@ struct psm3_verbs_mr {
 	void *addr;
 	uint64_t length;
 	uint32_t access;
-#if defined(PSM_ONEAPI)
-	uint64_t alloc_id;
+#ifdef PSM_HAVE_GPU
+	union psm3_verbs_mr_gpu_specific gpu_specific;
 #endif
 	// below is for queue of cache entries available for reuse (refcount==0)
 	// only used when cache_mode==1
@@ -211,11 +211,11 @@ extern unsigned psm3_mr_cache_debug;
 #define MR_OUT_RANGE(addr, len) (uint64_t)(uintptr_t)(addr), \
 					(uint64_t)(uintptr_t)(addr)+(uint64_t)(len)-1, \
 					(uint64_t)(len)
-#ifdef PSM_ONEAPI
-#define MRC_FMT "0x%"PRIx64":0x%"PRIx64" (len 0x%"PRIx64") id %"PRIu64 \
-				" access 0x%x"
-#define MR_OUT_MRC(mrc) MR_OUT_RANGE((mrc)->addr, (mrc)->length), \
-								 (mrc)->alloc_id, (mrc)->access
+#ifdef PSM_HAVE_GPU
+#define MRC_FMT "0x%"PRIx64":0x%"PRIx64" (len 0x%"PRIx64") access 0x%x" \
+		PSM3_GPU_MRC_FMT
+#define MR_OUT_MRC(mrc) MR_OUT_RANGE((mrc)->addr, (mrc)->length), (mrc)->access \
+		PSM3_GPU_OUT_MRC(&(mrc)->gpu_specific)
 #else
 #define MRC_FMT "0x%"PRIx64":0x%"PRIx64" (len 0x%"PRIx64") access 0x%x"
 #define MR_OUT_MRC(mrc) MR_OUT_RANGE((mrc)->addr, (mrc)->length), (mrc)->access
@@ -225,7 +225,7 @@ extern psm2_mr_cache_t psm3_verbs_alloc_mr_cache(psm2_ep_t ep,
 				uint32_t limit_entries, uint8_t cache_mode,
 				uint32_t limit_size_mb,
 				uint32_t limit_pri_entries, uint64_t pri_size
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				, uint64_t gpu_pri_size
 #endif
 				);

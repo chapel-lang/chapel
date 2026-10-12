@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -444,7 +444,6 @@ module String {
     buf = buf + offset;
     import OS.POSIX.memcpy;
     memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
-    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
@@ -712,11 +711,11 @@ module String {
     var buffSize: int = 0; // size of the buffer we own
     var cachedNumCodepoints: int = 0;
     var buff: bufferType = nil;
-    var isOwned: bool = true;
-    var hasEscapes: bool = false;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var isOwned: bool = true;
+    var hasEscapes: bool = false;
     // remember to update <=> if you add a field
 
     proc init() {
@@ -1527,6 +1526,35 @@ module String {
     else
       return doSearchUTF8(pattern, indices,
                           count=false, fromLeft=false): byteIndex;
+  }
+
+  /*
+    :arg pattern: the :type:`string` to search for
+    :arg indices: an optional range defining the substring to search within,
+                 default is the whole string. Halts if the range is not
+                 within ``0..<string.size``
+
+    :returns: whether the substring is present in the string.
+   */
+  @edition(last="2.0")
+  @unstable("'.contains' on 'string' is unstable and may change in future.")
+  inline proc string.contains(pattern: string,
+                              indices: range(?) = this.byteIndices:range(byteIndex)) : bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: the :type:`string` to search for
+    :arg indices: an optional range defining the substring to search within,
+                  default is the whole string. Halts if the range is not
+                  within ``0..<string.size``
+
+    :returns: whether the substring is present in the string.
+    */
+  @edition(first="preview")
+  inline proc string.contains(pattern: string,
+                              indices: range(?) = this.byteIndices:range(byteIndex)) : bool {
+    return this.find(pattern, indices) != -1;
   }
 
   /*

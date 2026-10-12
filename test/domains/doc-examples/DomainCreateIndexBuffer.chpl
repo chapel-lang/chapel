@@ -31,5 +31,3 @@ idxBuf.commit();
 
 for i in someIndexIterator() do assert(spsDom.contains(i));
 }
-
-

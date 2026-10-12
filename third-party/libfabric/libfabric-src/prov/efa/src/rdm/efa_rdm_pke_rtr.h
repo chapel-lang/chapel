@@ -21,4 +21,5 @@ ssize_t efa_rdm_pke_init_longcts_rtr(struct efa_rdm_pke *pkt_entry,
 
 void efa_rdm_pke_handle_rtr_recv(struct efa_rdm_pke *pkt_entry);
 
+struct efa_rdm_ope *efa_rdm_pke_alloc_rtr_rxe(struct efa_rdm_pke *pkt_entry);
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -254,10 +254,6 @@ operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
 }
 
 
-@deprecated("'BlockCyclic' is deprecated, please use 'blockCycDist' instead")
-type BlockCyclic = blockCycDist;
-
-
 class BlockCyclicImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
@@ -290,6 +286,15 @@ class BlockCyclicImpl : BaseDist, writeSerializable {
 
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
+
+    if boundsChecking {
+      for param i in 0..#rank {
+        if this.blocksize(i) <= 0 {
+          halt("blocksize must be positive - got blocksize " +
+               this.blocksize:string + " instead");
+        }
+      }
+    }
 
     const ranges = setupTargetLocRanges(rank, targetLocales);
     this.targetLocDom = {(...ranges)};

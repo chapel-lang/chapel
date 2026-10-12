@@ -1,2 +1,1 @@
-COMPOPTS <= --fast
-COMPOPTS <= --no-bounds-checks
+COMPOPTS <= --baseline

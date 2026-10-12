@@ -1,5 +1,5 @@
 use IO;
-use MasonNew;
+use MasonNewInit;
 use MasonUtils;
 
 

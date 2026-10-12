@@ -1,0 +1,3 @@
+returnTupArray4.chpl:2: warning: return type is a tuple, but return value is not a literal tuple - no return type checking will be performed
+returnTupArray4.chpl:2: note: see issue #29373 for more information on this
+(3, (0 0 0 0 0 0 0 0 0 0, 0 0 0 0 0 0 0 0 0 0))

@@ -1809,7 +1809,7 @@ gasnete_coll_broadcast_nb_default(gasnet_team_handle_t team,
   /* "Discover" in-segment flags if needed/possible */
   flags = gasnete_coll_segment_check(team, flags, 0, 0, dst, nbytes, 1, srcimage, src, nbytes);
   impl = gasnete_coll_autotune_get_bcast_algorithm(team, dst, srcimage, src, nbytes, flags GASNETI_THREAD_PASS);
-  ret = (*((gasnete_coll_bcast_fn_ptr_t) (impl->fn_ptr)))(team, dst, srcimage, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
+  ret = impl->fn_ptr.bcast_fn(team, dst, srcimage, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
   if(impl->need_to_free) gasnete_coll_free_implementation(impl);
   return ret;
 }
@@ -1888,7 +1888,7 @@ gasnete_coll_scatter_nb_default(gasnet_team_handle_t team,
 
   flags = gasnete_coll_segment_check(team, flags, 0, 0, dst, nbytes, 1, srcimage, src, nbytes*team->total_ranks);
   impl = gasnete_coll_autotune_get_scatter_algorithm(team, dst, srcimage, src, nbytes, nbytes, flags GASNETI_THREAD_PASS);
-  ret = (*((gasnete_coll_scatter_fn_ptr_t) (impl->fn_ptr)))(team, dst, srcimage, src, nbytes, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
+  ret = impl->fn_ptr.scatter_fn(team, dst, srcimage, src, nbytes, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
   if(impl->need_to_free) gasnete_coll_free_implementation(impl);
   return ret;
 }
@@ -1975,7 +1975,7 @@ gasnete_coll_gather_nb_default(gasnet_team_handle_t team,
   impl = gasnete_coll_autotune_get_gather_algorithm(team,dstimage, dst, src, 
                                                     nbytes, nbytes, flags  GASNETI_THREAD_PASS);
   
-  ret = (*((gasnete_coll_gather_fn_ptr_t) (impl->fn_ptr)))(team, dstimage, dst, src, nbytes, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
+  ret = impl->fn_ptr.gather_fn(team, dstimage, dst, src, nbytes, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
   if(impl->need_to_free) gasnete_coll_free_implementation(impl);
   return ret;
 }
@@ -2214,7 +2214,7 @@ gasnete_coll_gather_all_nb_default(gasnet_team_handle_t team,
   impl = gasnete_coll_autotune_get_gather_all_algorithm(team, dst, src, 
                                                         nbytes, flags  GASNETI_THREAD_PASS);
   
-  ret =  (*((gasnete_coll_gather_all_fn_ptr_t) (impl->fn_ptr)))(team, dst, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
+  ret =  impl->fn_ptr.gather_all_fn(team, dst, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
   if(impl->need_to_free) gasnete_coll_free_implementation(impl);
   
   return ret;
@@ -2359,7 +2359,7 @@ gasnete_coll_exchange_nb_default(gasnet_team_handle_t team,
                                      0, 0, src, nbytes*team->total_ranks);
   
   impl = gasnete_coll_autotune_get_exchange_algorithm(team, dst, src, nbytes, flags GASNETI_THREAD_PASS);
-  ret =  (*((gasnete_coll_exchange_fn_ptr_t) (impl->fn_ptr)))(team, dst, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
+  ret = impl->fn_ptr.exchange_fn(team, dst, src, nbytes, flags, impl, sequence GASNETI_THREAD_PASS);
   if(impl->need_to_free) gasnete_coll_free_implementation(impl);
   return ret;
 }

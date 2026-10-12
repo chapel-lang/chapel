@@ -1,0 +1,64 @@
+Don't test python memleaks
+
+Since Python 3.13, we have started to see lots of problems where objgraph would report extra memleaks. For example, the following shows a memleak
+
+```
+import objgraph
+import gc
+
+gc.growth()
+
+# DO NOTHING
+
+gc.collect()
+gc.show_growth(None)
+```
+
+In Chapel code, its
+```
+use Python, Map;
+
+var interp = new Interpreter();
+
+proc main() {
+
+  use Python.CPythonInterface;
+  {
+    writeln("memleaks begin");
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    interp.objgraph = interp.importModuleInternal("objgraph");
+    interp.gc = interp.importModuleInternal("gc");
+    interp.growth = PyObject_GetAttrString(interp.objgraph, "growth");
+    interp.checkException();
+    interp.collect = PyObject_GetAttrString(interp.gc, "collect");
+    interp.checkException();
+    interp.show_growth = PyObject_GetAttrString(interp.objgraph, "show_growth");
+    interp.checkException();
+
+    // objgraph.growth()
+    var res = PyObject_CallFunctionObjArgs(interp.growth, Py_None, nil);
+    interp.checkException();
+    Py_DECREF(res);
+  }
+  // do nothing
+  {
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    writeln("memleaks end");
+
+    // run gc.collect() before showing growth
+    PyObject_CallNoArgs(interp.collect);
+    try! interp.checkException();
+    // objgraph.show_growth()
+    PyObject_CallOneArg(interp.show_growth, Py_None);
+    try! interp.checkException();
+  }
+}
+```
+
+This problem got even worse in Python 3.14.
+
+Even without this noise, I was finding that running `objgraph.show_growth()`, then deallocating any reference, then `objgraph.show_growth()`, would have no effect.
+
+This feature is useful for debugging Chapel's Python interface, but this noise in nightly testing is not worth trying to quiet.

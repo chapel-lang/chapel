@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 #ifdef CHPL_MLI_IS_SERVER
   #include "chplexit.h"
   #include "chpl-mem.h"
-  #include "error.h"
+  #include "chpl-error.h"
 #endif
 
 // Include a file with libc wrappers for the client. This file is

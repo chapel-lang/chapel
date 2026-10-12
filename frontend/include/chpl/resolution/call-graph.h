@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ using CalledFnsSet = std::unordered_map<const ResolvedFunction*, CalledFnOrder>;
    This function does not consider transitive calls.
    Returns the number of functions gathered. */
 int gatherFnsCalledByFn(Context* context,
-                        const ResolvedFunction* fn,
+                        std::vector<const ResolvedFunction*>& fnStack,
                         CalledFnOrder order,
                         CalledFnsSet& called);
 
@@ -52,6 +52,7 @@ int gatherFnsCalledByFn(Context* context,
    function into a set.
    Returns the number of functions gathered. */
 int gatherTransitiveFnsCalledByFn(Context* context,
+                                  std::vector<const ResolvedFunction*>& fnStack,
                                   const ResolvedFunction* fn,
                                   CalledFnOrder order,
                                   CalledFnsSet& called);

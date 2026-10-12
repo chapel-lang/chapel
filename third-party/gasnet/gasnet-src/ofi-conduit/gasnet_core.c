@@ -974,9 +974,10 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
     return gasneti_export_srcdesc(sd);
 }
 
-extern void gasnetc_AM_CommitRequestMediumM(
+extern int gasnetc_AM_CommitRequestMediumM(
                        gex_AM_Index_t          handler,
-                       size_t                  nbytes
+                       size_t                  nbytes,
+                       gex_Flags_t             commit_flags
                        GASNETI_THREAD_FARG,
                      #if GASNET_DEBUG
                        unsigned int            nargs_arg,
@@ -985,18 +986,40 @@ extern void gasnetc_AM_CommitRequestMediumM(
 {
     gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
 
-    GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,NULL,nargs_arg,Medium);
+    GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,NULL,commit_flags,nargs_arg,Medium);
 
+    int rc = GASNET_OK; // assume success
     va_list argptr;
     va_start(argptr, sd_arg);
     if (sd->_is_nbrhd) {
         gasnetc_nbrhd_CommitRequest(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
     } else {
-        gasnetc_ofi_CommitMedium(sd, /*isreq*/1, handler, nbytes, argptr GASNETI_THREAD_PASS);
+        rc = gasnetc_ofi_CommitMedium(sd, /*isreq*/1, handler, nbytes, commit_flags, argptr GASNETI_THREAD_PASS);
+        gasneti_assert(!rc || (commit_flags & GEX_FLAG_IMMEDIATE));
     }
     va_end(argptr);
 
+    if (!rc) gasneti_reset_srcdesc(sd);
+
+    return rc;
+}
+
+int gasnetc_AM_CancelRequestMedium(
+                       gex_AM_SrcDesc_t        sd_arg,
+                       gex_Flags_t             flags)
+{
+    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+
+    GASNETI_COMMON_CANCEL_REQ(sd,flags,Medium);
+
+    if (sd->_is_nbrhd) {
+        gasnetc_nbrhd_CancelRequest(sd, gasneti_Medium, flags);
+    } else {
+        gasnetc_ofi_CancelMedium(sd);
+    }
+
     gasneti_reset_srcdesc(sd);
+    return GASNET_OK;
 }
 
 #endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
@@ -1040,9 +1063,10 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
     return gasneti_export_srcdesc(sd);
 }
 
-extern void gasnetc_AM_CommitReplyMediumM(
+extern int gasnetc_AM_CommitReplyMediumM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
+                       gex_Flags_t             commit_flags,
                      #if GASNET_DEBUG
                        unsigned int            nargs_arg,
                      #endif
@@ -1050,19 +1074,41 @@ extern void gasnetc_AM_CommitReplyMediumM(
 {
     gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
 
-    GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,NULL,nargs_arg,Medium);
+    GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,NULL,commit_flags,nargs_arg,Medium);
 
+    int rc = GASNET_OK; // assume success
     va_list argptr;
     va_start(argptr, sd_arg);
     if (sd->_is_nbrhd) {
         gasnetc_nbrhd_CommitReply(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
     } else {
         GASNET_POST_THREADINFO(sd->_thread);
-        gasnetc_ofi_CommitMedium(sd, /*isreq*/0, handler, nbytes, argptr GASNETI_THREAD_PASS);
+        rc = gasnetc_ofi_CommitMedium(sd, /*isreq*/0, handler, nbytes, commit_flags, argptr GASNETI_THREAD_PASS);
+        gasneti_assert(!rc || (commit_flags & GEX_FLAG_IMMEDIATE));
     }
     va_end(argptr);
 
+    if (!rc) gasneti_reset_srcdesc(sd);
+
+    return rc;
+}
+
+int gasnetc_AM_CancelReplyMedium(
+                       gex_AM_SrcDesc_t        sd_arg,
+                       gex_Flags_t             flags)
+{
+    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+
+    GASNETI_COMMON_CANCEL_REP(sd,flags,Medium);
+
+    if (sd->_is_nbrhd) {
+        gasnetc_nbrhd_CancelReply(sd, gasneti_Medium, flags);
+    } else {
+        gasnetc_ofi_CancelMedium(sd);
+    }
+
     gasneti_reset_srcdesc(sd);
+    return GASNET_OK;
 }
 
 #endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM

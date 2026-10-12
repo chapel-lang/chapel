@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,8 +22,18 @@
 #define _stdchplrt_H_
 
 /* This is similar to stdchpl.h, but pared down for the runtime
-   Chapel code -- in particular, things like chplcgfns.h are not
-   needed for the generated runtime code, and cause problems. */
+   Chapel code -- in particular, some headers are not needed for
+   the generated runtime code, and cause problems. */
+
+#ifndef LAUNCHER
+  #ifndef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Expected 'CHPL_RT_IS_BUILDING_RUNTIME' macro to be set!"
+  #endif
+#else // LAUNCHER
+  #ifdef CHPL_RT_IS_BUILDING_RUNTIME
+    #error "Macro should not be set when building launcher!"
+  #endif
+#endif
 
 #include "chplrt.h"
 
@@ -41,6 +51,6 @@
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #endif

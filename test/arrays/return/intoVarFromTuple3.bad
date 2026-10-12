@@ -1,0 +1,3 @@
+intoVarFromTuple3.chpl:1: warning: return type is a tuple, but return value is not a literal tuple - no return type checking will be performed
+intoVarFromTuple3.chpl:1: note: see issue #29373 for more information on this
+intoVarFromTuple3.chpl:5: error: illegal tuple variable declaration with non-tuple initializer

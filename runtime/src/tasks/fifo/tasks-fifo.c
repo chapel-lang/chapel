@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,6 @@
 
 #include "chplrt.h"
 #include "chpl_rt_utils_static.h"
-#include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
@@ -36,7 +35,8 @@
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-linefile-support.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo.h"
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -102,7 +102,7 @@ static void                    comm_task_wrapper(void*);
 static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
                                             void*, size_t,
                                             c_sublocid_t,
-                                            int, int32_t);
+                                            int32_t, int32_t);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(chpl_bool);
@@ -113,7 +113,7 @@ static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p,
                                                 void*, size_t,
-                                                chpl_bool, int, int32_t);
+                                                chpl_bool, int32_t, int32_t);
 
 //
 // Condition variable methods
@@ -489,16 +489,20 @@ void dequeue_task(task_pool_p ptask) {
 }
 
 
-void chpl_task_addTask(chpl_fn_int_t fid,
-                       chpl_task_bundle_t* arg, size_t arg_size,
-                       c_sublocid_t subloc,
-                       int lineno, int32_t filename) {
+void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                           chpl_task_bundle_t* arg,
+                           size_t arg_size,
+                           c_sublocid_t subloc,
+                           int32_t lineno,
+                           int32_t filename) {
   assert(subloc == c_sublocid_none);
 
   arg->kind = CHPL_ARG_BUNDLE_KIND_TASK;
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
+
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
 
   (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
                           false, lineno, filename);
@@ -508,10 +512,13 @@ void chpl_task_addTask(chpl_fn_int_t fid,
 }
 
 
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,
-                        void* arg, size_t arg_size,
-                        c_sublocid_t subloc,
-                        int lineno, int32_t filename) {
+void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
+                                   void* arg,
+                                   size_t arg_size,
+                                   c_sublocid_t subloc,
+                                   int32_t lineno,
+                                   int32_t filename) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 
@@ -520,7 +527,7 @@ static inline
 void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                   void* arg, size_t arg_size,
                   c_sublocid_t subloc,
-                  int lineno, int32_t filename) {
+                  int32_t lineno, int32_t filename) {
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
@@ -624,8 +631,14 @@ uint32_t chpl_task_getMaxPar(void) {
   //
   max = (uint32_t) chpl_topo_getNumCPUsPhysical(true);
   maxThreads = chpl_thread_getMaxThreads();
-  if (maxThreads < max && maxThreads > 0)
-    max = maxThreads;
+  if (!chpl_env_rt_get_bool("FORCE_NUM_THREADS_PER_LOCALE", false)) {
+    if (maxThreads < max && maxThreads > 0)
+      max = maxThreads;
+  } else {
+    // if CHPL_RT_FORCE_NUM_THREADS_PER_LOCALE=true always use the specified threads
+    if (maxThreads > 0)
+      max = maxThreads;
+  }
   return max;
 }
 
@@ -900,7 +913,7 @@ static inline
 task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              void* a, size_t a_size,
                              chpl_bool is_executeOn,
-                             int lineno, int32_t filename) {
+                             int32_t lineno, int32_t filename) {
 
 
   task_pool_p ptask;

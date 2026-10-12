@@ -1,0 +1,12 @@
+─── error in throwInNonThrowNonThrows.chpl:7 [CallToThrowingFunctionFromNon] ───
+  Call to throwing function 'canThrow' from a non-throwing context
+      |
+    7 |     canThrow();
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call must be enclosed in a 'try' or 'try!' block, or the enclosing function must be declared with 'throws'.
+  The function was declared to throw here:
+      |
+    3 |   proc canThrow() throws {
+      |
+

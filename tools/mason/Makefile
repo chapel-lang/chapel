@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,33 +21,48 @@ export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
+DEBUG=1
+else
+DEBUG=0
+endif
 
 unexport CHPL_MAKE_CHPLENV_CACHE
 
-bdir=$(CHPL_BIN_DIR)
-link=../../tools/mason/mason
-linkFile=$(bdir)/mason
+override CHPL_COMPILER ?= $(CHPL_BIN_DIR)/chpl
+outputFile=$(CHPL_BIN_DIR)/mason
 
 MASON_SOURCES=*.chpl
 
-all: $(bdir)/mason FORCE
+.PHONY: all mason install deps tarball-prep clean clean-deps clobber FORCE
+all: $(outputFile) FORCE
 
-mason: $(bdir)/mason FORCE
+install: $(outputFile) FORCE
 
-install: $(bdir)/mason FORCE
-
-$(bdir)/mason: $(MASON_SOURCES)
-	@if [ $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_re2.py) != bundled ]; then \
-        echo "CHPL_RE2=bundled is required to build mason"; \
-        exit 1;\
-	fi;
+$(outputFile): $(MASON_SOURCES) buildMason
+	@$(MAKE) deps
 	@echo "Building Mason..."
-	@chplBinDir=$(bdir) ./buildMason
+	@CHPL_COMPILER=$(CHPL_COMPILER) outputFile=$(outputFile) DEBUG=$(DEBUG) ./buildMason
+
+deps: pullMasonDeps
+	@echo "Pulling Mason dependencies..."
+	@./pullMasonDeps
+
+tarball-prep: FORCE
+	@echo "Preparing Mason for tarball..."
+	@$(MAKE) deps
+	@rm ThirdParty/masonDeps.txt ThirdParty/downloaded.txt
 
 clean: FORCE
 	@echo "Removing Mason..."
-	rm -f $(bdir)/mason
+	rm -f $(outputFile)
 
-clobber: clean FORCE
+clean-deps: FORCE
+	@echo "Removing Mason dependencies..."
+	@find ThirdParty -type f -not -path '*/.gitignore' -not -path '*/masonDeps.txt' -exec rm {} +
+
+clobber: clean clean-deps FORCE
 
 FORCE:

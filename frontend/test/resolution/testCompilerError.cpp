@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -169,7 +169,7 @@ static void testTwoErrors() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x", "y"});
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 645, "no", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 740, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
   guard.realizeErrors();

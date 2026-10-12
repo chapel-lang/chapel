@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,11 +90,5 @@ void splitStringWhitespace(const char* s, std::vector<std::string>& vec);
 void removeTrailingNewlines(std::string& str);
 
 bool startsWith(const char* str, const char* prefix);
-
-// Unicode-specific utilities
-static inline bool isInitialUTF8Byte(unsigned char c)
-{
-  return (c & 0xc0) != 0x80;
-}
 
 #endif

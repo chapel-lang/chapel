@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@ class FnSymbol;
 class Symbol;
 class Type;
 class TypeSymbol;
+struct AstIdLess;
 
 enum PythonFileType {
   C_PXD, // used for C extern declarations in Cython
@@ -43,15 +44,15 @@ enum PythonFileType {
 
 // Stores arg/function symbol to element type for the arg's array or function's
 // array return type
-extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
+extern std::map<Symbol*, TypeSymbol*, AstIdLess> exportedArrayElementType;
 
 extern std::string libDir;
-extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
-extern std::map<TypeSymbol*, std::string> fortranKindNames;
-extern std::map<TypeSymbol*, std::string> fortranTypeNames;
+extern std::map<TypeSymbol*, std::pair<std::string, std::string>, AstIdLess> pythonNames;
+extern std::map<TypeSymbol*, std::string, AstIdLess> fortranKindNames;
+extern std::map<TypeSymbol*, std::string, AstIdLess> fortranTypeNames;
 
-extern std::map<ArgSymbol*, std::string> exportedDefaultValues;
-extern std::set<FnSymbol*> exportedStrRets;
+extern std::map<ArgSymbol*, std::string, AstIdLess> exportedDefaultValues;
+extern std::set<FnSymbol*, AstIdLess> exportedStrRets;
 
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_fortran(std::vector<FnSymbol*> functions);
@@ -67,6 +68,8 @@ void openLibraryHelperFile(fileinfo* fi,
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();
 
+bool isMultiLocaleLibrary();
+bool isClientServerLibrary();
 bool isUserRoutine(FnSymbol* fn);
 
 std::string getPythonTypeName(Type* type, PythonFileType pxd);

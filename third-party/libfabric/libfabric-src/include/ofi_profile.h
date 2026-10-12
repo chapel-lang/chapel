@@ -114,39 +114,15 @@ struct util_profile {
 #define OFI_PROF_START_READS(prof)    \
 	do { (prof)->data_cached = true; } while (0)
 #define OFI_PROF_END_READS(prof)      \
-	do {  (prof)->data_cached = false; } while (0)
+	do { (prof)->data_cached = false; } while (0)
 
-
+// for both variable index or event index
 static inline int
 ofi_prof_id2_idx(uint32_t id, size_t common_desc_count)
 {
 	int idx = id & OFI_PROF_ID_MASK;
 
 	return (id >> 16) ? (common_desc_count + idx) : idx;
-}
-
-static inline struct fi_profile_desc *
-ofi_prof_var_id2_desc(struct util_profile *prof, uint32_t var_id)
-{
-	int idx = ofi_prof_id2_idx(var_id, ofi_common_var_count);
-	if ((idx < prof->varlist_size) &&
-	    (OFI_EVENT_ENABLED(&(prof->varlist[idx])))) {
-		return &(prof->varlist[idx]);
-	} else {
-		return NULL;
-	}
-}
-
-static inline struct fi_profile_desc *
-ofi_prof_event_id2_desc(struct util_profile *prof, uint32_t event_id)
-{
-	int idx = ofi_prof_id2_idx(event_id, ofi_common_event_count);
-	if ((idx < prof->eventlist_size) &&
-	    (OFI_EVENT_ENABLED(&(prof->eventlist[idx])))) {
-		return &(prof->eventlist[idx]);
-	} else {
-		return NULL;
-	}
 }
 
 static inline void
@@ -190,6 +166,12 @@ ofi_var_data_u64(void *var, enum fi_datatype type)
 	return 0;
 }
 
+static inline uint64_t
+ofi_var_data_atomic64(void *var)
+{
+	 return (uint64_t)ofi_atomic_get64((ofi_atomic64_t *)var);
+}
+
 static inline ssize_t
 ofi_prof_read_u64(struct util_profile *prof, int idx,
 		  void *data, size_t *size)
@@ -199,11 +181,16 @@ ofi_prof_read_u64(struct util_profile *prof, int idx,
 	if (*size < sizeof(uint64_t))
 		return -FI_ETOOSMALL;
 
-	if (prof->data_cached) 
+	if (prof->data_cached) {
 		*val64 = prof->data[idx].value.u64;
-	else
+	} else if (prof->varlist[idx].datatype_sel == fi_primitive_type) {
 		*val64 = ofi_var_data_u64(prof->vars[idx],
 					  prof->varlist[idx].datatype.primitive);
+	} else if (prof->varlist[idx].datatype.defined ==  FI_TYPE_ATOMIC_TYPE) {
+		*val64 = ofi_var_data_atomic64(prof->vars[idx]);
+	} else {
+		*val64 = 0;
+	}
 
 	return sizeof(uint64_t);
 }
@@ -218,6 +205,12 @@ ofi_prof_read_cached_data(struct util_profile *prof, int idx,
 	memcpy(data, prof->data[idx].value.pt, prof->data[idx].size);
 	return prof->data[idx].size;
 }
+
+struct fi_profile_desc *
+ofi_prof_event2_desc(struct util_profile *prof, uint32_t event_id);
+
+struct fi_profile_desc *
+ofi_prof_var2_desc(struct util_profile *prof, uint32_t var_id);
 
 int ofi_prof_init(struct util_profile *prof, struct fid *fid,
 		  uint64_t flags, void *context, struct fi_profile_ops *ops,
@@ -241,6 +234,13 @@ int ofi_prof_add_event(struct util_profile *prof, uint32_t event_id,
 int ofi_prof_pcb_noop(struct fid_profile *prof_fid, 
 		      struct fi_profile_desc *event, void *param,
 		      size_t size, void *context);
+
+
+//  May be associated to a fabric or a domain.
+// for now, use as global, not associated with a profile instance.
+void ofi_prof_sys_init();
+void ofi_prof_inc_sys_var(uint32_t var_id, int64_t val);
+uint64_t ofi_prof_read_sys_var(uint32_t var_id);
 
 #ifdef __cplusplus
 }

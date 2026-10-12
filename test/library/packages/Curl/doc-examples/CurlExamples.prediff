@@ -1,4 +1,6 @@
 #!/bin/bash
+# save a copy of the original output
+cat $2 > $2.orig.tmp
 # replace carriage returns
 cat $2 | sed 's/\r$//' > $2.tmp
 # keep only lines containing special symbol

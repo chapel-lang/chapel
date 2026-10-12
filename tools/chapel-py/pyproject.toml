@@ -9,25 +9,24 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
 keywords = ["chapel", "compiler", "frontend", "dyno"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
-  "attrs==24.2.0",
-  "cattrs==24.1.2",
+  "attrs==25.3.0",
+  "cattrs==25.1.1",
   "lsprotocol==2023.0.1",
   "pygls==1.3.1",
-  "typeguard==4.3.0",
+  "typeguard==4.4.4",
   "ConfigArgParse==1.7.1",
   "PyYAML==6.0.2",         # required by ConfigArgParse
   "toml==0.10.2",          # required by ConfigArgParse
   # needed for <python3.11
-  "exceptiongroup==1.2.2",
+  "exceptiongroup==1.3.0",
 ]
 
 [project.urls]
@@ -41,6 +40,7 @@ requires = ["scikit-build-core>=0.11.5"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
+wheel.py-api = "cp310" # limited API for 3.10
 wheel.expand-macos-universal-tags = true
 minimum-version = "build-system.requires"
 build-dir = "./build/{wheel_tag}"

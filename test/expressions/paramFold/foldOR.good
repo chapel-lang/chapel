@@ -1,0 +1,18 @@
+foldOR.chpl:9: warning: resolve true branch
+foldOR.chpl:17: warning: resolve true branch
+foldOR.chpl:20: warning: resolve false branch
+foldOR.chpl:26: warning: resolve true branch
+foldOR.chpl:29: warning: resolve false branch
+foldOR.chpl:35: warning: resolve true branch
+foldOR.chpl:38: warning: resolve false branch
+TRUE || non-param:
+passed if
+FALSE || non-param:
+getBool called
+passed if
+non-param || TRUE:
+getBool called
+passed if
+non-param || FALSE:
+getBool called
+passed if

@@ -1,0 +1,6 @@
+-sstartAtCase=1
+-sstartAtCase=2
+-sstartAtCase=3
+-sstartAtCase=1 -senableInnerFoo=false
+-sstartAtCase=2 -senableInnerFoo=false
+-sstartAtCase=3 -senableInnerFoo=false

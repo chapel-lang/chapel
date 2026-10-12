@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -258,10 +258,10 @@ module Bytes {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
-    var isOwned: bool = true;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var isOwned: bool = true;
     // remember to update <=> if you add a field
 
     proc init() {
@@ -583,6 +583,37 @@ module Bytes {
                           indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=false,
                          fromLeft=false);
+  }
+
+  /*
+    :arg pattern: The :type:`bytes` to search for
+
+    :arg indices: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: whether the :type:`bytes` contains the pattern.
+  */
+  @edition(last="2.0")
+  @unstable("'.contains' on 'bytes' is unstable and may change in future.")
+  inline proc bytes.contains(pattern: bytes,
+                              indices: range(?) = this.indices): bool {
+    return this.find(pattern, indices) != -1;
+  }
+
+  /*
+    :arg pattern: The :type:`bytes` to search for
+
+    :arg indices: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: whether the :type:`bytes` contains the pattern.
+  */
+  @edition(first="preview")
+  inline proc bytes.contains(pattern: bytes,
+                              indices: range(?) = this.indices): bool {
+    return this.find(pattern, indices) != -1;
   }
 
   /*

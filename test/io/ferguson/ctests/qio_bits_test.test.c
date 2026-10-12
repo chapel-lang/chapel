@@ -172,8 +172,7 @@ void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hi
   char filename[128];
   int fd = -1;
   uint64_t one = 1;
-  uint64_t mask = (one << width) - 1;
-  if( width == 64 ) mask = -1;
+  uint64_t mask = width == 64 ? -1 : (one << width) - 1;
 
   strcpy(filename,"/tmp/qio_bits_testXXXXXX");
 

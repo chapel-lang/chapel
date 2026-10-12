@@ -37,7 +37,10 @@ int cxip_portals_table_alloc(struct cxip_lni *lni, uint16_t *vni,
 
 	for (i = 0; i < vni_count; i++) {
 		ret = cxil_alloc_domain(lni->lni, vni[i], pid, &table->doms[i]);
-		if (ret) {
+		if (i && ret == -EEXIST) {
+			vni_count = i;
+			break;
+		} else if (ret) {
 			CXIP_WARN("Failed to allocate CXI Domain, ret: %d\n",
 				  ret);
 			ret = -FI_ENOSPC;

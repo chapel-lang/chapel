@@ -1,0 +1,36 @@
+# new with bad names
+echo_and_run mason new || true
+echo_and_run mason new 0bad || true
+echo_and_run mason new 'bad$stuff' --light || true
+echo_and_run mason new bad-name --lib || true
+echo_and_run mason new bad.name || true
+rm -rf testingPkg && mkdir testingPkg && echo_and_run mason new testingPkg || true
+rm -rf testingPkg
+
+
+# init with bad names
+mkdir 0bad && cd 0bad
+echo_and_run mason init || true
+cd .. && rm -rf 0bad
+
+mkdir bad-name && cd bad-name
+echo_and_run mason init --light || true
+cd .. && rm -rf bad-name
+
+mkdir bad.name && cd bad.name
+echo_and_run mason init || true
+cd .. && rm -rf bad.name
+
+
+
+# we can still use bad dir names with --name
+echo_and_run mason new 0bad --name good
+cd 0bad
+echo_and_run cat Mason.toml | sed '/chplVersion/d'
+cd .. && rm -rf 0bad
+
+# we can still use bad dir names with --name
+mkdir bad-name && cd bad-name
+echo_and_run mason init --name good
+echo_and_run cat Mason.toml | sed '/chplVersion/d'
+cd .. && rm -rf bad-name

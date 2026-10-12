@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -229,8 +229,7 @@ bool ConstInfo::hasMore() {
   return curTodo < todo.size();
 }
 
-std::map<Symbol*, ConstInfo*> infoMap;
-typedef std::map<Symbol*, ConstInfo*>::iterator ConstInfoIter;
+std::map<Symbol*, ConstInfo*, AstIdLess> infoMap;
 
 static bool inferConstRef(Symbol*);
 
@@ -336,6 +335,22 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
   return isSafeRefPrimitive(use);
 }
 
+static bool isPassedToRefFormalInIndirectCall(Expr* use, CallExpr* call) {
+  INT_ASSERT(use->parentExpr == call);
+
+  if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+
+    if (auto formal = ft->formalByOrdinal(use)) {
+      auto qt = formal->qualType();
+      return qt.isRefOrWideRef() && !qt.isConst();
+    }
+  }
+
+  return false;
+}
+
 //
 // Returns 'true' if 'sym' is (or should be) a const-ref.
 // If 'sym' can be a const-ref, but is not, this function will change either
@@ -345,7 +360,15 @@ static bool inferConstRef(Symbol* sym) {
   INT_ASSERT(sym->isRef());
   bool wasConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
 
-  if (sym->defPoint->parentSymbol->hasFlag(FLAG_EXTERN)) {
+  auto parent = sym->defPoint->parentSymbol;
+  auto parentFn = toFnSymbol(parent);
+
+  if (parent->hasFlag(FLAG_EXTERN)) {
+    // Do not modify intents of symbols in extern. TODO: Why?
+    return wasConstRef;
+
+  } else if (isArgSymbol(sym) && parentFn && parentFn->isUsedAsValue()) {
+    // Do not modify intents of formals for functions used as values.
     return wasConstRef;
   }
 
@@ -379,6 +402,11 @@ static bool inferConstRef(Symbol* sym) {
     if (call->isResolved()) {
       ArgSymbol* form = actual_to_formal(use);
       if (form->isRef() && !inferConstRef(form)) {
+        isConstRef = false;
+      }
+    }
+    else if (call->isIndirectCall()) {
+      if (isPassedToRefFormalInIndirectCall(use, call)) {
         isConstRef = false;
       }
     }
@@ -563,6 +591,9 @@ static bool inferConst(Symbol* sym) {
         }
       }
     }
+    else if (isPassedToRefFormalInIndirectCall(use, call)) {
+      isConstVal = false;
+    }
     else if (parent && isMoveOrAssign(parent)) {
       if (call->isPrimitive(PRIM_ADDR_OF) ||
           call->isPrimitive(PRIM_SET_REFERENCE)) {
@@ -649,6 +680,15 @@ static bool inferRefToConst(Symbol* sym) {
         info->fnUses = se->symbolSymExprsNext;
 
         CallExpr* call = toCallExpr(se->parentExpr);
+
+        // Used as an indirect call, give up for now until such time as this
+        // becomes relevant for performance.
+        if (call->baseExpr != se) {
+          isRefToConst = false;
+          break;
+        }
+
+        if (call->isPrimitive(PRIM_CAST_TO_TYPE)) continue;
         INT_ASSERT(call && call->isResolved());
 
         Symbol* actual = toSymExpr(formal_to_actual(call, sym))->symbol();
@@ -706,7 +746,7 @@ static bool inferRefToConst(Symbol* sym) {
         }
       }
     }
-    else if (call->isResolved()) {
+    else if (call->isResolved() || call->isIndirectCall()) {
       isRefToConst = true;
     } else if (call->isPrimitive()) {
       isRefToConst = isSafeRefPrimitive(use);
@@ -749,7 +789,7 @@ void inferConstRefs() {
     if (!se->isRef() && isClass(se->typeInfo())) continue;
 
     ConstInfo* info = NULL;
-    ConstInfoIter it = infoMap.find(se->symbol());
+    auto it = infoMap.find(se->symbol());
     if (it == infoMap.end()) {
       info = new ConstInfo(se->symbol());
       infoMap[se->symbol()] = info;
@@ -760,7 +800,7 @@ void inferConstRefs() {
     info->todo.push_back(se);
   }
 
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     Symbol* sym = it->first;
     if (sym->isRef()) {
       inferConstRef(sym);
@@ -769,7 +809,7 @@ void inferConstRefs() {
     }
   }
 
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     if (it->first->isRef()) {
       inferRefToConst(it->first);
     }
@@ -777,7 +817,7 @@ void inferConstRefs() {
 
   // Free the ConstInfo maps and clear the infoMap in case this function is
   // called again.
-  for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
+  for (auto it = infoMap.begin(); it != infoMap.end(); ++it) {
     delete it->second; // Free our ConstInfo class
   }
   infoMap.clear();

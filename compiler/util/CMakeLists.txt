@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,9 +18,12 @@ set(SRCS
     astlocs.cpp
     exprAnalysis.cpp
     files.cpp
+    MemoryTracker.cpp
     misc.cpp
     mysystem.cpp
     stringutil.cpp
     timer.cpp
    )
 add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_subdirectory(linters)

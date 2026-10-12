@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,8 +34,8 @@
 //
 void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
   std::vector<BaseAST*> asts;
-  std::set<BaseAST*> labels;
-  std::set<LoopStmt*> loops;
+  std::set<BaseAST*, AstIdLess> labels;
+  std::set<LoopStmt*, AstIdLess> loops;
   std::vector<ForallStmt*> foralls;
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {

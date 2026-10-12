@@ -1,0 +1,5 @@
+union in record
+not an int or real
+(u = ())
+(u = (x = 10))
+(u = (x = 11))

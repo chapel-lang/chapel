@@ -1,11 +1,13 @@
 FROM chapel/chapel:latest
 
+ARG MAKE_THREADS=1
+
 ENV CHPL_COMM=gasnet
 ENV CHPL_RT_OVERSUBSCRIBED=yes
 
-RUN CHPL_TARGET_COMPILER=llvm make -C $CHPL_HOME \
-    && CHPL_TARGET_COMPILER=gnu make -C $CHPL_HOME \
-    && make -C $CHPL_HOME chpldoc test-venv mason \
-    && make -C $CHPL_HOME cleanall
+RUN CHPL_TARGET_COMPILER=llvm make -j$MAKE_THREADS -C $CHPL_HOME
+RUN CHPL_TARGET_COMPILER=gnu make -j$MAKE_THREADS -C $CHPL_HOME
+RUN make -j$MAKE_THREADS -C $CHPL_HOME chpldoc test-venv mason
+RUN make -j$MAKE_THREADS -C $CHPL_HOME cleanall
 
 ENV GASNET_SPAWNFN=L

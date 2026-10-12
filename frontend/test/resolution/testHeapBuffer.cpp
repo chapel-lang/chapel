@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,11 +34,16 @@
 // Use a single context with revisions to get this test running faster.
 static Context* context;
 
-template <typename F>
-void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
+static Context* advanceAndGetContext() {
   context->advanceToNextRevision(false);
   if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+    setupModuleSearchPaths(context,  false, {}, {});
+  return context;
+}
+
+template <typename F>
+void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::stringstream ss;
@@ -153,9 +158,7 @@ static void test7() {
 }
 
 static void test8() {
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -183,9 +186,7 @@ static void test8() {
 }
 
 static void test9() {
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -220,9 +221,7 @@ static void test11() {
   // being considered when 'nil' is passed (because later, y will be instantiated
   // and only a conversion from nil will be needed).
 
-  context->advanceToNextRevision(false);
-  if (!context->chplHome().empty())
-    setupModuleSearchPaths(context, false, false, {}, {});
+  auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(

@@ -1,0 +1,27 @@
+
+# add packages to existing paths
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$PWD/myPackages"
+
+CWD=$(cd $(dirname $0) ; pwd)
+REG="$CWD/local-reg"
+
+echo_and_run mason publish --create-registry $REG
+export MASON_REGISTRY="my-local-registry|$REG"
+echo "MASON_REGISTRY=$MASON_REGISTRY"
+cd myDep
+git init -b main
+git add .
+git commit -m "initial commit"
+echo_and_run mason publish $REG
+cd ..
+
+
+cd myMasonPackage
+
+echo_and_run mason build
+echo_and_run mason run
+
+echo_and_run mason build --example example.chpl
+echo_and_run mason run --example example.chpl
+
+echo_and_run mason test

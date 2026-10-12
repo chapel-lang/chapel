@@ -17,7 +17,7 @@ var c: string;
 @deprecated(notes="e is deprecated, use f instead") var e: real;
 var f: real;
 
-// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// Ensures deprecation doesn't cause nodoc symbols to turn up in
 // documentation
 @chpldoc.nodoc
 @deprecated var g: int;

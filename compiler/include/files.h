@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,7 @@
 #include <vector>
 #include <functional>
 #include "vec.h"
+#include "chpl/util/filesystem.h"
 
 extern std::string executableFilename;
 extern std::string libmodeHeadername;
@@ -130,7 +131,7 @@ void restoreAdditionalSourceFiles();
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 
-const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
+std::string getDebuggerCommands(std::string_view, int argc, char* argv[]);
 
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();
@@ -146,9 +147,6 @@ bool readArgsFromFile(std::string path, std::vector<std::string>& cmds,
                       bool errFatal=true);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
-
-bool isDirectory(const char* path);
-bool pathExists(const char* path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

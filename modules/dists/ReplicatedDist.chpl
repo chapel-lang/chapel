@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,11 +166,6 @@ record replicatedDist : writeSerializable {
     chpl_distHelp.serialize(writer, serializer);
   }
 }
-
-
-@deprecated("'Replicated' is deprecated, please use 'replicatedDist' instead")
-type Replicated = replicatedDist;
-
 
 
 @chpldoc.nodoc
@@ -362,7 +357,7 @@ override proc ReplicatedImpl.dsiNewRectangularDom(param rank: int,
 }
 
 // Given an index, this should return the locale that owns that index.
-// (This is the implementation of dmap.idxToLocale().)
+// (This is the implementation of distribution.idxToLocale().)
 // For Replicated, we point it to the current locale.
 proc ReplicatedImpl.dsiIndexToLocale(indexx): locale {
   return here;

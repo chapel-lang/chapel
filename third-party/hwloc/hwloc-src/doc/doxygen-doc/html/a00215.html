@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Interoperability with OpenGL displays</title>
+<title>Hardware Locality (hwloc): Components and Plugins: finding PCI objects during other discoveries</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -41,147 +41,55 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Interoperability with OpenGL displays</div></div>
+  <div class="headertitle"><div class="title">Components and Plugins: finding PCI objects during other discoveries</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga4d66a77e4fe4051d6e5b772c1b8fcec5" id="r_ga4d66a77e4fe4051d6e5b772c1b8fcec5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00215.html#ga4d66a77e4fe4051d6e5b772c1b8fcec5">hwloc_gl_get_display_osdev_by_port_device</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned port, unsigned device)</td></tr>
-<tr class="separator:ga4d66a77e4fe4051d6e5b772c1b8fcec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2d36ef441d1dfddf49cfb5c01bd58d8e" id="r_ga2d36ef441d1dfddf49cfb5c01bd58d8e"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00215.html#ga2d36ef441d1dfddf49cfb5c01bd58d8e">hwloc_gl_get_display_osdev_by_name</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *name)</td></tr>
-<tr class="separator:ga2d36ef441d1dfddf49cfb5c01bd58d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga936665ab5f0d29a081c4b78d11f4ad07" id="r_ga936665ab5f0d29a081c4b78d11f4ad07"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00215.html#ga936665ab5f0d29a081c4b78d11f4ad07">hwloc_gl_get_display_by_osdev</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> osdev, unsigned *port, unsigned *device)</td></tr>
-<tr class="separator:ga936665ab5f0d29a081c4b78d11f4ad07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5062f8cb07418b9cb01657d363d0f969" id="r_ga5062f8cb07418b9cb01657d363d0f969"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00220.html">hwloc_obj</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00215.html#ga5062f8cb07418b9cb01657d363d0f969">hwloc_pci_find_parent_by_busid</a> (struct hwloc_topology *topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)</td></tr>
+<tr class="separator:ga5062f8cb07418b9cb01657d363d0f969"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1779bc839369b3edcea1545a04ea123c" id="r_ga1779bc839369b3edcea1545a04ea123c"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00220.html">hwloc_obj</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00215.html#ga1779bc839369b3edcea1545a04ea123c">hwloc_pci_find_by_busid</a> (struct hwloc_topology *topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)</td></tr>
+<tr class="separator:ga1779bc839369b3edcea1545a04ea123c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>This interface offers ways to retrieve topology information about OpenGL displays.</p>
-<p>Only the NVIDIA display locality information is currently available, using the NV-CONTROL X11 extension and the NVCtrl library. </p>
+<dl class="section note"><dt>Note</dt><dd>These structures and functions may change when <a class="el" href="a00162.html#gaac5bc1f46f55e10ef0141a68ce70e21f" title="Current component and plugin ABI version (see hwloc/plugins.h)">HWLOC_COMPONENT_ABI</a> is modified. </dd></dl>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga936665ab5f0d29a081c4b78d11f4ad07" name="ga936665ab5f0d29a081c4b78d11f4ad07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga936665ab5f0d29a081c4b78d11f4ad07">&#9670;&#160;</a></span>hwloc_gl_get_display_by_osdev()</h2>
+<a id="ga1779bc839369b3edcea1545a04ea123c" name="ga1779bc839369b3edcea1545a04ea123c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1779bc839369b3edcea1545a04ea123c">&#9670;&#160;</a></span>hwloc_pci_find_by_busid()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_gl_get_display_by_osdev </td>
+          <td class="memname">struct <a class="el" href="a00220.html">hwloc_obj</a> * hwloc_pci_find_by_busid </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>osdev</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned *&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned *&#160;</td>
-          <td class="paramname"><em>device</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the OpenGL display port and device corresponding to the given hwloc OS object. </p>
-<p>Retrieves the OpenGL display port (server) in <code>port</code> and device (screen) in <code>screen</code> that correspond to the given hwloc OS device object.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
-<dd>
--1 if none could be found.</dd></dl>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the GL component must be enabled in the topology. </p>
-
-</div>
-</div>
-<a id="ga2d36ef441d1dfddf49cfb5c01bd58d8e" name="ga2d36ef441d1dfddf49cfb5c01bd58d8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2d36ef441d1dfddf49cfb5c01bd58d8e">&#9670;&#160;</a></span>hwloc_gl_get_display_osdev_by_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_gl_get_display_osdev_by_name </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the hwloc OS device object corresponding to the OpenGL display given by name. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenGL display whose name is <code>name</code>, built as ":port.device" such as ":0.0" . </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the GL component must be enabled in the topology.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out). </dd></dl>
-
-</div>
-</div>
-<a id="ga4d66a77e4fe4051d6e5b772c1b8fcec5" name="ga4d66a77e4fe4051d6e5b772c1b8fcec5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4d66a77e4fe4051d6e5b772c1b8fcec5">&#9670;&#160;</a></span>hwloc_gl_get_display_osdev_by_port_device()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_gl_get_display_osdev_by_port_device </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype">struct hwloc_topology *&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
+          <td class="paramname"><em>domain</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>device</em>&#160;</td>
+          <td class="paramname"><em>bus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -189,19 +97,60 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the hwloc OS device object corresponding to the OpenGL display given by port and device index. </p>
-<dl class="section return"><dt>Returns</dt><dd>The hwloc OS device object describing the OpenGL display whose port (server) is <code>port</code> and device (screen) is <code>device</code>. </dd>
-<dd>
-<code>NULL</code> if none could be found.</dd></dl>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the GL component must be enabled in the topology.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out). </dd></dl>
+<p>Find the PCI device or bridge matching a PCI bus ID exactly. </p>
+<p>This is useful for adding specific information about some objects based on their PCI id. When it comes to attaching objects based on PCI locality, <a class="el" href="a00215.html#ga5062f8cb07418b9cb01657d363d0f969" title="Find the object or a parent of a PCI bus ID.">hwloc_pci_find_parent_by_busid()</a> should be preferred. </p>
+
+</div>
+</div>
+<a id="ga5062f8cb07418b9cb01657d363d0f969" name="ga5062f8cb07418b9cb01657d363d0f969"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5062f8cb07418b9cb01657d363d0f969">&#9670;&#160;</a></span>hwloc_pci_find_parent_by_busid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="a00220.html">hwloc_obj</a> * hwloc_pci_find_parent_by_busid </td>
+          <td>(</td>
+          <td class="paramtype">struct hwloc_topology *&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>bus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Find the object or a parent of a PCI bus ID. </p>
+<p>When attaching a new object (typically an OS device) whose locality is specified by PCI bus ID, this function returns the PCI object to use as a parent for attaching.</p>
+<p>If the exact PCI device with this bus ID exists, it is returned. Otherwise (for instance if it was filtered out), the function returns another object with similar locality (for instance a parent bridge, or the local CPU Package). </p>
 
 </div>
 </div>

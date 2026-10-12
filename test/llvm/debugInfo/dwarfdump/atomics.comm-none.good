@@ -1,0 +1,165 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+false | -5 | 0 | -32 | 17
+5 | 0 | 32 | 0
+1.5 | 2.5
+42 | nil
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+==================================myAtomicBool==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicBool")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(30)
+              DW_AT_type	("atomic bool")
+================================================================================
+==================================atomic bool===================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic bool")
+================================================================================
+==================================myAtomicInt8==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicInt8")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(31)
+              DW_AT_type	("atomic int(8)")
+================================================================================
+=================================atomic int(8)==================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic int(8)")
+================================================================================
+=================================myAtomicInt16==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicInt16")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(32)
+              DW_AT_type	("atomic int(16)")
+================================================================================
+=================================atomic int(16)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic int(16)")
+================================================================================
+=================================myAtomicInt32==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicInt32")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(33)
+              DW_AT_type	("atomic int(32)")
+================================================================================
+=================================atomic int(32)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic int(32)")
+================================================================================
+=================================myAtomicInt64==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicInt64")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(34)
+              DW_AT_type	("atomic int(64)")
+================================================================================
+=================================atomic int(64)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic int(64)")
+================================================================================
+=================================myAtomicUInt8==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicUInt8")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(35)
+              DW_AT_type	("atomic uint(8)")
+================================================================================
+=================================atomic uint(8)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic uint(8)")
+================================================================================
+=================================myAtomicUInt16=================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicUInt16")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(36)
+              DW_AT_type	("atomic uint(16)")
+================================================================================
+================================atomic uint(16)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic uint(16)")
+================================================================================
+=================================myAtomicUInt32=================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicUInt32")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(37)
+              DW_AT_type	("atomic uint(32)")
+================================================================================
+================================atomic uint(32)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic uint(32)")
+================================================================================
+=================================myAtomicUInt64=================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicUInt64")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(38)
+              DW_AT_type	("atomic uint(64)")
+================================================================================
+================================atomic uint(64)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic uint(64)")
+================================================================================
+=================================myAtomicReal32=================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicReal32")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(39)
+              DW_AT_type	("atomic real(32)")
+================================================================================
+================================atomic real(32)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic real(32)")
+================================================================================
+=================================myAtomicReal64=================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicReal64")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(40)
+              DW_AT_type	("atomic real(64)")
+================================================================================
+================================atomic real(64)=================================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic real(64)")
+================================================================================
+==================================myAtomicPtr===================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicPtr")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(42)
+              DW_AT_type	("atomic c_ptr(int(64))")
+================================================================================
+=============================atomic c_ptr(int(64))==============================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic c_ptr(int(64))")
+================================================================================
+==================================myAtomicCPtr==================================
+DW_TAG_variable
+              DW_AT_name	("myAtomicCPtr")
+              DW_AT_decl_file	("./atomics.chpl")
+              DW_AT_decl_line	(43)
+              DW_AT_type	("atomic c_ptrConst(real(64))")
+================================================================================
+==========================atomic c_ptrConst(real(64))===========================
+DW_TAG_typedef
+              DW_AT_type	("atomic ")
+              DW_AT_name	("atomic c_ptrConst(real(64))")
+================================================================================
+Success!!

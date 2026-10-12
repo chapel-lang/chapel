@@ -1,2 +1,5 @@
+ref-maybe-const-this-intent.chpl:28: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'this'
+ref-maybe-const-this-intent.chpl:19: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'this'
 ref-maybe-const-this-intent.chpl:4: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' this-intent for the method 'foo'
 (10, 12)
+(x = 2)

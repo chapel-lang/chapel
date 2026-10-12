@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -101,7 +101,7 @@ class ClosureEnv {
  private:
   FnSymbol* owner_ = nullptr;
   std::vector<Symbol*> outerVariables_;
-  std::map<Symbol*, std::vector<SymExpr*>> outerVariableToMentions_;
+  std::map<Symbol*, std::vector<SymExpr*>, AstIdLess> outerVariableToMentions_;
   std::vector<FnSymbol*> childFunctions_;
 
  public:

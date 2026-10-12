@@ -1,0 +1,11 @@
+prefix=/my/usr
+exec_prefix=/my/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: dummy
+Description: A dummy package to support testing mason
+URL: https://example.com
+Version: 10.9.8
+Cflags: -I${includedir}
+Libs: -L${libdir} -ldummy

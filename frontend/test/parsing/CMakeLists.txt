@@ -1,4 +1,4 @@
-# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,7 @@ comp_unit_test(testParseInterface)
 comp_unit_test(testParseLabelContinueBreak)
 comp_unit_test(testParseLocal)
 comp_unit_test(testParseLoopAttributes)
+comp_unit_test(testParseMatch)
 comp_unit_test(testParseModuleInclude)
 comp_unit_test(testParseModules)
 comp_unit_test(testParseMultiVar)

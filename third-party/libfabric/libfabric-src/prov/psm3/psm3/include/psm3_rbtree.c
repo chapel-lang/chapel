@@ -92,8 +92,9 @@
 #include "utils_queue.h"
 #endif
 
-// RBTREE_CMP should be a comparator, i.e. RBTREE_CMP(a, b) should evaluate to
+// RBTREE_CMP should be a comparator, i.e. RBTREE_CMP(a, b, c) should evaluate to
 // -1, 0, or 1 depending on if a < b, a == b, or a > b, respectively.
+// "c" is used to indicate if this is called during a search.
 #if (! defined(RBTREE_CMP) && \
 		(!defined ( RBTREE_GET_LEFTMOST )|| \
 				! defined ( RBTREE_GET_RIGHTMOST ))) || \
@@ -529,7 +530,7 @@ ips_cl_qmap_insert_item(
 
 		/* Traverse the tree until the correct insertion point is found. */
 #ifdef RBTREE_CMP
-		if(RBTREE_CMP(&p_item->payload, &p_insert_at->payload) < 0)
+		if(RBTREE_CMP(&p_item->payload, &p_insert_at->payload, false) < 0)
 #else
 		if( RBTREE_START(p_item) < RBTREE_START(p_insert_at) )
 #endif
@@ -1360,7 +1361,7 @@ ips_cl_qmap_searchv(cl_qmap_t * const p_map, const RBTREE_MI_PL *key)
 	ips_cl_qmap_validate(p_map, "searchv", 1, 1);
 
 	while (p_item != p_map->nil_item) {
-		int cmp = RBTREE_CMP(key, &p_item->payload);
+		int cmp = RBTREE_CMP(key, &p_item->payload, true);
 		if (cmp > 0) {
 			p_item = p_item->p_right;
 		} else if (cmp < 0) {
@@ -1422,7 +1423,7 @@ static int ips_cl_qmap_validate_order(cl_map_item_t *a, cl_map_item_t *b,
 {
 	int err_cnt = 0;
 #ifdef RBTREE_CMP
-	if (RBTREE_CMP(&a->payload, &b->payload) >= 0) {
+	if (RBTREE_CMP(&a->payload, &b->payload, false) >= 0) {
 		RBTREE_VALIDATE_PRINT("bad cmp order %s: Depth %u"RBTREE_ITEM_FMT" >= "RBTREE_ITEM_FMT"\n",
 					msg, cur_depth, RBTREE_ITEM(a), RBTREE_ITEM(b));
 		err_cnt=1;

@@ -158,24 +158,15 @@ self_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags_user,
 	if_pf(send_req == NULL)
 	    return PSM2_NO_MEMORY;
 
-#ifdef PSM_CUDA
+#ifdef PSM_HAVE_GPU
 	// we technically don't need to set is_buf_gpu_mem because psm3_mq_mtucpy
 	// will be used to copy the data to the destination or a sysbuf and it will
 	// check if the buffer is GPU memory. But we do need the sync_memops()
-	if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(ubuf)) {
-		psmi_cuda_set_attr_sync_memops(ubuf);
+	if (len && PSM3_IS_GPU_MEM(ubuf)) {
+		PSM3_GPU_MARK_BUF_SYNCHRONOUS(ubuf);
 		send_req->is_buf_gpu_mem = 1;
 	} else
 		send_req->is_buf_gpu_mem = 0;
-#endif
-#ifdef PSM_ONEAPI
-	// we don't need to set is_buf_gpu_mem because psm3_mq_mtucpy will be
-	// used to copy the data to the destination or a sysbuf and it will
-	// check if the buffer is a GPU memory
-	//if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(ubuf)) {
-	//	send_req->is_buf_gpu_mem = 1;
-	//} else
-	//	send_req->is_buf_gpu_mem = 0;
 #endif
 
 	mq->stats.tx_num++;
@@ -441,8 +432,10 @@ self_ptl_getopt(const void *component_obj, int optname,
 }
 
 /* Only symbol we expose out of here */
-struct ptl_ctl_init
-psm3_ptl_self = {
-	self_ptl_sizeof, self_ptl_init, self_ptl_fini, self_ptl_setopt,
-	self_ptl_getopt
+struct ptl_ctl_init psm3_ptl_self = {
+	.sizeof_ptl = self_ptl_sizeof,
+	.init = self_ptl_init,
+	.fini = self_ptl_fini,
+	.setopt = self_ptl_setopt,
+	.getopt = self_ptl_getopt,
 };

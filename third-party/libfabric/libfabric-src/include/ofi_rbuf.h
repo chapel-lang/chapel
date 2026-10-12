@@ -51,24 +51,27 @@
 /*
  * Circular queue/array template
  */
+#define OFI_DECLARE_CIRQUE_STRUCT(entrytype, name)              \
+struct name {                                                   \
+        size_t          size;                                   \
+        size_t          size_mask;                              \
+        size_t          rcnt;                                   \
+        size_t          wcnt;                                   \
+        entrytype       buf[];                                  \
+};                                                              \
+                                                                \
+static inline void name ## _init(struct name *cq, size_t size)  \
+{                                                               \
+        assert(size == roundup_power_of_two(size));             \
+        cq->size = size;                                        \
+        cq->size_mask = cq->size - 1;                           \
+        cq->rcnt = 0;                                           \
+        cq->wcnt = 0;                                           \
+}                                                               \
+void dummy ## name (void); /* work-around global ; scope */
+
 #define OFI_DECLARE_CIRQUE(entrytype, name)                     \
-struct name {							\
-	size_t		size;					\
-	size_t		size_mask;				\
-	size_t		rcnt;					\
-	size_t		wcnt;					\
-	entrytype	buf[];					\
-};								\
-								\
-static inline void name ## _init(struct name *cq, size_t size)	\
-{								\
-	assert(size == roundup_power_of_two(size));		\
-	cq->size = size;					\
-	cq->size_mask = cq->size - 1;				\
-	cq->rcnt = 0;						\
-	cq->wcnt = 0;						\
-}								\
-								\
+OFI_DECLARE_CIRQUE_STRUCT(entrytype, name)              	\
 static inline struct name * name ## _create(size_t size)	\
 {								\
 	struct name *cq;					\
@@ -82,8 +85,7 @@ static inline struct name * name ## _create(size_t size)	\
 static inline void name ## _free(struct name *cq)		\
 {								\
 	free(cq);						\
-}								\
-void dummy ## name (void) /* work-around global ; scope */
+}
 
 #define ofi_cirque_isempty(cq)		((cq)->wcnt == (cq)->rcnt)
 #define ofi_cirque_usedcnt(cq)		((cq)->wcnt - (cq)->rcnt)
@@ -116,6 +118,8 @@ struct ofi_ringbuf {
 
 static inline int ofi_rbinit(struct ofi_ringbuf *rb, size_t size)
 {
+	if (size == 0 || size > (SIZE_MAX / 2))
+		return -EINVAL;
 	rb->size = roundup_power_of_two(size);
 	rb->size_mask = rb->size - 1;
 	rb->rcnt = 0;

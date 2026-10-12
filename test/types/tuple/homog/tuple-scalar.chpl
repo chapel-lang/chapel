@@ -1,5 +1,5 @@
 
-var tupl = (10, 20, 30);
+var tupl = (10, 20, 25);
 var scal = 5;
 
 writeln(tupl  +  scal);

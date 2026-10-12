@@ -145,17 +145,6 @@ if [ $LINT -eq 1 ]; then
     # done with lint checks
 fi
 
-# Source common.bash, which sets up a bunch of environment variables that are
-# required for nightly testing.
-if [ "$GITHUB_ACTIONS" != "true" ]; then
-  source $CHPL_HOME/util/cron/common.bash
-fi
-
-# Disable GMP and re2 to speed up build.
-if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
-    export CHPL_GMP=none
-fi
-
 # mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
 if [ "$COMM" != "none" ]; then
@@ -171,6 +160,18 @@ if [ $MASON -eq 1 ]; then
 else
     export CHPL_RE2=none
 fi
+
+
+# Arkouda requires gmp and re2
+# if no arkouda required, disable gmp (re2 is already handled above)
+# otherwise, force enable gmp and re2 (even in a quickstart configuration)
+if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
+    export CHPL_GMP=none
+else
+    export CHPL_GMP=bundled
+    export CHPL_RE2=bundled
+fi
+
 
 echo ""
 
@@ -196,6 +197,7 @@ echo ""
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 num_procs=$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count)
+echo "Using $num_procs jobs for parallel make in smokeTest"
 
 # If make check fails, store the log file in CHPL_HOME. Also, create a temp dir
 # in $CHPL_HOME where the hello*.chpl tests are copied and run.

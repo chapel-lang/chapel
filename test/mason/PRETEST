@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+rm -rf mydeps
+
+# download the mason deps if they don't yet exist
+if [ ! -f "$CHPL_HOME/tools/mason/ThirdParty/downloaded.txt" ]; then
+  mkdir mydeps
+  echo "*" > mydeps/.gitignore
+  touch mydeps/NOTEST
+  touch mydeps/ThirdParty.notest
+  cp $CHPL_HOME/tools/mason/ThirdParty.chpl mydeps
+  mkdir mydeps/ThirdParty
+  export MASON_THIRD_PARTY_DIRECTORY=$(cd mydeps/ThirdParty ; pwd)
+  export MASON_THIRD_PARTY_DEPS_LIST=$CHPL_HOME/tools/mason/ThirdParty/masonDeps.txt
+  (cd $CHPL_HOME && make mason-deps)
+fi

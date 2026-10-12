@@ -236,7 +236,7 @@ Record Initialization
 
 When default initializing a record (see :ref:`Variable_Lifetimes`), an
 ``init`` method on the record will be called. For a concrete record,
-``init`` wil be called with no arguments. For an instantiated generic
+``init`` will be called with no arguments. For an instantiated generic
 record, the ``type`` and ``param`` arguments are passed by name.
 
 The compiler-generated default initializer for a record is defined in the
@@ -759,11 +759,9 @@ The following example demonstrates record assignment.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default functions to overload comparison operators are defined for
-records if none are explicitly defined. ``==`` and ``!=`` functions have the
-following signatures for a record ``R``:
-
-
+Default comparison operators are defined for records if none are
+explicitly defined by the user's program. ``==`` and ``!=`` functions
+have the following signatures for a record ``R``:
 
 .. code-block:: chapel
 
@@ -780,6 +778,16 @@ check the corresponding lexicographical order based on pair-wise comparisons
 between the arguments' fields.  The operators ``==`` and ``!=`` check whether
 the two arguments are pair-wise equal or not.  The fields are compared in the
 order they are declared in the record definition.
+
+.. note::
+
+  In the ``preview`` :ref:`edition of Chapel <readme-editions>`, these
+  operators are no longer defined by the compiler based on the
+  presence or absence of an overload, but as module code using generic
+  signatures like ``proc ==(x: record, y: record)``.  This is done
+  primarily to simplify the rules for how the default operators are
+  defined while removing any potential confusion about when the
+  compiler will or will not define them on a user's behalf.
 
 .. _Hashing_a_Record:
 

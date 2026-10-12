@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,7 +77,7 @@ bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
 }
 
 void ExpandExternArrayCalls::process(FnSymbol* fn) {
-  std::set<Expr*> cptrScopes;
+  std::set<Expr*, AstIdLess> cptrScopes;
   std::set<int> replaced_args;
   int current_formal = -1;
 

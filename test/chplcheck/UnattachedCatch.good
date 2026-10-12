@@ -1,0 +1,17 @@
+UnattachedCatch.chpl:6: node violates rule UnattachedCatch
+UnattachedCatch.chpl:9: node violates rule UnattachedCatch
+UnattachedCatch.chpl:12: node violates rule UnattachedCatch
+UnattachedCatch.chpl:19: node violates rule UnattachedCatch
+UnattachedCatch.chpl:26: node violates rule UnattachedCatch
+UnattachedCatch.chpl:33: node violates rule UnattachedCatch
+UnattachedCatch.chpl:39: node violates rule UnattachedCatch
+UnattachedCatch.chpl:41: node violates rule UnattachedCatch
+UnattachedCatch.chpl:43: node violates rule UnattachedCatch
+UnattachedCatch.chpl:50: node violates rule UnattachedCatch
+UnattachedCatch.chpl:54: node violates rule UnattachedCatch
+UnattachedCatch.chpl:57: node violates rule UnattachedCatch
+UnattachedCatch.chpl:64: node violates rule UnattachedCatch
+UnattachedCatch.chpl:66: node violates rule UnattachedCatch
+UnattachedCatch.chpl:69: node violates rule UnattachedCatch
+UnattachedCatch.chpl:75: node violates rule UnattachedCatch
+[Success matching fixit for UnattachedCatch]

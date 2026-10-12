@@ -1,5 +1,3 @@
-:title: Users Guide: Literal Values for Basic Types
-
 Literal Values for Basic Types
 ==============================
 

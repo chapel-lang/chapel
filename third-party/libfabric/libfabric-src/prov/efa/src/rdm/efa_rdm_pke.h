@@ -14,6 +14,10 @@
 #define EFA_RDM_PKE_LOCAL_READ		BIT_ULL(2) /**< this packet entry is used as context of a local read operation */
 #define EFA_RDM_PKE_DC_LONGCTS_DATA	BIT_ULL(3) /**< this DATA packet entry is used by a delivery complete LONGCTS send/write protocol*/
 #define EFA_RDM_PKE_LOCAL_WRITE		BIT_ULL(4) /**< this packet entry is used as context of an RDMA Write to self */
+#define EFA_RDM_PKE_SEND_TO_USER_RECV_QP	BIT_ULL(5) /**< this packet entry is used for posting send to a dedicated QP that doesn't expect any pkt hdrs */
+#define EFA_RDM_PKE_HAS_NO_BASE_HDR	BIT_ULL(6)	/**< This packet entry's wiredata contains no base header */
+#define EFA_RDM_PKE_IN_PEER_OUTSTANDING_TX_PKTS	BIT_ULL(7) /**< this packet entry is in peer->outstanding_tx_pkts list */
+#define EFA_RDM_PKE_IN_OPE_QUEUED_PKTS	BIT_ULL(8) /**< this packet entry is in ope->queued_pkts list */
 
 #define EFA_RDM_PKE_ALIGNMENT		128
 
@@ -25,7 +29,7 @@ enum efa_rdm_pke_alloc_type {
 	EFA_RDM_PKE_FROM_EFA_RX_POOL,     /**< packet is allocated from `ep->efa_rx_pkt_pool` */
 	EFA_RDM_PKE_FROM_UNEXP_POOL,      /**< packet is allocated from `ep->rx_unexp_pkt_pool` */
 	EFA_RDM_PKE_FROM_OOO_POOL,	      /**< packet is allocated from `ep->rx_ooo_pkt_pool` */
-	EFA_RDM_PKE_FROM_USER_BUFFER,     /**< packet is from user provided buffer` */
+	EFA_RDM_PKE_FROM_USER_RX_POOL,     /**< packet is allocated from `ep->user_rx_pkt_pool` */
 	EFA_RDM_PKE_FROM_READ_COPY_POOL,  /**< packet is allocated from `ep->rx_readcopy_pkt_pool` */
 };
 
@@ -71,6 +75,69 @@ enum efa_rdm_pke_alloc_type {
  * is not registered (when it is unexpected or out-of-order). A new packet entry will be cloned
  * using endpoint's read_copy_pkt_pool, whose memory was registered.
  */
+
+#if ENABLE_DEBUG
+/**
+ * @brief Debug info for tracking packet lifecycle events
+ *
+ * Used to diagnose "Packet already processed" errors by recording
+ * packet lifecycle events in a circular buffer.
+ *
+ * Size: 8 bytes per entry (naturally aligned)
+ * 48 entries provide sufficient history for diagnosis while keeping
+ * the debug buffer at a reasonable size (392 bytes total).
+ */
+#define EFA_RDM_PKE_DEBUG_INFO_SIZE 48
+
+/* Event type definitions (4 bits, 9 types) */
+#define EFA_RDM_PKE_DEBUG_EVENT_SEND_POST       0  /**< Send packet posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_SEND_COMPLETION 1  /**< Send packet completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_POST       2  /**< Receive buffer posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_COMPLETION 3  /**< Receive completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_READ_POST       4  /**< RDMA read posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_READ_COMPLETION 5  /**< RDMA read completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_WRITE_POST      6  /**< RDMA write posted */
+#define EFA_RDM_PKE_DEBUG_EVENT_WRITE_COMPLETION 7 /**< RDMA write completed */
+#define EFA_RDM_PKE_DEBUG_EVENT_RECV_RDMA_WITH_IMM 8 /**< Recv RDMA with immediate */
+#define EFA_RDM_PKE_DEBUG_EVENT_TYPE_COUNT      9  /**< Number of event types */
+
+struct efa_rdm_pke_debug_info {
+	uint32_t qkey;        /**< Queue key */
+	uint16_t qpn_gen;     /**< Bits [15:6]=qpn (10 bits), [5:0]=gen (6 bits) */
+	uint8_t counter;      /**< Incremental counter */
+	uint8_t event;        /**< Event type (9 types: 0-8) */
+};
+
+/* Compile-time size check */
+_Static_assert(sizeof(struct efa_rdm_pke_debug_info) == 8, "debug_info must be 8 bytes");
+
+/**
+ * @brief Debug info buffer - includes counter and circular buffer
+ */
+struct efa_rdm_pke_debug_info_buffer {
+	uint8_t counter;      /**< Global counter (0-255) */
+	uint8_t padding[7];   /**< Padding for alignment */
+	struct efa_rdm_pke_debug_info entries[EFA_RDM_PKE_DEBUG_INFO_SIZE]; /**< Circular buffer */
+};
+
+/* Bit field layout constants for qpn_gen field */
+#define EFA_RDM_PKE_DEBUG_GEN_BITS 6
+#define EFA_RDM_PKE_DEBUG_QPN_BITS 10
+#define EFA_RDM_PKE_DEBUG_QPN_SHIFT EFA_RDM_PKE_DEBUG_GEN_BITS
+#define EFA_RDM_PKE_DEBUG_GEN_MASK ((1 << EFA_RDM_PKE_DEBUG_GEN_BITS) - 1)
+#define EFA_RDM_PKE_DEBUG_QPN_MASK ((1 << EFA_RDM_PKE_DEBUG_QPN_BITS) - 1)
+
+/* Accessor macros for bit-packed qpn_gen field */
+#define EFA_RDM_PKE_DEBUG_INFO_GET_QPN(info)       (((info)->qpn_gen >> EFA_RDM_PKE_DEBUG_QPN_SHIFT) & EFA_RDM_PKE_DEBUG_QPN_MASK)
+#define EFA_RDM_PKE_DEBUG_INFO_GET_GEN(info)       ((info)->qpn_gen & EFA_RDM_PKE_DEBUG_GEN_MASK)
+#define EFA_RDM_PKE_DEBUG_INFO_GET_EVENT(info)     ((info)->event)
+
+#define EFA_RDM_PKE_DEBUG_INFO_SET_QPN_GEN(info, _qpn, _gen) \
+	do { \
+		(info)->qpn_gen = (((_qpn) & EFA_RDM_PKE_DEBUG_QPN_MASK) << EFA_RDM_PKE_DEBUG_QPN_SHIFT) | ((_gen) & EFA_RDM_PKE_DEBUG_GEN_MASK); \
+	} while(0)
+#endif
+
 struct efa_rdm_pke {
 	/**
 	 * entry to the linked list of outstanding/queued packet entries
@@ -105,26 +172,22 @@ struct efa_rdm_pke {
 	 */
 	struct fid_mr *mr;
 	/**
-	 * @brief peer address
+	 * @brief pointer to peer struct
 	 *
 	 * @details
-	 * When sending a packet, `addr` will be provided by application and it cannot be FI_ADDR_NOTAVAIL.
-	 * However, after a packet is sent, application can remove a peer by calling fi_av_remove().
-	 * When removing the peering, `addr` will be set to FI_ADDR_NOTAVAIL. Later, when device report
-	 * completion for such a TX packet, the TX completion will be ignored.
-	 *
-	 * When receiving a packet, lower device will set `addr`. If the sender's address is not in
-	 * address vector (AV), `lower device will set `addr` to FI_ADDR_NOTAVAIL. This can happen in
-	 * two scenarios:
-	 *
-	 * 1. There has been no prior communication with the peer. In this case, the packet should have
-	 *    peer's raw address in the header, and progress engine will insert the raw address into
-	 *    address vector, and update `addr`.
-	 *
-	 * 2. This packet is from a peer whose address has been removed from AV. In this case, the
-	 *    recived packet will be ignored because all resources associated with peer has been released.
+	 * In the TX path, peer cannot be null. It is inferred from the
+	 * destination address in the TX operation set by the application. In
+	 * the CQ read path, the peer in inferred from the packet source
+	 * information from rdma-core. It can be NULL in two cases
+	 * 1. There has been no prior communication with the peer. In this case,
+	 * the packet should have peer's raw address in the header, and progress
+	 * engine will insert the raw address into address vector, and set
+	 * `peer`
+	 * 2. The packet is from a peer whose address has been removed from AV.
+	 * In this case, the recived packet will be ignored because all
+	 * resources associated with peer has been released.
 	 */
-	fi_addr_t addr;
+	struct efa_rdm_peer *peer;
 
 	/** @brief indicate where the memory of this packet entry reside */
 	enum efa_rdm_pke_alloc_type alloc_type;
@@ -132,9 +195,15 @@ struct efa_rdm_pke {
 	/** 
 	 * @brief flags indicating the status of the packet entry
 	 * 
-	 * @details
-	 * Possible flags include  #EFA_RDM_PKE_IN_USE #EFA_RDM_PKE_RNR_RETRANSMIT,
-	 * #EFA_RDM_PKE_LOCAL_READ, and #EFA_RDM_PKE_DC_LONGCTS_DATA
+	 * @see #EFA_RDM_PKE_IN_USE
+	 * @see #EFA_RDM_PKE_RNR_RETRANSMIT
+	 * @see #EFA_RDM_PKE_LOCAL_READ
+	 * @see #EFA_RDM_PKE_DC_LONGCTS_DATA 
+	 * @see #EFA_RDM_PKE_LOCAL_WRITE
+	 * @see #EFA_RDM_PKE_SEND_TO_USER_RECV_QP
+	 * @see #EFA_RDM_PKE_HAS_NO_BASE_HDR
+	 * @see #EFA_RDM_PKE_IN_PEER_OUTSTANDING_TX_PKTS
+	 * @see #EFA_RDM_PKE_IN_OPE_QUEUED_PKTS
 	 */
 	uint32_t flags;
 
@@ -174,6 +243,13 @@ struct efa_rdm_pke {
 	 */
 	size_t payload_size;
 
+	/**@brief Generation counter. It is incremented every time the packet is posted to rdma-core */
+	uint8_t gen;
+
+#if ENABLE_DEBUG
+	struct efa_rdm_pke_debug_info_buffer *debug_info; /**< Pointer to debug info buffer */
+#endif
+
 	/** @brief buffer that contains data that is going over wire
 	 *
 	 * @details
@@ -194,8 +270,12 @@ struct efa_rdm_pke {
 	_Alignas(EFA_RDM_PKE_ALIGNMENT) char wiredata[0];
 };
 
-#if defined(static_assert) && defined(__x86_64__)
+#if defined(static_assert)
 static_assert(sizeof (struct efa_rdm_pke) % EFA_RDM_PKE_ALIGNMENT == 0, "efa_rdm_pke alignment check");
+#if !ENABLE_DEBUG
+/* In optimized builds, packet entry structure is designed to fit into two x86 cache lines */
+static_assert(sizeof (struct efa_rdm_pke) == EFA_RDM_PKE_ALIGNMENT, "efa_rdm_pke size check");
+#endif
 #endif
 
 struct efa_rdm_ep;
@@ -214,7 +294,33 @@ void efa_rdm_pke_release_tx(struct efa_rdm_pke *pkt_entry);
 
 void efa_rdm_pke_release_rx(struct efa_rdm_pke *pkt_entry);
 
+void efa_rdm_pke_release_rx_list(struct efa_rdm_pke *pkt_entry);
+
 void efa_rdm_pke_release(struct efa_rdm_pke *pkt_entry);
+
+#if ENABLE_DEBUG
+/**
+ * @brief Record debug info event in packet entry (inline for performance)
+ */
+static inline void efa_rdm_pke_record_debug_info(struct efa_rdm_pke *pkt_entry,
+                                                   uint16_t qpn, uint32_t qkey,
+                                                   uint8_t gen, uint8_t event_type)
+{
+	if (!pkt_entry->debug_info)
+		return;
+
+	uint8_t idx = pkt_entry->debug_info->counter % EFA_RDM_PKE_DEBUG_INFO_SIZE;
+	struct efa_rdm_pke_debug_info *info = &pkt_entry->debug_info->entries[idx];
+
+	info->qkey = qkey;
+	EFA_RDM_PKE_DEBUG_INFO_SET_QPN_GEN(info, qpn, gen);
+	info->counter = pkt_entry->debug_info->counter;
+	info->event = event_type;
+	pkt_entry->debug_info->counter++;
+}
+
+void efa_rdm_pke_print_debug_info(struct efa_rdm_pke *pkt_entry);
+#endif
 
 void efa_rdm_pke_append(struct efa_rdm_pke *dst,
 			struct efa_rdm_pke *src);
@@ -227,7 +333,7 @@ struct efa_rdm_pke *efa_rdm_pke_clone(struct efa_rdm_pke *src,
 struct efa_rdm_pke *efa_rdm_pke_get_unexp(struct efa_rdm_pke **pkt_entry_ptr);
 
 ssize_t efa_rdm_pke_sendv(struct efa_rdm_pke **pkt_entry_vec,
-			  int pkt_entry_cnt);
+			  int pkt_entry_cnt, uint64_t flags);
 
 int efa_rdm_pke_read(struct efa_rdm_pke *pkt_entry,
 		     void *local_buf, size_t len, void *desc,
@@ -235,6 +341,9 @@ int efa_rdm_pke_read(struct efa_rdm_pke *pkt_entry,
 
 ssize_t efa_rdm_pke_recvv(struct efa_rdm_pke **pke_vec,
 			  int pke_cnt);
+
+ssize_t efa_rdm_pke_user_recvv(struct efa_rdm_pke **pke_vec,
+			  int pke_cnt, uint64_t flags);
 
 int efa_rdm_pke_write(struct efa_rdm_pke *pkt_entry);
 #endif

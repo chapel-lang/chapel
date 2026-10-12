@@ -38,6 +38,7 @@ void efa_rdm_pke_init_rtr_common(struct efa_rdm_pke *pkt_entry,
 
 	pkt_entry->pkt_size = efa_rdm_pke_get_req_hdr_size(pkt_entry);
 	pkt_entry->ope = txe;
+	pkt_entry->peer = txe->peer;
 }
 
 /**
@@ -67,6 +68,36 @@ ssize_t efa_rdm_pke_init_longcts_rtr(struct efa_rdm_pke *pkt_entry,
 }
 
 /**
+ * @brief allcoate an RX entry for a incoming RTR packet
+ *
+ * The RX entry will be allocated from endpoint's OP entry
+ * pool
+ * @param[in]	pkt_entry	received RTR packet
+ *
+ * @return
+ * pointer to the newly allocated RX entry.
+ * NULL when OP entry pool has been exhausted.
+ */
+struct efa_rdm_ope *efa_rdm_pke_alloc_rtr_rxe(struct efa_rdm_pke *pkt_entry)
+{
+	struct efa_rdm_ep *ep = pkt_entry->ep;
+	struct efa_rdm_ope *rxe;
+	struct efa_rdm_rtr_hdr *rtr_hdr;
+
+	rxe = efa_rdm_ep_alloc_rxe(ep, pkt_entry->peer, ofi_op_read_rsp);
+	if (OFI_UNLIKELY(!rxe))
+		return NULL;
+
+	rtr_hdr = (struct efa_rdm_rtr_hdr *)pkt_entry->wiredata;
+	rxe->tx_id = rtr_hdr->recv_id;
+	rxe->window = rtr_hdr->recv_length;
+	rxe->iov_count = rtr_hdr->rma_iov_count;
+	rxe->internal_flags |= EFA_RDM_OPE_INTERNAL;
+
+	return rxe;
+}
+
+/**
  * @brief process an incoming RTR packet
  *
  * This functions works for both EFA_RDM_SHORT_RTR_PKT and EFA_RDM_LONGCTS_RTR_PKT
@@ -81,7 +112,7 @@ void efa_rdm_pke_handle_rtr_recv(struct efa_rdm_pke *pkt_entry)
 
 	ep = pkt_entry->ep;
 
-	rxe = efa_rdm_ep_alloc_rxe(ep, pkt_entry->addr, ofi_op_read_rsp);
+	rxe = efa_rdm_pke_alloc_rtr_rxe(pkt_entry);
 	if (OFI_UNLIKELY(!rxe)) {
 		EFA_WARN(FI_LOG_CQ,
 			"RX entries exhausted.\n");
@@ -90,14 +121,7 @@ void efa_rdm_pke_handle_rtr_recv(struct efa_rdm_pke *pkt_entry)
 		return;
 	}
 
-	rxe->addr = pkt_entry->addr;
-	rxe->bytes_received = 0;
-	rxe->bytes_copied = 0;
-
 	rtr_hdr = (struct efa_rdm_rtr_hdr *)pkt_entry->wiredata;
-	rxe->tx_id = rtr_hdr->recv_id;
-	rxe->window = rtr_hdr->recv_length;
-	rxe->iov_count = rtr_hdr->rma_iov_count;
 	err = efa_rdm_rma_verified_copy_iov(ep, rtr_hdr->rma_iov, rtr_hdr->rma_iov_count,
 					FI_REMOTE_READ, rxe->iov, rxe->desc);
 	if (OFI_UNLIKELY(err)) {

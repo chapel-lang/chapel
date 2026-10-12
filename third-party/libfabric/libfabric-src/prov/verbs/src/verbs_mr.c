@@ -84,8 +84,9 @@ static struct ibv_mr *vrb_reg_hmem_dmabuf(enum fi_hmem_iface iface,
 	if (err)
 		goto failover;
 
-	mr = ibv_reg_dmabuf_mr(pd, offset, len, (uint64_t)buf/* iova */,
+	mr = ibv_reg_dmabuf_mr(pd, offset, len, (uint64_t)(uintptr_t)buf/* iova */,
 			       fd, vrb_access);
+
 	if (!mr && failover_policy[iface] == TRY &&
 	    vrb_gl_data.peer_mem_support) {
 		saved_errno = errno;
@@ -142,12 +143,9 @@ vrb_mr_reg_common(struct vrb_mem_desc *md, int vrb_access, const void *base_addr
 		md->mr = ibv_reg_dmabuf_mr(md->domain->pd, (uintptr_t) buf,
 					   len, (uintptr_t) base_addr + (uintptr_t) buf,
 					   (int) device, vrb_access);
-	else if (vrb_gl_data.dmabuf_support &&
-		 (iface == FI_HMEM_ZE ||
-		  iface == FI_HMEM_SYNAPSEAI ||
-		  iface == FI_HMEM_ROCR))
+	else if (vrb_gl_data.dmabuf_support && iface != FI_HMEM_SYSTEM)
 		md->mr = vrb_reg_hmem_dmabuf(iface, md->domain->pd, buf, len,
-						vrb_access);
+					     vrb_access);
 	else
 #endif
 		md->mr = ibv_reg_mr(md->domain->pd, (void *) buf, len,
@@ -164,19 +162,6 @@ vrb_mr_reg_common(struct vrb_mem_desc *md, int vrb_access, const void *base_addr
 		md->lkey = md->mr->lkey;
 	}
 
-	if (md->domain->eq_flags & FI_REG_MR) {
-		struct fi_eq_entry entry = {
-			.fid = &md->mr_fid.fid,
-			.context = context,
-		};
-		if (md->domain->eq)
-			vrb_eq_write_event(md->domain->eq, FI_MR_COMPLETE,
-					   &entry, sizeof(entry));
-		else if (md->domain->util_domain.eq)
-			 /* This branch is taken for the verbs/DGRAM */
-			fi_eq_write(&md->domain->util_domain.eq->eq_fid,
-				    FI_MR_COMPLETE, &entry, sizeof(entry), 0);
-	}
 	return FI_SUCCESS;
 }
 

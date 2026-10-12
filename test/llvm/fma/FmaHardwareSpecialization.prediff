@@ -66,3 +66,11 @@ with open(outfile, 'a') as fp:
     fp.write('Did not find {}'.format(ins))
     fp.write(out)
     fp.write('\n')
+
+# filter out -Winvalid-feature-combination
+lines = open(outfile).readlines()
+if any('invalid-feature-combination' in line for line in lines):
+  lines = [line for line in lines if 'invalid-feature-combination' not in line]
+  lines = [line for line in lines if 'warning generated' not in line]
+  with open(outfile, 'w') as fp:
+    fp.writelines(lines)

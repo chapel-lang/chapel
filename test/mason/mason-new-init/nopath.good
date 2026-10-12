@@ -1,0 +1,3 @@
+PATH= $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason init
+Failed to run 'chpl --version'
+expected failure for empty PATH

@@ -155,7 +155,7 @@ int API_FUNC qthread_disable_shepherd(qthread_shepherd_id_t const shep) {
   }
   qthread_internal_incr(
     &(qlib->nshepherds_active), &(qlib->nshepherds_active_lock), (aligned_t)-1);
-  (void)QT_CAS(qlib->shepherds[shep].active, 1, 0);
+  atomic_store_explicit(&qlib->shepherds[shep].active, 0, memory_order_relaxed);
   return QTHREAD_SUCCESS;
 }
 
@@ -164,7 +164,7 @@ void API_FUNC qthread_enable_shepherd(qthread_shepherd_id_t const shep) {
   assert(shep < qlib->nshepherds);
   qthread_internal_incr(
     &(qlib->nshepherds_active), &(qlib->nshepherds_active_lock), 1);
-  (void)QT_CAS(qlib->shepherds[shep].active, 0, 1);
+  atomic_store_explicit(&qlib->shepherds[shep].active, 1, memory_order_relaxed);
 }
 
 /***************************************************************************

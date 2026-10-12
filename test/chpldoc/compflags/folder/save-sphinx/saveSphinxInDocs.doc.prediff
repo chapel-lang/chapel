@@ -15,5 +15,4 @@ sed -e "$regex" $tmpfile > $tmptmp
 # output, they behave unpredictably
 sed '/writing output/d' $tmptmp > $tmpfile
 sed '/reading sources/d' $tmpfile > $tmptmp
-
-mv $tmptmp $tmpfile
+sed '/Writing evaluated template result to/d' $tmptmp > $tmpfile

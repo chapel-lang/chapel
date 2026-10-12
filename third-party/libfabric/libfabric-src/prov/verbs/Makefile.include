@@ -15,6 +15,7 @@ _verbs_files =							\
 	prov/verbs/src/verbs_rma.c				\
 	prov/verbs/src/verbs_dgram_ep_msg.c			\
 	prov/verbs/src/verbs_dgram_av.c				\
+	prov/verbs/src/verbs_profile.c				\
 	prov/verbs/include/ofi_verbs_compat.h			\
 	prov/verbs/include/linux/verbs_osd.h
 

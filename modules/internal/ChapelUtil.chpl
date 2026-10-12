@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -192,13 +192,6 @@ module ChapelUtil {
                                                (local_arg.argc-1): int(32));
     return result;
   }
-
-  //
-  // These two are called from the emitted chpl_gen_main(), and
-  // defined in the runtime.
-  //
-  extern proc chpl_rt_preUserCodeHook();
-  extern proc chpl_rt_postUserCodeHook();
 
   extern proc allocate_string_literals_buf(s: int): c_ptrConst(c_char);
   extern proc deallocate_string_literals_buf(): void;

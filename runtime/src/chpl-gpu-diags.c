@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,7 +30,7 @@
 #include "chpl-gpu-diags.h"
 #include "chpl-comm-diags.h"
 #include "chpl-mem-consistency.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -49,7 +49,7 @@ static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
 static
 void broadcast_print_unstable(void) {
-  chpl_comm_bcast_rt_private(chpl_gpu_diags_print_unstable);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_gpu_diags_print_unstable);
 }
 
 
@@ -67,8 +67,8 @@ void chpl_gpu_startVerbose(chpl_bool stacktrace,
     chpl_warning("verbose gpu was already started", lineno, filename);
   }
   chpl_verbose_gpu = 1;
-  chpl_comm_bcast_rt_private(chpl_verbose_gpu);
-  chpl_comm_bcast_rt_private(chpl_verbose_gpu_stacktrace);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_gpu);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_gpu_stacktrace);
 }
 
 
@@ -77,7 +77,7 @@ void chpl_gpu_stopVerbose(int32_t lineno, int32_t filename) {
     chpl_warning("verbose gpu was never started", lineno, filename);
   }
   chpl_verbose_gpu = 0;
-  chpl_comm_bcast_rt_private(chpl_verbose_gpu);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_gpu);
 }
 
 
@@ -119,7 +119,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable,
     chpl_warning("gpu diagnostics was already started", lineno, filename);
   }
   chpl_gpu_diagnostics = 1;
-  chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_gpu_diagnostics);
 }
 
 
@@ -131,7 +131,7 @@ void chpl_gpu_stopDiagnostics(int32_t lineno, int32_t filename) {
     chpl_warning("gpu diagnostics was never started", lineno, filename);
   }
   chpl_gpu_diagnostics = 0;
-  chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_gpu_diagnostics);
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -703,25 +703,12 @@ module Set {
       // May take locks non-locally...
       _enter(); defer _leave();
 
-      var result: [0..#_htb.tableNumFullSlots] eltType;
-
       if !isCopyableType(eltType) then
         compilerError('Cannot create array because set element type ' +
                       eltType:string + ' is not copyable');
 
-      on this {
-        if _htb.tableNumFullSlots != 0 {
-          var count = 0;
-          var array: [0..#_htb.tableNumFullSlots] eltType;
-
-          for x in this {
-            array[count] = x;
-            count += 1;
-          }
-
-          result = array;
-        }
-      }
+      var result: [0..<_htb.tableNumFullSlots] eltType
+                = for x in this do x;
 
       return result;
     }

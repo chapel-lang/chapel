@@ -39,7 +39,12 @@ extern {
       char name[128];
       checkCudaErrors(cuDeviceGetName(name, 128, device), 4);
 
+      #if CUDA_VERSION >= 13000
+      CUctxCreateParams ctxCreateParams = {0};
+      checkCudaErrors(cuCtxCreate(&context, &ctxCreateParams, CU_CTX_BLOCKING_SYNC, device), 5);
+      #else
       checkCudaErrors(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device), 5);
+      #endif
     }
 
     checkCudaErrors(cuModuleLoadData(&cudaModule, chpl_gpuBinary), 6);

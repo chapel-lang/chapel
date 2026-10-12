@@ -57,15 +57,14 @@
 #define _HFI_i386_SYSDEP_H
 
 typedef struct cpuid {
-        unsigned eax, ebx, ecx, edx;
+	unsigned eax, ebx, ecx, edx;
 } cpuid_t;
 
-static __inline__ void
-get_cpuid(const unsigned func, const unsigned subfunc, cpuid_t *id)
+static __inline__ void get_cpuid(const unsigned func, const unsigned subfunc, cpuid_t *id)
 {
 	unsigned a, b, c, d;
 
-	asm (" \
+	asm(" \
 	mov %4, %%eax \n\
 	mov %5, %%ecx \n\
 	cpuid \n\
@@ -73,10 +72,10 @@ get_cpuid(const unsigned func, const unsigned subfunc, cpuid_t *id)
 	mov %%ebx, %1 \n\
 	mov %%ecx, %2 \n\
 	mov %%edx, %3 \n\
-	" : "=g" (a), "=g" (b), "=g" (c), "=g" (d)
-	: "g" (func), "g" (subfunc)
-	: "%eax", "%ebx", "%ecx", "%edx"
-	);
+	"
+	    : "=g"(a), "=g"(b), "=g"(c), "=g"(d)
+	    : "g"(func), "g"(subfunc)
+	    : "%eax", "%ebx", "%ecx", "%edx");
 
 	id->eax = a;
 	id->ebx = b;
@@ -89,7 +88,7 @@ static __inline__ uint64_t get_cycles(void)
 	uint64_t v;
 	uint32_t a, d;
 
-	asm volatile ("rdtsc" : "=a" (a), "=d"(d));
+	asm volatile("rdtsc" : "=a"(a), "=d"(d));
 	v = ((uint64_t) a) | (((uint64_t) d) << 32);
 
 	return v;
@@ -101,51 +100,52 @@ static __inline__ uint64_t get_cycles(void)
 
 static __inline__ void ips_barrier()
 {
-	asm volatile ("" :  :  : "memory");
+	asm volatile("" : : : "memory");
 }
 
 static __inline__ void ips_mb()
 {
-	asm volatile ("mfence" :  :  : "memory");
+	asm volatile("mfence" : : : "memory");
 }
 
 /* gcc-3.4 has a bug with this function body at -O0 */
 static
 #if defined(__GNUC__) && __GNUC__ == 3 && __GNUC_MINOR__ == 4
 #else
-__inline__
+	__inline__
 #endif
-void ips_rmb()
+	void
+	ips_rmb()
 {
-	asm volatile ("" :  :  : "memory");
+	asm volatile("" : : : "memory");
 }
 
 static __inline__ void ips_wmb()
 {
-	asm volatile ("sfence" :  :  : "memory");
+	asm volatile("sfence" : : : "memory");
 }
 
 static __inline__ void ips_sync_writes()
 {
-	asm volatile ("sfence" :  :  : "memory");
+	asm volatile("sfence" : : : "memory");
 }
 
 static __inline__ void ips_sync_reads()
 {
-	asm volatile ("lfence" :  :  : "memory");
+	asm volatile("lfence" : : : "memory");
 }
 
-static __inline__ uint32_t ips_cmpxchg(volatile uint32_t *ptr,
-				       uint32_t old_val, uint32_t new_val)
+static __inline__ uint32_t ips_cmpxchg(volatile uint32_t *ptr, uint32_t old_val, uint32_t new_val)
 {
 	uint32_t prev;
 	struct xchg_dummy {
 		uint32_t a[100];
 	};
 
-	asm volatile (LOCK_PREFIX "cmpxchgl %1,%2" : "=a"(prev)
-		      : "q"(new_val), "m"(*(struct xchg_dummy *)ptr), "0"(old_val)
-		      : "memory");
+	asm volatile(LOCK_PREFIX "cmpxchgl %1,%2"
+		     : "=a"(prev)
+		     : "q"(new_val), "m"(*(struct xchg_dummy *) ptr), "0"(old_val)
+		     : "memory");
 
 	return prev;
 }
@@ -155,8 +155,7 @@ typedef struct {
 } ips_atomic_t;
 
 #define ips_atomic_set(v, i)		  (((v)->counter) = (i))
-#define ips_atomic_cmpxchg(p, oval, nval)	  \
-	    ips_cmpxchg((volatile uint32_t *) &((p)->counter), oval, nval)
+#define ips_atomic_cmpxchg(p, oval, nval) ips_cmpxchg((volatile uint32_t *) &((p)->counter), oval, nval)
 
 #if 0
 static __inline__ int32_t

@@ -46,6 +46,16 @@ Chapel 2.4:
 See `this page <https://chapel-lang.org/download/#linux>`__ for the most
 up-to-date list of supported OSes and platforms.
 
+.. note::
+
+   If you are using an RPM based distribution like RHEL, Rocky Linux, or
+   Alma Linux, you may need to install the EPEL repository before installing
+   Chapel.
+
+   .. code-block:: bash
+
+      sudo dnf install epel-release
+
 brew
 ~~~~
 
@@ -83,14 +93,14 @@ Github Codespaces
 
 Github Codespaces are a great way to quickly setup a developer environment for
 Chapel without needing to install anything on your local machine. The
-`chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__
+`chapel-codespaces <https://github.com/chapel-lang/chapel-codespaces>`__
 repository provides a simple example of how to set up a Codespace for Chapel
 development. This repository also provides a template that you can use to
 create your own Codespace for Chapel development.
 
 To start using Chapel with a Codespace, use the following steps:
 
-1. Go to the `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__ repository.
+1. Go to the `chapel-codespaces <https://github.com/chapel-lang/chapel-codespaces>`__ repository.
 2. Click on "Use this template" to create a new repository based on the template.
 3. In the new repository, click on the "Code" button, select "Codespaces", and then click on "Create codespace on main".
 
@@ -122,7 +132,7 @@ featured version of Chapel from source, refer to
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 2.5 source release, see
+1) If you don't already have the Chapel 2.10 source release, see
    https://chapel-lang.org/download/
 
 
@@ -132,14 +142,14 @@ featured version of Chapel from source, refer to
 
       .. code-block:: bash
 
-         tar xzf chapel-2.5.0.tar.gz
+         tar xzf chapel-2.10.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-2.5.0
+         cd chapel-2.10.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,

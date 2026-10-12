@@ -32,13 +32,13 @@
     double es = (1.0 / (1.0 - q * m));                                         \
     fprintf(stdout, "        q: %f\n", q);                                     \
     fprintf(stdout, "        m: %d\n", m);                                     \
-    fprintf(stdout, "        E(n): %f\n", q *m);                               \
+    fprintf(stdout, "        E(n): %f\n", q * m);                              \
     fprintf(stdout, "        E(s): %.2f\n", es);                               \
   }                                                                            \
   if (tree_type == HYBRID) {                                                   \
     fprintf(stdout,                                                            \
             "        Root-to-depth: %d\n",                                     \
-            (int)ceil(shift_depth *tree_depth));                               \
+            (int)ceil(shift_depth * tree_depth));                              \
   }                                                                            \
   if (tree_type == BALANCED) {                                                 \
     fprintf(stdout, "        Gen mx: %d\n", tree_depth);                       \

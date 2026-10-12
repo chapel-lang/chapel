@@ -1,4 +1,4 @@
-.TH "hwlocality_openfabrics" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_openfabrics" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,13 +10,13 @@ hwlocality_openfabrics \- Interoperability with OpenFabrics
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_ibv_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, struct ibv_device *ibdev, \fBhwloc_cpuset_t\fP set)"
+.RI "int \fBhwloc_ibv_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, struct ibv_device *ibdev, \fBhwloc_cpuset_t\fP set)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_ibv_get_device_osdev_by_name\fP (\fBhwloc_topology_t\fP topology, const char *ibname)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_ibv_get_device_osdev_by_name\fP (\fBhwloc_topology_t\fP topology, const char *ibname)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_ibv_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, struct ibv_device *ibdev)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_ibv_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, struct ibv_device *ibdev)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -24,7 +24,7 @@ hwlocality_openfabrics \- Interoperability with OpenFabrics
 This interface offers ways to retrieve topology information about OpenFabrics devices (InfiniBand, Omni-Path, usNIC, etc)\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_ibv_get_device_cpuset (\fBhwloc_topology_t\fP topology, struct ibv_device * ibdev, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_ibv_get_device_cpuset (\fBhwloc_topology_t\fP topology, struct ibv_device * ibdev, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP"
 
 .PP
 Get the CPU set of processors that are physically close to device \fCibdev\fP\&. Store in \fCset\fP the CPU-set describing the locality of the OpenFabrics device \fCibdev\fP (InfiniBand, etc)\&.
@@ -43,7 +43,7 @@ This function is currently only implemented in a meaningful way for Linux; other
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_ibv_get_device_osdev (\fBhwloc_topology_t\fP topology, struct ibv_device * ibdev)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_ibv_get_device_osdev (\fBhwloc_topology_t\fP topology, struct ibv_device * ibdev)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the OpenFabrics device \fCibdev\fP\&. 
@@ -63,7 +63,7 @@ The corresponding PCI device object can be obtained by looking at the OS device 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_ibv_get_device_osdev_by_name (\fBhwloc_topology_t\fP topology, const char * ibname)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_ibv_get_device_osdev_by_name (\fBhwloc_topology_t\fP topology, const char * ibname)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the OpenFabrics device named \fCibname\fP\&. 

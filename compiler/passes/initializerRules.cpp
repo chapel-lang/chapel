@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,7 +160,7 @@ static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
-          if (isClass(type) == true || isRecord(type) == true) {
+          if (isClass(type) || isRecord(type) || isUnion(type)) {
             retval = type;
           }
         }
@@ -291,10 +291,10 @@ static InitNormalize preNormalize(AggregateType* at,
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (at->isRecord() == true || at->isUnion()) {
+  if (at->isRecord() || at->isUnion()) {
     preNormalizeInitRecordUnion(fn);
 
-  } else if (at->isClass()  == true) {
+  } else if (at->isClass()) {
     preNormalizeInitClass(fn);
 
   } else {
@@ -519,8 +519,8 @@ static InitNormalize preNormalize(AggregateType* at,
           }
           state.completePhase0(callExpr);
 
-          if (at->isRecord() == true) {
-            USR_FATAL_CONT(stmt, "super.init() not allowed in records");
+          if (at->isRecord() || at->isUnion()) {
+            USR_FATAL_CONT(stmt, "super.init() is only allowed in classes");
             callExpr->remove();
 
           } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
@@ -573,13 +573,8 @@ static InitNormalize preNormalize(AggregateType* at,
             stmt = stmt->next;
           }
         } else if (state.isFieldInitialized(field) == false) {
-          if (at->isUnion()) {
-            // Don't try to initialize union fields if not initialized
-            stmt = stmt->next;
-          } else {
-            checkLocalPhaseOneErrors(state, field, callExpr);
-            stmt = state.fieldInitFromInitStmt(field, callExpr);
-          }
+          checkLocalPhaseOneErrors(state, field, callExpr);
+          stmt = state.fieldInitFromInitStmt(field, callExpr);
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
@@ -649,7 +644,11 @@ static InitNormalize preNormalize(AggregateType* at,
                                                   cond->thenStmt,
                                                   InitNormalize(cond, state));
 
-        if (state.isPhase2() == false) {
+        // This union special-case is necessary because of the way
+        // compiler-generated copy initializers are written.  We could
+        // probably write them to use `if then ... else if ... else
+        // init this; to address this (?)
+        if (state.isPhase2() == false && !at->isUnion()) {
           if (stateThen.isPhase2() == true) {
             if (phaseThen == InitNormalize::cPhase0) {
               USR_FATAL(cond,
@@ -689,9 +688,11 @@ static InitNormalize preNormalize(AggregateType* at,
         if (state.isPhase2() == false) {
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
-            USR_FATAL(cond,
-                      "Both arms of a conditional must use 'this.init()' "
-                      "or 'init this' in phase 1");
+            if (!at->isUnion()) {
+              USR_FATAL(cond,
+                        "Both arms of a conditional must use 'this.init()' "
+                        "or 'init this' in phase 1");
+            }
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
@@ -1510,7 +1511,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   return ret;
 }
 
-static std::set<AggregateType*> postinitCache;
+static std::set<AggregateType*, AstIdLess> postinitCache;
 
 //
 // Inserts postinit methods and calls to super.postinit as needed.
@@ -1542,7 +1543,7 @@ void preNormalizePostInit(AggregateType* at) {
     }
   }
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if ((isRecord(at) || isUnion(at)) && at->hasPostInitializer()) {
     at->symbol->addFlag(FLAG_NOT_POD);
   }
 

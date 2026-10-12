@@ -12,26 +12,26 @@ function log_debug()
 {
     if [ -n "${verbose}" ] ; then
         log_date
-        echo >&2 "[DEBUG] $@"
+        echo >&2 "[DEBUG] $*"
     fi
 }
 
 function log_info()
 {
     log_date
-    echo >&2 "[INFO] $@"
+    echo >&2 "[INFO] $*"
 }
 
 function log_error()
 {
     log_date
-    echo >&2 "[ERROR] $@"
+    echo >&2 "[ERROR] $*"
 }
 
 function log_warn()
 {
     log_date
-    echo >&2 "[WARNING] $@"
+    echo >&2 "[WARNING] $*"
 }
 
 # sanity check CHPL_HOME

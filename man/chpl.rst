@@ -273,6 +273,37 @@ OPTIONS
     $CHPL\_COMM is set to "none", **\--local** is the default; otherwise
     **\--no-local** is the default.
 
+*Debugging Control Options*
+
+.. _man-debug:
+.. index:: --debug
+
+**\--debug**
+
+    Compile code in the best way for debugging. This implies
+    **-g** and **\--debug-safe-optimizations-only**. This flag is useful
+    when you are trying to debug a Chapel program using a source-level
+    debugger such as gdb or lldb.
+
+.. _man-debug-symbols:
+.. index:: --debug-symbols, --no-debug-symbols
+
+**-g, \--[no-]debug-symbols**
+
+    Causes the generated code to be compiled with debugging turned on. If
+    you are trying to debug a Chapel program, this flag is essential.
+
+    This flag also turns on the **\--cpp-lines** option
+    (only useful with the C backend) unless compiling as
+    a developer (for example, via **\--devel**).
+
+.. _man-debug-safe-optimizations-only:
+.. index:: --debug-safe-optimizations-only
+
+**\--debug-safe-optimizations-only**
+
+    Disable optimizations that may interfere with debugging.
+
 *Optimization Control Options*
 
 .. _man-baseline:
@@ -415,6 +446,24 @@ OPTIONS
     Enable [disable] generating vectorization hints for the target compiler.
     If enabled, hints will always be generated, but the effects on performance
     (and in some cases correctness) will vary based on the target compiler.
+
+.. _man-vector-library:
+.. index:: --vector-library
+
+**\--vector-library <lib>**
+
+    Select a vectorization library to use. Supported values are `none` (the
+    default), `libmvec`, `darwinLibSystemM`, or a valid vectorization library
+    for the current backend. This option is only supported with the
+    LLVM backend, or when using the C backend with Clang or GCC.
+
+    If an unsupported/unknown library is used, the compiler will just pass the
+    flag through to the backend compiler.
+
+    When using the LLVM backend or Clang, see
+    https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fveclib
+    for supported libraries. When using GCC, see
+    https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-mveclibabi-1.
 
 .. _man-optimize-on-clauses:
 .. index:: --optimize-on-clauses, --no-optimize-on-clauses
@@ -633,43 +682,31 @@ OPTIONS
 
     Enable [disable] run-time checking for stack overflow.
 
-*C Code Generation Options*
+.. _man-union-checks:
+.. index:: --union-checks, --no-union-checks
+
+**\--[no-]union-checks**
+
+    Enable [disable] run-time checking for accessing uninitialized fields of
+    unions.
+
+*Code Generation Options*
 
 .. _man-codegen:
 .. index:: --codegen, --no-codegen
 
 **\--[no-]codegen**
 
-    Enable [disable] generating C code and the binary executable. Disabling
+    Enable [disable] generating code and the binary executable. Disabling
     code generation is useful to reduce compilation time, for example, when
     only Chapel compiler warnings/errors are of interest.
-
-.. _man-cpp-lines:
-.. index:: --cpp-lines, --no-cpp-lines
-
-**\--[no-]cpp-lines**
-
-    Causes the compiler to emit cpp #line directives into the generated code
-    in order to help map generated C code back to the Chapel source code
-    that it implements. The [no-] version of this flag turns this feature
-    off.
-
-.. _man-max-c-ident-len:
-.. index:: --max-c-ident-len
-
-**\--max-c-ident-len**
-
-    Limits the length of identifiers in the generated code, except when set
-    to 0. The default is 0, except when $CHPL\_TARGET\_COMPILER indicates a
-    PGI compiler (pgi or cray-prgenv-pgi), in which case the default is
-    1020.
 
 .. _man-munge-user-idents:
 .. index:: --munge-user-idents, --no-munge-user-idents
 
 **\--[no-]munge-user-idents**
 
-    By default, **chpl** munges all user identifiers in the generated C code
+    By default, **chpl** munges all user identifiers in the generated code
     in order to minimize the chances of conflict with an identifier or
     keyword in C (in the current implementation, this is done by appending
     '\_chpl' to the identifier). This flag provides the ability to disable
@@ -682,11 +719,11 @@ OPTIONS
 
 **\--savec <dir>**
 
-    Saves the compiler-generated C code in the specified *directory*,
+    Saves the compiler-generated code in the specified *directory*,
     creating the *directory* if it does not already exist. This option may
     overwrite existing files in the *directory*.
 
-*C Code Compilation Options*
+*Code Compilation Options*
 
 .. _man-ccflags:
 .. index:: --ccflags
@@ -697,17 +734,6 @@ OPTIONS
     the generated code. Multiple **\--ccflags** *options* can be provided and
     in that case the combination of the flags will be forwarded to the C
     compiler.
-
-.. _man-debug:
-.. index:: --debug, --no-debug
-
-**-g, \--[no-]debug**
-
-    Causes the generated C code to be compiled with debugging turned on. If
-    you are trying to debug a Chapel program, this flag is virtually
-    essential along with the **\--savec** flag. This flag also turns on the
-    **\--cpp-lines** option unless compiling as a developer (for example, via
-    **\--devel**).
 
 .. _man-dynamic:
 .. index:: --dynamic
@@ -763,7 +789,7 @@ OPTIONS
 
 **-O, \--[no-]optimize**
 
-    Causes the generated C code to be compiled with [without] optimizations
+    Causes the generated code to be compiled with [without] optimizations
     turned on. The specific set of flags used by this option is
     platform-dependent; use the **\--print-commands** option to view the C
     compiler command used. If you would like additional flags to be used
@@ -774,7 +800,7 @@ OPTIONS
 
 **\--[no-]specialize**
 
-    Causes the generated C code to be compiled with flags that specialize
+    Causes the generated code to be compiled with flags that specialize
     the executable to the architecture that is defined by
     CHPL\_TARGET\_CPU. The effects of this flag will vary based on choice
     of back-end compiler and the value of CHPL\_TARGET\_CPU.
@@ -819,6 +845,29 @@ OPTIONS
     Pass an option to the LLVM optimization and transformation passes.
     This option can be specified multiple times.
 
+*C Code Generation Options*
+
+.. _man-cpp-lines:
+.. index:: --cpp-lines, --no-cpp-lines
+
+**\--[no-]cpp-lines**
+
+    Causes the compiler to emit cpp #line directives into the generated code
+    in order to help map generated C code back to the Chapel source code
+    that it implements. The [no-] version of this flag turns this feature
+    off.
+
+    This flag is only useful when not using CHPL_TARGET_COMPILER=llvm.
+
+.. _man-max-c-ident-len:
+.. index:: --max-c-ident-len
+
+**\--max-c-ident-len**
+
+    Limits the length of identifiers in the generated code, except when set
+    to 0. The default is 0, except when $CHPL\_TARGET\_COMPILER indicates a
+    PGI compiler (pgi or cray-prgenv-pgi), in which case the default is
+    1020.
 
 *Compilation Trace Options*
 
@@ -851,6 +900,14 @@ OPTIONS
     Saves the compiler passes and the amount of wall clock time required for
     the pass to <filename>. An error is displayed if the file cannot be
     opened but no recovery attempt is made.
+
+.. _man-print-passes-memory:
+.. index:: --print-passes-memory
+
+**\--[no-]print-passes-memory**
+
+    Prints the memory usage in addition to time usage for each compiler pass.
+    Implies **\--print-passes**. See **\--print-passes** for more information.
 
 *Miscellaneous Options*
 
@@ -1054,6 +1111,14 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     whether you've built the included GMP library in the third-party
     *directory*).
 
+.. _man-gpu:
+.. index:: --gpu
+
+**\--gpu <gpu>**
+
+    Specify the GPU vendor to use for GPU code generation. This flag
+    corresponds with and overrides the $CHPL\_GPU environment variable.
+
 .. _man-hwloc:
 .. index:: --hwloc
 
@@ -1122,6 +1187,16 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     Specify the RE2 library to use. This flag corresponds with and overrides
     the $CHPL\_RE2 environment variable (defaults to 'none' or 'bundled' if
     you've installed the re2 package in the third-party *directory*).
+
+.. _man-sanitize-exe:
+.. index:: --sanitize-exe
+
+**\--sanitize-exe <sanitizer>**
+
+    Specify the sanitizer to use for the generated executable and runtime. This
+    flag corresponds with and overrides the $CHPL\_SANITIZE\_EXE environment
+    variable.
+
 
 .. _man-target-arch:
 .. index:: --target-arch
@@ -1286,5 +1361,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

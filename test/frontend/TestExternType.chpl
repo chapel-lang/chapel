@@ -17,6 +17,8 @@ extern record b {
   var y: c_double;
 }
 
+extern proc qio_strdup(s): c_ptrConst(c_char);
+
 proc main() {
   var v1: a;
   var v2: b;
@@ -36,4 +38,9 @@ proc main() {
   x = y;
 
   println(x.x);
+
+  {
+    var s = qio_strdup("hello");
+    println(s);
+  }
 }

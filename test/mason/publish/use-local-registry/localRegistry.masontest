@@ -1,0 +1,55 @@
+
+CWD=$(cd $(dirname $0) ; pwd)
+REG="$CWD/local-reg"
+
+cd myDep
+
+# make a local repo so the dep can be published
+git init -b main
+git add .
+git commit -m "initial commit"
+
+# create the local registry
+echo_and_run mason publish --create-registry $REG
+
+# try and create it again, should error
+echo_and_run mason publish --create-registry $REG || echo "error as expected: $?"
+
+# publish to the local registry
+echo_and_run mason publish $REG
+
+# publish again, should error since the version already exists
+echo_and_run mason publish $REG || echo "error as expected: $?"
+
+export MASON_REGISTRY="my-local-registry|$REG"
+echo "MASON_REGISTRY=$MASON_REGISTRY"
+
+# mason search should now find the package in the local registry
+echo_and_run mason search
+
+# make sure myPackage can use the local registry to find myDep
+cd ../myPackage
+echo_and_run mason build
+echo_and_run mason run
+echo_and_run mason test
+echo_and_run mason run --example Ex.chpl --build
+
+# make sure mason doc works
+echo "mason doc"
+mason doc >/dev/null 2>/dev/null
+cat doc/_sources/modules/src/myPackage.rst.txt | grep '.. module::'
+
+
+# create a new package and add the dependency to it
+cd ..
+echo_and_run mason new myNewPackage
+cd myNewPackage
+echo_and_run mason add myDep@0.1.0
+# replace the body of the package with a simple main that prints the strings from myDep
+echo 'module myNewPackage { import myDep; proc main() { writeln("got strings: ", myDep.getStrings()); } }' > src/myNewPackage.chpl
+echo_and_run mason run --build
+
+# make sure mason doc works
+echo "mason doc"
+mason doc >/dev/null 2>/dev/null
+cat doc/_sources/modules/src/myNewPackage.rst.txt | grep '.. module::'

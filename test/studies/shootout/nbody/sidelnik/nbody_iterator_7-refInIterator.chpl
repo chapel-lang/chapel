@@ -23,14 +23,14 @@ class Planet {
 
 iter TriangleIter(B: [] unmanaged Planet) {
   for i in NBODIES {
-    ref b1 = B[i];
+    const ref b1 = B[i];
     for j in i+1..numBodies {
       yield (b1,B[j]);
     }
   }
 }
 
-proc advance(ref B: [] unmanaged Planet, dt: real) {
+proc advance(B: [] unmanaged Planet, dt: real) {
   for (b1,b2) in TriangleIter(B) {
     var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
     var distance = sqrt(+ reduce d**2);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on examples only, on linux64, with compiler gcc-11.2
+# Test default configuration on examples only, on linux64, with compiler gcc-11.5
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
@@ -11,17 +11,17 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /hpcdc/project/chapel/setup_gcc.bash 11.2
+source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_gcc.bash 11.5
 
-# Set environment variables to nudge cmake towards GCC 11.2
+# Set environment variables to nudge cmake towards GCC 11.5
 export CHPL_CMAKE_USE_CC_CXX=1
 export CC=$(which gcc)
 export CXX=$(which g++)
 
 gcc_version=$(gcc -dumpversion)
-if [ "$gcc_version" != "11.2.0" ]; then
+if [ "$gcc_version" != "11.5.0" ]; then
   echo "Wrong gcc version"
-  echo "Expected Version: 11.2.0 Actual Version: $gcc_version"
+  echo "Expected Version: 11.5.0 Actual Version: $gcc_version"
   exit 2
 fi
 

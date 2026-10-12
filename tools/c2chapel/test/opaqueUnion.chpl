@@ -15,5 +15,5 @@ extern "union foobar" union foobar {
 // ==== c2chapel typedefs ====
 
 // Opaque union?
-extern union myOpaque {};
+extern union myOpaque {}
 

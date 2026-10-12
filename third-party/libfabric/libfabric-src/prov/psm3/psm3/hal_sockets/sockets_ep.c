@@ -893,7 +893,7 @@ fail:
 }
 
 #ifdef RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 /* This function is only called when GPUDirect is enabled */
 static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 {
@@ -908,9 +908,8 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 
 	// GPU Direct is enabled and we need a GPU Cache
 	loc_info.rdma_mode = RV_RDMA_MODE_GPU_ONLY;
-#ifdef PSM_ONEAPI
-	psm3_oneapi_ze_can_use_zemem();
-#endif
+
+	PSM3_GPU_USING_RV_FOR_MRS();
 
 	// need portnum for rdma_mode KERNEL or (USER|GPU)
 	loc_info.port_num = ep->portnum;
@@ -932,17 +931,14 @@ static psm2_error_t open_rv(psm2_ep_t ep, psm2_uuid_t const job_key)
 #endif
 	if (loc_info.capability & RV_CAP_GPU_DIRECT)
 		psmi_hal_add_cap(PSM_HAL_CAP_GPUDIRECT);
-	if (loc_info.capability & RV_CAP_NVIDIA_GPU)
-		psmi_hal_add_cap(PSM_HAL_CAP_NVIDIA_GPU);
-	if (loc_info.capability & RV_CAP_INTEL_GPU)
-		psmi_hal_add_cap(PSM_HAL_CAP_INTEL_GPU);
+	PSM3_GPU_RV_SET_HAL_CAP(loc_info.capability);
 	// sockets does not support PSM_HAL_CAP_GPUDIRECT_SDMA nor RDMA
 	ep->rv_mr_cache_size = loc_info.mr_cache_size;
 	ep->rv_gpu_cache_size = loc_info.gpu_cache_size;
 
 	return PSM2_OK;
 }
-#endif /* PSM_CUDA  || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 #endif /* RNDV_MOD */
 
 psm2_error_t
@@ -954,7 +950,7 @@ psm3_ep_open_sockets(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid
 	ep->rdmamode = 0;	// no rendezvous RDMA for sockets
 	// no MR cache, leave ep->mr_cache_mode as set by caller (NONE)
 #ifdef RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	ep->rv_gpu_cache_size = psmi_parse_gpudirect_rv_gpu_cache_size(0);
 #endif
 #endif
@@ -997,9 +993,9 @@ psm3_ep_open_sockets(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid
 	_HFI_PRDBG("Using unit_id[%d] %s.\n", ep->unit_id, ep->dev_name);
 
 #ifdef RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/* Open rv only when GPUDirect is enabled */
-	if (PSMI_IS_GPU_ENABLED && psmi_parse_gpudirect() &&
+	if (PSM3_GPU_IS_ENABLED && psmi_parse_gpudirect() &&
 	    open_rv(ep, job_key) != PSM2_OK) {
 		_HFI_ERROR("Unable to open rv for port %d of %s.\n",
 			   port, ep->dev_name);
@@ -1007,7 +1003,7 @@ psm3_ep_open_sockets(psm2_ep_t ep, int unit, int port, int addr_index, psm2_uuid
 		ep->dev_name = NULL;
 		return PSM2_INTERNAL_ERR;
 	}
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 #endif /* RNDV_MOD */
 	ep->wiremode = 0; // TCP vs UDP are separate EPID protocols
 	ep->addr_index = addr_index;
@@ -1041,7 +1037,7 @@ psm3_sockets_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 	// defaults for SDMA thresholds.
 	// sockets does not support Send DMA, so set large to disable.
         proto->iovec_thresh_eager = proto->iovec_thresh_eager_blocking = ~0U;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
         proto->iovec_gpu_thresh_eager = proto->iovec_gpu_thresh_eager_blocking = ~0U;
 #endif
 #endif
@@ -1125,7 +1121,7 @@ psm3_sockets_ips_proto_init(struct ips_proto *proto, uint32_t cksum_sz)
 		// unfortunately default TCP max_buffering (16K) is too small
 		// so flow_credit_bytes < 16K would prevent getting a good pipeline of
 		// packets/ACKs going
-		proto->flow_credit_bytes = ep->mtu * proto->flow_credits;
+		proto->flow_credit_bytes = ep->mtu * proto->max_credits;
 	} else {
 		// sockets buffering needs to place an upper bound on bytes
 		// while flow_credits places an upper bound on pkts
@@ -1229,7 +1225,7 @@ fail:
 }
 
 // Fetch current link state to update linkinfo fields in ips_proto:
-// 	ep_base_lid, ep_lmc, ep_link_rate, QoS tables, CCA tables
+// 	ep_base_lid, ep_lmc, ep_link_rate
 // These are all fields which can change during a link bounce.
 // Note "active" state is not adjusted as on link down PSM will wait for
 // the link to become usable again so it's always a viable/active device
@@ -1360,7 +1356,7 @@ void psm3_ep_free_sockets(psm2_ep_t ep)
 		}
 	}
 #ifdef RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	if (ep->rv) {
 		psm3_rv_close(ep->rv);
 		ep->rv = NULL;

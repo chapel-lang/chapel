@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -382,7 +382,7 @@ void Builder::assignIDs() {
 
   if (topLevelRepeatOffset_) {
     // this is a special way to get a builder that creates a numbered overload
-    // for a particular function when compler-generating AST. Thus,
+    // for a particular function when compiler-generating AST. Thus,
     // ensure we are marked as generated, and that there's only one symbol,
     // whose offset we are now going to adjust.
     CHPL_ASSERT(isGenerated());
@@ -718,9 +718,11 @@ Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
   path += ")";
   auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
   auto mod = parseResult.singleModule();
-  CHPL_ASSERT(mod);
   owned<AstNode> initNode;
-  if (mod->stmt(0)->isVariable()) {
+  if (!mod || mod->numStmts() <= 0) {
+    auto loc = Location();
+    context()->error(loc, "Error while trying to set config '%s'", var->name().c_str());
+  } else if (mod->stmt(0)->isVariable()) {
     // steal the init expression, children_ will have nullptr in place
     initNode = std::move(mod->children_[0]->children_.back());
     // clean out the nullptr

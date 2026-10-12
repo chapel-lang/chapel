@@ -1,0 +1,3 @@
+proc(x: int, y: int): int
+proc(_: int, _: int): int
+proc(a: int, b: int): int

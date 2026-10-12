@@ -23,10 +23,20 @@ with open(outfile, 'r') as ofh:
 
 # fix the output file
 with open(outfile, 'w') as ofh:
+    in_compilation_env = False
     for line in myLines:
+        if in_compilation_env:
+            if line.startswith("  "):
+                continue
+            else:
+                in_compilation_env = False
+
         l = line.rstrip()
         if l.find(compver) == 0:
             ofh.write('%s\n'%(compver))
+        # strip the extra envs, as thats too hard to test for
+        elif "Compilation environment:" in l:
+            in_compilation_env = True
         else:
             ofh.write(line)
 

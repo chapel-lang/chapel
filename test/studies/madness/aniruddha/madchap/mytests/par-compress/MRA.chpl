@@ -250,7 +250,7 @@ class Function {
         const child = curNode.get_children();
 
         const (n,_) = curNode.get_coords();
-        if ( n+1 < log2(numThreadsPerLocale) ) then
+        if ( n+1 < log2(here.maxTaskPar) ) then
             cobegin {	
                 on sumC.node2loc(child(0)) do
                     if !sumC.has_coeffs(child(0)) then compress(child(0));

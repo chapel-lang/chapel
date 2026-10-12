@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009, 2024 CNRS
- * Copyright © 2009-2024 Inria.  All rights reserved.
+ * Copyright © 2009-2025 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2023 Université de Reims Champagne-Ardenne.  All rights reserved.
@@ -871,9 +871,10 @@ hwloc_utils_get_best_node_in_array_by_memattr(hwloc_topology_t topology, hwloc_m
                                               unsigned nbnodes, hwloc_obj_t *nodes,
                                               struct hwloc_location *initiator,
                                               unsigned long flags,
-                                              hwloc_nodeset_t best_nodeset)
+                                              hwloc_nodeset_t best_nodeset,
+                                              int verbose)
 {
-  unsigned i, j;
+  unsigned i, j, nb = 0;
   hwloc_uint64_t *values, bestvalue = 0;
   unsigned long mflags;
   int err;
@@ -886,28 +887,32 @@ hwloc_utils_get_best_node_in_array_by_memattr(hwloc_topology_t topology, hwloc_m
 
   if (mflags & HWLOC_MEMATTR_FLAG_NEED_INITIATOR) {
     /* iterate over targets, and then on their initiators */
-    for(i=0; i<nbnodes; i++) {
+    for(i=0, nb = 0; i<nbnodes; i++) {
       unsigned nbi;
       struct hwloc_location *initiators;
 
       nbi = 0;
       err = hwloc_memattr_get_initiators(topology, id, nodes[i], 0, &nbi, NULL, NULL);
-      if (err < 0)
-        goto out;
+      if (err < 0) {
+        hwloc_bitmap_zero(best_nodeset);
+        goto none;
+      }
 
       initiators = malloc(nbi * sizeof(*initiators));
       values = malloc(nbi * sizeof(*values));
       if (!initiators || !values) {
+        hwloc_bitmap_zero(best_nodeset);
         free(initiators);
         free(values);
-        goto out;
+        goto none;
       }
 
       err = hwloc_memattr_get_initiators(topology, id, nodes[i], 0, &nbi, initiators, values);
       if (err < 0) {
+        hwloc_bitmap_zero(best_nodeset);
         free(initiators);
         free(values);
-        goto out;
+        goto none;
       }
 
       for(j=0; j<nbi; j++) {
@@ -936,6 +941,8 @@ hwloc_utils_get_best_node_in_array_by_memattr(hwloc_topology_t topology, hwloc_m
         hwloc_utils__update_best_node(nodes[i], values[j],
                                       &bestvalue, best_nodeset,
                                       mflags);
+        nb++;
+        break; /* there shouldn't be multiple initiators */
       }
 
       free(initiators);
@@ -946,22 +953,54 @@ hwloc_utils_get_best_node_in_array_by_memattr(hwloc_topology_t topology, hwloc_m
     /* no initiator, just iterate over targets */
     for(i=0; i<nbnodes; i++) {
       uint64_t value;
-      if (!hwloc_memattr_get_value(topology, id, nodes[i], NULL, 0, &value))
+      if (!hwloc_memattr_get_value(topology, id, nodes[i], NULL, 0, &value)) {
         hwloc_utils__update_best_node(nodes[i], value,
                                       &bestvalue, best_nodeset,
                                       mflags);
+        nb++;
+      }
     }
   }
 
-  if ((flags & HWLOC_UTILS_BEST_NODE_FLAG_DEFAULT)
-      && hwloc_bitmap_iszero(best_nodeset)) {
-    for(i=0; i<nbnodes; i++)
-      hwloc_bitmap_set(best_nodeset, nodes[i]->os_index);
+  if (hwloc_bitmap_iszero(best_nodeset)) {
+  none:
+    if (flags & HWLOC_UTILS_BEST_NODE_FLAG_DEFAULT) {
+      if (!nb) {
+        if (verbose > 0)
+          printf("found no node with attribute values for this initiator, falling back to default\n");
+      } else {
+        fprintf(stderr, "couldn't find attribute values for all nodes, falling back to default\n");
+      }
+
+      /* try to get default nodes only */
+      hwloc_bitmap_t default_nodeset = hwloc_bitmap_alloc();
+      if (default_nodeset) {
+        err = hwloc_topology_get_default_nodeset(topology, default_nodeset, 0);
+        if (!err) {
+          hwloc_bitmap_zero(best_nodeset);
+          for(i=0; i<nbnodes; i++)
+            if (hwloc_bitmap_isset(default_nodeset, nodes[i]->os_index))
+              hwloc_bitmap_set(best_nodeset, nodes[i]->os_index);
+        }
+      }
+      free(default_nodeset);
+      /* if still empty, use all local nodes */
+      if (hwloc_bitmap_iszero(best_nodeset))
+        for(i=0; i<nbnodes; i++)
+          hwloc_bitmap_set(best_nodeset, nodes[i]->os_index);
+
+    } else {
+      if (!nb) {
+        if (verbose > 0)
+          printf("found no node with attribute values for this initiator\n");
+      } else {
+        fprintf(stderr, "couldn't find attribute values for all nodes, returning none\n");
+      }
+    }
   }
   return 0;
 
  out:
-  hwloc_bitmap_zero(best_nodeset);
   return -1;
 }
 
@@ -988,38 +1027,40 @@ hwloc_utils_parse_cpuset_format(const char *string)
     return HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN;
 }
 
-/* The AllowedCPUs systemd DBus API syntax expects a string as follows:
+/* The AllowedCPUs and AllowedMemoryNodes systemd DBus API syntax expects a string as follows:
  * "ay 0xNNNN 0xAA [0xBB [...]]"
  * where:
  *   "0xNNNN" is the size of the array, max size 2^26.
- *   "0xAA [0xBB [...]]" is the cpuset mask given bytes after bytes, little endian order.
+ *   "0xAA [0xBB [...]]" is the cpuset or nodeset mask given bytes after bytes, little endian order.
  * e.g. the output of `hwloc-calc --cpuset-input-format list 0,31-32,63-64,77 --cpuset-output-format systemd-dbus-api` is
- *   "AllowedCPUs ay 0x0a 0x01 0x00 0x00 x80 0x01 0x00 0x00 0x80 0x01 0x20
+ *   "ay 0x000a 0x01 0x00 0x00 x80 0x01 0x00 0x00 0x80 0x01 0x20
+ * e.g. the output of `hwloc-calc node:0 node:1 --nodeset-output-format systemd-dbus-api` is
+ *   "ay 0x0001 0x03"
  * */
-#define HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_FORMAT "AllowedCPUs ay 0x%04x"
-#define HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_SIZE 21
-#define HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_FORMAT " 0x%02x"
-#define HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE 5
+#define HWLOC_SYSTEMD_DBUS_API_PREFIX_FORMAT "ay 0x%04x"
+#define HWLOC_SYSTEMD_DBUS_API_PREFIX_SIZE 9
+#define HWLOC_SYSTEMD_DBUS_API_BYTES_FORMAT " 0x%02x"
+#define HWLOC_SYSTEMD_DBUS_API_BYTES_SIZE 5
 static __hwloc_inline int hwloc_utils_systemd_asprintf(char ** strp, const struct hwloc_bitmap_s * __hwloc_restrict set)
 {
   int last = hwloc_bitmap_last(set);
   if (last == -1 ) {
-    fprintf(stderr, "Empty and infinite CPU sets are not supported with the systemd-dbus-api output format\n");
+    fprintf(stderr, "Empty and infinite sets are not supported with the systemd-dbus-api output format\n");
     exit(EXIT_FAILURE);
   }
-  int bytes = last / 8 + 1; /* how many bytes to represent the cpuset bit mask */
-  int buflen = HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_SIZE + HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE * bytes + 1;
+  int bytes = last / 8 + 1; /* how many bytes to represent the bit mask */
+  int buflen = HWLOC_SYSTEMD_DBUS_API_PREFIX_SIZE + HWLOC_SYSTEMD_DBUS_API_BYTES_SIZE * bytes + 1;
   int ret = 0;
   char *buf;
   buf = malloc(buflen);
   *strp = buf;
-  ret = snprintf(buf, buflen, HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_FORMAT, bytes);
+  ret = snprintf(buf, buflen, HWLOC_SYSTEMD_DBUS_API_PREFIX_FORMAT, bytes);
   unsigned long ith = 0;
   for (int byte=0; byte < bytes; byte++) {
     if (byte % HWLOC_SIZEOF_UNSIGNED_LONG == 0) {
       ith = hwloc_bitmap_to_ith_ulong(set, byte / HWLOC_SIZEOF_UNSIGNED_LONG);
     }
-    ret += snprintf(buf + ret, HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE + 1, HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_FORMAT, (unsigned char) (ith & 0xFF));
+    ret += snprintf(buf + ret, HWLOC_SYSTEMD_DBUS_API_BYTES_SIZE + 1, HWLOC_SYSTEMD_DBUS_API_BYTES_FORMAT, (unsigned char) (ith & 0xFF));
     ith >>= 8;
   }
   assert(ith == 0); /* whenever some bytes of the ulong ith may not be consumed, they must be 0 */
@@ -1036,6 +1077,39 @@ hwloc_utils_cpuset_format_asprintf(char **string, hwloc_const_bitmap_t set,
   case HWLOC_UTILS_CPUSET_FORMAT_SYSTEMD: return hwloc_utils_systemd_asprintf(string, set);
   case HWLOC_UTILS_CPUSET_FORMAT_TASKSET: return hwloc_bitmap_taskset_asprintf(string, set);
   default: abort();
+  }
+}
+
+static __hwloc_inline int
+hwloc_utils_cpuset_format_sscanf(hwloc_bitmap_t set, const char *string, enum hwloc_utils_cpuset_format_e cpuset_format)
+{
+  if (cpuset_format == HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN) {
+    /* If user doesn't enforce a format, try to guess.
+     * There is some ambiguity if a list of singleton like 1,3,5 is given,
+     * it may be parsed as 0x1,0x3,0x5 (hwloc) or 1-1,3-3,5-5 (list).
+     * Assume list first, then hwloc, then taskset.
+     */
+    if (hwloc_strncasecmp(string, "0x", 2) && strchr(string, '-'))
+      cpuset_format = HWLOC_UTILS_CPUSET_FORMAT_LIST;
+    else if (strchr(string, ','))
+      cpuset_format = HWLOC_UTILS_CPUSET_FORMAT_HWLOC;
+    else
+      cpuset_format = HWLOC_UTILS_CPUSET_FORMAT_TASKSET;
+  }
+
+  switch (cpuset_format) {
+  case HWLOC_UTILS_CPUSET_FORMAT_HWLOC:
+    return hwloc_bitmap_sscanf(set, string);
+    break;
+  case HWLOC_UTILS_CPUSET_FORMAT_LIST:
+    return hwloc_bitmap_list_sscanf(set, string);
+    break;
+  case HWLOC_UTILS_CPUSET_FORMAT_TASKSET:
+    return hwloc_bitmap_taskset_sscanf(set, string);
+    break;
+  default:
+    /* HWLOC_UTILS_CPUSET_FORMAT_SYSTEMD input not supported */
+    abort();
   }
 }
 
@@ -1128,6 +1202,7 @@ hwloc_utils_parse_local_numanode_flags(char *str) {
   struct hwloc_utils_parsing_flag possible_flags[] = {
     HWLOC_UTILS_PARSING_FLAG(HWLOC_LOCAL_NUMANODE_FLAG_LARGER_LOCALITY),
     HWLOC_UTILS_PARSING_FLAG(HWLOC_LOCAL_NUMANODE_FLAG_SMALLER_LOCALITY),
+    HWLOC_UTILS_PARSING_FLAG(HWLOC_LOCAL_NUMANODE_FLAG_INTERSECT_LOCALITY),
     HWLOC_UTILS_PARSING_FLAG(HWLOC_LOCAL_NUMANODE_FLAG_ALL)
   };
 

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+OUTFILE=$2
+
+sed -e "s|$CHPL_HOME|\$CHPL_HOME|g" $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE

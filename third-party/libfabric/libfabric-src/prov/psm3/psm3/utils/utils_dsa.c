@@ -115,6 +115,7 @@ struct dsa_wq {
 	uint32_t use_count;	// how many threads assigned to this WQ
 	uint32_t max_xfer_size; // Maximum supported transfer size
 	uint8_t dedicated;	// is this a dedicated (1) or shared (0) WQ
+	int fd;                 // Only valid if wq_reg is NULL
 };
 static struct dsa_wq dsa_wqs[DSA_MAX_QUEUES];
 static uint32_t dsa_my_num_wqs;
@@ -123,9 +124,13 @@ static psmi_spinlock_t dsa_wq_lock; // protects dsa_wq.use_count
 
 
 // Each thread is assigned a DSA WQ on 1st memcpy
+// These are only available in the thread, so we can only initialize them on
+// 1st IO and we can't clear them since ep close could be called by main thread
 static __thread void *dsa_wq_reg = NULL;
 static __thread uint8_t dsa_wq_dedicated;
 static __thread uint32_t dsa_wq_xfer_limit;
+static __thread int dsa_wq_fd = -1;
+
 
 // we keep completion record in thread local storage instead of stack
 // this way if a DSA completion times out and arrives late it still has a
@@ -156,6 +161,116 @@ static inline void movdir64b(struct dsa_hw_desc *desc, volatile void *reg)
 		: : "a" (reg), "d" (desc));
 }
 
+/*
+ * Submit work to the shared workqueue.
+ *
+ * Return:
+ *   0 == success
+ *   -1 == Failure (timeout)
+ */
+static int dsa_swq_queue(struct dsa_hw_desc *desc, void *wq_reg,
+			 struct dsa_stats *stats)
+{
+	uint64_t start_cycles, end_cycles;
+	int ret = 0;
+
+	if (enqcmd(desc, wq_reg)) {
+		// must retry, limit attempts
+		start_cycles = get_cycles();
+		end_cycles = start_cycles + nanosecs_to_cycles(DSA_TIMEOUT)/4;
+		while (enqcmd(desc, wq_reg)) {
+			if (get_cycles() > end_cycles) {
+				_HFI_INFO("DSA SWQ Enqueue Timeout\n");
+				ret = -1;
+				stats->dsa_error++;
+				break;
+			}
+		}
+		if (!ret)
+			stats->dsa_swq_wait_ns +=
+				cycles_to_nanosecs(get_cycles() -
+						   start_cycles);
+	} else {
+		stats->dsa_swq_no_wait++;
+	}
+
+	return ret;
+}
+
+/*
+ * Submit work through the write call.
+ *
+ * Return:
+ *   0 == success
+ *   -1 == Failure (timeout)
+ */
+static int dsa_write_queue(struct dsa_hw_desc *desc, int wq_fd,
+			   struct dsa_stats *stats)
+{
+	uint64_t start_cycles, end_cycles;
+	int ret;
+
+	ret = write(wq_fd, desc, sizeof(*desc));
+	if (ret != sizeof(*desc)) {
+		_HFI_VDBG("DSA write failed: ret %d (%s)\n",
+			  ret, strerror(errno));
+
+		/* Return if the err code is not "EAGAIN" */
+		if (errno != EAGAIN)
+			return -1;
+		// must retry, limit attempts
+		start_cycles = get_cycles();
+		end_cycles = start_cycles + nanosecs_to_cycles(DSA_TIMEOUT)/4;
+		ret = 0;
+		while (write(wq_fd, desc, sizeof(*desc) != sizeof(*desc))) {
+			if (errno != EAGAIN) {
+				_HFI_INFO("DSA write failed: (%s)\n",
+					  strerror(errno));
+				ret = -1;
+				break;
+			}
+			if (get_cycles() > end_cycles) {
+				_HFI_INFO("DSA Write Enqueue Timeout\n");
+				ret = -1;
+				stats->dsa_error++;
+				break;
+			}
+		}
+		if (!ret)
+			stats->dsa_wait_ns +=
+				cycles_to_nanosecs(get_cycles() -
+						   start_cycles);
+	} else {
+		stats->dsa_no_wait++;
+		ret = 0;
+	}
+
+	return ret;
+}
+
+/*
+ * Return:
+ *   0 -- Success
+ *   -1 -- Failure
+ */
+static int dsa_submit(struct dsa_hw_desc *desc, void *wq_reg,
+		      uint8_t wq_dedicated, int wq_fd,
+		      struct dsa_stats *stats)
+{
+	int ret = 0;
+
+	if (wq_reg) {
+		if (wq_dedicated)
+			/* use MOVDIR64B for DWQ */
+			movdir64b(desc, wq_reg);
+		else
+			ret = dsa_swq_queue(desc, wq_reg, stats);
+	} else {
+		ret = dsa_write_queue(desc, wq_fd, stats);
+	}
+
+	return ret;
+}
 
 /* use DSA to copy a block of memory */
 /* !rx-> copy from app to shm (sender), rx-> copy from shm to app (receiver) */
@@ -178,8 +293,8 @@ void psm3_dsa_memcpy(void *dest, const void *src, uint32_t n, int rx,
 	int copied_chunks = 0;
 	uint32_t dsa_cp_len;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (n && PSMI_IS_GPU_ENABLED && (PSMI_IS_GPU_MEM(dest) || PSMI_IS_GPU_MEM((void *) src))) {
+#ifdef PSM_HAVE_GPU
+	if (n && (PSM3_IS_GPU_MEM(dest) || PSM3_IS_GPU_MEM((void *) src))) {
 		_HFI_VDBG("GPU copy from %p to %p for %u\n", src, dest, n);
 		PSM3_GPU_MEMCPY(dest, src, n);
 		return;
@@ -255,27 +370,14 @@ restart:
 	// make sure completion status zeroing fully written before post to HW
 	//_mm_sfence();
 	{ asm volatile("sfence":::"memory"); }
-	if (dsa_wq_dedicated) {
-		/* use MOVDIR64B for DWQ */
-		movdir64b(&desc, dsa_wq_reg);
-	} else {
-		/* use ENQCMDS for SWQ */
-		if (enqcmd(&desc, dsa_wq_reg)) {
-			// must retry, limit attempts
-			start_cycles = get_cycles();
-			end_cycles = start_cycles + nanosecs_to_cycles(DSA_TIMEOUT)/4;
-			while (enqcmd(&desc, dsa_wq_reg)) {
-				if (get_cycles() > end_cycles) {
-					_HFI_INFO("Disabling DSA: DSA SWQ Enqueue Timeout\n");
-					dsa_available = 0;
-					stats->dsa_error++;
-					goto memcpy_exit;
-				}
-			}
-			stats->dsa_swq_wait_ns += cycles_to_nanosecs(get_cycles() - start_cycles);
-		} else {
-			stats->dsa_swq_no_wait++;
-		}
+
+	// Submit the work
+	if (dsa_submit(&desc, dsa_wq_reg, dsa_wq_dedicated, dsa_wq_fd,
+		       stats)) {
+		// Fail to submit
+		_HFI_INFO("Disabling DSA: failed to submit work.\n");
+		dsa_available = 0;
+		goto memcpy_exit;
 	}
 
 	if (cpu_n) {
@@ -348,20 +450,31 @@ static void dsa_free_wqs(void)
 	int proc;
 	int i;
 
+	// free dsa_wqs, info relevant to our PROC
 	for (i=0; i<dsa_my_num_wqs; i++) {
 		if (dsa_wqs[i].wq_reg)
 			(void)munmap(dsa_wqs[i].wq_reg, DSA_MMAP_LEN);
 		dsa_wqs[i].wq_reg = NULL;
 		// points into dsa_wq_filename[], don't free
 		dsa_wqs[i].wq_filename = NULL;
+		dsa_wqs[i].use_count = 0;
+		if (dsa_wqs[i].fd >= 0) {
+			close(dsa_wqs[i].fd);
+			dsa_wqs[i].fd = -1;
+		}
 	}
+
 	// free what we parsed
 	for (proc=0; proc < dsa_num_proc; proc++) {
 		for (i=0; i<dsa_num_wqs[proc]; i++) {
 			psmi_free(dsa_wq_filename[proc][i]);
 			dsa_wq_filename[proc][i] = NULL;
+			dsa_wq_mode[proc][i] = 0;
+			dsa_wq_max_xfer_size[proc][i] = 0;
 		}
+		dsa_num_wqs[proc] = 0;
 	}
+	dsa_num_proc = 0;
 }
 
 // determine mode for a DSA WQ by reading the mode file under
@@ -473,11 +586,55 @@ static int psm3_dsa_max_xfer_size(const char *wq_filename)
 	return (uint32_t)strtoul(buf, NULL, 0);
 }
 
+/*
+ * Return:
+ *   0 -- Success
+ *   -1 -- Failure
+ */
+static int test_write_syscall(struct dsa_wq *wq)
+{
+	struct dsa_hw_desc desc = {};
+	struct dsa_completion_record comp __attribute__((aligned(32)));
+	int ret;
+	uint64_t start_cycles, end_cycles;
+
+	desc.opcode = DSA_OPCODE_NOOP;
+	desc.flags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+	comp.status = 0;
+	desc.completion_addr = (unsigned long)&comp;
+
+	ret = write(wq->fd, &desc, sizeof(desc));
+	if (ret == sizeof(desc)) {
+		ret = 0;
+
+		start_cycles = get_cycles();
+		end_cycles = start_cycles + nanosecs_to_cycles(DSA_TIMEOUT);
+		while (comp.status == 0) {
+			if (get_cycles() > end_cycles && comp.status == 0) {
+				_HFI_ERROR("DSA timed out.\n");
+				return -1;
+			}
+		}
+
+		if (comp.status != DSA_COMP_SUCCESS)
+			ret = -1;
+	} else {
+		_HFI_ERROR("write failed: ret %d (%s)\n",
+			   ret, strerror(errno));
+		ret = -1;
+	}
+
+	return ret;
+}
+
 /* initialize DSA - call once per process */
 /* Some invalid inputs and DSA initialization errors are treated as fatal errors
  * since if DSA gets initialized on some nodes, but not on others, the
  * inconsistency in shm FIFO sizes causes an obsure fatal error later in
  * PSM3 intialization. So make the error more obvious and fail sooner.
+ *
+ * Note: if this fails, caller may try again later, so must cleanup any
+ * globals or resources we allocate before return failure.
  */
 int psm3_dsa_init(void)
 {
@@ -518,6 +675,7 @@ int psm3_dsa_init(void)
 		char *delim;
 		int new_proc = 0;
 		proc = 0;
+		dsa_num_wqs[proc] = 0;
 
 		if (! temp) {
 			_HFI_ERROR("Can't alloocate temp string");
@@ -564,8 +722,11 @@ int psm3_dsa_init(void)
 			dsa_wq_mode[proc][dsa_num_wqs[proc]] = mode;
 			dsa_wq_filename[proc][dsa_num_wqs[proc]] = psmi_strdup(PSMI_EP_NONE, s);
 			dsa_num_wqs[proc]++;
-			if (new_proc)
+			if (new_proc) {
 				proc++;
+				if (proc < DSA_MAX_PROC)
+					dsa_num_wqs[proc] = 0;
+			}
 			s = delim+1;
 		} while (delim);
 		psmi_free(temp);
@@ -680,8 +841,11 @@ int psm3_dsa_init(void)
 	for (i=0; i<dsa_my_num_wqs; i++) {
 		// key off having rw access to the DSA WQ to decide if DSA is available
 		dsa_wqs[i].wq_filename = dsa_wq_filename[proc][i];
-		dsa_wqs[i].dedicated = dsa_wq_mode[proc][i];
+		dsa_wqs[i].use_count = 0;
 		dsa_wqs[i].max_xfer_size = dsa_wq_max_xfer_size[proc][i];
+		dsa_wqs[i].dedicated = dsa_wq_mode[proc][i];
+		dsa_wqs[i].wq_reg = NULL;
+		dsa_wqs[i].fd = -1;
 		if (! realpath(dsa_wqs[i].wq_filename, dsa_filename)) {
 			_HFI_ERROR("Failed to resolve DSA WQ path %s\n", dsa_wqs[i].wq_filename);
 			goto fail;
@@ -691,13 +855,24 @@ int psm3_dsa_init(void)
 			_HFI_ERROR("Unable to open DSA WQ (%s): %s\n", dsa_filename, strerror(errno));
 			goto fail;
 		}
+		psmi_assert(! dsa_wqs[i].wq_reg);
 		dsa_wqs[i].wq_reg = mmap(NULL, DSA_MMAP_LEN, PROT_WRITE, MAP_SHARED | MAP_POPULATE, fd, 0);
 		if (dsa_wqs[i].wq_reg == MAP_FAILED) {
-			_HFI_ERROR("Unable to mmap DSA WQ (%s): %s\n", dsa_filename, strerror(errno));
+			_HFI_PRDBG("Unable to mmap DSA WQ (%s): %s\n", dsa_filename, strerror(errno));
+			dsa_wqs[i].wq_reg = NULL;
+			dsa_wqs[i].fd = fd;
+			/*
+			 * In case the driver doesn't support mmap, test if
+			 * it supports write system call for work submission.
+			 * If yes, fall back to using write syscall.
+			 */
+			if (test_write_syscall(&dsa_wqs[i])) {
+				_HFI_ERROR("Neither mmap nor write is supported for DSA WQ (%s)\n", dsa_filename);
+				goto fail;
+			}
+		} else {
 			close(fd);
-			goto fail;
 		}
-		close(fd);
 		// name + a coma or space
 		dsa_my_dsa_str_len += strlen(dsa_wqs[i].wq_filename)+1;
 	}
@@ -734,7 +909,7 @@ static inline void psm3_dsa_pick_wq(void)
 	int i, sel = 0;
 	uint32_t min_use_count = UINT32_MAX;
 	// pick the WQ for the current thread
-	if (dsa_wq_reg)
+	if (dsa_wq_reg || dsa_wq_fd >= 0)
 		return;	// typical case, already picked one
 
 	// rcvthread, pick last and don't count it
@@ -761,6 +936,7 @@ found:
 	dsa_wq_reg = dsa_wqs[sel].wq_reg;
 	dsa_wq_dedicated = dsa_wqs[sel].dedicated;
 	dsa_wq_xfer_limit = dsa_wqs[sel].max_xfer_size;
+	dsa_wq_fd = dsa_wqs[sel].fd;
 }
 
 

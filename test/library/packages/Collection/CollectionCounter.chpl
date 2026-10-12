@@ -1,13 +1,11 @@
 use Collectives;
 use DistributedDeque;
-use DistributedBagDeprecated;
 
 // For this test, we implement a simple counter; we add a predetermined number
 // of elements, then concurrently remove all elements from it until it is empty,
 // testing that all elements added were removed.
 config param isBoundedDeque = false;
 config param isDeque = false;
-config param isBag = false;
 
 config param nElems = 1000;
 const expected = (nElems * (nElems + 1)) / 2;
@@ -15,10 +13,8 @@ const expected = (nElems * (nElems + 1)) / 2;
 var c = (
   if isBoundedDeque then new DistDeque(int, cap=nElems)
   else if isDeque then new DistDeque(int)
-  else if isBag then new DistBag(int)
-  else compilerError("Require 'isBoundedDeque', 'isDeque', or 'isBag' to be set...")
+  else compilerError("Require 'isBoundedDeque' or 'isDeque' to be set...")
 );
-
 
 // Fill...
 for i in 1 .. nElems {
@@ -45,7 +41,6 @@ assert(concurrentActual.read() == expected);
 assert(c.getSize() == nElems);
 
 // Empty collection. Make sure all tasks start around same time...
-if isBag then c.balance();
 concurrentActual.write(0);
 var bar = new barrier(here.maxTaskPar * numLocales);
 coforall loc in Locales do on loc {

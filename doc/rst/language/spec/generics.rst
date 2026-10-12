@@ -637,6 +637,7 @@ integral types, all of the numeric types, and all enumerated types. The
 type ``enumerated`` is currently available as a synonym for ``enum``.
 
 The type ``record`` can be instantiated with any record type.
+Similarly, the type ``union`` can be instantiated with any union type.
 
 The memory management strategies ``owned``, ``shared``, ``borrowed``,
 and ``unmanaged`` (see :ref:`Class_Types`) are also generic

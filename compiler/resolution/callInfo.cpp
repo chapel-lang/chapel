@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,7 +209,7 @@ const char* CallInfo::toString() {
         snprint_imm(buff, bufSize, *var->immediate);
 
         std::string s = buff;
-        if (is_imag_type(type))
+        if (isImagType(type))
           s += 'i';
 
         // Add the type if it's not default

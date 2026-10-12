@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,10 +40,11 @@
 #include "chpl-mem.h"
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include "comm-ofi-internal.h"
 
@@ -1164,7 +1165,7 @@ void chpl_comm_pre_mem_init(void) {
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
   init_broadcast_private();
 
   /*
@@ -1185,14 +1186,16 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
 // No support for lldb for now
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
+  return 1;
 }
 
 
@@ -1483,6 +1486,8 @@ chpl_bool isUseableProvider(struct fi_info* info) {
   static struct sockaddr_in6 t2;
   static chpl_bool initialized = false;
   static chpl_bool darwin = false;
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
 
   if (! initialized) {
     darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
@@ -2201,6 +2206,9 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
 
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
+
   if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0
       && chpl_env_rt_get_bool("COMM_OFI_SLINGSHOT_CHECK_ENV", true)) {
     heedSlingshotSettings(ofi_info);
@@ -2245,6 +2253,8 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
   const char* prov_name = getProviderName();
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                          CHPL_TARGET_PLATFORM);
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
@@ -2565,6 +2575,8 @@ void init_ofiEp(void) {
       } else {
         DBG_PRINTF(DBG_PROV, "fi_open_ops failed: %s", fi_strerror(rc));
       }
+#else
+      chpl_warning("The Chapel runtime was built without enhanced CXI support. Make sure your libfabric was built using `--enable-cxi`.", 0, 0);
 #endif
     }
     if (cxiHybridMRMode) {
@@ -3297,7 +3309,7 @@ void chpl_comm_rollcall(void) {
 // Chapel global and private variable support
 //
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
   //
@@ -3305,8 +3317,12 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   // buffer, and broadcast the address of that buffer to the other
   // nodes.
   //
-  wide_ptr_t* buf;
+
+  wide_ptr_t* buf = NULL;
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
+
     CHPL_CALLOC(buf, chpl_numGlobalsOnHeap);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
       buf[i] = *chpl_globals_registry[i];
@@ -3324,26 +3340,29 @@ void init_broadcast_private(void) {
   //
   //
   // Share the nodes' private broadcast tables around.  These are
-  // needed by chpl_comm_broadcast_private(), below.
+  // needed by chpl_comm_private_broadcast(), below.
   //
   void** pbtMap;
-  size_t pbtSize = chpl_rt_priv_bcast_tab_len
-                   * sizeof(chpl_rt_priv_bcast_tab[0]);
+  size_t pbtSize = chpl_rt_unified_private_broadcast_table_len
+                   * sizeof(chpl_rt_unified_private_broadcast_table[0]);
   CHPL_CALLOC(pbtMap, chpl_numNodes * pbtSize);
-  chpl_comm_ofi_oob_allgather(chpl_rt_priv_bcast_tab, pbtMap, pbtSize);
+  chpl_comm_ofi_oob_allgather(chpl_rt_unified_private_broadcast_table,
+                              pbtMap, pbtSize);
   CHPL_CALLOC(chplPrivBcastTabMap, chpl_numNodes);
+  const size_t len = chpl_rt_unified_private_broadcast_table_len;
   for (int i = 0; i < chpl_numNodes; i++) {
-    chplPrivBcastTabMap[i] = &pbtMap[i * chpl_rt_priv_bcast_tab_len];
+    chplPrivBcastTabMap[i] = &pbtMap[i * len];
   }
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size) {
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s(%d, %zd)", __func__, id, size);
 
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
+      (void) ofi_put(chpl_rt_unified_private_broadcast_table[id], i,
                      chplPrivBcastTabMap[i][id], size);
     }
   }
@@ -3579,6 +3598,8 @@ void init_fixedHeap(void) {
     // that can meet our base requirements has FI_MR_ALLOCATED set to
     // indicate it wants one.
     //
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            CHPL_TARGET_PLATFORM);
     if (!strcmp(CHPL_TARGET_PLATFORM, "cray-xc") ||
         !strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
       createHeap = true;
@@ -4197,74 +4218,50 @@ static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
 static void amWaitForDone(amDone_t*);
 
 
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t argSize,
-                          int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t argSize,
+                                  int32_t ln,
+                                  int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", node, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, true);
 }
 
 
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t argSize,
-                             int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t *arg,
+                                     size_t argSize,
+                                     int32_t ln,
+                                     int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, false, false);
 }
 
 
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t argSize,
-                               int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t *arg,
+                                       size_t argSize,
+                                       int32_t ln,
+                                       int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
              (int) node, (int) subloc, (int) fid, arg, argSize);
 
   CHK_TRUE(node != chpl_nodeID); // handled by the locale model
-
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-    chpl_comm_cb_info_t cb_data =
-      {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-       .iu.executeOn={subloc, fid, arg, argSize, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", node, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
-
   amRequestExecOn(node, subloc, fid, arg, argSize, true, true);
 }
 
@@ -5250,7 +5247,7 @@ void amWrapExecOnBody(void* p) {
 
   chpl_comm_bundleData_t* comm = &((chpl_comm_on_bundle_t*) p)->comm;
 
-  chpl_ftable_call(comm->fid, p);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, comm->fid, p);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(p));
   if (comm->pAmDone != NULL) {
@@ -5312,7 +5309,8 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   //
   // Now we can finally call the body function.
   //
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
   forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, true /*checkAmos*/);
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) xol));
   if (comm->pAmDone != NULL) {
@@ -5536,7 +5534,7 @@ void nb_handle_destroy(nb_handle_t h) {
  */
 static inline
 chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
-                       int32_t commID, int ln, int32_t fn) {
+                       int32_t commID, int32_t ln, int32_t fn) {
 
   retireDelayedAmDone(false /*taskIsEnding*/);
 
@@ -5581,7 +5579,7 @@ chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
  */
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn) {
+                                       int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5602,7 +5600,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
  */
 static inline
 chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
-                       int32_t commID, int ln, int32_t fn) {
+                       int32_t commID, int32_t ln, int32_t fn) {
 
   retireDelayedAmDone(false /*taskIsEnding*/);
 
@@ -5635,7 +5633,7 @@ chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn) {
+                                       int32_t commID, int32_t ln, int32_t fn) {
   nb_handle_t handle = NULL;
   if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_get_nb(handle, addr, node, raddr, size);
@@ -5774,7 +5772,7 @@ void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) {
 }
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn) {
+                   size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5786,7 +5784,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn) {
+                   size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5802,7 +5800,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t dstnode,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn) {
+                        int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %p, %d, %p, %p, %p, %d, %zd, %d)", __func__,
              dstaddr_arg, dststrides, (int) dstnode, srcaddr_arg, srcstrides,
@@ -5821,7 +5819,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t srcnode,
                         void* srcaddr_arg, size_t* srcstrides, size_t* count,
                         int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn) {
+                        int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %p, %d, %p, %p, %p, %d, %zd, %d)", __func__,
              dstaddr_arg, dststrides, (int) srcnode, srcaddr_arg, srcstrides,
@@ -5839,7 +5837,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn) {
+                                int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %p, %d, %p, %zd, %d)", __func__,
              (int) dstnode, dstaddr, (int) srcnode, srcaddr, size,
@@ -5879,7 +5877,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5917,7 +5915,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
 
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -7646,7 +7644,7 @@ static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
 #define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
   void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_WRITE,                                     \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                desired, (int) node, object,                             \
@@ -7675,7 +7673,7 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
   void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_READ,                                      \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                result, (int) node, object,                              \
@@ -7701,7 +7699,7 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
   void chpl_comm_atomic_xchg_##fnType                                   \
          (void* desired, c_nodeid_t node, void* object, void* result,   \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %d, %p, %p, %d, %s)", __func__,                  \
                desired, (int) node, object, result,                     \
@@ -7727,7 +7725,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
   void chpl_comm_atomic_cmpxchg_##fnType                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
           chpl_bool32* result, chpl_memory_order succ, chpl_memory_order fail,    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %p, %d, %p, %p, %d, %s)", __func__,              \
                expected, desired, (int) node, object, result,           \
@@ -7757,7 +7755,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7770,7 +7768,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_##fnOp##_unordered_##fnType                     \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7783,7 +7781,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7857,7 +7855,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7871,7 +7869,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_sub_unordered_##fnType                          \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7885,7 +7883,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7995,7 +7993,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
   static int validByType[FI_DATATYPE_LAST];
 
   if (!inited) {
-    for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+    for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
       validByType[t]  = computeAtomicValid(t);
     }
     inited = true;
@@ -8011,11 +8009,11 @@ int isAtomicValid(enum fi_datatype ofiType) {
       struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all
                                            // endpoints
 
-      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+      for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
         offset = 0;
         offset += snprintf(buf + offset, sizeof(buf) - offset, "%s: ",
                       fi_tostr(&t, FI_TYPE_ATOMIC_TYPE));
-        for (enum fi_op op = 0; op < FI_ATOMIC_OP_LAST; op++) {
+        for (enum fi_op op = 0; op < (enum fi_op)FI_ATOMIC_OP_LAST; op++) {
           size_t count; // needed by macros below
           int valid = my_valid(t, op);
           int fetch = my_fetch_valid(t, op);
@@ -8040,7 +8038,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
         }
         DBG_PRINTF(DBG_CFG_AMO, "%s", buf);
       }
-      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+      for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
         DBG_PRINTF(DBG_CFG_AMO, "%s: %s", fi_tostr(&t, FI_TYPE_ATOMIC_TYPE),
                    validByType[t] ? "valid" : "invalid");
       }

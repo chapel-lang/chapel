@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,16 +43,16 @@ uint32_t c_string_to_uint32_t_precise(c_string str, int* invalid, char* invalidC
 uint64_t c_string_to_uint64_t_precise(c_string str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
-int8_t c_string_to_int8_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-int16_t c_string_to_int16_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-int32_t c_string_to_int32_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-int64_t c_string_to_int64_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-uint8_t c_string_to_uint8_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-uint16_t c_string_to_uint16_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-uint32_t c_string_to_uint32_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
-uint64_t c_string_to_uint64_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+int8_t c_string_to_int8_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+int16_t c_string_to_int16_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+int32_t c_string_to_int32_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+int64_t c_string_to_int64_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+uint8_t c_string_to_uint8_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+uint16_t c_string_to_uint16_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+uint32_t c_string_to_uint32_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+uint64_t c_string_to_uint64_t(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
 
-chpl_bool c_string_to_chpl_bool(c_string str, chpl_bool* err, int lineno, int32_t filename);
+chpl_bool c_string_to_chpl_bool(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
 
 _real32 c_string_to_real32_precise(c_string str, int* invalid, char* invalidCh);
 _real64 c_string_to_real64_precise(c_string str, int* invalid, char* invalidCh);
@@ -61,12 +61,12 @@ _imag64 c_string_to_imag64_precise(c_string str, int* invalid, char* invalidCh);
 _complex64 c_string_to_complex64_precise(c_string str, int* invalid, char* invalidCh);
 _complex128 c_string_to_complex128_precise(c_string str, int* invalid, char* invalidCh);
 
-_real32 c_string_to_real32(c_string str, chpl_bool* err, int lineno, int32_t filename);
-_real64 c_string_to_real64(c_string str, chpl_bool* err, int lineno, int32_t filename);
-_imag32 c_string_to_imag32(c_string str, chpl_bool* err, int lineno, int32_t filename);
-_imag64 c_string_to_imag64(c_string str, chpl_bool* err, int lineno, int32_t filename);
-_complex64 c_string_to_complex64(c_string str, chpl_bool* err, int lineno, int32_t filename);
-_complex128 c_string_to_complex128(c_string str, chpl_bool* err, int lineno, int32_t filename);
+_real32 c_string_to_real32(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+_real64 c_string_to_real64(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+_imag32 c_string_to_imag32(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+_imag64 c_string_to_imag64(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+_complex64 c_string_to_complex64(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
+_complex128 c_string_to_complex128(c_string str, chpl_bool* err, int32_t lineno, int32_t filename);
 
 
 /* every other primitive type to string */

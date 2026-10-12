@@ -401,7 +401,6 @@ static const struct fi_tx_attr dgram_dflt_tx_attr = {
 	.mode = USDF_DGRAM_SUPP_MODE,
 	.op_flags = 0,
 	.msg_order = USDF_DGRAM_MSG_ORDER,
-	.comp_order = USDF_DGRAM_COMP_ORDER,
 	.inject_size = USDF_DGRAM_INJECT_SIZE,
 	.iov_limit = USDF_DGRAM_IOV_LIMIT,
 	.rma_iov_limit = USDF_DGRAM_RMA_IOV_LIMIT
@@ -412,8 +411,6 @@ static const struct fi_rx_attr dgram_dflt_rx_attr = {
 	.mode = USDF_DGRAM_SUPP_MODE,
 	.op_flags = 0,
 	.msg_order = USDF_DGRAM_MSG_ORDER,
-	.comp_order = USDF_DGRAM_COMP_ORDER,
-	.total_buffered_recv = 0,
 	.iov_limit = USDF_DGRAM_IOV_LIMIT
 };
 
@@ -431,11 +428,11 @@ static const struct fi_ep_attr dgram_dflt_ep_attr = {
 
 static const struct fi_domain_attr dgram_dflt_domain_attr = {
 	.caps = USDF_DOM_CAPS,
-	.threading = FI_THREAD_ENDPOINT,
+	.threading = FI_THREAD_COMPLETION,
 	.control_progress = FI_PROGRESS_AUTO,
 	.data_progress = FI_PROGRESS_MANUAL,
 	.resource_mgmt = FI_RM_DISABLED,
-	.mr_mode = FI_MR_ALLOCATED | FI_MR_LOCAL | FI_MR_BASIC,
+	.mr_mode = FI_MR_ALLOCATED | FI_MR_LOCAL | OFI_MR_BASIC,
 	.cntr_cnt = USDF_DGRAM_CNTR_CNT,
 	.mr_iov_limit = USDF_DGRAM_MR_IOV_LIMIT,
 	.mr_cnt = USDF_DGRAM_MR_CNT,
@@ -516,9 +513,7 @@ int usdf_dgram_fill_dom_attr(uint32_t version, const struct fi_info *hints,
 
 	switch (hints->domain_attr->threading) {
 	case FI_THREAD_UNSPEC:
-	case FI_THREAD_ENDPOINT:
 		break;
-	case FI_THREAD_FID:
 	case FI_THREAD_COMPLETION:
 	case FI_THREAD_DOMAIN:
 		defaults.threading = hints->domain_attr->threading;
@@ -624,9 +619,6 @@ int usdf_dgram_fill_tx_attr(uint32_t version, const struct fi_info *hints,
 	if ((hints->tx_attr->msg_order | USDF_DGRAM_MSG_ORDER) !=
 			USDF_DGRAM_MSG_ORDER)
 		return -FI_ENODATA;
-	if ((hints->tx_attr->comp_order | USDF_DGRAM_COMP_ORDER) !=
-			USDF_DGRAM_COMP_ORDER)
-		return -FI_ENODATA;
 
 	if (hints->tx_attr->inject_size > defaults.inject_size)
 		return -FI_ENODATA;
@@ -701,13 +693,6 @@ int usdf_dgram_fill_rx_attr(uint32_t version, const struct fi_info *hints,
 
 	if ((hints->rx_attr->msg_order | USDF_DGRAM_MSG_ORDER) !=
 			USDF_DGRAM_MSG_ORDER)
-		return -FI_ENODATA;
-	if ((hints->rx_attr->comp_order | USDF_DGRAM_COMP_ORDER) !=
-			USDF_DGRAM_COMP_ORDER)
-		return -FI_ENODATA;
-
-	if (hints->rx_attr->total_buffered_recv >
-			defaults.total_buffered_recv)
 		return -FI_ENODATA;
 
 	if (hints->rx_attr->iov_limit > USDF_DGRAM_MAX_SGE)

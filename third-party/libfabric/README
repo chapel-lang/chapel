@@ -2,7 +2,7 @@
 libfabric README for Chapel
 ===========================
 
-This copy of libfabric 1.21.0 is being released with Chapel for
+This copy of libfabric 2.5.1 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/ofiwg/libfabric
@@ -18,11 +18,11 @@ The directory $CHPL_HOME/third-party/libfabric/libfabric-src contains the
 un-tarballed libfabric package contents. Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/libfabric/:
 
-1. download the latest libfabric version: e.g. libfabric-1.21.0
-2. verify the checksum as `echo "SHASUM libfabric-1.21.0.tar.bz2" | shasum -c`
-3. `tar xf libfabric-1.21.0.tar.bz2`
+1. download the latest libfabric version: e.g. libfabric-2.5.1
+2. verify the checksum as `echo "SHASUM libfabric-2.5.1.tar.bz2" | shasum -c`
+3. `tar xf libfabric-2.5.1.tar.bz2`
 4. `rm -rf libfabric-src`
-5. `mv libfabric-1.21.0 libfabric-src`
+5. `mv libfabric-2.5.1 libfabric-src`
 6. `git add --force libfabric-src` (--force to ignore our .gitignore)
 7. update the version number mentioned above
 8. verify any references to libfabric's man pages in the runtime shim are

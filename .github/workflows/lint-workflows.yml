@@ -1,0 +1,52 @@
+name: lint workflows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - uses: kjanat/actionlint@08bb2c4f0d039744455b87aef1c647fb8b66d37b # v1.17.0
+
+  zizmor:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
+          inputs: |
+            .github/workflows
+
+  # Canary for any linter failures
+  linters-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-slim
+    needs:
+      - actionlint
+      - zizmor
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1

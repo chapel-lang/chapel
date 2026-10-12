@@ -99,7 +99,7 @@ void psm3_mq_sysbuf_init(psm2_mq_t mq)
     // eager message size (aka PSM3_MTU).
     // replenishing_rate is how many we add to pool at a time, there is
     // no upper bound to the pool.
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
     uint32_t gpu_block_sizes[] = {256, 512, 1024, 2048, 4096, 8192, 65536, 262144, (uint32_t)-1};
     uint32_t gpu_replenishing_rate[] = {128, 64, 32, 16, 8, 4, 2, 2, 0};
     uint32_t block_sizes[] = {256, 512, 1024, 2048, 4096, 8192, (uint32_t)-1, (uint32_t)-1,  (uint32_t)-1};
@@ -111,8 +111,8 @@ void psm3_mq_sysbuf_init(psm2_mq_t mq)
 
     if (mq->mem_ctrl_is_init)
         return;
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-    if (PSMI_IS_GPU_ENABLED) {
+#ifdef PSM_HAVE_GPU
+    if (PSM3_GPU_IS_ENABLED) {
         memcpy(block_sizes, gpu_block_sizes, sizeof(block_sizes));
         memcpy(replenishing_rate, gpu_replenishing_rate, sizeof(replenishing_rate));
     }
@@ -160,36 +160,7 @@ void psm3_mq_sysbuf_fini(psm2_mq_t mq)  // free all buffers that is currently no
     for (i=0; i < MM_NUM_OF_POOLS; i++) {
         while ((block = mq->handler_index[i].free_list) != NULL) {
             mq->handler_index[i].free_list = block->next;
-#if defined(PSM_CUDA) && !defined(PSM_NO_CUDA_REGISTER)
-            if (PSMI_IS_GPU_ENABLED && cu_ctxt) {
-                /* ignore NOT_REGISTERED in case cuda initialized late */
-                /* ignore other errors as context could be destroyed before this */
-                CUresult cudaerr;
-                //PSMI_CUDA_CALL_EXCEPT(CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
-                //               cuMemHostUnregister, block);
-                psmi_count_cuMemHostUnregister++;
-                cudaerr = psmi_cuMemHostUnregister(block);
-                if (cudaerr) {
-                    const char *pStr = NULL;
-                    psmi_count_cuGetErrorString++;
-                    psmi_cuGetErrorString(cudaerr, &pStr);
-                    _HFI_DBG("CUDA failure: cuMemHostUnregister returned %d: %s\n",
-                            cudaerr, pStr?pStr:"Unknown");
-                }
-            }
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-            if (PSMI_IS_GPU_ENABLED) {
-                ze_result_t result;
-                //PSMI_ONEAPI_ZE_CALL(zexDriverReleaseImportedPointer, ze_driver, block);
-                psmi_count_zexDriverReleaseImportedPointer++;
-                result = psmi_zexDriverReleaseImportedPointer(ze_driver,
-                        block);
-                if (result != ZE_RESULT_SUCCESS) {
-                    _HFI_DBG("OneAPI Level Zero failure: zexDriverReleaseImportedPointer returned %d: %s\n", result, psmi_oneapi_ze_result_to_string(result));
-                }
-            }
-#endif
+            PSM3_GPU_UNREGISTER_HOSTMEM(block);
             psmi_free(block);
         }
     }
@@ -229,20 +200,9 @@ void *psm3_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
             new_block = psmi_malloc(mq->ep, UNEXPECTED_BUFFERS, newsz);
 
             if (new_block) {
-#if defined(PSM_CUDA) && !defined(PSM_NO_CUDA_REGISTER)
                 // for transient buffers, no use Importing, adds cost for
                 // CPU copy, just pay GPU cost on the copy, we use once & free
-                //if (PSMI_IS_GPU_ENABLED && check_have_cuda_ctxt())
-                //    PSMI_CUDA_CALL(cuMemHostRegister, new_block, newsz,
-                //                   CU_MEMHOSTALLOC_PORTABLE);
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-                // for transient buffers, no use Importing, adds cost for
-                // CPU copy, just pay GPU cost on the copy, we use once & free
-                //if (PSMI_IS_GPU_ENABLED)
-                //    PSMI_ONEAPI_ZE_CALL(zexDriverImportExternalPointer, ze_driver,
-                //                    new_block, newsz);
-#endif
+                //PSM3_GPU_REGISTER_HOSTMEM(new_block, newsz);
                 new_block->mem_handler = mm_handler;
                 new_block++;
                 mm_handler->total_alloc++;
@@ -257,22 +217,9 @@ void *psm3_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
             new_block = psmi_malloc(mq->ep, UNEXPECTED_BUFFERS, newsz);
 
             if (new_block) {
-#if defined(PSM_CUDA) && !defined(PSM_NO_CUDA_REGISTER)
-                // By registering memory with Cuds, we make
-                // cuMemcpy* run faster for copies between
-                // GPU and this sysbuf
-                if (PSMI_IS_GPU_ENABLED && check_have_cuda_ctxt())
-                    PSMI_CUDA_CALL(cuMemHostRegister, new_block, newsz,
-                                   CU_MEMHOSTALLOC_PORTABLE);
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-                // By registering memory with Level Zero, we make
-                // zeCommandListAppendMemoryCopy run faster for copies between
-                // GPU and this sysbuf
-                if (PSMI_IS_GPU_ENABLED)
-                    PSMI_ONEAPI_ZE_CALL(zexDriverImportExternalPointer, ze_driver,
-                                    new_block, newsz);
-#endif
+                // By registering memory with GPU, we make GPU memcpy
+		// run faster for copies between GPU and this sysbuf
+		PSM3_GPU_REGISTER_HOSTMEM(new_block, newsz);
                 mm_handler->current_available++;
                 mm_handler->total_alloc++;
                 mq->mem_ctrl_total_bytes += newsz;
@@ -309,22 +256,9 @@ void psm3_mq_sysbuf_free(psm2_mq_t mq, void * mem_to_free)
     mm_handler = block_to_free->mem_handler;
 
     if (mm_handler->flags & MM_FLAG_TRANSIENT) {
-#if defined(PSM_CUDA) && !defined(PSM_NO_CUDA_REGISTER)
         // for transient buffers, no use Importing, adds cost for
         // CPU copy, just pay GPU cost on the copy, we use once & free
-        //if (PSMI_IS_GPU_ENABLED && cu_ctxt) {
-        //        /* ignore NOT_REGISTERED in case cuda initialized late */
-        //        CUresult cudaerr;
-        //        PSMI_CUDA_CALL_EXCEPT(CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED,
-        //                        cuMemHostUnregister, block_to_free);
-        //}
-#endif
-#if defined(PSM_ONEAPI) && !defined(PSM3_NO_ONEAPI_IMPORT)
-        // for transient buffers, no use Importing, adds cost for
-        // CPU copy, just pay GPU cost on the copy, we use once & free
-        //if (PSMI_IS_GPU_ENABLED)
-        //    PSMI_ONEAPI_ZE_CALL(zexDriverReleaseImportedPointer, ze_driver, block_to_free);
-#endif
+	// PSM3_GPU_UNREGISTER_HOSTMEM(block_to_free);
         psmi_free(block_to_free);
     } else {
         block_to_free->next = mm_handler->free_list;

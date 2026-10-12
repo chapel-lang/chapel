@@ -25,17 +25,18 @@ Tuple Types
 -----------
 
 A tuple type is defined by a fixed number (a compile-time constant) of
-component types. It can be specified by a parenthesized, comma-separated
-list of types. The number of types in the list defines the size of the
-tuple; the types themselves specify the component types.
+component types. It can be specified by a parenthesized, comma-separated list
+of types. A trailing comma is allowed. The number of types in the list defines
+the size of the tuple; the types themselves specify the component types.
 
 The syntax of a tuple type is given by: 
 
 .. code-block:: syntax
 
    tuple-type:
-     ( type-expression , type-list )
      ( type-expression , )
+     ( type-expression , type-list )
+     ( type-expression , type-list , )
 
    type-list:
      type-expression
@@ -108,9 +109,9 @@ Tuple Values
 
 A value of a tuple type attaches a value to each component type. Tuple
 values can be specified by a parenthesized, comma-separated list of
-expressions. The number of expressions in the list defines the size of
-the tuple; the types of these expressions specify the component types of
-the tuple. A trailing comma is allowed.
+expressions. A trailing comma is allowed. The number of expressions in the list
+defines the size of the tuple; the types of these expressions specify the
+component types of the tuple.
 
 The syntax of a tuple expression is given by: 
 
@@ -181,11 +182,12 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
 
 Tuple expressions are evaluated similarly to function calls where the
 arguments are all generic with no explicit intent. So a tuple expression
-containing an array does not copy the array.
+containing an array does not copy the array; see
+:ref:`Value_Tuples_and_Referential_Tuples`.
 
 When a tuple is passed as an argument to a function, it is passed as if
 it is a record type containing fields of the same type and in the same
-order as in the tuple.
+order as in the tuple; see :ref:`Tuple_Argument_Intents`.
 
 .. index::
    pair: tuples; indexing
@@ -334,7 +336,7 @@ Tuple Destructuring
 
 Tuples can be split into their components in the following ways:
 
--  In assignment where multiple expression on the left-hand side of the
+-  In assignment where multiple expressions on the left-hand side of the
    assignment operator are grouped using tuple notation.
 
 -  In variable declarations where multiple variables in a declaration
@@ -358,7 +360,7 @@ Tuples can be split into their components in the following ways:
 Splitting a Tuple with Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When multiple expression on the left-hand side of an assignment operator
+When multiple expressions on the left-hand side of an assignment operator
 are grouped using tuple notation, the tuple on the right-hand side is
 split into its components. The number of grouped expressions must be
 equal to the size of the tuple on the right-hand side. In addition to

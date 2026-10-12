@@ -1,0 +1,2 @@
+--detailed-errors # emptyEnum-detailed.good
+--no-detailed-errors # emptyEnum-brief.good

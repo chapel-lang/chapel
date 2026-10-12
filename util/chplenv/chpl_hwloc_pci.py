@@ -15,25 +15,26 @@ import overrides
 
 from utils import error, memoize, check_valid_var
 
+
 @memoize
 def get():
     hwloc_val = chpl_hwloc.get()
-    if hwloc_val != 'bundled':
-        return 'disable'
+    if hwloc_val != "bundled":
+        return "disable"
 
-    pci_val = overrides.get('CHPL_HWLOC_PCI')
+    pci_val = overrides.get("CHPL_HWLOC_PCI")
     if not pci_val:
-        pci_val = 'disable'
+        pci_val = "disable"
         comm_val = chpl_comm.get()
-        if comm_val != 'none':
-            pci_val = 'enable'
+        if comm_val != "none":
+            pci_val = "enable"
         else:
             locale_val = chpl_locale_model.get()
-            if locale_val == 'gpu':
+            if locale_val == "gpu":
                 gpu_val = chpl_gpu.get()
-                if gpu_val != 'cpu':
-                    pci_val = 'enable'
-    check_valid_var('CHPL_HWLOC_PCI', pci_val, ['enable', 'disable'])
+                if gpu_val != "cpu":
+                    pci_val = "enable"
+    check_valid_var("CHPL_HWLOC_PCI", pci_val, ["enable", "disable"])
     return pci_val
 
 
@@ -42,5 +43,5 @@ def _main():
     sys.stdout.write("{0}\n".format(pci_val))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

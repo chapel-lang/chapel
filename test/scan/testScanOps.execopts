@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# use a smaller size for UB testing, since otherwise + and * will likely overflow
+if [ "$CHPL_SANITIZE_EXE" == "undefined" ]; then
+  echo "--maxInt=$((2**4)) --n=15"
+fi

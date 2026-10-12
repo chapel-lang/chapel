@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+
+"""Merge one or more start_test log summary files."""
+
+import argparse
+import re
+import sys
+import time
+
+HEADER_RE = re.compile(r"\[Test Summary - .+\]")
+RESULTS_RE = re.compile(
+    r"\[Summary: #Successes = (\d+) \| #Failures = (\d+) "
+    r"\| #Futures = (\d+) \| #Warnings = (\d+) \]"
+)
+PASSING_RE = re.compile(
+    r"\[Summary: #Passing Suppressions = (\d+) "
+    r"\| #Passing Futures = (\d+) \]"
+)
+
+
+def read_summary(path):
+    """Read a start_test summary and return its detail lines and counts."""
+    with open(path, "r", encoding="utf-8", errors="replace") as summary_file:
+        lines = summary_file.read().splitlines()
+
+    if not lines or not HEADER_RE.fullmatch(lines[0]):
+        raise ValueError("{0}: missing test summary header".format(path))
+    if not lines or lines[-1] != "[END]":
+        raise ValueError("{0}: missing [END] marker".format(path))
+
+    result_matches = [
+        (index, RESULTS_RE.fullmatch(line))
+        for index, line in enumerate(lines)
+        if RESULTS_RE.fullmatch(line)
+    ]
+    passing_matches = [
+        (index, PASSING_RE.fullmatch(line))
+        for index, line in enumerate(lines)
+        if PASSING_RE.fullmatch(line)
+    ]
+    if len(result_matches) != 1:
+        raise ValueError(
+            "{0}: expected exactly one test result summary".format(path)
+        )
+    if len(passing_matches) != 1:
+        raise ValueError(
+            "{0}: expected exactly one passing test summary".format(path)
+        )
+
+    result_index, result_match = result_matches[0]
+    passing_index, passing_match = passing_matches[0]
+    assert result_match is not None
+    assert passing_match is not None
+    if passing_index != result_index + 1 or passing_index != len(lines) - 2:
+        raise ValueError("{0}: malformed test summary footer".format(path))
+
+    counts = tuple(
+        int(value) for value in result_match.groups() + passing_match.groups()
+    )
+    return lines[1:result_index], counts
+
+
+def merge_summaries(paths):
+    """Return merged start_test summary text for paths."""
+    details = []
+    totals = [0] * 6
+    for path in paths:
+        summary_details, counts = read_summary(path)
+        details.extend(summary_details)
+        totals = [total + count for total, count in zip(totals, counts)]
+
+    def sort_key(line):
+        if line.startswith("[Error"):
+            return (0, line)
+        elif line.startswith("[Suppress"):
+            return (1, line)
+        elif line.startswith("[Future"):
+            return (2, line)
+        else:
+            return (3, line)
+
+    details.sort(key=sort_key)
+
+    lines = ["[Test Summary - {0}]".format(time.strftime("%y%m%d.%H%M%S"))]
+    lines.extend(details)
+    lines.append(
+        "[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
+        "| #Warnings = {3} ]".format(*totals[:4])
+    )
+    lines.append(
+        "[Summary: #Passing Suppressions = {0} | #Passing Futures = {1} ]".format(
+            *totals[4:]
+        )
+    )
+    lines.append("[END]")
+    return "\n".join(lines) + "\n"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "summary_files", nargs="+", help="summary files to merge"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        metavar="FILE",
+        help="write the merged summary to FILE",
+    )
+    args = parser.parse_args()
+
+    try:
+        merged_summary = merge_summaries(args.summary_files)
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as output_file:
+                output_file.write(merged_summary)
+        else:
+            sys.stdout.write(merged_summary)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+
+
+if __name__ == "__main__":
+    main()

@@ -118,7 +118,7 @@ void ofi_xpmem_cache_destroy(struct ofi_mr_cache *cache)
  */
 int ofi_xpmem_cache_search(struct ofi_mr_cache *cache, struct iovec *iov,
 			   uint64_t peer_id, struct ofi_mr_entry **mr_entry,
-			   struct xpmem_client *xpmem)
+			   struct ofi_xpmem_client *xpmem)
 {
 	int ret;
 	struct ofi_mr_info info;
@@ -146,7 +146,7 @@ out:
 
 int ofi_xpmem_cache_search(struct ofi_mr_cache *cache, struct iovec *iov,
 			   uint64_t peer_id, struct ofi_mr_entry **mr_entry,
-			   struct xpmem_client *xpmem)
+			   struct ofi_xpmem_client *xpmem)
 {
 	return -FI_ENOSYS;
 }

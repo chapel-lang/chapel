@@ -1,0 +1,2 @@
+breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+target stop-hook add --name debuggerBreakHere -o "up"

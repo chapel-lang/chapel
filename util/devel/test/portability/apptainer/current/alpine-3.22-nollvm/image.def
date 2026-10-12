@@ -1,0 +1,11 @@
+BootStrap: docker
+From: alpine:3.22
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apk-deps.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

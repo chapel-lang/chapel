@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,77 +23,62 @@ module ChapelDynamicLoading {
   private use CTypes;
   private use Atomics;
   private use ChapelLocks;
+  private use ChapelProgramRegistration;
+
+  private proc isLocalNoComm param {
+    use ChplConfig;
+    return compiledForSingleLocale();
+  }
+
+  private proc isRuntimeCompiledAsDynamicLibrary {
+    // TODO: Need to adjust the runtime build to inject a macro value or
+    // compile in a separate source file just into the '.so/.dylib'.
+    return true;
+  }
 
   param chpl_defaultProcBufferSize = 512;
 
-  // This will always be run, so we can rely on it.
-  inline proc issueConfigurationErrors() param {
+  // Returns 'true' if compile-time configuration errors exist.
+  proc configErrorsForDynamicLoading(param emitErrors: bool) param {
     use ChplConfig;
 
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
-    if useProcedurePointers && CHPL_TARGET_COMPILER == "llvm" &&
-       unsupportedLlvmVersion {
-      // This could be a compiler error, but I'm lazy and putting it here.
-      compilerError('The experimental procedure pointer implementation ' +
-                    'is not supported with LLVM-' + CHPL_LLVM_VERSION, 2);
+    if !useProcedurePointers {
+      if emitErrors {
+        compilerError('The experimental procedure pointer implementation ' +
+                      'must be enabled to use dynamic loading. Set the ' +
+                      'config param \'useProcedurePointers\' to \'true\'', 2);
+      }
       return true;
     }
 
     return false;
   }
 
-  inline proc isDynamicLoadingSupported param {
-    if issueConfigurationErrors() then return false;
-    return true;
+  proc isDynamicLoadingSupported param {
+    return !configErrorsForDynamicLoading(emitErrors=false);
   }
 
-  inline proc isDynamicLoadingEnabled {
-    return isDynamicLoadingSupported;
+  iter fanToAll(skip: locale) {
+    for loc in Locales {
+      if loc != skip then yield loc;
+    }
   }
 
-  // Invoke immediately to issue compiler errors.
-  isDynamicLoadingSupported;
-
-  // This counter is used to assign a unique 'wide index' to each procedure.
-  // We start with '1' since the '0th' index is reserved to represent 'nil'.
-  var chpl_dynamicProcIdxCounter: atomic int = 1;
-
-  // Wrapper to use the 'manage' statement to create a critical section.
-  record chpl_lockWrapper {
-    var _lock: chpl_LocalSpinlock;
-    inline proc useSpinlock param do return true;
-    inline proc const withLock() ref do return withWriteLock();
-    inline proc const withReadLock() ref where useSpinlock do return _lock;
-    inline proc const withWriteLock() ref where useSpinlock do return _lock;
+  proc shouldFanOut: bool {
+    return isDynamicLoadingSupported && !isLocalNoComm && numLocales > 1;
   }
 
-  // This class is a local bidirectional map from 'pointer' <-> 'int'.
+  // This counter is used to assign a unique index to each pointer.
+  // We start with '2' because:
+  //
+  //  -- The '0th' index is reserved to represent 'nil'.
+  //  -- The '1st' index is reserved to represent the root program.
+  //
+  // TODO: Split out counters for program IDs so there is no overlap.
+  var chpl_ptrCacheIdxCounter: atomic int = 2;
+
   class chpl_LocalPtrCache {
-    forwarding var _lockWrapper = new chpl_lockWrapper();
-    var _procPtrToIdx = new chpl_localMap(c_ptr(void), int);
-    var _idxToProcPtr = new chpl_localMap(int, c_ptr(void));
-
-    inline proc setUnlocked(ptr: c_ptr(void), idx: int) {
-      var ret = false;
-      on this do {
-        var add1 = _procPtrToIdx.set(ptr, idx);
-        var add2 = _idxToProcPtr.set(idx, ptr);
-        ret = add1;
-      }
-      return ret;
-    }
-
-    inline proc getUnlocked(ptr: c_ptr(void), out idx: int) {
-      var ret = false;
-      on this do ret = _procPtrToIdx.get(ptr, idx);
-      return ret;
-    }
-
-    inline proc getUnlocked(idx: int, out ptr: c_ptr(void)) {
-      var ret = false;
-      on this do ret = _idxToProcPtr.get(idx, ptr);
-      return ret;
-    }
+    var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
   }
 
   // One cache of pointers guarded by a lock defined per locale. We use a
@@ -109,29 +94,20 @@ module ChapelDynamicLoading {
   // If we are multi-locale, then we'll need to initialize the cache on the
   // remaining locales manually, since the module initializer is only
   // running on LOCALE-0.
-  if isDynamicLoadingSupported && numLocales > 1 {
-    coforall loc in Locales[1..] {
-      on loc do local do {
-        assert(chpl_localPtrCache == nil);
-        chpl_localPtrCache = new unmanaged chpl_LocalPtrCache();
-      }
+  if shouldFanOut {
+    coforall loc in fanToAll(skip=here) do on loc do local {
+      // The local value will be nil despite a non-nilable type. This is OK.
+      assert(chpl_localPtrCache == nil);
+      chpl_localPtrCache = new unmanaged chpl_LocalPtrCache();
     }
   }
 
-  // NOTE: Stale TODO (I think), but I'm keeping it here in case it pops up.
-  //
-  // TODO: The moment I try to delete these pointers some locales will crash
-  // with (what I assume is) a double-free or some other memory corruption
-  // on program shutdown. You don't really see it single-locale unless
-  // jemalloc allocates a large enough chunk, so set the flag
-  // 'chpl_defaultProcBufferSize=512' to see. The crash seems to happen in
-  // the qthreads layer, perhaps while cleaning up TLS.
-  //
   proc deinit() {
     on Locales[0] do delete chpl_localPtrCache;
 
-    if isDynamicLoadingSupported {
-      coforall loc in Locales[1..] do on loc {
+    // Behind a 'local' check to avoid throwing off compiler optimizations.
+    if shouldFanOut {
+      coforall loc in fanToAll(skip=here) do on loc {
         delete chpl_localPtrCache;
       }
     }
@@ -169,13 +145,13 @@ module ChapelDynamicLoading {
   // lock (per locale) because they all need to access the same error
   // routine, and we need to guarantee that access to it is not racey.
   pragma "locale private"
-  private var localDynLoadGuard: chpl_lockWrapper;
+  private var localDynLoadLock: chpl_LocalSpinlock;
 
   private inline
   proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLoadError?) {
     extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
 
-    manage localDynLoadGuard.withLock() {
+    manage localDynLoadLock {
       localDynLoadClearErrorUnlocked();
 
       const code = chpl_dlclose(ptr);
@@ -194,7 +170,7 @@ module ChapelDynamicLoading {
 
     var ret: c_ptr(void) = nil;
 
-    manage localDynLoadGuard.withLock() {
+    manage localDynLoadLock {
       localDynLoadClearErrorUnlocked();
 
       ret = chpl_dlopen(path.c_str(), CHPL_RTLD_LAZY);
@@ -215,7 +191,7 @@ module ChapelDynamicLoading {
 
     var ret: c_ptr(void) = nil;
 
-    manage localDynLoadGuard.withLock() {
+    manage localDynLoadLock {
       localDynLoadClearErrorUnlocked();
 
       ret = chpl_dlsym(handle, sym.c_str());
@@ -228,59 +204,54 @@ module ChapelDynamicLoading {
     return ret;
   }
 
+  proc checkForDynamicLoadingErrors(ref err) {
+    // Note that procedure pointer errors were checked in module code.
+    param errors = configErrorsForDynamicLoading(emitErrors=true);
+
+    if errors || !isDynamicLoadingSupported {
+      err = new DynLoadError('Dynamic loading is not supported');
+      return true;
+    }
+
+    return false;
+  }
+
   // A store of of all loaded binaries which lives on LOCALE-0. Each time a
   // binary is loaded an entry will be made in the store. The interface to the
   // stored info is the system pointer retrieved by 'dlopen'.
   class chpl_BinaryInfoStore {
-    forwarding var _lockWrapper = new chpl_lockWrapper();
 
     // The key is the 'dlopen' pointer returned on LOCALE-0. You are able to
     // 'dlopen' a symbol multiple times, so you can get the key as needed.
-    var _handleToInfo: chpl_localMap(c_ptr(void), unmanaged chpl_BinaryInfo?);
-
-    inline proc set(ptr: c_ptr(void), bin: unmanaged chpl_BinaryInfo?) {
-      return _handleToInfo.set(ptr, bin);
-    }
-
-    inline proc get(ptr: c_ptr(void), out bin: unmanaged chpl_BinaryInfo?) {
-      return _handleToInfo.get(ptr, bin);
-    }
+    // TODO: After doing so, do we need to call close to drop the internal
+    //       refcount that is maintained by the OS?
+    var handleToInfo: chpl_lockGuard(chpl_localMap(c_ptr(void),
+                                     unmanaged chpl_BinaryInfo?));
 
     proc deinit() {
-      for slot in _handleToInfo.slots() do {
+      ref m = handleToInfo.unsafeAccess();
+      for slot in m.slots() do {
         if slot.val != nil then delete slot.val;
       }
     }
   }
 
-  private inline proc errorIfUnsupported() {
-    var ret: owned DynLoadError?;
-
-    if !isDynamicLoadingSupported {
-      compilerError('Dynamic loading is not supported for your ' +
-                    'current Chapel configuration', 2);
-    }
-
-    if !isDynamicLoadingEnabled {
-      ret = new DynLoadError('Dynamic loading is not enabled');
-    }
-
-    return ret;
-  }
-
   // This is one per entrypoint binary and lives on LOCALE-0.
   var chpl_binaryInfoStore = new owned chpl_BinaryInfoStore();
+
+  enum binaryKind { FOREIGN, CHAPEL };
 
   // This class represents a "wide" binary. It contains the state necessary
   // to load a symbol from the binary on each locale.
   class chpl_BinaryInfo {
-    forwarding var lockWrapper = new chpl_lockWrapper();
+    var _lock: chpl_LocalSpinlock;
+    var _kind: binaryKind = binaryKind.FOREIGN;
 
     // This refcount is bumped and dropped by the user-facing wrapper.
     var _refCount: atomic int = 0;
 
     // This is the path that was used to load the binary.
-    var _path: string;
+    const _path: string;
 
     // This is the set of loaded binary pointers, indexed by locale. It lives
     // on LOCALE-0. Since it is a local buffer it can only be accessed there!
@@ -292,7 +263,7 @@ module ChapelDynamicLoading {
     var _procPtrToDataLocale0: chpl_localMap(c_ptr(void), (int, string));
 
     // A pointer to the parent store is used to coordinate load/unload.
-    var _store: borrowed chpl_BinaryInfoStore;
+    const _store: borrowed chpl_BinaryInfoStore;
 
     // Set only when '_close()' is called for the first time.
     var _closed = false;
@@ -311,13 +282,11 @@ module ChapelDynamicLoading {
       }
     }
 
-    // Load a binary given a path.
-    proc type create(path: string, out err: owned DynLoadError?) {
+    // Try to eagerly load a binary on all locales when given a path.
+    proc type _tryToLoadEagerly(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
-      // Check for an error and return if it was set.
-      err = errorIfUnsupported();
-      if err != nil then return ret;
+      if checkForDynamicLoadingErrors(err) then return ret;
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
@@ -337,8 +306,8 @@ module ChapelDynamicLoading {
 
         // Check the LOCALE-0 store for an existing entry.
         if shouldCreateNewEntry {
-          manage store.withReadLock() {
-            shouldCreateNewEntry = !store.get(ptr0, ret);
+          manage store.handleToInfo.read() as m {
+            shouldCreateNewEntry = !m.get(ptr0, ret);
           }
         }
 
@@ -353,8 +322,8 @@ module ChapelDynamicLoading {
           var numErrs: atomic int = 0;
 
           // Loop and attempt to open system handles on other locales.
-          if numLocales > 1 {
-            coforall loc in Locales[1..] with (ref errBuf) do on loc {
+          if shouldFanOut {
+            coforall loc in fanToAll(skip=here) with (ref errBuf) do on loc {
               const n = (here.id: int);
 
               var err: owned DynLoadError?;
@@ -398,11 +367,11 @@ module ChapelDynamicLoading {
               assert(bin._systemPtrs[i] != nil);
             }
 
-            manage store.withWriteLock() {
-              var found = store.get(bin._systemPtrs[0], ret);
+            manage store.handleToInfo.write() as m {
+              var found = m.get(bin._systemPtrs[0], ret);
               if !found {
                 ret = owned.release(bin);
-                var ok = store.set(ret!._systemPtrs[0], ret);
+                const ok = m.add(ret!._systemPtrs[0], ret);
                 assert(ok);
               }
             }
@@ -413,20 +382,157 @@ module ChapelDynamicLoading {
       return ret;
     }
 
+    proc _localPrepareProgramInfo(): c_ptr(chpl_rt_prginfo) {
+      var err;
+      const p = this.loadSymbolLocally('chpl_prepareProgramInfoHere',
+                                       proc(): c_ptr(chpl_rt_prginfo),
+                                       err);
+      return if p != nil && err == nil then p() else nil;
+    }
+
+    proc _initializeLoadedModules(out err: owned DynLoadError?): void {
+      var errGuard: chpl_lockGuard(err.type);
+      var origin = here;
+
+      coforall loc in Locales do on loc {
+        var errHere;
+        // Each locale has to call this hook in order to initialize modules,
+        // even though L0 will be the only locale executing the majority of
+        // the code. This is defined in 'ChapelProgramEntrypoints' and it
+        // constitutes the 'entrypoint' for a loaded Chapel program, at least
+        // as far as module initialization is concerned.
+        const p = this.loadSymbolLocally('chpl_initLoadedProgramModulesHere',
+                                         proc(): void,
+                                         errHere);
+        if errHere != nil {
+          // TODO: Consolidate instead of just keeping one.
+          on origin do manage errGuard.write() as e do e = errHere;
+        } else {
+          p();
+        }
+      }
+
+      // Propagate the error if one exists (write to consume the 'owned').
+      ref e = errGuard.unsafeAccess();
+      if e != nil then err = e;
+    }
+
+    // TODO: If I don't type 'id', its type is inferred as int64 vs uint64?
+    inline proc
+    _localBindToId(infoPtr, id: chpl_rt_prg_id=chpl_programInfo.nullId) {
+      // Internal runtime function used to bind program IDs.
+      extern 'chpl_rt_prginfo_register_here_nosync'
+        proc bind(id: chpl_rt_prg_id,
+                  prg: c_ptr(chpl_rt_prginfo)): chpl_rt_prg_id;
+      const ret = bind(id, infoPtr);
+      return ret;
+    }
+
+    // TODO: Propagate warnings out as errors instead.
+    proc _inspectAndPrepareIfCompatibleChapelBinary(): binaryKind {
+      use ChapelProgramRegistration;
+
+      const info = _localPrepareProgramInfo();
+      if info == nil then return binaryKind.FOREIGN;
+
+      //
+      // TODO: Confirm that the info is compatible with us. This can be
+      //       generated based on which fields are ABI-sensitive.
+      // TODO: Also, we need to make sure that it's compatible with the
+      //       runtime. To do that, we will need to store the runtime's
+      //       build configuration separately from the program.
+      //
+
+      // The runtime records if it was compiled as a dynamic library or not,
+      // so check that. If it was not, currently we cannot possibly load this
+      // as a Chapel binary right now without making some more adjustments.
+      //
+      // Do not even TRY to load it, because doing so will cause the linker
+      // to emit some symbol resolution errors for runtime symbols right off
+      // the bat (e.g., for 'chpl_std_module_init').
+      if !isRuntimeCompiledAsDynamicLibrary {
+        warning('Will not attempt to \'' + _path + '\' as a Chapel binary ' +
+                'because the runtime is not compiled as a dynamic library');
+        return binaryKind.FOREIGN;
+      }
+
+      var idBuf = new chpl_localBuffer(chpl_rt_prg_id, numLocales);
+
+      // Bind and set on 'this.locale'.
+      const newPrgId = _localBindToId(info);
+      idBuf[here.id] = newPrgId;
+
+      if newPrgId == chpl_programInfo.nullId ||
+         newPrgId == chpl_programInfo.rootId {
+        // TODO: Unbind.
+        warning('Failed to set Chapel program ID on locale ' +
+                here.id:string + ' for program loaded at \'' +
+                _path + '\'');
+        return binaryKind.FOREIGN;
+      }
+
+      // Bind the ID of this program on all locales.
+      coforall loc in fanToAll(skip=here) with (ref idBuf) do on loc {
+        const infoHere = _localPrepareProgramInfo();
+        assert(infoHere != nil);
+
+        const slotIdx = here.id;
+        const prgIdx = _localBindToId(infoHere, newPrgId);
+
+        on idBuf do idBuf[slotIdx] = prgIdx;
+      }
+
+      for i in 0..<idBuf.size do {
+        if i == here.id then continue;
+
+        const id = idBuf[i];
+        if id != newPrgId {
+          // TODO: Unbind.
+          warning('Failed to set Chapel program ID on locale ' +
+                  here.id:string + ' ' + 'for program loaded at \'' +
+                  _path + '\'');
+          return binaryKind.FOREIGN;
+        }
+      }
+
+      // Set up the module code.
+      var err;
+      _initializeLoadedModules(err);
+
+      // TODO: Propagate me back out.
+      if err != nil then halt(err!.message());
+
+      return binaryKind.CHAPEL;
+    }
+
+    // Load a binary given a path.
+    proc type create(path: string, out err: owned DynLoadError?) {
+      var ret = _tryToLoadEagerly(path, err);
+
+      if ret == nil || err != nil then return ret;
+
+      // Otherwise, we can inspect things about the loaded binary.
+      ret!._kind = ret!._inspectAndPrepareIfCompatibleChapelBinary();
+
+      return ret;
+    }
+
     // TODO: Also need to evict pointer cache entries.
     proc _close() {
       assert(_refCount.read() == 0);
       if _closed then return;
 
-      on Locales[0] do manage this.withWriteLock() {
+      on Locales[0] do manage this._lock {
         if !_closed {
           _closed = true;
+
           for i in 0..<_systemPtrs.size {
-            const loc = Locales[i];
             const ptr = _systemPtrs[i];
-            if ptr != nil then on loc {
+
+            if ptr != nil then on Locales[i] {
               var err: owned DynLoadError?;
               localDynLoadClose(ptr, err);
+
               // TODO: Figure out how to propagate this instead of halting?
               if err != nil then halt(err!.message());
             }
@@ -439,6 +545,100 @@ module ChapelDynamicLoading {
     inline proc dropRefCount() {
       if _refCount.read() <= 0 then return;
       _refCount.sub(1);
+    }
+
+    // This private method emplaces a new index into the local procedure
+    // pointer cache on each locale, and then it returns the index. It
+    // may lock on local caches but it does not ensure global consistency.
+    // The caller should do that by holding 'this._lock'.
+    //
+    // Note that the passed in pointer only has meaning on 'this.locale'.
+    inline proc _emplaceNewIndexUnlocked(sym: string, ptrOnThis: c_ptr(void),
+                                         out err: owned DynLoadError?) {
+      var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
+      var numErrs: atomic int;
+
+      // Get the wide index to use by interning on 'this.locale'. By passing
+      // in '0' we tell the routine to assign us a unique index to use.
+      var ret = chpl_mapPtrToIdxHere(ptrOnThis, this.locale.id);
+      assert(ret != 0);
+
+      if shouldFanOut {
+        coforall loc in fanToAll(skip=this.locale) do on loc {
+          const n = here.id : int;
+          var handle: c_ptr(void);
+          on this do handle = _systemPtrs[n];
+
+          var err;
+          const ptr = localDynLoadSymbolLookup(sym, handle, err);
+
+          if ptr == nil && err == nil {
+            const msg = 'Failed to load symbol on locale ' + n:string;
+            err = new DynLoadError(msg);
+          }
+
+          if err != nil {
+            on this do errBuf[n] = err;
+            numErrs.add(1);
+
+          } else {
+            assert(ptr != nil);
+            const got = chpl_mapPtrToIdxHere(ptr, ret);
+            assert(got == ret);
+          }
+        }
+      }
+
+      if numErrs.read() > 0 {
+        // If there were errors, then report the first error.
+        // TODO: Evict any pointers stored in the cache.
+        // TODO: Consolidate the reported errors.
+        for i in 0..<errBuf.size {
+          if errBuf[i] {
+            err = errBuf[i];
+            break;
+          }
+        }
+
+        // Clear the index since there was an error.
+        ret = 0;
+      }
+
+      return ret;
+    }
+
+    // Load a symbol locally and return a local procedure pointer.
+    proc loadSymbolLocally(sym: string, type t, out err: owned DynLoadError?) {
+      type P = chpl_toExternProcType(chpl_toLocalProcType(t));
+      var ret = __primitive("cast", P, nil);
+
+      if !isProcedure(t) || isClass(t) {
+        compilerError('The type passed to \'loadSymbol\' must be ' +
+                      'a procedure type');
+      }
+
+      if checkForDynamicLoadingErrors(err) then return ret;
+
+      // Get the handle for the current locale.
+      // TODO: Re-implement to have NO comm!
+      const origin = here.id;
+      var handle: c_ptr(void);
+      on this do handle = _systemPtrs[origin];
+      assert(handle != nil);
+
+      local do {
+        const ptr = localDynLoadSymbolLookup(sym, handle, err);
+
+        if ptr == nil {
+          // There was an error while calling the system lookup routine.
+          err = new DynLoadError('Failed to locate symbol: ' + sym);
+
+        } else if err == nil {
+          ret = __primitive("cast", P, ptr);
+        }
+      }
+
+      return ret;
     }
 
     // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
@@ -454,87 +654,52 @@ module ChapelDynamicLoading {
       }
 
       if chpl_isLocalProc(t) {
-        // The 'wideness' of a procedure type should not necessarily be
-        // exposed to the user (and so we really shouldn't care), but it's an
-        // assumption we make about the input type as a precaution. Also,
-        // we might like to allow users to load references to data as well.
+        // Users shouldn't be able to easily construct local types right now.
         compilerError('The procedure type passed to \'loadSymbol\'' +
                       'should be wide');
       }
 
-      // Check for an error and return if it was set.
-      err = errorIfUnsupported();
-      if err != nil then return __primitive("cast", P, 0);
+      if checkForDynamicLoadingErrors(err) {
+        return __primitive("cast", P, 0);
+      }
 
-      // On the fast path, we check to see if the symbol exists on LOCALE-0.
-      // If it does, then it should be in the procedure pointer cache, and
-      // we can immediately translate it into a wide index.
       on Locales[0] {
-        var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
-        var numErrs: atomic int = 0;
-        var shouldInternPointer = false;
+        const handle = _systemPtrs[here.id];
+        assert(handle != nil);
 
-        // No need to grab the lock, this should not be modified (or nil).
-        const handle0 = _systemPtrs[0];
-        assert(handle0 != nil);
+        // Call the system lookup routine, e.g., 'dlsym'.
+        var errOnThis;
+        const ptrOnThis = localDynLoadSymbolLookup(sym, handle, errOnThis);
 
-        const ptr0 = localDynLoadSymbolLookup(sym, handle0, errBuf[0]);
+        if errOnThis != nil {
+          err = errOnThis;
 
-        if errBuf[0] == nil && ptr0 != nil {
-          manage this.withReadLock() {
-            var data;
-            const found = _procPtrToDataLocale0.get(ptr0, data);
-            shouldInternPointer = !found;
-            if found {
-              const (got, sym) = data;
-              assert(got != 0);
-              idx = got;
+        } else if ptrOnThis == nil {
+          // There was an error while calling the system lookup routine.
+          err = new DynLoadError('Failed to locate symbol: ' + sym);
+
+        } else manage this._lock {
+          // The following section must all happen while holding the lock.
+          // Check to see if the wide index is already stored stored here.
+          var data;
+          const found = _procPtrToDataLocale0.get(ptrOnThis, data);
+
+          if found {
+            // In the fast path there was already an entry for the symbol.
+            const (got, sym) = data;
+            assert(got != 0);
+            idx = got;
+
+          } else {
+            // Otherwise there was no entry, so add pointers to all caches.
+            idx = _emplaceNewIndexUnlocked(sym, ptrOnThis, err);
+
+            if idx != 0 {
+              // A non-nil index was returned, so we add a new entry.
+              const data = (idx, sym);
+              const added = _procPtrToDataLocale0.add(ptrOnThis, data);
+              assert(added);
             }
-          }
-        }
-
-        if shouldInternPointer {
-          // Get the wide index to use by interning on LOCALE-0. By passing
-          // in '0' we tell the routine to assign us a unique index to use.
-          idx = chpl_insertExternLocalPtrNoSync(ptr0, 0);
-          assert(idx != 0);
-
-          if numLocales > 1 {
-            // Loop over all locales and fetch the symbol's local pointer.
-            coforall loc in Locales[1..] do on loc {
-              const n = (here.id: int);
-
-              // Fetch the system handle that is stored on LOCALE-0.
-              var handle: c_ptr(void);
-              on Locales[0] do handle = _systemPtrs[n];
-
-              var err: owned DynLoadError?;
-              const ptr = localDynLoadSymbolLookup(sym, handle, err);
-              if err {
-                on Locales[0] do errBuf[n] = err;
-                numErrs.add(1);
-              } else if ptr {
-                var got = chpl_insertExternLocalPtrNoSync(ptr, idx);
-                assert(got == idx);
-              } else {
-                // TODO: Construct an error instead.
-                halt('Failed to fetch symbol!');
-              }
-            }
-          }
-
-          if numErrs.read() > 0 {
-            // If there were errors, then report the first error.
-            // TODO: Evict any pointers stored in the cache.
-            // TODO: Consolidate the reported errors.
-            for i in 0..<errBuf.size {
-              if errBuf[i] {
-                err = errBuf[i];
-                break;
-              }
-            }
-            // Clear the index since there was an error.
-            idx = 0;
           }
         }
       }
@@ -602,7 +767,7 @@ module ChapelDynamicLoading {
 
     inline proc this(idx: integral) ref {
       if boundsChecking && (idx < 0 || idx >= _size) then
-          halt('Out of bounds!');
+        halt('Out of bounds!');
       return _ptr[idx];
     }
 
@@ -715,7 +880,7 @@ module ChapelDynamicLoading {
       for slot in oldBuf {
         if !_isKeyZeroBits(slot.key) {
           import MemMove;
-          const added = set(slot.key, MemMove.moveFrom(slot.val));
+          const added = add(slot.key, MemMove.moveFrom(slot.val));
           assert(added);
         }
       }
@@ -738,8 +903,8 @@ module ChapelDynamicLoading {
       return false;
     }
 
-    // Returns 'true' if the key was set in the map for the first time.
-    proc ref set(in key: K, in val: V): bool {
+    // Returns 'true' if the key was added in the map for the first time.
+    proc ref add(in key: K, in val: V, param addOnlyIfAbsent=false): bool {
       if _isKeyZeroBits(key) then return false;
 
       _resizeIfNeeded();
@@ -760,11 +925,9 @@ module ChapelDynamicLoading {
 
       } else if (slot.key == key) {
         // The slot is initialized, so just assign the value.
-        slot.val = val;
-        return false;
+        if !addOnlyIfAbsent then slot.val = val;
       }
 
-      halt('Should not reach here!');
       return false;
     }
 
@@ -788,6 +951,41 @@ module ChapelDynamicLoading {
     }
   }
 
+  // This class is a local bidirectional map.
+  record chpl_localBidirectionalMap {
+    type K, V;
+    var _keyToVal: chpl_localMap(K, V);
+    var _valToKey: chpl_localMap(V, K);
+
+    inline proc size do return _valToKey.size;
+
+    proc ref add(in key: K, in val: V) {
+      var ret = false;
+
+      on this do {
+        if _keyToVal.add(key, val, addOnlyIfAbsent=true) {
+          const added = _valToKey.add(val, key);
+          assert(added);
+          ret = true;
+        }
+      }
+
+      return ret;
+    }
+
+    proc get(key: K, out val: V) {
+      var ret = false;
+      on this do ret = _keyToVal.get(key, val);
+      return ret;
+    }
+
+    proc get(val: V, out key: K) {
+      var ret = false;
+      on this do ret = _valToKey.get(val, key);
+      return ret;
+    }
+  }
+
   private proc lookupPtrFromLocalFtable(idx: int): c_ptr(void) {
     extern proc chpl_get_ftable(): c_ptr(c_ptr(void));
     extern const chpl_ftableSize: int(64);
@@ -802,12 +1000,14 @@ module ChapelDynamicLoading {
     // There should always be an entry for this dynamic index in the local
     // cache because the local roots are emplaced when a function value is
     // created. So just halt if this is not the case.
-    local do manage chpl_localPtrCache.withReadLock() {
-      var found = chpl_localPtrCache.getUnlocked(idx, ret);
-      assert(found);
+    if idx != 0 {
+      local do manage chpl_localPtrCache.guard.read() as m {
+        const found = m.get(idx, ret);
+        assert(found);
+        assert(ret != nil);
+      }
     }
 
-    assert(ret != nil);
     return ret;
   }
 
@@ -815,34 +1015,36 @@ module ChapelDynamicLoading {
     var ret: int = 0;
 
     // Return the local pointer for this locale if it's already set.
-    local do manage chpl_localPtrCache.withReadLock() {
-      var ptr = lookupPtrFromLocalFtable(idx);
-      if chpl_localPtrCache.getUnlocked(ptr, ret) then return ret;
+    local do manage chpl_localPtrCache.guard.read() as m {
+      const ptr = lookupPtrFromLocalFtable(idx);
+      if m.get(ptr, ret) then return ret;
     }
 
     // Otherwise, synchronize on LOCALE-0...
     on Locales[0] {
-      manage chpl_localPtrCache.withWriteLock() {
+      manage chpl_localPtrCache.guard.write() as m {
         var requestedUniqueIdx = false;
 
         // Use the value of the pointer on LOCALE-0 as the map key.
-        var ptr = lookupPtrFromLocalFtable(idx);
+        const ptr = lookupPtrFromLocalFtable(idx);
 
-        if !chpl_localPtrCache.getUnlocked(ptr, ret) {
+        if !m.get(ptr, ret) {
           // If we did not look up an existing entry, then we are the task
           // that will set the map entries for this pointer. Set the index
           // on LOCALE-0 to claim the job.
-          ret = chpl_dynamicProcIdxCounter.fetchAdd(1);
-          chpl_localPtrCache.setUnlocked(ptr, ret);
+          ret = chpl_ptrCacheIdxCounter.fetchAdd(1);
+          m.add(ptr, ret);
           requestedUniqueIdx = true;
         }
 
         // While holding the LOCALE-0 lock, set on all other locales.
         if requestedUniqueIdx && numLocales > 1 {
-          coforall loc in Locales[1..] do on loc {
-            local do manage chpl_localPtrCache.withWriteLock() {
-              var ptr = lookupPtrFromLocalFtable(idx);
-              chpl_localPtrCache.setUnlocked(ptr, ret);
+          coforall loc in Locales do on loc {
+            if loc.id != 0 {
+              local do manage chpl_localPtrCache.guard.write() as m {
+                const ptr = lookupPtrFromLocalFtable(idx);
+                m.add(ptr, ret);
+              }
             }
           }
         }
@@ -863,18 +1065,16 @@ module ChapelDynamicLoading {
   // if it has done so. It does not do synchronization on LOCALE-0 as it
   // expects the caller to do so if necessary.
   export proc
-  chpl_insertExternLocalPtrNoSync(ptr: c_ptr(void), idx: int): int {
-    if !isDynamicLoadingEnabled then halt('Should not reach here!');
-
+  chpl_mapPtrToIdxHere(ptr: c_ptr(void), idx: int): int {
     const ret = if idx == 0
-      then chpl_dynamicProcIdxCounter.fetchAdd(1)
+      then chpl_ptrCacheIdxCounter.fetchAdd(1)
       else idx;
 
-    local do manage chpl_localPtrCache.withWriteLock() {
-      // If 'set()' returns 'false' then the index was already in it!
-      // We just overwrote it, but it shouldn't have been set in the
-      // first place so the only thing to do is halt.
-      if !chpl_localPtrCache.setUnlocked(ptr, ret) {
+    local do manage chpl_localPtrCache.guard.write() as m {
+      // If 'set()' returns 'false' then the index was already in the map!
+      // We just overwrote it, but it shouldn't have been set in the first
+      // place so the only thing to do is halt.
+      if !m.add(ptr, ret) {
         halt('Procedure pointer duplicately mapped!');
       }
     }
@@ -882,19 +1082,38 @@ module ChapelDynamicLoading {
     return ret;
   }
 
+  // Needed by the runtime.
+  export proc chpl_areAnyChapelProgramsLoaded(): c_int {
+    // TODO: Cannot lock - will lead to deadlock. Need reentrant locks.
+    ref m = chpl_binaryInfoStore.handleToInfo.unsafeAccess();
+    return m.size != 0;
+  }
+
+  // Needed by the runtime.
+  export proc chpl_getPtrForIdxHere(idx: int): c_ptr(void) {
+    if idx <= 0 then return nil;
+
+    local do manage chpl_localPtrCache.guard.read() as m {
+      var ret: c_ptr(void);
+      if m.get(idx, ret) then return ret;
+    }
+
+    return nil;
+  }
+
   // This function is called by the compiler to lookup wide pointer indices.
   export proc chpl_dynamicProcIdxToLocalPtr(idx: int): c_ptr(void) {
-    var ret = if isDynamicLoadingEnabled
-        then fetchLocalPtrForDynamicIdx(idx)
-        else lookupPtrFromLocalFtable(idx);
+    const ret = if isDynamicLoadingSupported
+          then fetchLocalPtrForDynamicIdx(idx)
+          else lookupPtrFromLocalFtable(idx);
     return ret;
   }
 
   // This function is called by the compiler to create wide pointer indices.
   export proc chpl_staticToDynamicProcIdx(idx: int): int {
-    var ret = if isDynamicLoadingEnabled
-        then fetchDynamicIdxForStaticIdx(idx)
-        else idx;
+    const ret = if isDynamicLoadingSupported
+          then fetchDynamicIdxForStaticIdx(idx)
+          else idx;
     return ret;
   }
 }

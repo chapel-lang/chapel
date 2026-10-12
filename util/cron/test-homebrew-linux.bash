@@ -9,6 +9,8 @@
 # tarball created and sha of the tarball,
 # and run home-brew test-bot commands as homebrew CI does
 
+set -exo pipefail
+
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
@@ -16,10 +18,11 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 # common-tarball sets CHPL_HOME
 source $UTIL_CRON_DIR/common-tarball.bash
 
-
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
+# skip docs build for a faster tarball
+export CHPL_GEN_RELEASE_SKIP_DOCS=true
 
 export CHPL_LLVM=none
 
@@ -33,7 +36,6 @@ cd $CHPL_HOME
 short_version=$(get_short_version)
 gen_release $short_version
 
-cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
@@ -58,6 +60,8 @@ sed_command="sed -i.bak -e "
 # Replace the tarball location in the container where the tarball is copied over
 $sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
+# drop any revision
+$sed_command "/^[[:space:]]*revision [[:digit:]][[:digit:]]*[[:space:]]*$/d" chapel.rb
 
 # To mimic home-brew CI. Run homebrew chpl install inside a container.
 # This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
@@ -65,6 +69,9 @@ cd ${CHPL_HOME}/util/packaging/homebrew
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
+
+log_info "Chapel formula to be tested:"
+cat ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 
 # This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash

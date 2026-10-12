@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Helpers for consulting distance matrices</title>
+<title>Hardware Locality (hwloc): Windows-specific helpers</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -41,39 +41,37 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Helpers for consulting distance matrices</div></div>
+  <div class="headertitle"><div class="title">Windows-specific helpers</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gab9e770c7d56c5d6040f26bd1dc8854cd" id="r_gab9e770c7d56c5d6040f26bd1dc8854cd"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00198.html#gab9e770c7d56c5d6040f26bd1dc8854cd">hwloc_distances_obj_index</a> (struct <a class="el" href="a00302.html">hwloc_distances_s</a> *distances, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj)</td></tr>
-<tr class="separator:gab9e770c7d56c5d6040f26bd1dc8854cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3c665b23056e3269f777b21a67148c82" id="r_ga3c665b23056e3269f777b21a67148c82"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00198.html#ga3c665b23056e3269f777b21a67148c82">hwloc_distances_obj_pair_values</a> (struct <a class="el" href="a00302.html">hwloc_distances_s</a> *distances, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj1, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj2, hwloc_uint64_t *value1to2, hwloc_uint64_t *value2to1)</td></tr>
-<tr class="separator:ga3c665b23056e3269f777b21a67148c82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa4376a1969660a344911d117f645d3dd" id="r_gaa4376a1969660a344911d117f645d3dd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00198.html#gaa4376a1969660a344911d117f645d3dd">hwloc_windows_get_nr_processor_groups</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned long flags)</td></tr>
+<tr class="separator:gaa4376a1969660a344911d117f645d3dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga167d1f28d3bd9defe1ffa940c14e8dd1" id="r_ga167d1f28d3bd9defe1ffa940c14e8dd1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00198.html#ga167d1f28d3bd9defe1ffa940c14e8dd1">hwloc_windows_get_processor_group_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned pg_index, <a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> cpuset, unsigned long flags)</td></tr>
+<tr class="separator:ga167d1f28d3bd9defe1ffa940c14e8dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>These functions query Windows processor groups. These groups partition the operating system into virtual sets of up to 64 neighbor PUs. Threads and processes may only be bound inside a single group. Although Windows processor groups may be exposed in the hwloc hierarchy as hwloc Groups, they are also often merged into existing hwloc objects such as NUMA nodes or Packages. This API provides explicit information about Windows processor groups so that applications know whether binding to a large set of PUs may fail because it spans over multiple Windows processor groups. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gab9e770c7d56c5d6040f26bd1dc8854cd" name="gab9e770c7d56c5d6040f26bd1dc8854cd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab9e770c7d56c5d6040f26bd1dc8854cd">&#9670;&#160;</a></span>hwloc_distances_obj_index()</h2>
+<a id="gaa4376a1969660a344911d117f645d3dd" name="gaa4376a1969660a344911d117f645d3dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa4376a1969660a344911d117f645d3dd">&#9670;&#160;</a></span>hwloc_windows_get_nr_processor_groups()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_distances_obj_index </td>
+          <td class="memname">int hwloc_windows_get_nr_processor_groups </td>
           <td>(</td>
-          <td class="paramtype">struct <a class="el" href="a00302.html">hwloc_distances_s</a> *&#160;</td>
-          <td class="paramname"><em>distances</em>, </td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -81,58 +79,45 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Find the index of an object in a distances structure. </p>
-<dl class="section return"><dt>Returns</dt><dd>the index of the object in the distances structure if any. </dd>
+<p>Get the number of Windows processor groups. </p>
+<p><code>flags</code> must be 0 for now.</p>
+<dl class="section return"><dt>Returns</dt><dd>at least <code>1</code> on success. </dd>
 <dd>
--1 if object <code>obj</code> is not involved in structure <code>distances</code>. </dd></dl>
+-1 on error, for instance if the topology does not match the current system (e.g. loaded from another machine through XML). </dd></dl>
 
 </div>
 </div>
-<a id="ga3c665b23056e3269f777b21a67148c82" name="ga3c665b23056e3269f777b21a67148c82"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3c665b23056e3269f777b21a67148c82">&#9670;&#160;</a></span>hwloc_distances_obj_pair_values()</h2>
+<a id="ga167d1f28d3bd9defe1ffa940c14e8dd1" name="ga167d1f28d3bd9defe1ffa940c14e8dd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga167d1f28d3bd9defe1ffa940c14e8dd1">&#9670;&#160;</a></span>hwloc_windows_get_processor_group_cpuset()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_distances_obj_pair_values </td>
+          <td class="memname">int hwloc_windows_get_processor_group_cpuset </td>
           <td>(</td>
-          <td class="paramtype">struct <a class="el" href="a00302.html">hwloc_distances_s</a> *&#160;</td>
-          <td class="paramname"><em>distances</em>, </td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj1</em>, </td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>pg_index</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj2</em>, </td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>cpuset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">hwloc_uint64_t *&#160;</td>
-          <td class="paramname"><em>value1to2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">hwloc_uint64_t *&#160;</td>
-          <td class="paramname"><em>value2to1</em>&#160;</td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -140,18 +125,14 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Find the values between two objects in a distance matrices. </p>
-<p>The distance from <code>obj1</code> to <code>obj2</code> is stored in the value pointed by <code>value1to2</code> and reciprocally.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success. </dd>
+<p>Get the CPU-set of a Windows processor group. </p>
+<p>Get the set of PU included in the processor group specified by <code>pg_index</code>. <code>pg_index</code> must be between <code>0</code> and the value returned by <a class="el" href="a00198.html#gaa4376a1969660a344911d117f645d3dd" title="Get the number of Windows processor groups.">hwloc_windows_get_nr_processor_groups()</a> minus 1.</p>
+<p><code>flags</code> must be 0 for now.</p>
+<dl class="section return"><dt>Returns</dt><dd><code>0</code> on success. </dd>
 <dd>
--1 if object <code>obj1</code> or <code>obj2</code> is not involved in structure <code>distances</code>. </dd></dl>
+<code>-1</code> on error, for instance if <code>pg_index</code> is invalid, or if the topology does not match the current system (e.g. loaded from another machine through XML). </dd></dl>
 
 </div>
 </div>

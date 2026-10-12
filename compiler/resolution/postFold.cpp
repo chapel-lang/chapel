@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "symbol.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/string-utils.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -633,7 +634,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     // Count it as an initial UTF-8 byte.
     size_t ncodepoints  = (nbytes > 0);
     for (size_t i = 1; i < nbytes; ++i)
-      if (isInitialUTF8Byte(unesc[i]))
+      if (chpl::isInitialUTF8Byte(unesc[i]))
         ++ncodepoints;
 
     retval = new SymExpr(new_IntSymbol(ncodepoints, INT_SIZE_DEFAULT));
@@ -721,6 +722,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
     FOLD_CALL1(P_prim_get_imag);
+
+  } else if (call->isPrimitive(PRIM_BUILD_COMPLEX) == true) {
+    FOLD_CALL2(P_prim_build_complex);
 
   } else if(canSimplifyCallExpr(call)) {
     retval = simplifyCallExpr(call);
@@ -1050,6 +1054,13 @@ bool requiresImplicitDestroy(CallExpr* call) {
         // the below exceptions should be considered workarounds
         fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
+      retval = true;
+    }
+  } else if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    auto retType = ft->returnType();
+    if ((isRecord(retType) || isConstrainedType(retType)) &&
+        retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
       retval = true;
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,7 @@
  */
 
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include <string.h>
 
 #ifdef __cplusplus
@@ -47,9 +47,6 @@ extern "C" {
 // calls.  Also, the returned value may change due to the activity of other
 // threads.
 typedef const char* c_string;
-
-// Used in the process of deprecating 'c_string' by the compiler.
-typedef c_string c_string_rehook;
 
 static inline
 int8_t ascii(c_string s) {
@@ -76,7 +73,7 @@ int32_t string_compare(c_string x, c_string y) {
 // stopgap formatting
 //
 c_string chpl_format(c_string format, ...)
-  __attribute__((format(printf, 1, 2)));
+  __attribute__ ((format (printf, 1, 2)));
 
 // Uses the system allocator.
 char* chpl_glom_strings(int numstrings, ...);

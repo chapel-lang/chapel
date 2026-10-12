@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
-extern std::map<Type*,     Serializers> serializeMap;
+extern std::map<Type*,     Serializers, AstIdLess> serializeMap;
 
 
 
@@ -82,6 +82,7 @@ Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
 bool       isInstantiation(Type* sub, Type* super);
 
 bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
+bool       formalRequiresTemp(FunctionType::Formal formal);
 
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.
@@ -147,7 +148,8 @@ bool canDispatch(Type*     actualType,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
                  bool*     paramNarrows= NULL,
-                 bool      paramCoerce = false);
+                 bool      paramCoerce = false,
+                 FunctionType* fnType = nullptr);
 
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
@@ -257,7 +259,14 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
+enum class PoiSearchMode {
+  NORMAL,
+  NON_POI_ONLY,
+  POI_ONLY,
+};
+
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+bool      resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved = nullptr);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
@@ -357,11 +366,12 @@ Type* moveDetermineRhsType(CallExpr* call);
 
 bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
-std::set<Type*> getWellKnownTypesSet();
-bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
+std::set<Type*, AstIdLess> getWellKnownTypesSet();
+bool isUnusedClass(Type* t, const std::set<Type*, AstIdLess>& wellknown);
 
 void saveGenericSubstitutions();
 void pruneResolvedTree();
+void clearIteratorFormalCache();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
 
@@ -440,6 +450,9 @@ static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
   }
 }
 
+Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
+                                        Expr* defaultExpr,
+                                        Expr* ctx);
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);

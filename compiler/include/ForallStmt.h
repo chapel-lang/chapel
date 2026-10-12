@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -112,11 +112,11 @@ class ForallOptimizationInfo {
     std::deque<ALACandidate> dynamicCandidates;
 
     // the static check control symbol added for symbol
-    std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
-    std::map<Symbol *, Symbol *> staticCheckWOffSymForSymMap;
+    std::map<Symbol *, Symbol *, AstIdLess> staticCheckSymForSymMap;
+    std::map<Symbol *, Symbol *, AstIdLess> staticCheckWOffSymForSymMap;
 
     // the dynamic check call added for symbol
-    std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+    std::map<Symbol *, CallExpr *, AstIdLess> dynamicCheckForSymMap;
 
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 

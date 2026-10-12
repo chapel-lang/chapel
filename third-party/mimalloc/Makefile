@@ -41,7 +41,7 @@ CHPL_MIMALLOC_CFG_OPTIONS += -DCMAKE_C_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(C
 	                           -DCMAKE_CXX_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --additional) $(CXXFLAGS)'
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
@@ -74,10 +74,10 @@ configure-mimalloc: FORCE
 	  $(CHPL_MIMALLOC_CFG_OPTIONS)
 
 build-mimalloc: FORCE
-	$(CMAKE) --build $(MIMALLOC_BUILD_DIR)
+	if [ -f $(MIMALLOC_BUILD_DIR)/Makefile ]; then cd $(MIMALLOC_BUILD_DIR) && $(MAKE); else $(CMAKE) --build $(MIMALLOC_BUILD_DIR); fi
 
 install-mimalloc: FORCE
-	$(CMAKE) --install $(MIMALLOC_BUILD_DIR)
+	if [ -f $(MIMALLOC_BUILD_DIR)/Makefile ]; then cd $(MIMALLOC_BUILD_DIR) && $(MAKE) install; else $(CMAKE) --install $(MIMALLOC_BUILD_DIR); fi
 
 FORCE:
 

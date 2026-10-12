@@ -1,0 +1,4 @@
+-stestCase=testCases.compare # complexOrderedCompareErrors.compare.good
+-stestCase=testCases.compareParam # complexOrderedCompareErrors.compareParam.good
+-stestCase=testCases.min # complexOrderedCompareErrors.min.good
+-stestCase=testCases.maxParam # complexOrderedCompareErrors.maxParam.good

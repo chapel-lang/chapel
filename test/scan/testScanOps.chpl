@@ -4,6 +4,7 @@ use PrivateDist;
 use Random;
 
 config const n = 100;
+config const maxInt = max(int);
 
 proc main() {
   testType(int);
@@ -16,7 +17,10 @@ proc testType(type T) {
   var S = D dmapped new blockDist(D);
 
   var DR : [D] T;
-  fillRandom(DR);
+  if isIntegralType(T) then
+    fillRandom(DR, -maxInt, maxInt);
+  else
+    fillRandom(DR);
   test(DR);
 
   var BL : [S] T = DR;

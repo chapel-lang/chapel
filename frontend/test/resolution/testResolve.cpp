@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -521,6 +521,51 @@ static void test10() {
   guard.realizeErrors();
 }
 
+// Tests 'const ref' formals disallowing coercion, and that this
+// error happens after disambiguation.
+static void test10b() {
+  printf("test10b\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class Child : Parent { }
+
+                             /* Both functions should be considered, one
+                                should be picked (numeric, since we prefer
+                                instantiating), and this function should be
+                                rejected. */
+                             proc const ref Parent.f(x: int(8)) { }
+                             proc const ref Parent.f(x: numeric) { }
+
+                             var x = new Child();
+                             var sixtyFourBits: int = 0;
+                             x.f(sixtyFourBits);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 8);
+  const Call* call = m->stmt(7)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == chpl::ConstRefCoercion);
+  guard.realizeErrors();
+}
+
 // Test transmutation primitives (for params, currently only real(64) -> uint(64)
 // is possible since there's no way to get other params of these types.
 
@@ -786,11 +831,11 @@ static void test17() {
 
 // invalid module-level split-init
 static void test18() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
+  ErrorGuard guard(context);
 
-  auto variables = resolveTypesOfVariables(&context,
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       var flag = true;
       var foo;
@@ -1436,12 +1481,11 @@ static void test23() {
 }
 
 static void test24() {
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
   {
     // straightforward case for qualified module
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1463,7 +1507,9 @@ static void test24() {
     // qualified call when POI is involved. Make sure that although the
     // current scope isn't searched for the function, it is still searched
     // for POI functions when resolving the generic function's body.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1491,7 +1537,9 @@ static void test24() {
   {
     // another POI case, to make sure that the POI-based generic function
     // we just wrote isn't defaulting to some return type.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1522,7 +1570,9 @@ static void test24() {
   {
     // qualified call, but we're not calling a function. Rather, we're invoking
     // an overloaded call operator on a value, which we retrieve from a module.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1547,6 +1597,9 @@ static void test24() {
 
   {
     // nested module qualified access should work too.
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -2252,6 +2305,194 @@ static void testUseOfUninitializedVar() {
   assert(guard.realizeErrors() == 2);
 }
 
+/* test cases copied from testTypePropertyPrimitives */
+static void testAnyPod() {
+  auto base =
+    /* prelude */ R"""(
+            pragma "ignore noinit"
+            record r1 {}
+            record r2 { var x: int; var y: real; }
+            record r3 { var x: int; var y: real; var z: integral; }
+            record r4 { var x: r2; var y: int; }
+            record r5 {
+              proc deinit() {}
+            }
+            record r6 {
+              proc init=(rhs: r6) {}
+            }
+            record r7 {
+              operator=(lhs: r7, rhs: r7) {}
+            }
+            record r8 {}
+            operator=(lhs: r8, rhs: r8) {}
+            // Should be marked POD irregardless of the generic.
+            pragma "plain old data"
+            record r9 { type T; var x: T; }
+            class c1 { var x: int; }
+            record r10 { var x: owned c1?; }
+            record r11 { var x: r9(?); }
+            operator =(ref lhs: int, const rhs: int) {}
+            operator =(ref lhs: real, const rhs: real) {}
+            )""";
+
+  auto runTest = [base](const char* type, bool shouldWork) {
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto fullProg = std::string(base) +
+      "proc foo(type arg: chpl_anyPOD) param do return true;\n" +
+      "pragma \"last resort\" proc foo(type arg) param do return false;\n" +
+      "param x = foo(" + std::string(type) + ");\n";
+
+    auto qt = resolveTypeOfXInit(ctx, fullProg);
+    ensureParamBool(qt, shouldWork);
+  };
+
+  const char* podTypes[] = {
+    "bool", "int", "int(8)", "int(16)", "int(32)",
+    "int(64)", "uint", "uint(8)", "uint(16)",
+    "uint(32)", "uint(64)", "real(32)", "real(64)",
+    "complex", "imag",
+    "r2", "r4", "r9",
+    "borrowed c1", "borrowed c1?", "unmanaged c1", "unmanaged c1?",
+  };
+  for (size_t i = 0; i < sizeof(podTypes) / sizeof(podTypes[0]); i++) {
+    runTest(podTypes[i], true);
+  }
+
+  // skip "integral", because it's a built-in generic type and we don't
+  // resolve calls with this type as an actual.
+  const char* nonPodTypes[] = {
+    /* "integral", */ "r1", "r3", "r5", "r6", "r7", "r8", "r10",
+    // TODO: Currently marked as non-POD even though all the members are
+    // marked as POD - this is because 'r9' is technically generic, which
+    // causes problems.
+    "r11",
+    "c1", "owned c1", "owned c1?", "shared c1", "shared c1?",
+  };
+  for (size_t i = 0; i < sizeof(nonPodTypes) / sizeof(nonPodTypes[0]); i++) {
+    runTest(nonPodTypes[i], false);
+  }
+
+  // TODO:(these are todo'd in the original test file, too)
+  // { {"atomic int"}, Test::FALSE },
+  // { {"single int"}, Test::FALSE },
+  // { {"sync int"}, Test::FALSE },
+}
+
+static void testTupleFormalWithDefault() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+       proc foo((x, y) = (1, 2)) {
+         return x + y;
+       }
+       var x = foo((3,4));
+    )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+}
+
+// regression test. For generic types that used their type parameter
+// as an argument to a 'new' of another type, while computing their generic
+// type, we'd end up resolving 'new C(unknown)', which caused issues. Now, as
+// in other cases like 'foo(unknown)', we skip resolving such calls.
+static void testSkipUnknownInNew() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+    class C {
+      type argT;
+    }
+
+    record R {
+      type argT;
+      var myC = new unmanaged C(argT);
+    }
+
+    var x = new R(int);
+  )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isRecordType());
+}
+
+// regression test. Allow for patterns in which a type formal etc. is
+// instantiated with a generic type, and we invke a type method on it,
+// which (according to production tests) is allowed.
+static void testTypeProcOnGenericReceiver() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+    record R {
+      type t;
+      proc type tt type do return int;
+    }
+
+    proc foo(type arg1, type arg2 = arg1.tt) {
+      var tmp: arg2;
+      return tmp;
+    }
+    var x = foo(R(?));
+  )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+}
+
+// regression test. We previously hit bugs in which:
+// * The user wrote a free-standing call 'foo()' in a method context.
+// * The resolution machinery attempted to resolve 'this.foo()'.
+// * A candidate was rejected because its receiver was not applicable.
+// * The reported actual index was 0 (for the 'this' argument), but this
+//   is out of bounds of the original `foo()`.actuals(). This caused an
+//   assertion error.
+//
+// Test that triggering a resolution error in this case does not cause an
+// assertion failure.
+static void testReindexingForErrors() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    record R {}
+    proc int.foo() {}
+    proc R.bar() {
+      foo();
+    }
+    (new R()).bar();
+    )""", {});
+  assert(guard.realizeErrors() == 1);
+}
+
+// regression test. In certain errors that tried to print a particular
+// actual, we assumed that CallInfo actual indices match the call expression.
+// However, CallInfo actuals have an extra 'this' argument, which meant
+// that for method calls, the indexing broke.
+//
+// Trigger this by trying to split-init a method receiver.
+static void testReindexingForErrors2() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context,
+    R"""(
+    proc int.bar(arg: int) {}
+
+    proc foo() {
+      var y;
+      y.bar(10);
+      10.bar(y);
+    }
+    var tmp = foo();
+    )""", {});
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -2263,6 +2504,7 @@ int main() {
   test8();
   test9();
   test10();
+  test10b();
   test11();
   test12();
   test13();
@@ -2311,6 +2553,16 @@ int main() {
   testGenericSync();
 
   testUseOfUninitializedVar();
+
+  testAnyPod();
+  testTupleFormalWithDefault();
+
+  testSkipUnknownInNew();
+
+  testTypeProcOnGenericReceiver();
+
+  testReindexingForErrors();
+  testReindexingForErrors2();
 
   return 0;
 }

@@ -73,7 +73,7 @@ static int psmx2_mr_reserve_key(struct psmx2_fid_domain *domain,
 
 	domain->mr_lock_fn(&domain->mr_lock, 1);
 
-	if (domain->mr_mode == FI_MR_BASIC) {
+	if (domain->mr_mode == OFI_MR_BASIC) {
 		key = domain->mr_reserved_key;
 		try_count = 10000; /* large enough */
 	} else {
@@ -84,7 +84,7 @@ static int psmx2_mr_reserve_key(struct psmx2_fid_domain *domain,
 	for (i=0; i<try_count; i++, key++) {
 		if (!rbtFind(domain->mr_map, (void *)key)) {
 			if (!rbtInsert(domain->mr_map, (void *)key, mr)) {
-				if (domain->mr_mode == FI_MR_BASIC)
+				if (domain->mr_mode == OFI_MR_BASIC)
 					domain->mr_reserved_key = key + 1;
 				*assigned_key = key;
 				err = 0;
@@ -314,7 +314,7 @@ STATIC int psmx2_mr_reg(struct fid *fid, const void *buf, size_t len,
 	mr_priv->iov_count = 1;
 	mr_priv->iov[0].iov_base = (void *)buf;
 	mr_priv->iov[0].iov_len = len;
-	mr_priv->offset = (domain_priv->mr_mode == FI_MR_BASIC) ? 0 :
+	mr_priv->offset = (domain_priv->mr_mode == OFI_MR_BASIC) ? 0 :
 				((uint64_t)mr_priv->iov[0].iov_base - offset);
 
 	*mr = &mr_priv->mr;
@@ -369,7 +369,7 @@ STATIC int psmx2_mr_regv(struct fid *fid,
 	for (i=0; i<count; i++)
 		mr_priv->iov[i] = iov[i];
 	psmx2_mr_normalize_iov(mr_priv->iov, &mr_priv->iov_count);
-	mr_priv->offset = (domain_priv->mr_mode == FI_MR_BASIC) ? 0 :
+	mr_priv->offset = (domain_priv->mr_mode == OFI_MR_BASIC) ? 0 :
 				((uint64_t)mr_priv->iov[0].iov_base - offset);
 
 	*mr = &mr_priv->mr;
@@ -422,7 +422,7 @@ STATIC int psmx2_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	for (i=0; i<attr->iov_count; i++)
 		mr_priv->iov[i] = attr->mr_iov[i];
 	psmx2_mr_normalize_iov(mr_priv->iov, &mr_priv->iov_count);
-	mr_priv->offset = (domain_priv->mr_mode == FI_MR_BASIC) ? 0 :
+	mr_priv->offset = (domain_priv->mr_mode == OFI_MR_BASIC) ? 0 :
 				((uint64_t)mr_priv->iov[0].iov_base - attr->offset);
 
 	*mr = &mr_priv->mr;

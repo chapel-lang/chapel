@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _CHPL_DYNAMIC_LOADING_H_
-#define _CHPL_DYNAMIC_LOADING_H_
+#ifndef CHPL_RT_DYNAMIC_LOADING_H
+#define CHPL_RT_DYNAMIC_LOADING_H
 
 #ifdef __cplusplus
 extern "C" {

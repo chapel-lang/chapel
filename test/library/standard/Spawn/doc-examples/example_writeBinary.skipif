@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+if command -v xxd >/dev/null 2>/dev/null; then
+  echo "False";
+else
+  echo "True";
+fi

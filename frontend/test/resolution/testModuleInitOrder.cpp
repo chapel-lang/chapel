@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -854,13 +854,8 @@ static void testBundled(void) {
   // sure that this completes without error; however it might
   // have use in manual testing.
 
-  Context::Configuration config;
-  config.chplHome = chplHome();
-  Context context(config);
-  Context* ctx = &context;
+  Context* ctx = buildStdContext();
   ErrorGuard guard(ctx);
-
-  setupModuleSearchPaths(ctx, false, false, {}, {});
 
   auto path = TEST_NAME(ctx);
   std::cout << path.c_str() << std::endl;

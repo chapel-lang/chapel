@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 #ifndef _WELL_KNOWN_H_
 #define _WELL_KNOWN_H_
 
+#include <string>
 #include <vector>
 
 class AggregateType;
@@ -94,6 +95,8 @@ extern Type* dt_ssize_t;
 extern Type* dt_size_t;
 extern Type* dt_wchar;
 
+Type* chapelTypeForPrimitiveCTypeName(const std::string& name);
+
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
@@ -112,6 +115,7 @@ extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
+extern FnSymbol *gChplErrorPropagateStackInfo;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
 extern FnSymbol *gAllocateStringLiteralsBuf;

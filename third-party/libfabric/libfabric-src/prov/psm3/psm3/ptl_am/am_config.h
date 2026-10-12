@@ -56,24 +56,8 @@
 
 #include "psm_config.h"
 
-/*
- * Can change the rendezvous threshold based on usage of cma (or not)
- */
-#define PSMI_MQ_RV_THRESH_CMA      16000
-
-/* If no kernel assisted copy is available this is the rendezvous threshold */
-#define PSMI_MQ_RV_THRESH_NO_KASSIST 16000
-
 #define AMSH_HAVE_CMA   0x1
 #define AMSH_HAVE_KASSIST 0x1
-
-#if defined(PSM_CUDA)
-/* Threshold for GPU rendezvous (aka scale-up transfer vs via CPU shared mem */
-#define PSMI_MQ_GPU_RV_THRESH 127
-#elif defined(PSM_ONEAPI)
-/* Threshold for GPU rendezvous (aka scale-up transfer vs via CPU shared mem */
-#define PSMI_MQ_GPU_RV_THRESH 127
-#endif
 
 /* Each block reserves some space at the beginning to store auxiliary data */
 #define AMSH_BLOCK_HEADER_SIZE  4096
@@ -86,6 +70,12 @@
  * am_pkt_bulk_t header struct.
  */
 #define AMLONG_SZ_NO_DSA   8192
+// for AI workloads with limited processes and multi-ep, better to have
+// large MTU and will default to CMA off for all but 1st EP
+#define AMLONG_SZ_MULTIEP 32768
+// This is the range we allow AMLONG_SZ to be configured as
+#define AMLONG_SZ_MIN 1024
+#define AMLONG_SZ_MAX (1024*1024)
 
 #ifdef PSM_DSA
 /* DSA benefits from larger bulk packets and hence larger copies */
@@ -94,7 +84,14 @@
 #define AMLONG_SZ_DSA   (1024*512)
 #endif
 
-#define PSMI_KASSIST_MODE_DEFAULT PSMI_KASSIST_CMA_GET
-#define PSMI_KASSIST_MODE_DEFAULT_STRING  "cma-get"
+// GPU only supports GET("cma-get") or OFF("none"), so can't use PUT as default
+#define PSM3_KASSIST_MODE_DEFAULT PSM3_KASSIST_CMA_GET
+#define PSM3_KASSIST_MODE_DEFAULT_STRING  "cma-get"
+
+#ifdef PSM_FI
+#define SHM_FAULTINJ_CMA_ERR	10000	/* 1 every X CMA get/put error */
+#define SHM_FAULTINJ_CMA_NOTAVAIL 4	/* 1 every X CMA available at init */
+#endif /* PSM_FI */
+
 
 #endif /* PTL_AM_AM_CONFIG_H */

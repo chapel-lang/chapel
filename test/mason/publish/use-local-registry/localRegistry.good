@@ -1,0 +1,53 @@
+Initialized empty Git repository in $CHPL_HOME/test/mason/publish/use-local-registry/myDep/.git/
+mason publish --create-registry $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Initialized local registry at $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Add this registry to MASON_REGISTRY environment variable to include it in search path:
+   export MASON_REGISTRY="mason-registry|https://github.com/chapel-lang/mason-registry,local-reg|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg"
+mason publish --create-registry $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Registry already exists at $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+error as expected: 1
+mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+Created git tag: v0.1.0. Make sure to push this tag to your remote when you publish to the registry with 'git push origin --tags'
+Successfully published package to $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+mason publish $CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+A package with that name and version number already exists in the Bricks.
+error as expected: 1
+MASON_REGISTRY=my-local-registry|$CHPL_HOME/test/mason/publish/use-local-registry/local-reg
+mason search
+Updating my-local-registry
+myDep (0.1.0)
+mason build
+Updating my-local-registry
+Downloading dependency: myDep-0.1.0
+Compiling [debug] target: myPackage
+Build Successful
+
+mason run
+got strings: (set, set)
+got magic: 17
+mason test
+Updating my-local-registry
+
+----------------------------------------------------------------------
+Ran 2 tests in n seconds
+
+OK (passed = 2 )
+mason run --example Ex.chpl --build
+Updating my-local-registry
+got strings: (set, set)
+got magic: 17
+mason doc
+.. module:: myPackage
+mason new myNewPackage
+Created new application project: myNewPackage
+Tip: To convert existing code to a mason project, move the driver application to the `src/myNewPackage.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
+mason add myDep@0.1.0
+Adding Mason dependency myDep version 0.1.0
+mason run --build
+Updating my-local-registry
+Compiling [debug] target: myNewPackage
+Build Successful
+
+got strings: (set, set)
+mason doc
+.. module:: myNewPackage

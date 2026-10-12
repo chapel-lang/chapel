@@ -1,9 +1,14 @@
+use DSIUtil;
+
 config const n=2, m=3;
 var D_orig: domain(2) = {1..n, 1..m};
-const dist = new dmap(new GlobalDistribution());
+const dist = new globalDistribution();
 var D: domain(2) dmapped dist = D_orig;
 var a: [D] real;
 
+record globalDistribution {
+  forwarding var _value = new chpl__rectLayoutHelper(new GlobalDistribution());
+}
 
 class GlobalDistribution : BaseDist {}
 

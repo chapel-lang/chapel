@@ -11,8 +11,9 @@ import os.path
 class LicenseCommenter(object):
     __doc__ = __doc__
 
-    raw_comment_text_file = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'license_text_for_comment.txt'))
+    raw_comment_text_file = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "license_text_for_comment.txt")
+    )
 
     def __init__(self):
         super(LicenseCommenter, self).__init__()
@@ -34,12 +35,12 @@ class LicenseCommenter(object):
         :type source_filename: str
         :arg source_filename: name of source file to prepend copyright/license comment
         """
-        with open(source_filename, 'r') as fp:
+        with open(source_filename, "r") as fp:
             orig_cont = fp.read()
 
         comment_text = self.get_comment_text(source_filename)
 
-        with open(source_filename, 'w') as fp:
+        with open(source_filename, "w") as fp:
             fp.write(comment_text)
             fp.write(orig_cont)
 
@@ -62,10 +63,10 @@ class LicenseCommenter(object):
             :type line: str
             :arg line: text for the comment
             """
-            if line == '':
+            if line == "":
                 return comment_prefix
             else:
-                return '{0} {1}'.format(comment_prefix, line)
+                return "{0} {1}".format(comment_prefix, line)
 
         def commentate_lines(comment_prefix, lines):
             """Apply commentate_line to each line in lines.
@@ -77,14 +78,19 @@ class LicenseCommenter(object):
             """
             return map(lambda l: commentate_line(comment_prefix, l), lines)
 
-        if ('Makefile' in source_filename or
-            source_filename.endswith('CMakeLists.txt') or
-            source_filename.endswith('.cmake') or
-            source_filename.endswith('.cmake.in')):
+        if (
+            "Makefile" in source_filename
+            or source_filename.endswith("CMakeLists.txt")
+            or source_filename.endswith(".cmake")
+            or source_filename.endswith(".cmake.in")
+        ):
             # Add "# " to each line.
-            return '\n'.join(commentate_lines('#', self.comment_text_lines)) + '\n\n'
+            return (
+                "\n".join(commentate_lines("#", self.comment_text_lines))
+                + "\n\n"
+            )
 
-        c_style_comments = ['.c', '.chpl', '.cpp', '.h', '.lex', '.ypp', '.y']
+        c_style_comments = [".c", ".chpl", ".cpp", ".h", ".lex", ".ypp", ".y"]
 
         root, extension = os.path.splitext(source_filename)
         if extension in c_style_comments:
@@ -96,19 +102,22 @@ class LicenseCommenter(object):
             #  * last license line
             #  */
             # <blank line>
-            license_lines = commentate_lines(' *', self.comment_text_lines)
-            comment_lines = ['/*'] + list(license_lines) + [' */', '\n']
-            return '\n'.join(comment_lines)
+            license_lines = commentate_lines(" *", self.comment_text_lines)
+            comment_lines = ["/*"] + list(license_lines) + [" */", "\n"]
+            return "\n".join(comment_lines)
         else:
-            raise ValueError('Cannot figure out comment style for: {0}'.format(source_filename))
+            raise ValueError(
+                "Cannot figure out comment style for: {0}".format(
+                    source_filename
+                )
+            )
 
     def parse_args(self):
-
         """Parse arguments, which should be list of source files to update."""
-        parser = optparse.OptionParser('%prog [filename] ...')
+        parser = optparse.OptionParser("%prog [filename] ...")
         _, args = parser.parse_args()
         return args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     LicenseCommenter().main()

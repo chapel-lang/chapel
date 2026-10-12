@@ -1,0 +1,19 @@
+Creating r
+In R.init
+---
+creating r2
+In R.init
+assigning r2
+In R.init
+---
+creating u
+assigning u.x
+In R.init
+re-assigning u.x
+In R.init
+re-re-assigning u.x
+In R.init
+assigning u.y
+re-re-re-assigning u.x
+In R.init
+---

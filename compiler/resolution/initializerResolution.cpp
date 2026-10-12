@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,7 +82,7 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
 
     resolveInitializerMatch(call->resolvedFunction());
 
-    if (isGenericRecord(call->get(2)->typeInfo())) {
+    if (isGenericRecord(call->get(2)->typeInfo()->getValType())) {
       SymExpr* namedSe = NULL;
 
       // There are two cases for generic records
@@ -141,7 +141,8 @@ static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
 // The map is keyed by the FnSymbol of the original initializer and the expr of
 //   the allocator (if any)
 // The value is the '_new' wrapped initializer
-static std::map<std::pair<FnSymbol*,Expr*>,FnSymbol*> newWrapperMap;
+static std::map<std::pair<FnSymbol*, Expr*>, FnSymbol*, AstIdLess>
+  newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion

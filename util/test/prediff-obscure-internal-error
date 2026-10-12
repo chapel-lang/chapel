@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Designed to squash out internal error codes from tests that lock down internal
+# errors, which are sensitive to code locations and commit hashes. The `sed`
+# command is borrowed from:
+#
+# `util/test/diff-ignoring-module-line-numbers`
+#
+
+tmpfile=$2
+
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+regex='
+    s/chpl version [0-9]*.*$/chpl version mmmm/
+    s/internal error: \([A-Z][A-Z\-]*\)[0-9][0-9]* chpl version mmmm/internal error: \1nnnn chpl version mmmm/
+'
+
+sed -e "$regex" $tmpfile > $tmptmp
+
+mv $tmptmp $tmpfile

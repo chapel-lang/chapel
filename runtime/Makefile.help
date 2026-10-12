@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -90,7 +90,7 @@ SUBDIRS = \
 
 SRCS =
 
-RUNTIME_OBJS = \
+COMMON_RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
 	$(TASKS_OBJS) \
 	$(THREADS_OBJS) \
@@ -104,24 +104,36 @@ RUNTIME_OBJS = \
 	$(AUXFS_HDFS_OBJS) \
 	$(AUXFS_CURL_OBJS)
 
+STATIC_RUNTIME_OBJS = \
+	$(STATIC_RUNTIME_ONLY_OBJS) \
+	$(COMMON_RUNTIME_OBJS)
+
+SHARED_RUNTIME_OBJS = \
+	$(SHARED_RUNTIME_ONLY_OBJS) \
+	$(COMMON_RUNTIME_OBJS)
+
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
 	$(LAUNCHER_OBJS) \
 	$(ONLY_LAUNCHER_OBJS)
 
-RUNTIME_DIR = ../$(LIB_RT_DIR)
-RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
+RUNTIME_DIR = $(CHPL_MAKE_HOME)/lib/$(CHPL_MAKE_RUNTIME_SUBDIR)
+RUNTIME_STATIC_LIB = $(CHPL_MAKE_TARGET_STATIC_RUNTIME_LIB_PATH)
+RUNTIME_SHARED_LIB = $(CHPL_MAKE_TARGET_SHARED_RUNTIME_LIB_PATH)
+RUNTIME_SHARED_LIB_NAME = $(notdir $(RUNTIME_SHARED_LIB))
+
 RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
 
 RUNTIME_MALLOC_LIB = $(RUNTIME_DIR)/libchplmalloc.a
 
-LAUNCHER_DIR = ../$(LIB_LN_DIR)
+LAUNCHER_DIR = $(CHPL_MAKE_HOME)/lib/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 LAUNCHER_LIB = $(LAUNCHER_DIR)/libchpllaunch.a
 LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
 
 RUNTIME_TARGETS = \
-	$(RUNTIME_LIB) \
+	$(RUNTIME_SHARED_LIB) \
+	$(RUNTIME_STATIC_LIB) \
 	$(RUNTIME_DIR)/main.o \
 	$(RUNTIME_MALLOC_LIB) \
 
@@ -158,21 +170,68 @@ RUNTIME_LIST_INCLUDESANDDEFINES = $(RUNTIME_DIR)/list-includes-and-defines
 RUNTIME_LIST_LIBRARIES = $(RUNTIME_DIR)/list-libraries
 RUNTIME_OVERRIDE_LD = $(RUNTIME_DIR)/override-ld
 
-$(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) $(RUNTIME_LIST_INCLUDESANDDEFINES) $(RUNTIME_LIST_LIBRARIES) $(RUNTIME_OVERRIDE_LD)
+# Mac linkers use eager lookup (occurs when the library is linked) by default,
+# while Linux linkers use lazy lookup (occurs when a symbol is first
+# referenced at runtime) by default. Toggle the below flags to consistently
+# maintain lazy/eager lookup for both platforms.
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+  # Uncomment for the Mac linker to use lazy linking.
+  RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,-undefined,dynamic_lookup
+else
+  # Uncomment for the Linux linker to use eager linking.
+  # RUNTIME_SHARED_LIB_CXX_LINK_FLAGS=-Wl,--no-undefined
+endif
+
+PRINTCHPLENV_WRAPPER= \
+  CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
+  CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
+  CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
+  CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
+  CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
+  CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
+  $(CHPL_MAKE_HOME)/util/printchplenv
+
+# NOTE: Need to recompute the link arguments since they were inherited from
+#       make/Makefile.base, and it is possible that third-party packages were
+#       not installed when they were computed (and thus they do not show up
+#       in the linking arguments, which breaks the build).
+RUNTIME_SHARED_LIB_BUNDLED_LINK_ARGS= \
+	$(shell $(PRINTCHPLENV_WRAPPER) --value --only=CHPL_TARGET_BUNDLED_RUNTIME_LINK_ARGS)
+RUNTIME_SHARED_LIB_SYSTEM_LINK_ARGS= \
+	$(shell $(PRINTCHPLENV_WRAPPER) --value --only=CHPL_TARGET_SYSTEM_RUNTIME_LINK_ARGS)
+
+$(RUNTIME_SHARED_LIB): $(SHARED_RUNTIME_OBJS) \
+                       $(RUNTIME_DIR_TIMESTAMP) \
+                       $(RUNTIME_LIST_INCLUDESANDDEFINES) \
+                       $(RUNTIME_LIST_LIBRARIES) \
+                       $(RUNTIME_OVERRIDE_LD)
+ifneq ($(CHPL_MAKE_LIB_PIC),pic)
+	@echo "note: Skipping creation of '$(RUNTIME_SHARED_LIB_NAME)' because 'CHPL_LIB_PIC' != 'pic'"
+else
+	$(CHPL_MAKE_TARGET_CXX) -shared -o $@ $(RUNTIME_SHARED_LIB_CXX_LINK_FLAGS) \
+		$(SHARED_RUNTIME_OBJS) \
+		$(LIBS) \
+		$(RUNTIME_SHARED_LIB_BUNDLED_LINK_ARGS) \
+		$(RUNTIME_SHARED_LIB_SYSTEM_LINK_ARGS)
+endif
+
+$(RUNTIME_STATIC_LIB): $(STATIC_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) \
+                       $(RUNTIME_LIST_INCLUDESANDDEFINES) \
+                       $(RUNTIME_LIST_LIBRARIES) \
+                       $(RUNTIME_OVERRIDE_LD)
 	@rm -f $@
-	$(AR) -rc $@ $(RUNTIME_OBJS)
+	$(AR) -rc $@ $(STATIC_RUNTIME_OBJS)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
-	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
+	$(PRINTCHPLENV_WRAPPER) --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
 
-
-$(RUNTIME_LIST_INCLUDESANDDEFINES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+$(RUNTIME_LIST_INCLUDESANDDEFINES): $(COMMON_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(MAKE) -f Makefile.config printincludesanddefines > $(RUNTIME_LIST_INCLUDESANDDEFINES)
 
-$(RUNTIME_LIST_LIBRARIES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+$(RUNTIME_LIST_LIBRARIES): $(COMMON_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(MAKE) -f Makefile.config printlibraries > $(RUNTIME_LIST_LIBRARIES)
 
-$(RUNTIME_OVERRIDE_LD): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+$(RUNTIME_OVERRIDE_LD): $(COMMON_RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	$(MAKE) -f Makefile.config printoverrideld > $(RUNTIME_OVERRIDE_LD)
 
 $(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o

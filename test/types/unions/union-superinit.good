@@ -1,0 +1,2 @@
+union-superinit.chpl:6: In initializer:
+union-superinit.chpl:7: error: super.init() is only allowed in classes

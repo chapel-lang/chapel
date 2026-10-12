@@ -1,1 +1,0 @@
-cpSplittingError.chpl:1: warning: CodepointSplittingError is deprecated; please use CodepointSplitError instead

@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+import os
+
+ok_comm = os.getenv("CHPL_COMM") == "gasnet" or \
+          os.getenv("CHPL_COMM") == "none"
+ok_pic = os.getenv("CHPL_LIB_PIC") == "pic"
+ok = ok_comm and ok_pic
+
+print(not ok)

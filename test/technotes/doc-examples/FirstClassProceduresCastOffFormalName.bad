@@ -1,0 +1,1 @@
+FirstClassProceduresCastOffFormalName.chpl:16: error: Cannot assign to proc(_: int, _: int): int from proc(a: int, b: int): int

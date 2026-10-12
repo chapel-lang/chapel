@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -81,7 +81,7 @@ To read or write from ``stdin`` or ``stdout`` in binary format, use the
 :proc:`~IO.fileWriter.withSerializer` and :proc:`~IO.fileReader.withDeserializer`
 methods to create binary-serializing aliases of ``stdin`` and ``stdout``. For
 example, consider the following program that writes the numbers ``1`` through
-``10`` in binary to the ``hexdump`` utility:
+``10`` in binary to the ``xxd`` utility:
 
 .. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_writeBinary.chpl
  :language: chapel

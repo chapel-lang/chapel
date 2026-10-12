@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -93,13 +93,13 @@ void chpl_gpu_support_module_finished_initializing(void);
 
 void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
-                               int n_redbufs, int n_hostreg_vars, int ln,
+                               int n_redbufs, int n_hostreg_vars, int32_t ln,
                                int32_t fn);
 void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                   int n_params, int n_pids, int n_redbufs,
-                                  int n_hostreg_vars, int ln, int32_t fn);
+                                  int n_hostreg_vars, int32_t ln, int32_t fn);
 
 void chpl_gpu_deinit_kernel_cfg(void* cfg);
 void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
@@ -128,40 +128,40 @@ void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src,
-                     size_t n, int32_t commID, int ln, int32_t fn);
+                     size_t n, int32_t commID, int32_t ln, int32_t fn);
 void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
                        c_sublocid_t src_subloc, void *src,
-                       size_t size, int32_t commID, int ln, int32_t fn);
+                       size_t size, int32_t commID, int32_t ln, int32_t fn);
 
 void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
                        c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
-                       size_t size, int32_t commID, int ln, int32_t fn);
+                       size_t size, int32_t commID, int32_t ln, int32_t fn);
 
 void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
                             void* dstaddr_arg, size_t* dststrides,
                             c_nodeid_t srclocale, c_sublocid_t src_subloc,
                             void* srcaddr_arg, size_t* srcstrides,
                             size_t* count, int32_t strlevels, size_t elemSize,
-                            int32_t commID, int ln, int32_t fn);
+                            int32_t commID, int32_t ln, int32_t fn);
 
 void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
                           void* dstaddr_arg, size_t* dststrides,
                           c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
                           void* srcaddr_arg, size_t* srcstrides,
                           size_t* count, int32_t stridelevels, size_t elemSize,
-                          int32_t commID, int ln, int32_t fn);
+                          int32_t commID, int32_t ln, int32_t fn);
 
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   const void* src, size_t n, int32_t commID,
-                                  int ln, int32_t fn);
+                                  int32_t ln, int32_t fn);
 void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
                                   const void* src, size_t n, int32_t commID,
-                                  int ln, int32_t fn);
+                                  int32_t ln, int32_t fn);
 void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                     c_sublocid_t src_dev, const void* src,
-                                    size_t n, int32_t commID, int ln,
+                                    size_t n, int32_t commID, int32_t ln,
                                     int32_t fn);
 void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_comm_wait(void *stream);

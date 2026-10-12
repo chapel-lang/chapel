@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,9 @@
 #define _CACHES_H_
 
 #include "baseAST.h"
+
+#include <unordered_map>
+#include <vector>
 
 class CalledFunInfo;
 class VisibilityInfo;
@@ -97,8 +100,11 @@ public:
   SymbolMap map;
 };
 
-typedef Map<FnSymbol*,     Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCache;
-typedef MapElem<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCacheElem;
+typedef std::unordered_map<size_t, std::vector<SymbolMapScopeCacheEntry*>>
+        SymbolMapScopeCacheBuckets;
+
+typedef Map<FnSymbol*,     SymbolMapScopeCacheBuckets*> SymbolMapScopeCache;
+typedef MapElem<FnSymbol*, SymbolMapScopeCacheBuckets*> SymbolMapScopeCacheElem;
 
 void      addCache(SymbolMapScopeCache& cache,
                    FnSymbol*       oldFn,

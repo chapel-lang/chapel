@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,6 +65,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SET_LINEAR_SIZE         4               /* must be <= than VEC_INTEGRAL_SIZE */
 #define SET_MAX_PROBE           5
 #define SET_INITIAL_INDEX       2
+
+#ifdef __has_builtin
+#if __has_builtin (__builtin_unreachable) && !defined(CHPL_UNREACHABLE)
+  #define CHPL_UNREACHABLE() __builtin_unreachable()
+#endif
+#endif
+#ifndef CHPL_UNREACHABLE
+  #define CHPL_UNREACHABLE() do { } while (0)
+#endif
 
 // Do not define the generic variation of _vec_hasher, requiring us to write
 // a _vec_hasher for potential types.
@@ -446,6 +455,8 @@ Vec<C,S>::addx() {
     return;
   }
   if (v == e) {
+    if (!(0 <= n && n <= VEC_INITIAL_SIZE))
+      CHPL_UNREACHABLE();
     v = (C*)malloc(VEC_INITIAL_SIZE * sizeof(C));
     memcpy((void*)v, &e[0], n * sizeof(C));
   } else {

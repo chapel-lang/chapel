@@ -23,26 +23,25 @@
 /*
  * cxip_recv_req_src_addr() - Translate request source address to FI address.
  */
-fi_addr_t cxip_recv_req_src_addr(struct cxip_req *req)
+fi_addr_t cxip_recv_req_src_addr(struct cxip_rxc *rxc,
+				 uint32_t init, uint16_t vni,
+				 bool force)
 {
-	struct cxip_rxc *rxc = req->recv.rxc;
-
 	/* If the FI_SOURCE capability is enabled, convert the initiator's
 	 * address to an FI address to be reported in a CQ event. If
 	 * application AVs are symmetric, the match_id in the EQ event is
 	 * logical and translation is not needed. Otherwise, translate the
 	 * physical address in the EQ event to logical FI address.
 	 */
-	if (rxc->attr.caps & FI_SOURCE) {
-		struct cxip_addr addr = {};
+	if ((rxc->attr.caps & FI_SOURCE) || force) {
+		struct cxip_addr addr = {0};
 
 		if (rxc->ep_obj->av->symmetric)
-			return CXI_MATCH_ID_EP(rxc->pid_bits,
-					       req->recv.initiator);
+			return CXI_MATCH_ID_EP(rxc->pid_bits, init);
 
-		addr.nic = CXI_MATCH_ID_EP(rxc->pid_bits, req->recv.initiator);
-		addr.pid = CXI_MATCH_ID_PID(rxc->pid_bits, req->recv.initiator);
-		addr.vni = req->recv.vni;
+		addr.nic = CXI_MATCH_ID_EP(rxc->pid_bits, init);
+		addr.pid = CXI_MATCH_ID_PID(rxc->pid_bits, init);
+		addr.vni = vni;
 
 		return cxip_av_lookup_fi_addr(rxc->ep_obj->av, &addr);
 	}
@@ -61,7 +60,6 @@ int cxip_recv_req_alloc(struct cxip_rxc *rxc, void *buf, size_t len,
 			int (*recv_cb)(struct cxip_req *req,
 				       const union c_event *event))
 {
-	struct cxip_domain *dom = rxc->domain;
 	struct cxip_req *req;
 	struct cxip_md *recv_md = NULL;
 	int ret;
@@ -80,7 +78,8 @@ int cxip_recv_req_alloc(struct cxip_rxc *rxc, void *buf, size_t len,
 	if (len) {
 		/* If hybrid descriptor not passed, map for dma */
 		if (!md) {
-			ret = cxip_map(dom, (void *)buf, len, 0, &recv_md);
+			ret = cxip_ep_obj_map(rxc->ep_obj, (void *)buf, len,
+					      CXI_MAP_WRITE, 0, &recv_md);
 			if (ret) {
 				RXC_WARN(rxc,
 					 "Map of recv buffer failed: %d, %s\n",
@@ -104,7 +103,7 @@ int cxip_recv_req_alloc(struct cxip_rxc *rxc, void *buf, size_t len,
 	dlist_init(&req->recv.children);
 	dlist_init(&req->recv.rxc_entry);
 
-	ofi_atomic_inc32(&rxc->orx_reqs);
+	cxip_rxc_orx_reqs_inc(rxc);
 	*cxip_req = req;
 
 	return FI_SUCCESS;
@@ -118,15 +117,22 @@ err_free_request:
 void cxip_recv_req_free(struct cxip_req *req)
 {
 	struct cxip_rxc *rxc = req->recv.rxc;
+	struct fid_peer_srx *owner_srx = cxip_get_owner_srx(rxc);
 
 	assert(req->type == CXIP_REQ_RECV);
 	assert(dlist_empty(&req->recv.children));
 	assert(dlist_empty(&req->recv.rxc_entry));
 
-	ofi_atomic_dec32(&rxc->orx_reqs);
+	cxip_rxc_orx_reqs_dec(rxc);
+
+	if (req->recv.cntr)
+		cxip_cntr_progress_dec(req->recv.cntr);
 
 	if (req->recv.recv_md && !req->recv.hybrid_md)
 		cxip_unmap(req->recv.recv_md);
+
+	if (owner_srx && req->rx_entry)
+		owner_srx->owner_ops->free_entry(req->rx_entry);
 
 	cxip_evtq_req_free(req);
 }
@@ -150,7 +156,8 @@ static inline int recv_req_event_success(struct cxip_rxc *rxc,
 	}
 
 	if (req->recv.rxc->attr.caps & FI_SOURCE) {
-		src_addr = cxip_recv_req_src_addr(req);
+		src_addr = cxip_recv_req_src_addr(req->recv.rxc, req->recv.initiator,
+						  req->recv.vni, false);
 		if (src_addr != FI_ADDR_NOTAVAIL ||
 		    !(rxc->attr.caps & FI_SOURCE_ERR))
 			return cxip_cq_req_complete_addr(req, src_addr);
@@ -189,6 +196,7 @@ void cxip_recv_req_report(struct cxip_req *req)
 			     !(req->flags & FI_COMPLETION));
 	struct cxip_rxc *rxc = req->recv.rxc;
 	ssize_t truncated = req->recv.rlen - req->data_len;
+	bool sw_cntr_update = rxc->protocol != FI_PROTO_CXI_RNR;
 
 	/* data_len (i.e. mlength) should NEVER be greater than rlength. */
 	assert(truncated >= 0);
@@ -217,7 +225,12 @@ void cxip_recv_req_report(struct cxip_req *req)
 			    parent->recv.mrecv_bytes == parent->recv.mrecv_unlink_bytes)
 				unlinked = true;
 		} else {
-			if ((parent->recv.ulen - parent->recv.mrecv_bytes) < rxc->min_multi_recv)
+			parent->recv.multirecv_inflight--;
+			assert(parent->recv.multirecv_inflight >= 0);
+
+			if (!parent->recv.multirecv_inflight &&
+			    ((parent->recv.ulen - parent->recv.mrecv_bytes) <
+			    rxc->min_multi_recv))
 				unlinked = true;
 		}
 
@@ -246,7 +259,7 @@ void cxip_recv_req_report(struct cxip_req *req)
 					 ret);
 		}
 
-		if (req->recv.cntr) {
+		if (req->recv.cntr && sw_cntr_update) {
 			ret = cxip_cntr_mod(req->recv.cntr, 1, false, false);
 			if (ret)
 				RXC_WARN(rxc, "cxip_cntr_mod returned: %d\n",
@@ -280,7 +293,7 @@ void cxip_recv_req_report(struct cxip_req *req)
 		if (ret != FI_SUCCESS)
 			RXC_WARN(rxc, "Failed to report error: %d\n", ret);
 
-		if (req->recv.cntr) {
+		if (req->recv.cntr && sw_cntr_update) {
 			ret = cxip_cntr_mod(req->recv.cntr, 1, false, true);
 			if (ret)
 				RXC_WARN(rxc, "cxip_cntr_mod returned: %d\n",
@@ -313,6 +326,9 @@ struct cxip_req *cxip_mrecv_req_dup(struct cxip_req *mrecv_req)
 
 	/* Update fields specific to this Send */
 	req->recv.parent = mrecv_req;
+
+	/* Parent keeps track of operations in flight */
+	mrecv_req->recv.multirecv_inflight++;
 
 	/* Start pointer and data_len must be set elsewhere! */
 
@@ -460,7 +476,7 @@ int cxip_recv_cancel(struct cxip_req *req)
 	/* In hybrid mode requests could be on priority list
 	 * or software receive list.
 	 */
-	if (req->recv.software_list) {
+	if (!req->recv.hw_offloaded) {
 		dlist_remove_init(&req->recv.rxc_entry);
 		req->recv.canceled = true;
 		req->recv.unlinked = true;
@@ -526,7 +542,7 @@ int cxip_flush_appends(struct cxip_rxc_hpc *rxc,
 		ret = -FI_EAGAIN;
 		goto err;
 	}
-	ofi_atomic_inc32(&rxc->base.orx_reqs);
+	cxip_rxc_orx_reqs_inc(&rxc->base);
 
 	rxc->base.rx_evtq.ack_batch_size = 1;
 
@@ -553,7 +569,7 @@ int cxip_flush_appends(struct cxip_rxc_hpc *rxc,
 	return FI_SUCCESS;
 
 err_dec_free_cq_req:
-	ofi_atomic_dec32(&rxc->base.orx_reqs);
+	cxip_rxc_orx_reqs_dec(&rxc->base);
 	cxip_evtq_req_free(req);
 err:
 	return ret;
@@ -575,6 +591,7 @@ int cxip_recv_req_dropped(struct cxip_req *req)
 	assert(rxc->base.protocol == FI_PROTO_CXI);
 	assert(dlist_empty(&req->recv.rxc_entry));
 
+	req->recv.hw_offloaded = false;
 	dlist_insert_tail(&req->recv.rxc_entry, &rxc->replay_queue);
 
 	RXC_DBG(rxc, "Receive dropped: %p\n", req);
@@ -631,6 +648,7 @@ void cxip_report_send_completion(struct cxip_req *req, bool sw_cntr)
 	int ret_err;
 	int success_event = (req->flags & FI_COMPLETION);
 	struct cxip_txc *txc = req->send.txc;
+	uint64_t count;
 
 	req->flags &= (FI_MSG | FI_TAGGED | FI_SEND | FI_CXI_TRUNC);
 
@@ -646,7 +664,15 @@ void cxip_report_send_completion(struct cxip_req *req, bool sw_cntr)
 		}
 
 		if (sw_cntr && req->send.cntr) {
-			ret = cxip_cntr_mod(req->send.cntr, 1, false, false);
+			if (req->send.cntr->attr.events ==
+			    FI_CXI_CNTR_EVENTS_BYTES)
+				count = txc->trunc_ok ? req->data_len :
+					req->send.len;
+			else
+				count = 1;
+
+			ret = cxip_cntr_mod(req->send.cntr, count, false,
+					    false);
 			if (ret)
 				TXC_WARN(txc, "cxip_cntr_mod returned: %d\n",
 					 ret);
@@ -692,6 +718,8 @@ void cxip_send_buf_fini(struct cxip_req *req)
 		cxip_unmap(req->send.send_md);
 	if (req->send.ibuf)
 		cxip_txc_ibuf_free(req->send.txc, req->send.ibuf);
+	if (req->send.cntr)
+		cxip_cntr_progress_dec(req->send.cntr);
 }
 
 int cxip_send_buf_init(struct cxip_req *req)
@@ -699,14 +727,21 @@ int cxip_send_buf_init(struct cxip_req *req)
 	struct cxip_txc *txc = req->send.txc;
 	int ret;
 
+	/* Any request structures associated with a counter require counter
+	 * progression.
+	 */
+	if (req->send.cntr)
+		cxip_cntr_progress_inc(req->send.cntr);
+
 	/* Nothing to do for zero byte sends. */
 	if (!req->send.len)
 		return FI_SUCCESS;
 
 	/* Triggered operation always requires memory registration. */
 	if (req->triggered)
-		return cxip_map(txc->domain, req->send.buf, req->send.len, 0,
-			       &req->send.send_md);
+		return cxip_ep_obj_map(txc->ep_obj, req->send.buf,
+				       req->send.len, CXI_MAP_READ, 0,
+				       &req->send.send_md);
 
 	/* FI_INJECT operations always require an internal bounce buffer. This
 	 * is needed to replay FI_INJECT operations which may experience flow
@@ -764,8 +799,8 @@ int cxip_send_buf_init(struct cxip_req *req)
 	}
 
 	/* Everything else requires memory registeration. */
-	return cxip_map(txc->domain, req->send.buf, req->send.len, 0,
-			&req->send.send_md);
+	return cxip_ep_obj_map(txc->ep_obj, req->send.buf, req->send.len,
+			       CXI_MAP_READ, 0, &req->send.send_md);
 
 err_buf_fini:
 	cxip_send_buf_fini(req);
@@ -1043,6 +1078,33 @@ struct fi_ops_tagged cxip_ep_tagged_no_rx_ops = {
 	.injectdata = cxip_tinjectdata,
 };
 
+/* Tagged ops with writedata disabled (cq_data_size == 0) */
+struct fi_ops_tagged cxip_ep_tagged_ops_no_writedata = {
+	.size = sizeof(struct fi_ops_tagged),
+	.recv = cxip_trecv,
+	.recvv = cxip_trecvv,
+	.recvmsg = cxip_trecvmsg,
+	.send = cxip_tsend,
+	.sendv = cxip_tsendv,
+	.sendmsg = cxip_tsendmsg,
+	.inject = cxip_tinject,
+	.senddata = fi_no_tagged_senddata,
+	.injectdata = fi_no_tagged_injectdata,
+};
+
+struct fi_ops_tagged cxip_ep_tagged_no_rx_ops_no_writedata = {
+	.size = sizeof(struct fi_ops_tagged),
+	.recv = fi_no_tagged_recv,
+	.recvv = fi_no_tagged_recvv,
+	.recvmsg = fi_no_tagged_recvmsg,
+	.send = cxip_tsend,
+	.sendv = cxip_tsendv,
+	.sendmsg = cxip_tsendmsg,
+	.inject = cxip_tinject,
+	.senddata = fi_no_tagged_senddata,
+	.injectdata = fi_no_tagged_injectdata,
+};
+
 static ssize_t cxip_recv(struct fid_ep *fid_ep, void *buf, size_t len,
 			 void *desc, fi_addr_t src_addr, void *context)
 {
@@ -1291,3 +1353,31 @@ struct fi_ops_msg cxip_ep_msg_no_rx_ops = {
 	.senddata = cxip_senddata,
 	.injectdata = cxip_injectdata,
 };
+
+/* Message ops with writedata disabled (cq_data_size == 0) */
+struct fi_ops_msg cxip_ep_msg_ops_no_writedata = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = cxip_recv,
+	.recvv = cxip_recvv,
+	.recvmsg = cxip_recvmsg,
+	.send = cxip_send,
+	.sendv = cxip_sendv,
+	.sendmsg = cxip_sendmsg,
+	.inject = cxip_inject,
+	.senddata = fi_no_msg_senddata,
+	.injectdata = fi_no_msg_injectdata,
+};
+
+struct fi_ops_msg cxip_ep_msg_no_rx_ops_no_writedata = {
+	.size = sizeof(struct fi_ops_msg),
+	.recv = fi_no_msg_recv,
+	.recvv = fi_no_msg_recvv,
+	.recvmsg = fi_no_msg_recvmsg,
+	.send = cxip_send,
+	.sendv = cxip_sendv,
+	.sendmsg = cxip_sendmsg,
+	.inject = cxip_inject,
+	.senddata = fi_no_msg_senddata,
+	.injectdata = fi_no_msg_injectdata,
+};
+

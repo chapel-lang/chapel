@@ -1,7 +1,7 @@
 
 use MasonPublish;
 use MasonUtils;
-use MasonNew;
+use MasonNewInit;
 
 const dir = here.cwd();
 
@@ -11,4 +11,6 @@ proc dry() {
   masonPublish(['publish', '--dry-run']);
 }
 
-dry();
+proc main() {
+  dry();
+}

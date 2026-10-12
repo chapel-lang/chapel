@@ -26,7 +26,7 @@ with the project via the following steps:
     available from https://chapel-lang.org/papers/
 
   - the "State of the Project" talk from the most recent `ChapelCon
-    meeting <https://chapel-lang.org/ChapelCon.html>`_
+    meeting <https://chapel-lang.org/chapelcon/>`_
 
   - the `release notes <https://chapel-lang.org/releaseNotes.html>`_
     from the most recent Chapel release.

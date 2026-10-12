@@ -136,7 +136,7 @@ Operators
 */
 
 // Math operators:
-var a: int, thisInt = 1234, thatInt = 5678;
+var a: int, thisInt = 12, thatInt = 17;
 a = thisInt + thatInt;  // Addition
 a = thisInt * thatInt;  // Multiplication
 a = thisInt - thatInt;  // Subtraction
@@ -242,7 +242,7 @@ if a % 3 == 0 {
 } else if a % 3 == 1 {
   writeln(a, " is divided by 3 with a remainder of 1.");
 } else {
-  writeln(b, " is divided by 3 with a remainder of 2.");
+  writeln(a, " is divided by 3 with a remainder of 2.");
 }
 
 // Ternary: ``if`` - ``then`` - ``else`` in a statement.

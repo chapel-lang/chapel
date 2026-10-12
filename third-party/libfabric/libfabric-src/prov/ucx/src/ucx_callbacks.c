@@ -33,6 +33,16 @@
 #include "ucx.h"
 #include "ucx_core.h"
 
+void ucx_callback_noop(void *request, ucs_status_t status)
+{
+	/*
+	 * The current use case is the inject send path, where we do not want
+	 * to free the request since it will be used later to check completion of
+	 * the send operation. The request object is freed in the send function
+	 * after the progress loop waiting on the send completes.
+	 */
+}
+
 void ucx_send_callback_no_compl(void *request, ucs_status_t status)
 {
 	struct ucx_request *ucx_req = request;

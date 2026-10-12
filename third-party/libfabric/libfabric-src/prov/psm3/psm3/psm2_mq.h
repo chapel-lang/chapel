@@ -1639,7 +1639,7 @@ struct psm2_mq_stats {
 #else
 	uint64_t dsa_stats[DSA_STATS_SZ*2];	/* same size as dsa_stats[2] */
 #endif
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/** maximum handles allowed in cache **/
 	uint64_t gpu_ipc_cache_limit;
 	/** current handles in cache **/
@@ -1656,9 +1656,9 @@ struct psm2_mq_stats {
 	uint64_t gpu_ipc_cache_remove;
 	/** cache cleared due to error opening new Ipc Handle **/
 	uint64_t gpu_ipc_cache_clear;
-#else /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+#else /* PSM_HAVE_GPU */
 	uint64_t _reserved_gpu[8];
-#endif /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+#endif /* PSM_HAVE_GPU */
 
 	/** sysbufs are used for unexpected eager receive (and RTS payload) */
 	/** Number of messages using system buffers (not used for 0 byte msg) */
@@ -1669,7 +1669,7 @@ struct psm2_mq_stats {
 	/** rank in MPI_COMM_WORLD, while unchanging, easiest to put here */
 	uint64_t comm_world_rank;
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 	/** Messages transmitted eagerly from CPU buffer */
 	uint64_t tx_eager_cpu_num;
 	/** Bytes transmitted eagerly from CPU buffer */

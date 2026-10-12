@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,8 @@
 
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-unwind.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -121,26 +122,24 @@ void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
 #undef _COMM_DIAGS_COPY
 }
 
-extern chpl_bool chpl_task_setCommDiagsTemporarilyDisabled(chpl_bool);
-extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
-
-#define chpl_comm_diags_verbose_printf(is_unstable, format, ...)   \
-  do {                                                             \
-    if (chpl_verbose_comm                                          \
-        && !chpl_task_getCommDiagsTemporarilyDisabled()            \
-        && (!is_unstable || chpl_comm_diags_print_unstable)) {     \
-      char* stack = NULL;                                          \
-      if (chpl_verbose_comm_stacktrace) {                          \
-        stack = chpl_stack_unwind_to_string(' ');                  \
-      }                                                            \
-      if (stack != NULL) {                                         \
-        printf("%d: " format " <%s>\n", chpl_nodeID, __VA_ARGS__, stack); \
-        chpl_mem_free(stack, 0, 0);                                \
-      } else {                                                     \
-        printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);      \
-      }                                                            \
-    }                                                              \
-  } while(0)
+#define chpl_comm_diags_verbose_printf(is_unstable, format, ...) do {       \
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;                  \
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_getCommDiagsTemporarilyDisabled);  \
+  if (chpl_verbose_comm                                                     \
+      && !chpl_task_getCommDiagsTemporarilyDisabled()                       \
+      && (!is_unstable || chpl_comm_diags_print_unstable)) {                \
+    char* stack = NULL;                                                     \
+    if (chpl_verbose_comm_stacktrace) {                                     \
+      stack = chpl_stack_unwind_to_string(' ');                             \
+    }                                                                       \
+    if (stack != NULL) {                                                    \
+      printf("%d: " format " <%s>\n", chpl_nodeID, __VA_ARGS__, stack);     \
+      chpl_mem_free(stack, 0, 0);                                           \
+    } else {                                                                \
+      printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);                 \
+    }                                                                       \
+  }                                                                         \
+} while(0)
 
 #define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn, commid)     \
   chpl_comm_diags_verbose_printf(false,                                  \
@@ -170,15 +169,16 @@ extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)
 
-#define chpl_comm_diags_incr(_ctr)                                           \
-  do {                                                                       \
-    if (chpl_comm_diagnostics &&                                             \
-        !chpl_task_getCommDiagsTemporarilyDisabled()) {                      \
-      chpl_atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
-      (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
-                                                      chpl_memory_order_relaxed); \
-    }                                                                        \
-  } while(0)
+#define chpl_comm_diags_incr(_ctr) do {                                     \
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;                  \
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_getCommDiagsTemporarilyDisabled);  \
+  if (chpl_comm_diagnostics &&                                              \
+      !chpl_task_getCommDiagsTemporarilyDisabled()) {                       \
+    chpl_atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;   \
+    chpl_memory_order mem_order = chpl_memory_order_relaxed;                \
+    (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1, mem_order); \
+  }                                                                         \
+} while(0)
 
 #ifdef __cplusplus
 }

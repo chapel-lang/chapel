@@ -1,1 +1,3 @@
 CHPL_LIB_PIC != pic
+# Skip if 'COMM != none' after adding '--client-server-library' flag
+CHPL_COMM != none

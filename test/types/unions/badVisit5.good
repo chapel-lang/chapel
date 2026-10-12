@@ -1,0 +1,1 @@
+badVisit5.chpl:14: error: functor at index 0 (corresponding to field "x")  cannot be called with an argument of type string

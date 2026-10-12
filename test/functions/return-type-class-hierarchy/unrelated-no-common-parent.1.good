@@ -1,0 +1,2 @@
+unrelated-no-common-parent.chpl:4: error: unable to resolve return type
+unrelated-no-common-parent.chpl:4: note: could not find a common parent type for the returned class types

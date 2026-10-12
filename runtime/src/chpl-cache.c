@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2023,7 +2023,7 @@ int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       struct cache_entry_s* entry) {
 
-  // read and do an aquire fence
+  // read and do an acquire fence
   chpl_cache_taskPrvData_t* v = read_reservedByTask(entry);
 
   if (v != NULL) {
@@ -2502,7 +2502,7 @@ int cache_put_in_page(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       unsigned char* addr,
                       c_nodeid_t node, raddr_t raddr, size_t size,
-                      int32_t commID, int ln, int32_t fn)
+                      int32_t commID, int32_t ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_page;
@@ -2604,7 +2604,7 @@ int cache_put(struct rdcache_s* cache,
               chpl_cache_taskPrvData_t* task_local,
               unsigned char* addr,
               c_nodeid_t node, raddr_t raddr, size_t size,
-              int32_t commID, int ln, int32_t fn)
+              int32_t commID, int32_t ln, int32_t fn)
 {
   raddr_t ra_first_page;
   raddr_t ra_last_page;
@@ -2677,7 +2677,7 @@ int cache_get(struct rdcache_s* cache,
               unsigned char * addr,
               c_nodeid_t node, raddr_t raddr, size_t size,
               int sequential_readahead_length,
-              int32_t commID, int ln, int32_t fn);
+              int32_t commID, int32_t ln, int32_t fn);
 
 static
 void cache_get_trigger_readahead(struct rdcache_s* cache,
@@ -2688,7 +2688,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                                  // skip < 0 -> reverse, >0 -> forward
                                  readahead_distance_t skip,
                                  readahead_distance_t len,
-                                 int32_t commID, int ln, int32_t fn)
+                                 int32_t commID, int32_t ln, int32_t fn)
 {
   // Handle prefetching.
   // See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
@@ -2898,7 +2898,7 @@ int cache_get_in_page(struct rdcache_s* cache,
                       c_nodeid_t node, raddr_t raddr, size_t size,
                       raddr_t ra_first_page, raddr_t ra_last_page,
                       int sequential_readahead_length,
-                      int32_t commID, int ln, int32_t fn)
+                      int32_t commID, int32_t ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_page;
@@ -3251,7 +3251,7 @@ int cache_get(struct rdcache_s* cache,
               unsigned char * addr,
               c_nodeid_t node, raddr_t raddr, size_t size,
               int sequential_readahead_length,
-              int32_t commID, int ln, int32_t fn)
+              int32_t commID, int32_t ln, int32_t fn)
 {
   raddr_t ra_first_page;
   raddr_t ra_last_page;
@@ -3334,7 +3334,7 @@ int mock_get(struct rdcache_s* cache,
              c_nodeid_t node, raddr_t raddr, size_t size,
              cache_seqn_t last_acquire,
              int sequential_readahead_length,
-             int32_t commID, int ln, int32_t fn)
+             int32_t commID, int32_t ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   struct cache_entry_s* aout_entry;
@@ -3775,7 +3775,7 @@ void chpl_cache_exit(void)
 }
 
 
-void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
+void chpl_cache_fence(int acquire, int release, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -3814,7 +3814,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 }
 
 void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
-                           int ln, int32_t fn)
+                           int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -3841,7 +3841,7 @@ int size_merits_direct_comm(const struct rdcache_s* cache, size_t size)
 }
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -3889,7 +3889,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -3937,7 +3937,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int32_t commID, int ln, int32_t fn)
+                              size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -3969,7 +3969,7 @@ void strd_invalidate_fn(void* addr,
                         size_t size,
                         void* ctxv,
                         int32_t commID,
-                        int ln,
+                        int32_t ln,
                         int32_t fn)
 {
 
@@ -3985,7 +3985,7 @@ static
 void strd_invalidate(void *addr, void *dststr, c_nodeid_t node,
                      void *raddr, void *srcstr, void *count,
                      int32_t strlevels, size_t elemSize,
-                     int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int32_t ln, int32_t fn) {
 
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -4006,7 +4006,7 @@ void strd_invalidate(void *addr, void *dststr, c_nodeid_t node,
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t commID, int ln, int32_t fn) {
+                              int32_t commID, int32_t ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
 
   if (STRIDED_INVALIDATE_ALL) {
@@ -4043,7 +4043,7 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t commID, int ln, int32_t fn) {
+                              int32_t commID, int32_t ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
 
   if (STRIDED_INVALIDATE_ALL) {
@@ -4083,7 +4083,7 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
 // overlapping regions beforehand.
 //
 void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn)
+                                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -4105,7 +4105,7 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn)
+                                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
@@ -4130,7 +4130,7 @@ void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
 void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       c_nodeid_t srcnode, void* srcaddr,
                                       size_t size, int32_t commID,
-                                      int ln, int32_t fn)
+                                      int32_t ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();

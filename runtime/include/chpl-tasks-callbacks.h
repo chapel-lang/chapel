@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,7 +146,7 @@ typedef struct {
                                 // chpl_task_cb_info_kind_full:
       chpl_fn_int_t fid;        //   number of function to call
       int32_t filename;         //   source file of task definition
-      int lineno;               //   source line of task definition
+      int32_t lineno;               //   source line of task definition
       uint64_t id;              //   unique ID, within locale
       int is_executeOn;         //   !=0: task is for executeOn body
     } full;

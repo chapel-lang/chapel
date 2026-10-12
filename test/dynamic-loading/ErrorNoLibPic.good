@@ -1,0 +1,1 @@
+error: The '--no-builtin-runtime' flag requires position-independent code. Rebuild Chapel with 'CHPL_LIB_PIC=pic'

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Converting between Object Types and Attributes, and Strings</title>
+<title>Hardware Locality (hwloc): Finding Objects covering at least CPU set</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -41,227 +41,49 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Converting between Object Types and Attributes, and Strings</div></div>
+  <div class="headertitle"><div class="title">Finding Objects covering at least CPU set</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga6a38b931e5d45e8af4323a169482fe39" id="r_ga6a38b931e5d45e8af4323a169482fe39"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga6a38b931e5d45e8af4323a169482fe39">hwloc_obj_type_string</a> (<a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type)</td></tr>
-<tr class="separator:ga6a38b931e5d45e8af4323a169482fe39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadb8765c260edea80c52cd06a76639ba4" id="r_gadb8765c260edea80c52cd06a76639ba4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#gadb8765c260edea80c52cd06a76639ba4">hwloc_obj_type_snprintf</a> (char *restrict string, size_t size, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, int verbose)</td></tr>
-<tr class="separator:gadb8765c260edea80c52cd06a76639ba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga870e876931c282a1c7aee2f031912ce3" id="r_ga870e876931c282a1c7aee2f031912ce3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga870e876931c282a1c7aee2f031912ce3">hwloc_obj_attr_snprintf</a> (char *restrict string, size_t size, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, const char *restrict separator, int verbose)</td></tr>
-<tr class="separator:ga870e876931c282a1c7aee2f031912ce3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga510f21b066fba2dab12b8c9b173b1dfd" id="r_ga510f21b066fba2dab12b8c9b173b1dfd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga510f21b066fba2dab12b8c9b173b1dfd">hwloc_type_sscanf</a> (const char *string, <a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> *typep, union <a class="el" href="a00234.html">hwloc_obj_attr_u</a> *attrp, size_t attrsize)</td></tr>
-<tr class="separator:ga510f21b066fba2dab12b8c9b173b1dfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga52c63cd7203e55b804c1314affc9bd12" id="r_ga52c63cd7203e55b804c1314affc9bd12"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga52c63cd7203e55b804c1314affc9bd12">hwloc_type_sscanf_as_depth</a> (const char *string, <a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> *typep, <a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int *depthp)</td></tr>
-<tr class="separator:ga52c63cd7203e55b804c1314affc9bd12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga33b785797d3ec5c37b75380c819eaae7" id="r_ga33b785797d3ec5c37b75380c819eaae7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga33b785797d3ec5c37b75380c819eaae7">hwloc_get_child_covering_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> parent)</td></tr>
+<tr class="separator:ga33b785797d3ec5c37b75380c819eaae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5535e32d7a0bd047cabedd04b53270cf" id="r_ga5535e32d7a0bd047cabedd04b53270cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga5535e32d7a0bd047cabedd04b53270cf">hwloc_get_obj_covering_cpuset</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set)</td></tr>
+<tr class="separator:ga5535e32d7a0bd047cabedd04b53270cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga98c864a575327bfbfdb92b701e5069dd" id="r_ga98c864a575327bfbfdb92b701e5069dd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#ga98c864a575327bfbfdb92b701e5069dd">hwloc_get_next_obj_covering_cpuset_by_depth</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, int depth, <a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
+<tr class="separator:ga98c864a575327bfbfdb92b701e5069dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae37eabe1f91b6524576e2c0dad3b3639" id="r_gae37eabe1f91b6524576e2c0dad3b3639"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00177.html#gae37eabe1f91b6524576e2c0dad3b3639">hwloc_get_next_obj_covering_cpuset_by_type</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00164.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type, <a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
+<tr class="separator:gae37eabe1f91b6524576e2c0dad3b3639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga870e876931c282a1c7aee2f031912ce3" name="ga870e876931c282a1c7aee2f031912ce3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga870e876931c282a1c7aee2f031912ce3">&#9670;&#160;</a></span>hwloc_obj_attr_snprintf()</h2>
+<a id="ga33b785797d3ec5c37b75380c819eaae7" name="ga33b785797d3ec5c37b75380c819eaae7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga33b785797d3ec5c37b75380c819eaae7">&#9670;&#160;</a></span>hwloc_get_child_covering_cpuset()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_obj_attr_snprintf </td>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_child_covering_cpuset </td>
           <td>(</td>
-          <td class="paramtype">char *restrict&#160;</td>
-          <td class="paramname"><em>string</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>size</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *restrict&#160;</td>
-          <td class="paramname"><em>separator</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>verbose</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stringify the attributes of a given topology object into a human-readable form. </p>
-<p>Attribute values are separated by <code>separator</code>.</p>
-<p>Only the major attributes are printed in non-verbose mode.</p>
-<p>If <code>size</code> is 0, <code>string</code> may safely be <code>NULL</code>.</p>
-<dl class="section return"><dt>Returns</dt><dd>the number of characters that were actually written if not truncating, or that would have been written (not including the ending \0). </dd></dl>
-
-</div>
-</div>
-<a id="gadb8765c260edea80c52cd06a76639ba4" name="gadb8765c260edea80c52cd06a76639ba4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadb8765c260edea80c52cd06a76639ba4">&#9670;&#160;</a></span>hwloc_obj_type_snprintf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_obj_type_snprintf </td>
-          <td>(</td>
-          <td class="paramtype">char *restrict&#160;</td>
-          <td class="paramname"><em>string</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>size</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>verbose</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stringify the type of a given topology object into a human-readable form. </p>
-<p>Contrary to <a class="el" href="a00177.html#ga6a38b931e5d45e8af4323a169482fe39" title="Return a constant stringified object type.">hwloc_obj_type_string()</a>, this function includes object-specific attributes (such as the Group depth, the Bridge type, or OS device type) in the output, and it requires the caller to provide the output buffer.</p>
-<p>The output is guaranteed to be the same for all objects of a same topology level.</p>
-<p>If <code>verbose</code> is 1, longer type names are used, e.g. L1Cache instead of L1.</p>
-<p>The output string may be parsed back by <a class="el" href="a00177.html#ga510f21b066fba2dab12b8c9b173b1dfd" title="Return an object type and attributes from a type string.">hwloc_type_sscanf()</a>.</p>
-<p>If <code>size</code> is 0, <code>string</code> may safely be <code>NULL</code>.</p>
-<dl class="section return"><dt>Returns</dt><dd>the number of characters that were actually written if not truncating, or that would have been written (not including the ending \0). </dd></dl>
-
-</div>
-</div>
-<a id="ga6a38b931e5d45e8af4323a169482fe39" name="ga6a38b931e5d45e8af4323a169482fe39"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6a38b931e5d45e8af4323a169482fe39">&#9670;&#160;</a></span>hwloc_obj_type_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * hwloc_obj_type_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Return a constant stringified object type. </p>
-<p>This function is the basic way to convert a generic type into a string. The output string may be parsed back by <a class="el" href="a00177.html#ga510f21b066fba2dab12b8c9b173b1dfd" title="Return an object type and attributes from a type string.">hwloc_type_sscanf()</a>.</p>
-<p><a class="el" href="a00177.html#gadb8765c260edea80c52cd06a76639ba4" title="Stringify the type of a given topology object into a human-readable form.">hwloc_obj_type_snprintf()</a> may return a more precise output for a specific object, but it requires the caller to provide the output buffer.</p>
-<dl class="section return"><dt>Returns</dt><dd>A constant string containing the object type name or <code>"Unknown"</code>. </dd></dl>
-
-</div>
-</div>
-<a id="ga510f21b066fba2dab12b8c9b173b1dfd" name="ga510f21b066fba2dab12b8c9b173b1dfd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga510f21b066fba2dab12b8c9b173b1dfd">&#9670;&#160;</a></span>hwloc_type_sscanf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_type_sscanf </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>string</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> *&#160;</td>
-          <td class="paramname"><em>typep</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">union <a class="el" href="a00234.html">hwloc_obj_attr_u</a> *&#160;</td>
-          <td class="paramname"><em>attrp</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>attrsize</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Return an object type and attributes from a type string. </p>
-<p>Convert strings such as "Package" or "L1iCache" into the corresponding types. Matching is case-insensitive, and only the first letters are actually required to match.</p>
-<p>The matched object type is set in <code>typep</code> (which cannot be <code>NULL</code>).</p>
-<p>Type-specific attributes, for instance Cache type, Cache depth, Group depth, Bridge type or OS Device type may be returned in <code>attrp</code>. Attributes that are not specified in the string (for instance "Group" without a depth, or "L2Cache" without a cache type) are set to -1.</p>
-<p><code>attrp</code> is only filled if not <code>NULL</code> and if its size specified in <code>attrsize</code> is large enough. It should be at least as large as union <a class="el" href="a00234.html" title="Object type-specific Attributes.">hwloc_obj_attr_u</a>.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 if a type was correctly identified, otherwise -1.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>This function is guaranteed to match any string returned by <a class="el" href="a00177.html#ga6a38b931e5d45e8af4323a169482fe39" title="Return a constant stringified object type.">hwloc_obj_type_string()</a> or <a class="el" href="a00177.html#gadb8765c260edea80c52cd06a76639ba4" title="Stringify the type of a given topology object into a human-readable form.">hwloc_obj_type_snprintf()</a>.</dd>
-<dd>
-This is an extended version of the now deprecated hwloc_obj_type_sscanf(). </dd></dl>
-
-</div>
-</div>
-<a id="ga52c63cd7203e55b804c1314affc9bd12" name="ga52c63cd7203e55b804c1314affc9bd12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga52c63cd7203e55b804c1314affc9bd12">&#9670;&#160;</a></span>hwloc_type_sscanf_as_depth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_type_sscanf_as_depth </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>string</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> *&#160;</td>
-          <td class="paramname"><em>typep</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>depthp</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>parent</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -269,16 +91,177 @@ This is an extended version of the now deprecated hwloc_obj_type_sscanf(). </dd>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Return an object type and its level depth from a type string. </p>
-<p>Convert strings such as "Package" or "L1iCache" into the corresponding types and return in <code>depthp</code> the depth of the corresponding level in the topology <code>topology</code>.</p>
-<p>If no object of this type is present on the underlying architecture, <a class="el" href="a00176.html#ggaf4e663cf42bbe20756b849c6293ef575a0565ab92ab72cb0cec91e23003294aad" title="No object of given type exists in the topology.">HWLOC_TYPE_DEPTH_UNKNOWN</a> is returned.</p>
-<p>If multiple such levels exist (for instance if giving Group without any depth), the function may return <a class="el" href="a00176.html#ggaf4e663cf42bbe20756b849c6293ef575ae99465995cacde6c210d5fc2e409798c" title="Objects of given type exist at different depth in the topology (only for Groups).">HWLOC_TYPE_DEPTH_MULTIPLE</a> instead.</p>
-<p>The matched object type is set in <code>typep</code> if <code>typep</code> is non <code>NULL</code>.</p>
-<dl class="section note"><dt>Note</dt><dd>This function is similar to <a class="el" href="a00177.html#ga510f21b066fba2dab12b8c9b173b1dfd" title="Return an object type and attributes from a type string.">hwloc_type_sscanf()</a> followed by <a class="el" href="a00176.html#ga8bec782e21be313750da70cf7428b374" title="Returns the depth of objects of type type.">hwloc_get_type_depth()</a> but it also automatically disambiguates multiple group levels etc.</dd>
+<p>Get the child covering at least CPU set <code>set</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>the child that covers the set entirely. </dd>
 <dd>
-This function is guaranteed to match any string returned by <a class="el" href="a00177.html#ga6a38b931e5d45e8af4323a169482fe39" title="Return a constant stringified object type.">hwloc_obj_type_string()</a> or <a class="el" href="a00177.html#gadb8765c260edea80c52cd06a76639ba4" title="Stringify the type of a given topology object into a human-readable form.">hwloc_obj_type_snprintf()</a>. </dd></dl>
+<code>NULL</code> if no child matches or if <code>set</code> is empty.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function cannot work if parent does not have a CPU set (I/O or Misc objects). </dd></dl>
+
+</div>
+</div>
+<a id="ga98c864a575327bfbfdb92b701e5069dd" name="ga98c864a575327bfbfdb92b701e5069dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga98c864a575327bfbfdb92b701e5069dd">&#9670;&#160;</a></span>hwloc_get_next_obj_covering_cpuset_by_depth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_obj_covering_cpuset_by_depth </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>depth</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Iterate through same-depth objects covering at least CPU set <code>set</code>. </p>
+<p>The next invokation should pass the previous return value in <code>prev</code> so as to obtain the next object covering at least another part of <code>set</code>.</p>
+<dl class="section return"><dt>Returns</dt><dd>the first object at depth <code>depth</code> covering at least part of CPU set <code>set</code> if object <code>prev</code> is <code>NULL</code>. </dd>
+<dd>
+the next one if <code>prev</code> is not <code>NULL</code>. </dd>
+<dd>
+<code>NULL</code> if there is no next object.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function cannot work if objects at the given depth do not have CPU sets (I/O or Misc objects). </dd></dl>
+
+</div>
+</div>
+<a id="gae37eabe1f91b6524576e2c0dad3b3639" name="gae37eabe1f91b6524576e2c0dad3b3639"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae37eabe1f91b6524576e2c0dad3b3639">&#9670;&#160;</a></span>hwloc_get_next_obj_covering_cpuset_by_type()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_obj_covering_cpuset_by_type </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00164.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Iterate through same-type objects covering at least CPU set <code>set</code>. </p>
+<p>The next invokation should pass the previous return value in <code>prev</code> so as to obtain the next object of type <code>type</code> covering at least another part of <code>set</code>.</p>
+<dl class="section return"><dt>Returns</dt><dd>the first object of type <code>type</code> covering at least part of CPU set <code>set</code> if object <code>prev</code> is <code>NULL</code>. </dd>
+<dd>
+the next one if <code>prev</code> is not <code>NULL</code>. </dd>
+<dd>
+<code>NULL</code> if there is no next object. </dd>
+<dd>
+<code>NULL</code> if there is no depth for the given type. </dd>
+<dd>
+<code>NULL</code> if there are multiple depths for the given type, the caller should fallback to <a class="el" href="a00177.html#ga98c864a575327bfbfdb92b701e5069dd" title="Iterate through same-depth objects covering at least CPU set set.">hwloc_get_next_obj_covering_cpuset_by_depth()</a>.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This function cannot work if objects of the given type do not have CPU sets (I/O or Misc objects). </dd></dl>
+
+</div>
+</div>
+<a id="ga5535e32d7a0bd047cabedd04b53270cf" name="ga5535e32d7a0bd047cabedd04b53270cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5535e32d7a0bd047cabedd04b53270cf">&#9670;&#160;</a></span>hwloc_get_obj_covering_cpuset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00165.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_obj_covering_cpuset </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00163.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>set</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the lowest object covering at least CPU set <code>set</code>. </p>
+<dl class="section return"><dt>Returns</dt><dd>the lowest object covering the set entirely. </dd>
+<dd>
+<code>NULL</code> if no object matches or if <code>set</code> is empty. </dd></dl>
 
 </div>
 </div>

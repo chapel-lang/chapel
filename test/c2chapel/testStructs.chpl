@@ -36,4 +36,8 @@ proc main() {
   var fds2: forwardDeclStruct2;
   fds2.x = 16;
   printForwardDeclStruct2(fds2);
+
+  var nested: nestedStruct;
+  nestedStruct_init(c_ptrTo(nested), 1, 2, 3);
+  nestedStruct_print(nested);
 }

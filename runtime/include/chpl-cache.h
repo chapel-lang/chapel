@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,8 +25,23 @@
 #include "chpl-atomics.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-env.h"
+#include "chpl-prginfo.h"
 #include "chpl-tasks.h"
-#include "error.h"
+#include "chpl-error.h"
+
+#if defined(__SANITIZE_ADDRESS__)
+#define CHPL_RT_USING_ASAN 1
+#endif
+
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define CHPL_RT_USING_ASAN 1
+#endif
+#endif
+
+#if !defined(CHPL_RT_USING_ASAN)
+#define CHPL_RT_USING_ASAN 0
+#endif
 
 #ifdef HAS_CHPL_CACHE_FNS
 // This is a cache for remote data.
@@ -35,28 +50,13 @@
 extern "C" {
 #endif
 
-// Is the cache supposed to be enabled? (set at compile time)
+// TODO: Remove reads of me entirely from the runtime side of the code.
 extern const int CHPL_CACHE_REMOTE;
 
-#if defined(__SANITIZE_ADDRESS__)
-#define CHPL_ASAN 1
-#endif
-
-#if defined(__has_feature)
-#if __has_feature(address_sanitizer)
-#define CHPL_ASAN 1
-#endif
-#endif
-
-#if !defined(CHPL_ASAN)
-#define CHPL_ASAN 0
-#endif
-
 static inline
-void chpl_cache_warn_if_disabled(void)
-{
+void chpl_cache_warn_if_disabled(void) {
   if (CHPL_CACHE_REMOTE && !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
-    if (CHPL_ASAN) {
+    if (CHPL_RT_USING_ASAN) {
       chpl_warning("Disabling --cache-remote due to incompatibility with "
                    "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
     } else if (chpl_task_canMigrateThreads()) {
@@ -67,15 +67,13 @@ void chpl_cache_warn_if_disabled(void)
 }
 
 static inline
-int chpl_cache_enabled(void)
-{
+int chpl_cache_enabled(void) {
   // The remote cache is not compatible with ASan, and it uses thread local
   // storage, so if tasks can migrate between threads we lose our ability to
   // correctly fence.
-  return CHPL_CACHE_REMOTE && !CHPL_ASAN && !chpl_task_canMigrateThreads();
+  return CHPL_CACHE_REMOTE && !CHPL_RT_USING_ASAN &&
+         !chpl_task_canMigrateThreads();
 }
-#undef CHPL_ASAN
-
 
 // Initialize the remote data cache layer.
 void chpl_cache_init(void);
@@ -84,17 +82,17 @@ void chpl_cache_exit(void);
 // If release is set, waits on any pending puts in the cache.
 // If acquire is set, sets this task's last acquire fence to
 // the cache's current request number.
-void chpl_cache_fence(int acquire, int release, int ln, int32_t fn);
+void chpl_cache_fence(int acquire, int release, int32_t ln, int32_t fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
 static inline
-void chpl_cache_acquire(int ln, int32_t fn)
+void chpl_cache_acquire(int32_t ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
 static inline
-void chpl_cache_release(int ln, int32_t fn)
+void chpl_cache_release(int32_t ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);
 }
@@ -103,27 +101,27 @@ void chpl_cache_release(int ln, int32_t fn)
 // These are the functions that the generated code should be eventually
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn);
+                         size_t size, int32_t commID, int32_t ln, int32_t fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn);
+                         size_t size, int32_t commID, int32_t ln, int32_t fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int32_t commID, int ln, int32_t fn);
+                              size_t size, int32_t commID, int32_t ln, int32_t fn);
 void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels,
-                   size_t elemSize, int32_t commID, int ln, int32_t fn);
+                   size_t elemSize, int32_t commID, int32_t ln, int32_t fn);
 void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
-                      size_t elemSize, int32_t commID, int ln, int32_t fn);
+                      size_t elemSize, int32_t commID, int32_t ln, int32_t fn);
 void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn);
+                                   size_t size, int32_t commID, int32_t ln, int32_t fn);
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn);
+                                   size_t size, int32_t commID, int32_t ln, int32_t fn);
 void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       c_nodeid_t srcnode, void* srcaddr,
                                       size_t size, int32_t commID,
-                                      int ln, int32_t fn);
+                                      int32_t ln, int32_t fn);
 void chpl_cache_comm_getput_unordered_task_fence(void);
 
 int chpl_cache_pagesize(void);
@@ -136,7 +134,7 @@ void chpl_cache_print_stats(void);
 // returns 1 if the data was cached
 int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size);
 void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
-                           int ln, int32_t fn);
+                           int32_t ln, int32_t fn);
 
 #ifdef __cplusplus
 }

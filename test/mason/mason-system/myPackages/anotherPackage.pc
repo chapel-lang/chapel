@@ -1,0 +1,12 @@
+prefix=/my/usr
+exec_prefix=/my/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: anotherPackage
+Description: Another simple package with no real information
+URL: https://example.com
+Version: 1.2.3
+Cflags: -I${includedir} -O3
+Libs.private: -lm -lpthread
+Libs: -L${libdir} -lanotherPackageName

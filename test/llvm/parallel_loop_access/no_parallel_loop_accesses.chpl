@@ -8,8 +8,8 @@ proc load(arg: int(32)) {
   if arg < 0 then halt("x");
 }
 
-proc keep(ref arg) { }
-proc mark() { }
+proc keep(ref arg) { return 1; }
+proc mark() { return 2; }
 
 // CHECK: void @loop1
 proc loop1(A, B) {

@@ -1,4 +1,4 @@
-# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2026 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -22,8 +22,6 @@
 
 # Set CHPL_DEVELOPER to 0 if it is not set yet
 CHPL_DEVELOPER ?= 0
-# set DYNO_ENABLE_ASSERTIONS to 0 if it is not set yet
-DYNO_ENABLE_ASSERTIONS ?= 0
 
 ifneq ($(NO_DEPEND), 1)
 DEPEND=1
@@ -41,10 +39,13 @@ else
 DEBUG=1
 WARNINGS=1
 TAGS=1
-# always enable assertions in CHPL_DEVELOPER/debug mode
-DYNO_ENABLE_ASSERTIONS=1
+# enable assertions if unset in CHPL_DEVELOPER/debug mode
+DYNO_ENABLE_ASSERTIONS ?= 1
 endif
 #PROFILE=1
+
+# set DYNO_ENABLE_ASSERTIONS to 0 if it is not set yet
+DYNO_ENABLE_ASSERTIONS ?= 0
 
 ifeq ($(DYNO_ENABLE_ASSERTIONS), 0)
   # disable assertions

@@ -56,7 +56,7 @@ void done_shorthandler(gex_Token_t token) {
 	  done = 1;
 }
 gex_AM_Entry_t htable[] = {
-    { hidx_done_shorthandler, done_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0, NULL, NULL }
+    { hidx_done_shorthandler, (gex_AM_Fn_t)done_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0, NULL, NULL }
 };
 
 static void * doTest(void *);

@@ -6,9 +6,6 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 # Perform checks and set up environment variables for virtual env.
 source $CWD/run-in-venv-common.bash
 
-CC=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_CC)
-PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)
-
 chpl_frontend_py_deps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps-chapel-py)
 export PYTHONPATH="$chpl_frontend_py_deps":$PYTHONPATH
 
@@ -19,6 +16,8 @@ if [ ! -d "$chpl_frontend_py_deps/chapel" ]; then
 fi
 
 if [ $("$python" "$CHPL_HOME/util/chplenv/chpl_sanitizers.py") == "address" ]; then
+  CC=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_CC)
+  PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)
   if [ "$PLATFORM" == "darwin" ]; then
     echo "Cannot use chapel-py on Mac OS when address sanitization is enabled; please unset 'CHPL_SANITIZE', then rebuild Chapel and chapel-py"
     exit 1

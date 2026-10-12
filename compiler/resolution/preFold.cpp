@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -116,10 +116,18 @@ Expr* preFold(CallExpr* call) {
       call->replace(retval);
 
     } else {
-      if (symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+      auto isTypeVariable = symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+      if (isTypeVariable &&
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
+        // do nothing for non-tuple type variables
 
-      } else if (isLcnSymbol(symExpr->symbol())) {
+      } else if (isLcnSymbol(symExpr->symbol()) ||
+                 (isTypeSymbol(symExpr->symbol()) && isTypeVariable && symExpr->typeInfo() != dtTuple)) {
+        // rewrite to '.this' call for values and type variables...
+        // ... but, per restriction above, we don't call type variables that aren't tuples.
+        // ... even for tuples, "indexing" a generic tuple is invoking its type constructor.
+        // See also isTypeConstructionCall in functionResolution.cpp
+
         if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
@@ -660,7 +668,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
                        retDesc);
 
         // TODO: Globalize + clear me at pass end?
-        static std::set<AggregateType*> onceForEachAggregate;
+        static std::set<AggregateType*, AstIdLess> onceForEachAggregate;
 
         // Also hint that users can remove the extra overloads, but only
         // display this hint once per type to avoid verbosity.
@@ -802,6 +810,8 @@ static Expr* preFoldPrimResolves(CallExpr* call) {
           INT_ASSERT(expr);
         } break;
       }
+    } else if (call->isIndirectCall()) {
+      resolveFunctionPointerCall(call, true, &didResolveExpr);
 
     // Otherwise, it is a normal call, so rely on 'tryResolveCall'.
     } else {
@@ -892,8 +902,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
                                           testType,
                                           call)) {
+                auto prim = fcfs::usePointerImplementation() ? PRIM_CAPTURE_FN :
+                              PRIM_CAPTURE_FN_TO_CLASS;
                 // TODO: Replace me with a function pointer.
-                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                auto capture = new CallExpr(prim,
                                             new SymExpr(fn));
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);
@@ -1158,18 +1170,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1209,15 +1220,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
-    int            num        = 0;
+    int            num        = -1;
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (strcmp(field->name, fieldName) == 0) {
           num = fieldCount;
         }
+        fieldCount++;
       }
     }
 
@@ -1244,11 +1254,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     for_fields(field, classType) {
       if (isNormalField(field) == true) {
-        fieldCount++;
-
         if (fieldCount == fieldNum) {
           name = field->name;
         }
+        fieldCount++;
       }
     }
 
@@ -1257,7 +1266,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum-1,
+                fieldNum,
                 toString(classType));
     }
 
@@ -1286,7 +1295,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new SymExpr(new_StringSymbol(envMap[envKey]));
 
       call->replace(retval);
-
+    } else if (envKey == "CHPL_DYNO") {
+      auto str = fDynoResolver || fDynoResolveOnly ? "on" : "off";
+      retval = new SymExpr(new_StringSymbol(str));
+      call->replace(retval);
     } else {
       USR_FATAL(call,
                 "primitive string does not match any environment variable");
@@ -1984,12 +1996,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_FOLLOWER: {
     FnSymbol* iterator     = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* followerCall = NULL;
 
     if (FnSymbol* f2 = findForallexprFollower(iterator)) {
       followerCall = new CallExpr(f2);
     } else {
       followerCall = new CallExpr(iterator->name);
+
+      if (parentMod && !iterator->isMethod()) {
+        // The "to follower" call can be happening outside of the scope in which
+        // the original iterator is defined, so we may not be able to find the
+        // corresponding leader function in the current scope. To make sure it's
+        // found, explicitly add the module of the original iterator.
+        followerCall->insertAtTail(gModuleToken);
+        followerCall->insertAtTail(parentMod);
+      }
     }
 
     for_formals(formal, iterator) {
@@ -2027,7 +2049,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_LEADER: {
     FnSymbol* iterator   = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* leaderCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to leader" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      leaderCall->insertAtTail(gModuleToken);
+      leaderCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -2053,7 +2084,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_TO_STANDALONE: {
     FnSymbol* iterator       = getTheIteratorFn(call->get(1)->typeInfo());
+    ModuleSymbol* parentMod = toModuleSymbol(iterator->defPoint->parentSymbol);
     CallExpr* standaloneCall = new CallExpr(iterator->name);
+    if (parentMod && !iterator->isMethod()) {
+      // The "to standalone" call can be happening outside of the scope in which
+      // the original iterator is defined, so we may not be able to find the
+      // corresponding leader function in the current scope. To make sure it's
+      // found, explicitly add the module of the original iterator.
+      standaloneCall->insertAtTail(gModuleToken);
+      standaloneCall->insertAtTail(parentMod);
+    }
 
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
@@ -2156,7 +2196,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
 
       if (blk) {
-        (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
+        blk->blockTag = (BlockTag)((unsigned)(blk->blockTag) & ~(unsigned)BLOCK_TYPE_ONLY);
       }
     } else if (type->symbol->hasFlag(FLAG_TUPLE)) {
       Type* newt = computeNonRefTuple(toAggregateType(type));
@@ -2764,7 +2804,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
     Symbol* sym = base->symbol();
 
-    if (isVarSymbol(sym)                 == true &&
+    if ((isVarSymbol(sym) || isTypeSymbol(sym)) &&
         sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       int64_t index    =        0;
       char    field[8] = { '\0' };
@@ -2862,35 +2902,35 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* oldType = sym->type;
           Type* newType = toSE->symbol()->type;
 
-          bool fromEnum = is_enum_type(oldType);
+          bool fromEnum = isEnumType(oldType);
           bool fromString = (oldType == dtString ||
                              oldType == dtStringC ||
                              isCPtrConstChar(oldType));
           bool fromBytes = oldType == dtBytes;
-          bool fromIntUint = is_int_type(oldType) ||
-                             is_uint_type(oldType);
-          bool fromRealEtc = is_real_type(oldType) ||
-                             is_imag_type(oldType) ||
-                             is_complex_type(oldType);
-          bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
+          bool fromIntUint = isIntType(oldType) ||
+                             isUIntType(oldType);
+          bool fromRealEtc = isRealType(oldType) ||
+                             isImagType(oldType) ||
+                             isComplexType(oldType);
+          bool fromIntEtc = fromIntUint || fromRealEtc || isBoolType(oldType);
 
-          bool toEnum = is_enum_type(newType);
+          bool toEnum = isEnumType(newType);
           bool toString = (newType == dtString ||
                            newType == dtStringC ||
                            isCPtrConstChar(newType));
           bool toBytes = newType == dtBytes;
-          bool toIntUint = is_int_type(newType) ||
-                           is_uint_type(newType);
-          bool toRealEtc = is_real_type(newType) ||
-                           is_imag_type(newType) ||
-                           is_complex_type(newType);
-          bool toIntEtc = toIntUint || toRealEtc || is_bool_type(newType);
+          bool toIntUint = isIntType(newType) ||
+                           isUIntType(newType);
+          bool toRealEtc = isRealType(newType) ||
+                           isImagType(newType) ||
+                           isComplexType(newType);
+          bool toIntEtc = toIntUint || toRealEtc || isBoolType(newType);
 
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             if (fWarnUnstable && fromEnum && !toIntUint) {
-              if (is_bool_type(newType)) {
+              if (isBoolType(newType)) {
                 USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
               } else {
                 USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
@@ -3109,7 +3149,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (t2->symbol->hasFlag(FLAG_RANGE)) USR_WARN(call,
           "(range * range) is unstable and may change in the future");
       } else if (call->isNamedAstr(astrSstarstar)) {
-        if (is_int_type(t2) || is_uint_type(t2)) USR_WARN(call,
+        if (isIntType(t2) || isUIntType(t2)) USR_WARN(call,
           "(range ** integer) is unstable and may change in the future");
       }
     }
@@ -3117,6 +3157,24 @@ static Expr* preFoldNamed(CallExpr* call) {
     // Handle a reference to an interface associated type, if applicable.
     if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
+    } else if (auto ft = toFunctionType(call->get(2)->getValType())) {
+      if (call->isNamed("retType")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'retType' method is unstable");
+        }
+        retval = new SymExpr(ft->returnType()->symbol);
+        call->replace(retval);
+      } else if (call->isNamed("argTypes")) {
+        if (shouldWarnUnstableFor(call)) {
+          USR_WARN(call, "The 'argTypes' method is unstable");
+        }
+        CallExpr* expr = new CallExpr("_build_tuple");
+        for (auto& formal : ft->formals()) {
+          expr->insertAtTail(formal.type()->symbol);
+        }
+        retval = expr;
+        call->replace(expr);
+      }
     }
   }
 
@@ -3137,7 +3195,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   Type* indexType = call->get(3)->getValType();
 
-  if (!is_int_type(indexType) && !is_uint_type(indexType) && !is_bool_type(indexType))
+  if (!isIntType(indexType) && !isUIntType(indexType) && !isBoolType(indexType))
     USR_FATAL(call, "tuple indexing expression is not of integral type");
 
   AggregateType* baseType = toAggregateType(baseVar->getValType());
@@ -3248,18 +3306,6 @@ static Symbol* determineQueriedField(CallExpr* call) {
     Vec<Symbol*> args;
     int position = var->immediate->int_value();
 
-    // A couple of variables to help us deal with the deprecated 'kind' field
-    // in fileReader and fileWriter.
-    bool isReaderWriter = false;
-    bool specifiesKind = false;
-
-    {
-      AggregateType* root = at->getRootInstantiation();
-      isReaderWriter = root->getModule() == ioModule &&
-          (strcmp(root->symbol->name, "fileReader") == 0 ||
-           strcmp(root->symbol->name, "fileWriter") == 0);
-    }
-
     if (at->symbol->hasFlag(FLAG_TUPLE)) {
       return at->getField(position);
     }
@@ -3295,23 +3341,12 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
-      if (isReaderWriter &&
-          strcmp("kind", var->immediate->v_string.c_str()) == 0) {
-        specifiesKind = true;
-      }
-
       for (int j = 0; j < args.n; j++) {
         if (args.v[j] != NULL &&
             strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
-    }
-
-    // Need to increment by one so that expressions like 'fileWriter(false)'
-    // match up correctly.
-    if (isReaderWriter && !specifiesKind) {
-      position += 1;
     }
 
     forv_Vec(Symbol, arg, args) {

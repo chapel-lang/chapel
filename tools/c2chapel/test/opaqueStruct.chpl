@@ -15,5 +15,5 @@ extern "struct foobar" record foobar {
 // ==== c2chapel typedefs ====
 
 // Opaque struct?
-extern record myOpaque {};
+extern record myOpaque {}
 

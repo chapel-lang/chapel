@@ -1,0 +1,80 @@
+creating R with value 0
+caught error: value is equal to 0
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:12
+  (frame 3) throwingAggregate.chpl:55
+creating R with value 1
+caught error: value is equal to 1
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:15
+  (frame 3) throwingAggregate.chpl:55
+creating R with value 2
+created (x = 2)
+caught error: value is equal to 2
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:18
+  (frame 3) throwingAggregate.chpl:57
+creating owned C with value 0
+caught error: value is equal to 0
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:55
+  (frame 3) throwingAggregate.chpl:55
+  (frame 4) throwingAggregate.chpl:55
+creating owned C with value 1
+caught error: value is equal to 1
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:29
+  (frame 3) throwingAggregate.chpl:55
+  (frame 4) throwingAggregate.chpl:55
+creating owned C with value 2
+created {x = 2}
+caught error: value is equal to 2
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:32
+  (frame 3) throwingAggregate.chpl:57
+creating shared C with value 0
+caught error: value is equal to 0
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:55
+  (frame 3) throwingAggregate.chpl:55
+  (frame 4) throwingAggregate.chpl:55
+creating shared C with value 1
+caught error: value is equal to 1
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:29
+  (frame 3) throwingAggregate.chpl:55
+  (frame 4) throwingAggregate.chpl:55
+creating shared C with value 2
+created {x = 2}
+caught error: value is equal to 2
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:32
+  (frame 3) throwingAggregate.chpl:57
+creating U with value 0
+caught error: value is equal to 0
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:40
+  (frame 3) throwingAggregate.chpl:55
+creating U with value 1
+caught error: value is equal to 1
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:43
+  (frame 3) throwingAggregate.chpl:55
+creating U with value 2
+created (x = 2)
+caught error: value is equal to 2
+stack trace:
+  (frame 1) throwingAggregate.chpl:5
+  (frame 2) throwingAggregate.chpl:46
+  (frame 3) throwingAggregate.chpl:57

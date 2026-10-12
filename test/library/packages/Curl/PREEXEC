@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# make sure there are no http.server processes running
+ps -ef | grep 'http.server 8000 --bind 127.0.0.1' | grep -v grep | awk '{print $2}' | xargs -r kill -9

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,10 +23,10 @@
 #include <inttypes.h>
 
 #include "chplrt.h"
-#include "chplcgfns.h"
 #include "chpl-thread-local-storage.h"
 
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 
 static const char *savedFilename;
 
@@ -36,7 +36,6 @@ CHPL_TLS_DECL(fileBuff, unknownFileBuffer);
 // See note in chpl-linefile-support.h
 void chpl_saveFilename(const char *filename) { savedFilename = filename; }
 
-// chpl_filenameTable is defined in chplcgfns.h
 c_string chpl_lookupFilename(const int32_t idx) {
   if (idx < 0) {
     switch (idx) {
@@ -69,8 +68,10 @@ c_string chpl_lookupFilename(const int32_t idx) {
     }
     }
   } else {
-    if (idx < chpl_filenameTableSize) {
-      return chpl_filenameTable[idx];
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (idx < CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTableSize)) {
+      return CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTable)[idx];
     } else {
       snprintf(CHPL_TLS_GET(unknownFileBuffer), 48,
                "<unknown file idx %" PRId32 ">", idx);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -619,23 +619,47 @@ static void test14() {
 
 static void test15() {
   printf("%s\n", __FUNCTION__);
-  auto context = buildStdContext();
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup = (1, 2);
+                    var x = ( (... tup), 3.0);
+                  )"""");
 
-  auto qt = resolveTypeOfXInit(context,
-                R""""(
-                  var tup = (1, 2);
-                  var x = ( (... tup), 3.0);
-                )"""");
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type()->isTupleType());
-  auto tt = qt.type()->toTupleType();
+    assert(tt->numElements() == 3);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isRealType());
+  }
 
-  assert(tt->numElements() == 3);
-  assert(!tt->isStarTuple());
-  assert(tt->elementType(0).type()->isIntType());
-  assert(tt->elementType(1).type()->isIntType());
-  assert(tt->elementType(2).type()->isRealType());
+  {
+    auto context = buildStdContext();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    var tup1 = (1, 2);
+                    var tup2 = (3.0, "hi");
+                    var x = ( (... tup1), false, (... tup2), true);
+                  )"""");
+
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
+
+    assert(tt->numElements() == 6);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isIntType());
+    assert(tt->elementType(2).type()->isBoolType());
+    assert(tt->elementType(3).type()->isRealType());
+    assert(tt->elementType(4).type()->isStringType());
+    assert(tt->elementType(5).type()->isBoolType());
+  }
 }
 
 static void test16() {
@@ -650,6 +674,21 @@ static void test16() {
                 )"""");
 
   assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isRealType());
+}
+
+static void test16b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+
+  auto qt = resolveQualifiedTypeOfX(context,
+                R""""(
+                  proc helper(type a, type b) type { return b; }
+                  type tup = (int, real);
+                  type x = helper( (... tup) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::TYPE);
   assert(qt.type()->isRealType());
 }
 
@@ -724,6 +763,31 @@ static void test18() {
                   var x = t(0);
                   var y = t(1);
                   var z = t(2);
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isStringType());
+  assert(rr.byAst(z).type().type()->isRealType());
+}
+
+// same as test18, but with unsigned.
+static void test18b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+
+  auto program = R""""(
+                  var t = (1, "hello", 3.0);
+                  var x = t(0 : uint);
+                  var y = t(1 : uint);
+                  var z = t(2 : uint);
                 )"""";
 
   auto m = parseModule(context, std::move(program));
@@ -1030,7 +1094,9 @@ static void test24() {
 
   // Get the type of the '(x, _)' tuple itself.
   auto testFn = mod->stmt(3)->toFunction();
-  auto astTup = testFn->stmt(1)->toCall()->actual(0)->toTuple();
+  auto astOp = testFn->stmt(1)->toOpCall();
+  assert(astOp);
+  auto astTup = astOp->lhs()->toTuple();
   assert(astTup);
   auto& qtTup = fnRR.byAst(astTup).type();
 
@@ -1039,21 +1105,18 @@ static void test24() {
   assert(qtTup.type()->isTupleType());
   auto tpTup = qtTup.type()->toTupleType();
 
-  // Its components are 'ref real(64)' and 'var nothing'.
+  // Its components are 'var real(64)' and 'var nothing'.
   for (int i = 0; i < tpTup->numElements(); i++) {
     auto qt = tpTup->elementType(i);
-    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::REF));
+    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::VAR));
     assert(i != 1 || (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
   }
 
   // Finally confirm that there is an assignment for 'x' but not for '_'.
-  for (int i = 0; i < astTup->numActuals(); i++) {
-    auto actual = astTup->actual(i);
-    auto& actions = fnRR.byAst(actual).associatedActions();
-    assert(i != 0 || (actions.size() == 1 &&
-                      actions[0].action() == AssociatedAction::ASSIGN));
-    assert(i != 1 || actions.size() == 0);
-  }
+  auto& actions = fnRR.byAst(astOp).associatedActions();
+  assert(actions.size() == 1 &&
+         actions[0].action() == AssociatedAction::ASSIGN &&
+         actions[0].tupleEltIdx() && actions[0].tupleEltIdx() == 0);
 }
 
 static void test25() {
@@ -1076,8 +1139,7 @@ static void test25() {
 
 static void test26() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1105,8 +1167,7 @@ static void test26() {
 
 static void test27() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1125,8 +1186,7 @@ static void test27() {
 // This is private issue #6382.
 static void test28() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1154,8 +1214,7 @@ static void test28() {
 
 static void test29() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1198,8 +1257,7 @@ static void test29() {
 
 static void test30() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1235,8 +1293,7 @@ static void test30() {
 
 static void test31() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1265,8 +1322,7 @@ static void test31() {
 
 static void test32() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1293,8 +1349,7 @@ static void test32() {
 
 static void test33() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1312,15 +1367,13 @@ static void test33() {
   resolveModule(context, mod->id());
 
   assert(guard.numErrors() == 1);
-  auto& err = guard.error(0);
-  assert(err->message() == "tuple size mismatch in split tuple assign");
+  assert(guard.error(0)->type() == ErrorType::TupleDeclAssignMismatchedElems);
   guard.realizeErrors();
 }
 
 static void test34() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1335,6 +1388,70 @@ static void test34() {
   // Should resolve without error
   auto mod = parseModule(context, program);
   resolveModule(context, mod->id());
+}
+
+static void test35a() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var (x): (int);
+    x;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
+static void test35b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var (x, y): (int);
+    x;
+    y;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
+static void test35c() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var x;
+    var y;
+    (x, y) = 5;
+    x;
+    y;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  const size_t expectedErrors = 2;
+  assert(guard.numErrors() == expectedErrors);
+  for (size_t i = 0; i < expectedErrors; i++) {
+    assert(guard.error(i)->type() == ErrorType::VariableWithoutInitOrType);
+  }
+  guard.realizeErrors();
 }
 
 int main() {
@@ -1356,8 +1473,10 @@ int main() {
   test14();
   test15();
   test16();
+  test16b();
   test17();
   test18();
+  test18b();
   test19();
   testTupleGeneric();
 
@@ -1376,6 +1495,9 @@ int main() {
   test32();
   test33();
   test34();
+  test35a();
+  test35b();
+  test35c();
 
   return 0;
 }

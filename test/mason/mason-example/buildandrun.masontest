@@ -1,0 +1,9 @@
+echo_and_run mason clean
+echo_and_run mason run --build --example withOpts.chpl
+# rebuild
+echo_and_run mason run --force --build --example withOpts.chpl
+
+# build with options
+echo_and_run mason build --example withOpts.chpl -- -sexParam2='"set on cli"'
+# run with options
+echo_and_run mason run --example withOpts.chpl -- --exConfig='set on cli'

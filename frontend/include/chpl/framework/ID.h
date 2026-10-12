@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,9 @@ namespace chpl {
 class Context;
 
 #define ID_GEN_START -3
+
+/* find the last '.' but don't count \. returns -1 if none was found */
+ssize_t findLastDot(const char* path);
 
 /**
   This class represents an ID for an AST node.

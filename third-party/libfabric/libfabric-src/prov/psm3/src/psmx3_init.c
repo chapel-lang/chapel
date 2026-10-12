@@ -45,7 +45,7 @@ static const char* FI_PSM3_NAME_SERVER_HELP =
 			"Whether to turn on the name server or not (default: yes)";
 static const char* FI_PSM3_TAGGED_RMA_HELP =
 			"Whether to use tagged messages for large size RMA or not " \
-			"(default: yes)";
+			"(default: no)";
 static const char* FI_PSM3_UUID_HELP =
 			"Unique Job ID required by the fabric";
 static const char* FI_PSM3_DELAY_HELP =
@@ -81,6 +81,8 @@ static const char* FI_PSM3_TAG_LAYOUT_HELP =
 #endif
 static const char* FI_PSM3_YIELD_MODE_HELP =
 			"Enabled interrupt driven operation with fi_wait. (default: no).";
+static const char* FI_PSM3_WAIT_ENABLE_HELP =
+			"Enabled use of wait semantics outside of yield mode. (default: no).";
 
 #define FI_PSM3_PREFIX "FI_PSM3_"
 #define FI_PSM3_PREFIX_LEN strlen(FI_PSM3_PREFIX)
@@ -132,7 +134,7 @@ int psmx3_param_get_str(struct fi_provider *provider, const char *env_var_name,
 
 struct psmx3_env psmx3_env = {
 	.name_server	= 1,
-	.tagged_rma	= 1,
+	.tagged_rma	= 0,
 	.uuid		= PSMX3_DEFAULT_UUID,
 	.uuid_override  = 0,
 	.delay		= 0,
@@ -149,6 +151,7 @@ struct psmx3_env psmx3_env = {
 	.tag_layout	= "auto",
 #endif
 	.yield_mode	= 0,
+	.wait_enable	= 0,
 };
 
 #if (PSMX3_TAG_LAYOUT == PSMX3_TAG_LAYOUT_RUNTIME)
@@ -253,6 +256,8 @@ static void psmx3_init_env(void)
 	//fi_param_get_bool(&psmx3_prov, "yield_mode", &psmx3_env.yield_mode);
 	psmx3_param_get_bool(&psmx3_prov, "FI_PSM3_YIELD_MODE",
 				FI_PSM3_YIELD_MODE_HELP, 0, &psmx3_env.yield_mode);
+	psmx3_param_get_bool(&psmx3_prov, "FI_PSM3_WAIT_ENABLE",
+				FI_PSM3_WAIT_ENABLE_HELP, 0, &psmx3_env.wait_enable);
 }
 
 void psmx3_init_tag_layout(struct fi_info *info)
@@ -391,16 +396,12 @@ out:
 static int psmx3_update_hfi_info(void)
 {
 	unsigned short i, j, psmx3_unit;
-	int nctxts = 0;
-	int nfreectxts = 0;
 	int multirail = 0;
-	int counted_unit;
 	char *s = NULL;
 	char unit_name[NAME_MAX];
 	char fabric_name[NAME_MAX];
 	uint32_t cnt = 0;
 	uint32_t addr_cnt = 0;
-	int tmp_nctxts, tmp_nfreectxts;
 	int unit_active;
 	int ret;
 	psm2_info_query_arg_t args[4];
@@ -459,25 +460,6 @@ static int psmx3_update_hfi_info(void)
 			continue;
 		}
 
-		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_NUM_FREE_CONTEXTS,
-						&tmp_nfreectxts, 1, args) || (tmp_nfreectxts < 0))
-		{
-			PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read number of free contexts from HFI unit_id %d\n",
-				i);
-			continue;
-		}
-
-		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_NUM_CONTEXTS,
-						&tmp_nctxts, 1, args) || (tmp_nctxts < 0))
-		{
-			PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read number of contexts from HFI unit_id %d\n",
-				i);
-			continue;
-		}
-
-		counted_unit = 0;
 		for (j=0; j < addr_cnt; j++) {
 			psmx3_unit = i * addr_cnt + j;
 			args[1].port = 1;	// VERBS_PORT
@@ -506,12 +488,6 @@ static int psmx3_update_hfi_info(void)
 				continue;
 			}
 
-			if (! counted_unit) {
-				nctxts += tmp_nctxts;
-				nfreectxts += tmp_nfreectxts;
-				counted_unit = 1;
-			}
-
 			psmx3_domain_info.num_active_units++;
 
 			/* for PSM3_MULTIRAIL only report 1 "autoselect" unit */
@@ -519,8 +495,6 @@ static int psmx3_update_hfi_info(void)
 				psmx3_domain_info.unit_is_active[psmx3_unit] = 1;
 				psmx3_domain_info.unit_id[psmx3_unit] = i;
 				psmx3_domain_info.addr_index[psmx3_unit] = j;
-				psmx3_domain_info.unit_nctxts[psmx3_unit] = tmp_nctxts;
-				psmx3_domain_info.unit_nfreectxts[psmx3_unit] = tmp_nfreectxts;
 				psmx3_domain_info.active_units[psmx3_domain_info.num_reported_units++] = psmx3_unit;
 			}
 			if (psmx3_domain_info.num_active_units == 1) {
@@ -554,22 +528,19 @@ static int psmx3_update_hfi_info(void)
 	}
 
 	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
-		"hfi1 units: total %d, reported %d, active %d; "
-		"hfi1 contexts: total %d, free %d\n",
+		"psm3 units: total %d, reported %d, active %d\n",
 		psmx3_domain_info.num_units, psmx3_domain_info.num_reported_units,
-		psmx3_domain_info.num_active_units, nctxts, nfreectxts);
+		psmx3_domain_info.num_active_units);
 
 	if (psmx3_env.multi_ep) {
-		psmx3_domain_info.max_trx_ctxt = nctxts;
-		psmx3_domain_info.free_trx_ctxt = nfreectxts;
+		psmx3_domain_info.max_trx_ctxt = PSMX3_MAX_EPS;
 	} else {
 		psmx3_domain_info.max_trx_ctxt = 1;
-		psmx3_domain_info.free_trx_ctxt = (nfreectxts == 0) ? 0 : 1;
 	}
 
 	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
-		"Tx/Rx contexts: %d in total, %d available.\n",
-		psmx3_domain_info.max_trx_ctxt, psmx3_domain_info.free_trx_ctxt);
+		"Tx/Rx contexts: %d allowed per process.\n",
+		psmx3_domain_info.max_trx_ctxt);
 
 	return 0;
 }
@@ -707,24 +678,11 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 	struct fi_info *prov_info = NULL;
 	struct psmx3_ep_name *dest_addr = NULL;
 	struct psmx3_ep_name *src_addr = NULL;
-	int svc0, svc = PSMX3_ANY_SERVICE;
 	size_t len;
 	void *addr;
 	uint32_t fmt;
 
 	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,"\n");
-
-	__builtin_cpu_init();
-	if (!__builtin_cpu_supports(PSM3_MARCH)) {
-		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
-			"CPU does not support '%s'.\n", PSM3_MARCH);
-		OFI_INFO_STR(&psmx3_prov,
-			(__builtin_cpu_supports("avx2") ? "AVX2" :
-				(__builtin_cpu_supports("avx") ? "AVX" :
-					(__builtin_cpu_supports("sse4.2") ? "SSE4.2" : "unknown"))),
-			PSM3_MARCH, "CPU Supports", "PSM3 Built With");
-		goto err_out;
-	}
 
 	if (psmx3_init_prov_info(hints, &prov_info))
 		goto err_out;
@@ -831,32 +789,9 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 
 	/* Resovle dest address using "node", "service" pair */
 	if (!dest_addr && node && !(flags & FI_SOURCE)) {
-		psm2_uuid_t uuid;
-
-		psmx3_get_uuid(uuid);
-		struct util_ns ns = {
-			.port = psmx3_uuid_to_port(uuid),
-			.name_len = sizeof(*dest_addr),
-			.service_len = sizeof(svc),
-			.service_cmp = psmx3_ns_service_cmp,
-			.is_service_wildcard = psmx3_ns_is_service_wildcard,
-		};
-		ofi_ns_init(&ns);
-
-		if (service)
-			svc = atoi(service);
-		svc0 = svc;
-		dest_addr = (struct psmx3_ep_name *)
-			ofi_ns_resolve_name(&ns, node, &svc);
-		if (dest_addr) {
-			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
-				"'%s:%u' resolved to <epid=%s>:%d\n",
-				node, svc0, psm3_epid_fmt(dest_addr->epid, 0), svc);
-		} else {
-			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
-				"failed to resolve '%s:%u'.\n", node, svc);
+		dest_addr = psmx3_lookup(node, service);
+		if (!dest_addr)
 			goto err_out;
-		}
 	}
 
 	/* Update prov info with resovled addresses and hfi info */
@@ -980,6 +915,8 @@ PROVIDER_INI
 #endif
 	fi_param_define(&psmx3_prov, "yield_mode", FI_PARAM_BOOL,
 			FI_PSM3_YIELD_MODE_HELP);
+	fi_param_define(&psmx3_prov, "wait_enable", FI_PARAM_BOOL,
+			FI_PSM3_WAIT_ENABLE_HELP);
 
 	psmx3_init_env();
 

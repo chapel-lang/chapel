@@ -45,6 +45,40 @@ config param debugAccumStencilDistBulkTransfer = false;
 //
 config param disableAccumStencilLazyRAD = defaultDisableLazyRADOpt;
 
+record accumStencil {
+  param rank: int;
+  type idxType = int;
+  param ignoreFluff = false;
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged AccumStencil(rank, idxType, ignoreFluff));
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank = boundingBox.rank,
+            type idxType = boundingBox.idxType,
+            fluff: rank*idxType = makeZero(rank, idxType),
+            periodic: bool = false,
+            param ignoreFluff = false) {
+    const value = new unmanaged AccumStencil(boundingBox, targetLocales,
+                                             dataParTasksPerLocale,
+                                             dataParIgnoreRunningTasks,
+                                             dataParMinGranularity,
+                                             rank, idxType, fluff, periodic,
+                                             ignoreFluff);
+    this.rank = rank;
+    this.idxType = idxType;
+    this.ignoreFluff = ignoreFluff;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+}
+
 class AccumStencil : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;

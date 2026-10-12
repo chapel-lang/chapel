@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@ removeEmptyRecords() {
   if (fNoRemoveEmptyRecords)
     return;
 
-  std::set<Type*> emptyRecordTypeSet;
+  std::set<Type*, AstIdLess> emptyRecordTypeSet;
   int numEmptyRecordTypes = 0;
   std::vector<Symbol*> emptyRecordSymbols;
 

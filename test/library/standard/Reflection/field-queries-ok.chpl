@@ -64,11 +64,4 @@ union UCon {
 test(UCon);
 
 
-union UGen {
-  var f1, f2, f3, f4, f5, f6;
-}
-
-test(UGen(?));
-
-
 compilerError("=== done ===");

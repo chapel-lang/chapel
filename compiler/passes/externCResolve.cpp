@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,7 @@
 
 #ifdef HAVE_LLVM
 // clang headers
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 #include "llvm/ADT/SmallSet.h"
@@ -486,7 +487,8 @@ void convertDeclToChpl(ModuleSymbol* module,
   //struct
   if (clang::RecordDecl *rd =
       llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
-    convertToChplType(module, rd->getTypeForDecl());
+    auto& ctx = rd->getASTContext();
+    convertToChplType(module, getClangASTType(ctx, rd));
   }
 
   //enum constant
@@ -577,8 +579,8 @@ Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
 }
 
 static Symbol* doTryCResolve(ModuleSymbol* module,
-                             const char*                       name,
-                             llvm::SmallSet<ModuleSymbol*, 24> &visited) {
+                             const char* name,
+                             llvm::SmallSet<ModuleSymbol*, 24, AstIdLess> &visited) {
 
   if (module == NULL) {
     return NULL;
@@ -618,7 +620,7 @@ Symbol* tryCResolve(ModuleSymbol* mod, const char* name) {
     return got;
 
   if (fAllowExternC == true) {
-    llvm::SmallSet<ModuleSymbol*, 24> visited;
+    llvm::SmallSet<ModuleSymbol*, 24, AstIdLess> visited;
 
     retval = doTryCResolve(mod, name, visited);
   }

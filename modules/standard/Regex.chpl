@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,10 +53,10 @@ Using Regular Expression Support
 
 Chapel supports both string and bytes regular expressions.
 
-.. code-block:: chapel
-
-   use Regex;
-   var myRegex = new regex("a+");   // b"a+" for matching arbitrary bytes values
+.. literalinclude:: ../../../../test/regex/doc-examples/RegexExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Now you can use these methods on regular expressions: :proc:`regex.search`,
 :proc:`regex.match`, :proc:`regex.split`, :proc:`regex.matches`.
@@ -424,11 +424,10 @@ class BadRegexError : Error {
     Lastly, something of type regexMatch can be checked for a match
     in a simple if statement, as in:
 
-    .. code-block:: chapel
-
-      var m:regexMatch = ...;
-      if m then do_something_if_matched();
-      if !m then do_something_if_not_matched();
+    .. literalinclude:: ../../../../test/regex/doc-examples/RegexMatchExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
@@ -437,14 +436,6 @@ record regexMatch {
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
-}
-
-pragma "do not resolve unless called"
-@chpldoc.nodoc
-proc reMatch type
-{
-   compilerWarning("Regex: 'reMatch' is deprecated; please use 'regexMatch' instead");
-   return regexMatch;
 }
 
 @chpldoc.nodoc
@@ -770,11 +761,10 @@ record regex : serializable {
      For example, this function can be used to check to see if a string
      fits a particular template:
 
-     .. code-block:: chapel
-
-       if myRegex.match("some string") {
-         doSomethingIfMatched();
-       }
+     .. literalinclude:: ../../../../test/regex/doc-examples/RegexMatchExamples.chpl
+        :language: chapel
+        :start-after: START_EXAMPLE_1
+        :end-before: STOP_EXAMPLE_1
 
      :arg text: a string or bytes to search
      :arg captures: what to capture from the regular expression.

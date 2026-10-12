@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,12 +57,6 @@ pragma "suppress generic actual warning"
 proc getNumFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
 
-/* Return the number of fields in a class or record as a param.
-   The count of fields includes types and param fields.
- */
-@deprecated(notes="'numFields' is deprecated - please use 'getNumFields' instead")
-proc numFields(type t) param : int do return getNumFields(t);
-
 /* Get the name of the field at `idx` in a class or record.
    Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
@@ -72,7 +66,7 @@ proc numFields(type t) param : int do return getNumFields(t);
  */
 pragma "suppress generic actual warning"
 proc getFieldName(type t, param idx:int) param : string do
-  return __primitive("field num to name", checkQueryT(t), idx+1);
+  return __primitive("field num to name", checkQueryT(t), idx);
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
@@ -84,11 +78,12 @@ proc getFieldName(type t, param idx:int) param : string do
    :arg idx: which field to get
    :returns: the `param` that field represents
 */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param idx: int) param
   where idx >= 0 && idx < getNumFields(t) &&
-        isParam(__primitive("field by num", obj, idx+1)) {
+        isParam(__primitive("field by num", obj, idx)) {
 
-  return __primitive("field by num", obj, idx+1);
+  return __primitive("field by num", obj, idx);
 }
 
 // Note, since this version has a where clause, it is preferred
@@ -101,10 +96,11 @@ proc getField(const ref obj:?t, param idx: int) param
    :arg idx: which field to get
    :returns: the type that field represents
 */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param idx: int) type
   where idx >= 0 && idx < getNumFields(t) &&
-        isType(__primitive("field by num", obj, idx+1)) {
-  return __primitive("field by num", obj, idx+1);
+        isType(__primitive("field by num", obj, idx)) {
+  return __primitive("field by num", obj, idx);
 }
 
 /* Get the field at `idx` in a class or record.
@@ -115,8 +111,9 @@ proc getField(const ref obj:?t, param idx: int) type
    :returns: a const reference to that field.
  */
 pragma "unsafe"
+pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
-  return __primitive("field by num", obj, idx+1);
+  return __primitive("field by num", obj, idx);
 
 /* Get a field in a class or record by name. When the named
    field is a `param`, this overload will be chosen to return a
@@ -127,6 +124,7 @@ inline proc getField(const ref obj:?t, param idx:int) const ref do
    :arg name: the name of a field
    :returns: the `param` that field represents
  */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param name: string) param
 where getFieldIndex(t, name) != -1 &&
       isParam(getField(obj, getFieldIndex(t, name))) {
@@ -142,6 +140,7 @@ where getFieldIndex(t, name) != -1 &&
    :arg name: the name of a field
    :returns: the type that field represents
  */
+pragma "suppress generic actual warning"
 proc getField(const ref obj:?t, param name: string) type
   where getFieldIndex(t, name) != -1 && isType(getField(obj, getFieldIndex(t, name))) {
 
@@ -157,9 +156,10 @@ proc getField(const ref obj:?t, param name: string) type
    :returns: a const reference to that field.
  */
 pragma "unsafe"
+pragma "suppress generic actual warning"
 inline proc getField(const ref obj:?t, param name:string) const ref {
-  param i = __primitive("field name to num", t, name);
-  if i == 0 then
+  param i = __primitive("field name to num", checkQueryT(t), name);
+  if i == -1 then
     compilerError("field ", name, " not found in ", t:string);
   return __primitive("field by num", obj, i);
 }
@@ -214,29 +214,30 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
-inline proc getFieldRef(ref x:?t, param i:int) ref {
+@chpldoc.noWhereClause
+inline proc getFieldRef(ref x:?t, param i:int) ref where !isClassType(t) {
   checkValidQueryT(t);
-  if isType(__primitive("field by num", x, i+1)) then
+  if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
                   getFieldName(t, i), "'");
-  if isParam(__primitive("field by num", x, i+1)) then
+  if isParam(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'param' field '",
                   getFieldName(t, i), "'");
-  return __primitive("field by num", x, i+1);
+  return __primitive("field by num", x, i);
 }
 
 pragma "unsafe"
 @chpldoc.nodoc
 @unstable(reason="'getFieldRef' is unstable")
-inline proc getFieldRef(x: borrowed, param i:int) ref {
+inline proc getFieldRef(x:?t, param i:int) ref where isClassType(t) {
   checkValidQueryT(x.type);
-  if isType(__primitive("field by num", x, i+1)) then
+  if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '",
                   getFieldName(x.type, i), "'");
-  if isParam(__primitive("field by num", x, i+1)) then
+  if isParam(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'param' field '",
                   getFieldName(x.type, i), "'");
-  return __primitive("field by num", x, i+1);
+  return __primitive("field by num", x, i);
 }
 
 /* Get a mutable ref to a field in a class or record by name.
@@ -249,11 +250,25 @@ inline proc getFieldRef(x: borrowed, param i:int) ref {
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
-proc getFieldRef(ref x:?t, param s:string) ref {
-  checkValidQueryT(t);
-  param i = __primitive("field name to num", t, s);
-  if i == 0 then
+@chpldoc.noWhereClause
+proc getFieldRef(ref x:?t, param s:string) ref where !isClassType(t) {
+  param i = __primitive("field name to num", checkQueryT(t), s);
+  if i == -1 then
     compilerError("field ", s, " not found in ", t:string);
+  if isType(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'type' field '", s, "'");
+  if isParam(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'param' field '", s, "'");
+  return __primitive("field by num", x, i);
+}
+
+pragma "unsafe"
+@chpldoc.nodoc
+@unstable(reason="'getFieldRef' is unstable")
+proc getFieldRef(x:?t, param s:string) ref where isClassType(t) {
+  param i = __primitive("field name to num", checkQueryT(x.type), s);
+  if i == -1 then
+    compilerError("field ", s, " not found in ", x.type:string);
   if isType(__primitive("field by num", x, i)) then
     compilerError("cannot return a reference to 'type' field '", s, "'");
   if isParam(__primitive("field by num", x, i)) then
@@ -271,7 +286,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
  */
 pragma "suppress generic actual warning"
 proc getFieldIndex(type t, param name:string) param : int do
-  return __primitive("field name to num", checkQueryT(t), name)-1;
+  return __primitive("field name to num", checkQueryT(t), name);
 
 /* Returns ``true`` if a class or record has a field named `name`,
    or ``false`` otherwise.
@@ -354,6 +369,28 @@ proc canResolveTypeMethod(type t, param fname : string) param : bool do
 @unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
+
+/* Returns ``true`` if a call to a first-class function can be resolved
+   without any arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@chpldoc.nodoc
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn) param : bool do
+  return __primitive("resolves", fn());
+
+/* Returns ``true`` if a call to a first-class function can be resolved with
+   the given arguments.
+
+  .. note:: Does not attempt to resolve the body of the invoked function.
+
+    */
+@chpldoc.nodoc
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
+proc canResolveCall(fn, args...) param : bool do
+  return __primitive("resolves", fn((...args)));
 
 // TODO -- do we need a different version of can resolve with ref this?
 

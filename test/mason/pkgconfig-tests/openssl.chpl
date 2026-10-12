@@ -1,3 +1,5 @@
 use pcTest;
 
-test(goodLock="openssl.good", tf="openssl.toml");
+proc main() {
+  test(goodLock="openssl.good", tf="openssl.toml");
+}

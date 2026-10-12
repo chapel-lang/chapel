@@ -100,27 +100,75 @@ use them, enable ``--resolver``.
 
 The following features are extra visual aids:
 
-+----------------+--------------------------------------------+---------------------------------------+
-| Feature        | Description                                | Flag                                  |
-+----------------+--------------------------------------------+---------------------------------------+
-| Type Inlays    | Type information can be displayed inline   | ``--type-inlays`` (default),          |
-|                | as an inlay hint.                          | ``--no-type-inlays``                  |
-+----------------+--------------------------------------------+---------------------------------------+
-| Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
-|                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |
-+----------------+--------------------------------------------+---------------------------------------+
-| Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
-| Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
-+----------------+--------------------------------------------+---------------------------------------+
-| Call Inlays    | Names of literal arguments can be          | ``--literal-arg-inlays`` (default),   |
-|                | displayed inline as inlay hints.           | ``--no-literal-arg-inlays``           |
-+----------------+--------------------------------------------+---------------------------------------+
-| Dead Code      | Dyno can determine compile-time dead code, | ``--dead-code`` (default),            |
-|                | which ``CLS`` highlights in the editor.    | ``--no-dead-code``                    |
-+----------------+--------------------------------------------+---------------------------------------+
-| Generic        | ``CLS`` can show the various               | ``--show-instantiations`` (default),  |
-| Instantiations | instantiations of a generic function.      | ``--no-show-instantiations``          |
-+----------------+--------------------------------------------+---------------------------------------+
+
++----------------+--------------------------------------------+---------------------------------------------+
+| Feature        | Description                                | Flag                                        |
++----------------+--------------------------------------------+---------------------------------------------+
+| Type Inlays    | Type information can be displayed inline   | ``--type-inlays`` (default),                |
+|                | as an inlay hint.                          | ``--no-type-inlays``                        |
++----------------+--------------------------------------------+---------------------------------------------+
+| Return Type    | Inferred return types for functions can    | ``--return-type-inlays`` (default),         |
+| Inlays         | be displayed where a return type           | ``--no-return-type-inlays``                 |
+|                | annotation would normally occur.           |                                             |
++----------------+--------------------------------------------+---------------------------------------------+
+| Generic Return | In some cases, the language server can     | ``--generic-return-type-inlays`` (default), |
+| Type Inlays    | infer a general return type for a generic  | ``--no-generic-return-type-inlays``         |
+|                | function, written in terms of its formals  |                                             |
+|                | (e.g., ``myFormal.type``).                 |                                             |
++----------------+--------------------------------------------+---------------------------------------------+
+| Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),               |
+|                | displayed inline as inlay hints.           | ``--no-param-inlays``                       |
++----------------+--------------------------------------------+---------------------------------------------+
+| Enum Inlays    | ``enum`` elements' numerical values can be | ``--enum-inlays`` (default),                |
+|                | inferred where not explicitly specified    | ``--no-enum-inlays``                        |
+|                | and displayed as inlay hints.              |                                             |
++----------------+--------------------------------------------+---------------------------------------------+
+| Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default),       |
+| Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``               |
++----------------+--------------------------------------------+---------------------------------------------+
+| Call Inlays    | Names of literal arguments can be          | ``--literal-arg-inlays`` (default),         |
+|                | displayed inline as inlay hints.           | ``--no-literal-arg-inlays``                 |
++----------------+--------------------------------------------+---------------------------------------------+
+| Dead Code      | Dyno can determine compile-time dead code, | ``--dead-code`` (default),                  |
+|                | which ``CLS`` highlights in the editor.    | ``--no-dead-code``                          |
++----------------+--------------------------------------------+---------------------------------------------+
+| Generic        | ``CLS`` can show the various               | ``--show-instantiations`` (default),        |
+| Instantiations | instantiations of a generic function.      | ``--no-show-instantiations``                |
++----------------+--------------------------------------------+---------------------------------------------+
+| Default        | Procedures accepting array formals are     | ``--default-rect-arrays`` (default),        |
+| Instantiations | usually generic over the array's dimension | ``--no-default-rect-arrays``                |
+| For Arrays     | and distribution. ``CLS`` can automatically|                                             |
+|                | create concrete instantiations with        |                                             |
+|                | "regular" (default-rectangular) arrays.    |                                             |
++----------------+--------------------------------------------+---------------------------------------------+
+| Common         | When generic functions are instantiated    | ``--common-inlays`` (default),              |
+| Instantiation  | with multiple different types, ``CLS`` can | ``--no-common-inlays``                      |
+| Inlays         | show type inlays even for the generic      |                                             |
+|                | version of the function, by finding the    |                                             |
+|                | set of inlays shared between all           |                                             |
+|                | instantiations of the function.            |                                             |
+|                |                                            |                                             |
+|                | Affects type, param, and return type       |                                             |
+|                | inlays.                                    |                                             |
++----------------+--------------------------------------------+---------------------------------------------+
+
+Additionally, some of the above features can be tweaked.
+
++----------------+--------------------------------------------+------------------------------------------+
+| Behavior       | Description                                | Flag                                     |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides inlays for type aliases when the     | ``--hide-redundant-type-inlays``         |
+| hide obvious   | inlay exactly matches the right-hand side  | (default),                               |
+| inlays         | of the declaration.                        | ``--no-hide-redundant-type-inlays``      |
+|                |                                            |                                          |
+|                | Example: ``type myType = int(64);``        |                                          |
++----------------+--------------------------------------------+------------------------------------------+
+| Type Inlays:   | Hides potentially obvious inlays even if   | ``--hide-more-redundant-type-inlays``,   |
+| hide more      | the right-hand side of the type alias does | ``--no-hide-more-redundant-type-inlays`` |
+| inlays         | not exactly match the computed type.       | (default)                                |
+|                |                                            |                                          |
+|                | Example: ``type myType = range;``          |                                          |
++----------------+--------------------------------------------+------------------------------------------+
 
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,20 +239,31 @@ project using ``make``:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim make
+   chpl-shim make
 
 This is similarly done for ``mason`` projects:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim mason build
-
-.. note::
-
-   The above commands assume a from-source build of Chapel. An installed Chapel
-   may require a different path to ``chpl-shim``.
+   chpl-shim mason build
 
 .. note::
 
    First-class ``mason`` support is currently planned (but not yet
    implemented), avoiding the need for ``chpl-shim`` in ``mason`` projects.
+
+Setting up VSCode tasks
+^^^^^^^^^^^^^^^^^^^^^^^
+
+VSCode users may wish to build their Chapel projects from the VSCode GUI.
+``chpl-shim`` can also be used to help generate a ``tasks.json`` file for
+building a Chapel project. For example, the following command will generate a
+``tasks.json`` file for a Chapel project using ``make``:
+
+.. code-block:: bash
+
+   chpl-shim --vscode make
+
+This will add a new task to the ``tasks.json`` file that will build the project
+(as well as writing the ``.cls-commands.json`` file). This can similarly be
+done for ``mason`` projects.

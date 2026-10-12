@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,6 +60,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include "llvm/Support/Path.h"
+#include "llvm/Support/FileSystem.h"
 
 
 std::string executableFilename;
@@ -599,33 +602,34 @@ const char* nthFilename(int i) {
 }
 
 
-const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
-  const char* dbgfilename = genIntermediateFilename(astr(debugger, ".commands"));
-  FILE* dbgfile = openfile(dbgfilename);
-  int i;
+std::string getDebuggerCommands(std::string_view debugger, int argc, char* argv[]) {
+  std::string command;
+  auto commandsFile = CHPL_HOME + "/compiler/etc/" +
+                      std::string(debugger) + ".commands";
 
-  if (strcmp(debugger, "gdb") == 0) {
-    fprintf(dbgfile, "set args");
-  } else if (strcmp(debugger, "lldb") == 0) {
-    fprintf(dbgfile, "settings set -- target.run-args");
+  if (debugger == "gdb") {
+    command += "gdb -q -x ";
+    command += commandsFile;
+    command += " --args ";
+    command += argv[0];
+  } else if (debugger == "lldb") {
+    command += "lldb -s ";
+    command += commandsFile;
+    command += " -- ";
+    command += argv[0];
   } else {
-      INT_FATAL("createDebuggerFile doesn't know how to handle the given "
-                "debugger: '%s'", debugger);
+      INT_FATAL("getDebuggerCommands doesn't know how to handle the given "
+                "debugger: '%s'", std::string(debugger).c_str());
   }
-  for (i=1; i<argc; i++) {
-    if (strcmp(argv[i], astr("--", debugger)) != 0) {
-      fprintf(dbgfile, " %s", argv[i]);
+  const char* dbgFlagName = astr("--", astr(debugger));
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], dbgFlagName) != 0) {
+      command += " ";
+      command += argv[i];
     }
   }
 
-  fprintf(dbgfile, "\n");
-  closefile(dbgfile);
-  myshell(astr("cat ", CHPL_HOME.c_str(), "/compiler/etc/", debugger, ".commands >> ",
-                dbgfilename),
-           astr("appending ", debugger, " commands"),
-           false);
-
-  return dbgfilename;
+  return command;
 }
 
 std::string getChplDepsApp() {
@@ -733,16 +737,17 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 
 static std::string genMakefileEnvCache() {
   std::string result;
-  std::map<std::string, const char*>::iterator env;
 
-  for (env = envMap.begin(); env != envMap.end(); ++env) {
-    const std::string& key = env->first;
+  for (const auto& env: envMap) {
+    const std::string& key = env.first;
     const char* oldPrefix = "CHPL_";
     const char* newPrefix = "CHPL_MAKE_";
     INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
     std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
     std::string chpl_make_key = newPrefix + keySuffix;
-    result += chpl_make_key + "=" + std::string(env->second) + "|";
+    result += chpl_make_key + "=";
+    result += std::string(env.second);
+    result += "|";
   }
 
   return result;
@@ -771,6 +776,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
   fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
+
+  const char* runtimeLinkStyle = fBuiltinRuntime ? "static" : "shared";
+
+  fprintf(makefile.fptr, "RUNTIME_LINK_STYLE = %s\n\n", runtimeLinkStyle);
 
   // Store chapel environment variables in a cache.
   makeallvars = genMakefileEnvCache();
@@ -802,7 +811,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     // name with a trailing underscore just to guarantee that it's different
     // from the file name.
     //
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       server = astr(executableFilename.c_str(), "_server");
       fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
@@ -819,7 +828,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     const char* pfx = startsWithLib ? "/" : "/lib";
     tmpbin = astr(tmpDirName, pfx, strippedExeFilename, ".tmp", exeExt);
 
-    if (fMultiLocaleInterop) {
+    if (fClientServerLibrary) {
       tmpserver = astr(tmpDirName, "/", strippedExeFilename, "_server");
     }
   } else {
@@ -843,18 +852,18 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   //
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     fprintf(makefile.fptr, "TMPSERVERNAME = %s\n\n", tmpserver);
   }
 
   // Bunch of C compiler flags.
   fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
-  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);
+  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", fDebugSymbols);
   fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode);
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
 
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
     fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
   }
@@ -868,7 +877,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Compiler flags for each deliverable.
   fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
-  if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
+  if (fLibraryCompile && !fClientServerLibrary && dyn) {
     fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
   fprintf(makefile.fptr, "%s %s%s\n",
@@ -890,7 +899,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     case LS_STATIC:
       lmode = "$(GEN_STATIC_FLAG)"; break;
     }
-  } else if (fLibraryCompile && !fMultiLocaleInterop) {
+  } else if (fLibraryCompile && !fClientServerLibrary) {
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
@@ -915,7 +924,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "\n\n");
 
   // List source files needed to compile this deliverable.
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
 
     const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
     const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
@@ -979,7 +988,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Figure out the appropriate base Makefile to include.
   std::string incpath = "include $(CHPL_MAKE_HOME)/runtime/etc/";
-  if (fMultiLocaleInterop) {
+  if (fClientServerLibrary) {
     incpath += dyn ? "Makefile.mli-shared" : "Makefile.mli-static";
   } else if (fLibraryCompile) {
     incpath += dyn ? "Makefile.shared" : "Makefile.static";
@@ -1101,24 +1110,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
     expandInstallationPaths(s);
     args[i] = s;
   }
-}
-
-bool isDirectory(const char* path)
-{
-  struct stat stats;
-  if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
-    return true;
-
-  return false;
-}
-
-bool pathExists(const char* path)
-{
-  struct stat stats;
-  if (stat(path, &stats) == 0)
-    return true;
-
-  return false;
 }
 
 // would just use realpath, but it is not supported on all platforms.

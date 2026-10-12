@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,9 @@
 #include "alist.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/DenseSet.h"
 
+#include <functional>
 #include <vector>
 #include <set>
 
@@ -57,7 +59,7 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
 // Given a detupled tuple 'sym', collect all its components.
-std::set<Symbol*> findAllDetupledComponents(Symbol* sym);
+std::set<Symbol*, AstIdLess> findAllDetupledComponents(Symbol* sym);
 
 // collect children asts in _an_ order. Today this is preorder
 // but callsites should transition to using collect_asts_{pre,post,un}order
@@ -102,11 +104,20 @@ void compute_call_sites();
 void computeNonvirtualCallSites(FnSymbol* fn);
 void computeAllCallSites(FnSymbol* fn);
 
-// The type of a function that takes a type and produces a type.
-using AdjustTypeFn = Type*(*)(Type* t);
+using AdjustTypeFn = std::function<Type*(Type*)>;
 
-// Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
-// the type produced by 'adjustTypeFn' differs from the symbol's current type.
+// Given 'adjustTypeFn', compute the new type of 'sym' and adjust 'sym->type'
+// if able. Returns the newly computed type. If the symbol is a 'TypeSymbol',
+// will not set 'sym->type'. The caller is responsible for walking the live
+// uses of the type symbol and retargeting them to the newly computed type.
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels=true);
+
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
+// if the type produced by 'adjustTypeFn' differs from the symbol's current
+// type. If the symbol is a 'TypeSymbol' and the adjusted type differs, this
+// function will adjust all uses of the 'TypeSymbol' to point to the new type
+// instead of setting 'sym->type'.
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
                           bool preserveRefLevels=true);
 
@@ -124,7 +135,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 // collect set of symbols
 //
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
-void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*, AstIdLess>& symSet);
 void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet);
 
 
@@ -240,7 +251,9 @@ bool givesType(Symbol* sym);
 bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call);
 
 Symbol* getSvecSymbol(CallExpr* call);
-void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
+void collectUsedFnSymbols(BaseAST* ast, llvm::DenseSet<FnSymbol*>& fnSymbols);
+// came as collectUsedFnSymbols, but does not follow them transitively
+void collectCallTargets(BaseAST* ast, llvm::SmallVector<FnSymbol*, 8>& targets);
 
 void cleanupAfterTypeRemoval();
 
@@ -252,5 +265,14 @@ bool symExprIsUsedAsRef(
   SymExpr* use,
   bool constRef,
   std::function<bool(SymExpr*, CallExpr*)> checkForMove);
+
+// Returns 'true' if the given 'SymExpr' refers to a 'FnSymbol' that is being
+// used as a value. This function relies on typed AST to make determinations.
+bool isUseOfProcedureAsValue(SymExpr* se);
+
+// Make the ref level of 't' match the ref level of 'matchType'. E.g., if
+// 'matchType' is 'ref', then 't' will be adjusted to be 't->refType' if it
+// is not already a ref type.
+Type* matchRefLevel(Type* t, Type* matchType);
 
 #endif

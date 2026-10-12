@@ -1,1 +1,1 @@
--O --no-checks brg_sha1.c brg_sha1.h
+-O --no-checks brg_sha1.c brg_sha1.h rng_brg.c rng_brg.h

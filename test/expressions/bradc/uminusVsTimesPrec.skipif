@@ -1,1 +1,3 @@
 COMPOPTS <= --fast
+# intentionally does signed integer wraparound (C UB)
+CHPL_SANITIZE_EXE==undefined

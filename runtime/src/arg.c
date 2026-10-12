@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,16 +22,16 @@
 
 #include "arg.h"
 #include "chplcast.h"
-#include "chplcgfns.h"
 #include "chpl-env.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
+#include "chpl-prginfo.h"
 #include "chplmemtrack.h"
 #include "chpl-tasks.h"
 #include "chpl-linefile-support.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-comm-locales.h"
 
 #include <assert.h>
@@ -118,7 +118,7 @@ static void parseDashEArgs(int* argc, char* argv[]) {
   const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
 
   for (int i = 1; i < *argc; i++) {
-    int lineno = i;
+    int32_t lineno = i;
     const char* currentArg = argv[i];
 
     if (currentArg[0] == '-' && currentArg[1] == 'E') {
@@ -354,16 +354,18 @@ int32_t getArgNumLocalesPerNode(void) {
   return _argNumLocalesPerNode;
 }
 
-
-extern void chpl_program_about(void); // The generated code provides this
 void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                int* argc, char* argv[]) {
-  int i;
+  int i = 0;
   int printHelp = 0;
   int printAbout = 0;
   int origargc = *argc;
   int stop_parsing = 0;
   int saw_socket_conn = 0;
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
+  CHPL_RT_PRGINFO_DECLARE(prg, mainHasArgs);
 
   //
   // Handle the pre-parse for '-E' arguments separately.
@@ -376,7 +378,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
   for (i = 1; i < *argc; i++) {
     const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
-    int lineno = i + (origargc - *argc);
+    int32_t lineno = i + (origargc - *argc);
     int argLength = 0;
     const char* currentArg = argv[i];
     argLength = strlen(currentArg);
@@ -385,8 +387,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       /* update the argv structure passed to a Chapel program, but don't parse
        * the arguments
        */
-      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[i];
-      chpl_gen_main_arg.argc++;
+      main_arg_ptr->argv[main_arg_ptr->argc] = argv[i];
+      main_arg_ptr->argc++;
       continue;
     }
 
@@ -395,11 +397,13 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
      */
     if (mainHasArgs && strcmp(currentArg, "--") == 0) {
       stop_parsing = 1;
+
       // if the ArgumentParser was also included, copy the -- through so it
       // may use it as a passthrough delimiter
-      if (mainPreserveDelimiter) {
-        chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = currentArg;
-        chpl_gen_main_arg.argc++;
+      if (CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                               mainPreserveDelimiter)) {
+        main_arg_ptr->argv[main_arg_ptr->argc] = currentArg;
+        main_arg_ptr->argc++;
       }
       continue;
     }
@@ -429,8 +433,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
           if (strcmp(flag, "help") == 0) {
             printHelp = 1;
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "--help";
-            chpl_gen_main_arg.argc++;
+            main_arg_ptr->argv[main_arg_ptr->argc] = "--help";
+            main_arg_ptr->argc++;
             break;
           }
           if (strcmp(flag, "about") == 0) {
@@ -465,9 +469,9 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             saw_socket_conn = 1;
             // We reached information about the socket in a multilocale library
             // run.  Save it.
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] =
+            main_arg_ptr->argv[main_arg_ptr->argc++] =
               "--chpl-mli-socket-loc";
-            chpl_gen_main_arg.argv[chpl_gen_main_arg.argc++] = currentArg;
+            main_arg_ptr->argv[main_arg_ptr->argc++] = currentArg;
             break;
           }
           if (argLength < 3) {
@@ -517,8 +521,8 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
       case 'h':
         if (currentArg[2] == '\0') {
           printHelp = 1;
-          chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = "-h";
-          chpl_gen_main_arg.argc++;
+          main_arg_ptr->argv[main_arg_ptr->argc] = "-h";
+          main_arg_ptr->argc++;
         } else {
           i += handleNonstandardArg(argc, argv, i, lineno, filename);
         }
@@ -584,6 +588,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   }
 
   if (printAbout) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT, chpl_program_about);
     chpl_program_about();
     chpl_exit_any(0);
   }

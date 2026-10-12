@@ -1,4 +1,5 @@
 #if 0
+/* Portions of this file are Copyright (c) 2025 Tactical Computing Labs, LLC; see COPYING */
 /* Portions of this file are Copyright (c) 2005-2006 Russ Cox, MIT; see COPYRIGHT */
 /* Portions of this file are Copyright Sandia National Laboratories */
 #endif
@@ -48,6 +49,10 @@
 #elif defined(__linux__)
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM)
 #  define NEEDARMCONTEXT 1
+#  define SET qt_setmctxt
+#  define GET qt_getmctxt
+# elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_RISCV)
+#  define NEEDRISCVCONTEXT 1
 #  define SET qt_setmctxt
 #  define GET qt_getmctxt
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
@@ -634,6 +639,79 @@ SET:
         ldr     r14, [r0,#56]
         ldr     r0, [r0]
 	bx      lr
+#endif
+
+#ifdef NEEDRISCVCONTEXT
+.globl GET
+.global GET
+.type GET, %function
+GET:
+        sd     s1, 8(a0)
+        sd     s2, 16(a0)
+        sd     s3, 24(a0)
+        sd     s4, 32(a0)
+        sd     s5, 40(a0)
+        sd     s6, 48(a0)
+        sd     s7, 56(a0)
+        sd     s8, 64(a0)
+        sd     s9, 72(a0)
+        sd     s10, 80(a0)
+        sd     s11, 88(a0)
+        sd     s0, 96(a0)
+        sd     ra, 104(a0)
+        sd     sp, 112(a0)
+        addi   t0, a0, 120
+        fsd    f8, 0(t0)
+        fsd    f9, 8(t0)
+        fsd    f18, 16(t0)
+        fsd    f19, 24(t0)
+        fsd    f20, 32(t0)
+        fsd    f21, 40(t0)
+        fsd    f22, 48(t0)
+        fsd    f23, 56(t0)
+        fsd    f24, 64(t0)
+        fsd    f25, 72(t0)
+        fsd    f26, 80(t0)
+        fsd    f27, 88(t0)
+        li     t1, 1
+        sd     t1, 0(a0)
+        li     a0, 0
+        ret
+
+.globl SET
+.global SET
+.type SET, %function
+SET:
+        ld     s1, 8(a0)
+        ld     s2, 16(a0)
+        ld     s3, 24(a0)
+        ld     s4, 32(a0)
+        ld     s5, 40(a0)
+        ld     s6, 48(a0)
+        ld     s7, 56(a0)
+        ld     s8, 64(a0)
+        ld     s9, 72(a0)
+        ld     s10, 80(a0)
+        ld     s11, 88(a0)
+        ld     s0, 96(a0)
+        ld     ra, 104(a0)
+        ld     sp, 112(a0)
+        addi   t0, a0, 120
+        fld    f8, 0(t0)
+        fld    f9, 8(t0)
+        fld    f18, 16(t0)
+        fld    f19, 24(t0)
+        fld    f20, 32(t0)
+        fld    f21, 40(t0)
+        fld    f22, 48(t0)
+        fld    f23, 56(t0)
+        fld    f24, 64(t0)
+        fld    f25, 72(t0)
+        fld    f26, 80(t0)
+        fld    f27, 88(t0)
+        ld     a0, 0(a0)
+        ret
+
 #endif
 
 #if defined(__ELF__)

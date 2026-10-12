@@ -1,0 +1,2 @@
+bug: ownership-generic field warning not emitted without calling the constructor
+#27978

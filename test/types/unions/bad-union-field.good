@@ -1,0 +1,13 @@
+bad-union-field.chpl:2: error: union fields must be 'var'
+bad-union-field.chpl:3: error: union fields must be 'var'
+bad-union-field.chpl:5: error: union fields must be 'var'
+bad-union-field.chpl:6: error: union fields must be 'var'
+bad-union-field.chpl:7: error: union fields cannot have initializers
+bad-union-field.chpl:8: error: union fields cannot have initializers
+bad-union-field.chpl:9: error: union fields must have an explicit type
+bad-union-field.chpl:10: error: union fields must have an explicit type
+bad-union-field.chpl:11: error: union fields cannot have initializers
+bad-union-field.chpl:12: error: union fields cannot have initializers
+bad-union-field.chpl:14: error: union fields must have an explicit type
+bad-union-field.chpl:15: error: union fields cannot have initializers
+bad-union-field.chpl:16: error: union fields must have an explicit type

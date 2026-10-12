@@ -1,0 +1,3 @@
+MASON=$(which mason)
+rm -rf testingPkg && mkdir testingPkg && cd testingPkg
+echo_and_run PATH='' $MASON init || echo "expected failure for empty PATH"

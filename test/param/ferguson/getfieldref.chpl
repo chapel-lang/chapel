@@ -11,7 +11,7 @@ var r:R;
 // If const checking is improved, I expect it
 // to become a compile error.
 proc getFieldRef(x:?t, param i:int) ref {
-  return __primitive("field by num", x, i+1);
+  return __primitive("field by num", x, i);
 }
 
 getFieldRef(r, 0) = 10;

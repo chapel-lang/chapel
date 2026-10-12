@@ -340,8 +340,12 @@ static ssize_t sock_cq_sreadfrom(struct fid_cq *cq, void *buf, size_t count,
 	ssize_t cq_entry_len, avail;
 
 	sock_cq = container_of(cq, struct sock_cq, cq_fid);
+	pthread_mutex_lock(&sock_cq->lock);
 	if (ofi_rbused(&sock_cq->cqerr_rb))
-		return -FI_EAVAIL;
+		ret = -FI_EAVAIL;
+	pthread_mutex_unlock(&sock_cq->lock);
+	if (ret)
+		return ret;
 
 	cq_entry_len = sock_cq->cq_entry_size;
 	if (sock_cq->attr.wait_cond == FI_CQ_COND_THRESHOLD)
@@ -620,6 +624,7 @@ int sock_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	struct sock_fid_list *list_entry;
 	struct sock_wait *wait;
 	int ret;
+	ssize_t retsize;
 
 	sock_dom = container_of(domain, struct sock_domain, dom_fid);
 	ret = sock_cq_verify_attr(attr);
@@ -646,7 +651,13 @@ int sock_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	}
 
 	sock_cq->domain = sock_dom;
-	sock_cq->cq_entry_size = sock_cq_entry_size(sock_cq);
+	retsize = sock_cq_entry_size(sock_cq);
+	if (retsize < 0) {
+		ret = (int) retsize;
+		goto err1;
+	}
+
+	sock_cq->cq_entry_size = retsize;
 	sock_cq_set_report_fn(sock_cq);
 
 	dlist_init(&sock_cq->tx_list);

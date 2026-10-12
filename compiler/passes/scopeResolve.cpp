@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,8 +64,14 @@ using SmallVector = llvm::SmallVector<T, N>;
 *                                                                             *
 ************************************** | *************************************/
 
-
-using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
+struct VisitedModulesComparator {
+  template <typename SomeType>
+  bool operator()(const SomeType lhs, const SomeType rhs) const {
+    return lhs.first < rhs.first || (lhs.first == rhs.first && lhs.second < rhs.second);
+  }
+};
+using VisitedModulesSet =
+  std::set<std::pair<ModuleSymbol*, const char*>, VisitedModulesComparator>;
 
 // modSymsCache caches lookups at a module scope, including transitive uses.
 // key: pair of module symbol and name to lookup
@@ -100,9 +106,9 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              scope,
                             llvm::SmallVectorImpl<Symbol*>& symbols,
                             bool skipExternBlocks,
-                            std::map<Symbol*, astlocT*>& renameLocs,
+                            std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                             llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
 static bool isParenfulFn(Symbol* sym);
@@ -121,7 +127,7 @@ static void computeClassHierarchy() {
 // Here we record method names on interface types, that is, T1, ... and
 // AT1, ..., given 'interface IFC(T1, ...) { type AT1; ... }'
 // so that we know when we can insert an implicit 'this' actual arg.
-static std::map<Symbol*, std::set<const char*> > interfaceMethodNames;
+static std::map<Symbol*, std::set<const char*>, AstIdLess> interfaceMethodNames;
 
 // 'interfaceMethodNames' records a 'proc IFC.someMethod...' as a method on T1.
 // 'thisTypeToIfcFormal' maps the type of 'this' in the former to T1.
@@ -178,6 +184,7 @@ static void handleReceiverFormals() {
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
 
     if (fn->_this == NULL) continue; // not a method
     SET_LINENO(fn->_this);
@@ -230,32 +237,49 @@ static void markGenerics() {
       }
 
       // don't try to mark generic again
-      if (!at->isGeneric()) {
+      if (at->isGeneric()) {
+        continue;
+      }
 
-        bool anyGeneric = false;
-        bool anyNonDefaultedGeneric = false;
-        bool anyDefaultedGeneric = false;
-        for_fields(field, at) {
-          bool hasDefault = false;
-          if (at->fieldIsGeneric(field, hasDefault)) {
-            anyGeneric = true;
-            if (hasDefault == false)
-              anyNonDefaultedGeneric = true;
-            else
-              anyDefaultedGeneric = true;
+      bool anyGeneric = false;
+      bool anyNonDefaultedGeneric = false;
+      bool anyDefaultedGeneric = false;
+
+      for (auto dispatchParent : at->dispatchParents) {
+        if (dispatchParent->isGeneric()) {
+          anyGeneric = true;
+
+          if (dispatchParent->isGenericWithDefaults()) {
+            anyDefaultedGeneric = true;
+          } else if (dispatchParent->isGenericWithSomeDefaults()) {
+            anyDefaultedGeneric = true;
+            anyNonDefaultedGeneric = true;
+          } else {
+            anyNonDefaultedGeneric = true;
           }
         }
+      }
 
-        if (anyGeneric) {
-          at->markAsGeneric();
-          if (anyNonDefaultedGeneric == false)
-            at->markAsGenericWithDefaults();
-          else if (anyDefaultedGeneric == true &&
-                   anyNonDefaultedGeneric == true)
-            at->markAsGenericWithSomeDefaults();
-
-          changed = true;
+      for_fields(field, at) {
+        bool hasDefault = false;
+        if (at->fieldIsGeneric(field, hasDefault)) {
+          anyGeneric = true;
+          if (hasDefault == false)
+            anyNonDefaultedGeneric = true;
+          else
+            anyDefaultedGeneric = true;
         }
+      }
+
+      if (anyGeneric) {
+        at->markAsGeneric();
+        if (anyNonDefaultedGeneric == false)
+          at->markAsGenericWithDefaults();
+        else if (anyDefaultedGeneric == true &&
+                 anyNonDefaultedGeneric == true)
+          at->markAsGenericWithSomeDefaults();
+
+        changed = true;
       }
     }
   } while (changed);
@@ -752,7 +776,7 @@ static void processImportExprs() {
               ResolveScope* last = scopes.top();
               BlockStmt* lastAst = last->asBlockStmt();
               BlockStmt* curBlock = scope->asBlockStmt();
-              if (curBlock != NULL) {
+              if (curBlock && lastAst) {
                 if (lastAst->contains(curBlock)) {
                   scopes.push(scope);
                 } else {
@@ -1332,6 +1356,23 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   }
 }
 
+CallExpr* findBlockInfo(Expr* exprInAst) {
+  if (Expr* parent1 = exprInAst->parentExpr) {
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
+      if (parent1 == parent2->byrefVars) {
+        return parent2->blockInfoGet();
+      }
+    }
+  }
+  return NULL;
+}
+
+bool isTaskBlockInfo(CallExpr* call) {
+  return call->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
+         call->isPrimitive(PRIM_BLOCK_COFORALL) ||
+         call->isPrimitive(PRIM_BLOCK_BEGIN);
+}
+
 //
 // 'expr' ended up being a field reference (or perhaps a method call).
 // If we are inside a 'with' clause, report an error.
@@ -1339,19 +1380,9 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a task construct.
-  if (Expr* parent1 = exprInAst->parentExpr) {
-    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
-      if (parent1 == parent2->byrefVars) {
-        CallExpr* blockInfo = parent2->blockInfoGet();
-
-        // Ensure that an issue, indeed, occurred a task construct.
-        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
-
-        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
-      }
-    }
+  if (CallExpr* blockInfo = findBlockInfo(exprInAst)) {
+    INT_ASSERT(isTaskBlockInfo(blockInfo));
+    errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
   }
 }
 
@@ -1817,17 +1848,17 @@ static void lookup(const char*           name,
                    llvm::SmallPtrSetImpl<BaseAST*>&        visited,
 
                    llvm::SmallVectorImpl<Symbol*>& symbols,
-                   std::map<Symbol*, astlocT*>& renameLocs,
+                   std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                    bool storeRenames,
-                   std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                   std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                    llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
 static void
 printConflictingSymbols(llvm::SmallVectorImpl<Symbol*>& symbols, Symbol* sym,
                         const char* nameUsed, bool storeRenames,
-                        std::map<Symbol*, astlocT*> renameLocs,
-                        std::map<Symbol*, VisibilityStmt*>& reexportPts)
+                        std::map<Symbol*, astlocT*, AstIdLess> renameLocs,
+                        std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
   for(Symbol* another : symbols)
@@ -1863,8 +1894,8 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs,
-                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+                             std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts) {
 
   Symbol* foundOperator = nullptr;
   Symbol* foundMethod = nullptr;
@@ -1947,8 +1978,8 @@ Symbol* lookupAndCount(const char*           name,
                        bool issueErrors) {
 
   SmallVector<Symbol*> symbols;
-  std::map<Symbol*, astlocT*> renameLocs;
-  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  std::map<Symbol*, astlocT*, AstIdLess> renameLocs;
+  std::map<Symbol*, VisibilityStmt*, AstIdLess> reexportPts;
   Symbol*              retval = NULL;
 
   lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
@@ -2004,8 +2035,8 @@ Symbol* lookup(const char* name, BaseAST* context) {
 void lookup(const char*           name,
             BaseAST*              context,
             llvm::SmallVectorImpl<Symbol*>& symbols,
-            std::map<Symbol*, astlocT*>& renameLocs,
-            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+            std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+            std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
             bool storeRenames) {
   llvm::SmallPtrSet<BaseAST*, 32> visited;
   llvm::SmallPtrSet<Symbol*, 32> foundSymsSet;
@@ -2047,9 +2078,9 @@ static void lookup(const char*           name,
                    llvm::SmallPtrSetImpl<BaseAST*>&        visited,
 
                    llvm::SmallVectorImpl<Symbol*>& symbols,
-                   std::map<Symbol*, astlocT*>& renameLocs,
+                   std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                    bool storeRenames,
-                   std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                   std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                    llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
 
   if (!visited.contains(scope)) {
@@ -2153,9 +2184,9 @@ static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             llvm::SmallVectorImpl<Symbol*>& symbols,
-                            std::map<Symbol*, astlocT*>& renameLocs,
+                            std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                             VisitedModulesSet& visitedModules,
                             bool forShadowScope,
                             bool publicOnly,
@@ -2166,7 +2197,7 @@ void lookupUsedImportedMod(const char*           name,
                            BaseAST*              context,
                            BaseAST*              scope,
                            llvm::SmallVectorImpl<Symbol*>& symbols,
-                           std::map<Symbol*, astlocT*>& renameLocs,
+                           std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                            bool storeRenames,
                            bool forShadowScope,
                            bool publicOnly,
@@ -2193,9 +2224,9 @@ bool lookupThisScopeAndUses(const char*           name,
                             BaseAST*              scope,
                             llvm::SmallVectorImpl<Symbol*>& symbols,
                             bool skipExternBlocks,
-                            std::map<Symbol*, astlocT*>& renameLocs,
+                            std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                             llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
 
 
@@ -2317,9 +2348,9 @@ static void lookupUseImport(const char*           name,
                             BaseAST*              context,
                             BaseAST*              scope,
                             llvm::SmallVectorImpl<Symbol*>& symbols,
-                            std::map<Symbol*, astlocT*>& renameLocs,
+                            std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                             VisitedModulesSet& visitedModules,
                             bool forShadowScope,
                             bool publicOnly,
@@ -2517,7 +2548,7 @@ void lookupUsedImportedMod(const char*           name,
                            BaseAST*              context,
                            BaseAST*              scope,
                            llvm::SmallVectorImpl<Symbol*>& symbols,
-                           std::map<Symbol*, astlocT*>& renameLocs,
+                           std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
                            bool storeRenames,
                            bool forShadowScope,
                            bool publicOnly,
@@ -2608,8 +2639,8 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
   // also check the uses of the module (e.g., for use CTypes, to find c_int),
   // but don't look in extern blocks (that would lead to an infinite loop).
   SmallVector<Symbol*> syms;
-  std::map<Symbol*, astlocT*> renameLocs;
-  std::map<Symbol*, VisibilityStmt*> reexportPts;
+  std::map<Symbol*, astlocT*, AstIdLess> renameLocs;
+  std::map<Symbol*, VisibilityStmt*, AstIdLess> reexportPts;
   llvm::SmallPtrSet<Symbol*, 32> foundSymsSet;
   lookupThisScopeAndUses(name, scope, scope, syms,
                          /* skipExternBlocks */ true,
@@ -3047,7 +3078,7 @@ static void resolveUnmanagedBorrows() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
+static void markUsedModule(std::set<ModuleSymbol*, AstIdLess>& set, ModuleSymbol* mod) {
   // Do nothing if it's already in the set.
   if (set.count(mod) != 0)
     return;
@@ -3071,7 +3102,7 @@ static void markUsedModule(std::set<ModuleSymbol*>& set, ModuleSymbol* mod) {
 // Figure out if there are any modules that are not used at all.
 // If so, completely remove these modules from the tree.
 static void removeUnusedModules() {
-  std::set<ModuleSymbol*> usedModules;
+  std::set<ModuleSymbol*, AstIdLess> usedModules;
 
   markUsedModule(usedModules, stringLiteralModule);
 
@@ -3130,8 +3161,8 @@ static void detectUserDefinedBorrowMethods() {
    symbols.
  */
 static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
-  std::map<std::string, std::set<Symbol*>*>& visibleMap,
-  std::set<Symbol*>& alreadyFound) {
+  std::map<std::string, std::set<Symbol*, AstIdLess>*>& visibleMap,
+  std::set<Symbol*, AstIdLess>& alreadyFound) {
 
   int numSymbolsFound;
   Symbol* found = lookupAndCount(name, call, numSymbolsFound,
@@ -3144,7 +3175,7 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
     const char* fname = found->defPoint->fname();
     alreadyFound.insert(found);
     if (visibleMap.count(fname) == 0) {
-      visibleMap.insert(make_pair(fname, new std::set<Symbol*>()));
+      visibleMap.insert(make_pair(fname, new std::set<Symbol*, AstIdLess>()));
     }
     visibleMap[(std::string)fname]->insert(found);
   }
@@ -3194,9 +3225,9 @@ static void processGetVisibleSymbols() {
         USR_FATAL(call, "get visible symbols may only have 0 or 2 arguments");
       }
 
-      std::set<Symbol*> alreadyFound;
+      std::set<Symbol*, AstIdLess> alreadyFound;
       // build a map from filename to set of visible symbols in that file
-      std::map<std::string, std::set<Symbol*>*> visibleMap;
+      std::map<std::string, std::set<Symbol*, AstIdLess>*> visibleMap;
       forv_Vec(VarSymbol, sym, gVarSymbols) {
         lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
       }
@@ -3209,23 +3240,20 @@ static void processGetVisibleSymbols() {
 
       // create and sort a vector of all the filenames in the map
       std::vector<std::string> sortedFilenames;
-      std::map<std::string, std::set<Symbol*>*>::iterator mapIdx;
 
-      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
-        sortedFilenames.push_back((std::string)(mapIdx->first));
+      for (auto& mapIdx: visibleMap) {
+        sortedFilenames.push_back((std::string)(mapIdx.first));
       }
       std::sort(sortedFilenames.begin(), sortedFilenames.end());
 
       printf("%s:%d: Printing symbols visible from here:\n",
              call->fname(), call->linenum());
       // now walk the sorted vector printing visible symbols from each file
-      for (std::vector<std::string>::iterator it = sortedFilenames.begin();
-           it != sortedFilenames.end(); it++) {
+      for (auto it = sortedFilenames.begin(); it != sortedFilenames.end(); it++) {
         // create and sort a vector of <lineNumber, Symbol*> pairs
         // for the current file by line number
-        std::set<Symbol*>::iterator setIdx;
         std::vector<std::pair<int, Symbol*> > sortedSymbols;
-        for (setIdx = visibleMap[it->c_str()]->begin();
+        for (auto setIdx = visibleMap[it->c_str()]->begin();
              setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
           Symbol* sym = *setIdx;
           sortedSymbols.push_back(std::make_pair(sym->defPoint->linenum(),
@@ -3234,7 +3262,7 @@ static void processGetVisibleSymbols() {
         std::sort(sortedSymbols.begin(), sortedSymbols.end());
 
         // walk the sorted vector of symbols to print information on each
-        for (std::vector<std::pair<int, Symbol*> >::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+        for (auto symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
           Symbol* sym = symPair->second;
           if (ignoreInternalModules &&
               sym->getModule()->modTag == MOD_INTERNAL)

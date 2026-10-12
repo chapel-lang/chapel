@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,13 @@ enum ErrorType {
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 };
+
+/* Forward-declare subclasses of ErrorBase, so that we can use them in
+   ErrorBase::toBla() methods. */
+class GeneralError;
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) class Error##NAME;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
 
 /**
   Parent class for all errors in Dyno.
@@ -152,7 +159,35 @@ class ErrorBase {
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
   virtual owned<ErrorBase> clone() const = 0;
+
+  bool isGeneralError() const { return type_ == ErrorType::General; }
+  const GeneralError* toGeneralError() const {
+    return isGeneralError() ? (const GeneralError*)(this) : nullptr;
+  }
+  GeneralError* toGeneralError() {
+    return isGeneralError() ? (GeneralError*)(this) : nullptr;
+  }
+
+  /// \cond DO_NOT_DOCUMENT
+  #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+    bool is##NAME() const { return type_ == ErrorType::NAME; } \
+    const Error##NAME* to##NAME() const { \
+      return is##NAME() ? (const Error##NAME*)(this) : nullptr; \
+    } \
+    Error##NAME* to##NAME() { \
+      return is##NAME() ? (Error##NAME*)(this) : nullptr; \
+    }
+  #include "chpl/framework/error-classes-list.h"
+  #undef DIAGNOSTIC_CLASS
+  /// \endcond DO_NOT_DOCUMENT
 };
+
+/* Converts a given ErrorType to its corresponding ErrorBase::Kind */
+ErrorBase::Kind errorKindForErrorType(ErrorType type);
+
+/* Returns whether the given kind represents an error (as opposed to
+   a warning or note) */
+bool errorKindIsError(ErrorBase::Kind kind);
 
 /**
   An error without a specific type, and lacking (typed) additional information

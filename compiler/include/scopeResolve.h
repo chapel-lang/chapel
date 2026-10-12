@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,11 +27,13 @@ class astlocT;
 class BaseAST;
 class CallExpr;
 class DefExpr;
+class Expr;
 class FnSymbol;
 class ModuleSymbol;
 class Symbol;
 class VisibilityStmt;
 class astlocT;
+struct AstIdLess;
 
 #include <cstddef>
 #include <map>
@@ -46,8 +48,8 @@ Symbol*  lookup(const char*           name,
 void     lookup(const char*           name,
                 BaseAST*              context,
                 llvm::SmallVectorImpl<Symbol*>& symbols,
-                std::map<Symbol*, astlocT*>& renameLocs,
-                std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+                std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts,
                 bool storeRenames = false);
 
 Symbol*  lookupAndCount(const char*           name,
@@ -67,12 +69,19 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs,
-                             std::map<Symbol*, VisibilityStmt*>& reexportPts);
+                             std::map<Symbol*, astlocT*, AstIdLess>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*, AstIdLess>& reexportPts);
 
 BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
 void resolveUnmanagedBorrows(CallExpr* call);
+
+// scopeResolve.cpp utility re-used in normalize.cpp
+// given an AST node that may be in a 'with' clause, find the corresponding
+// block info call
+CallExpr* findBlockInfo(Expr* exprInAst);
+bool isTaskBlockInfo(CallExpr* call);
+
 
 #endif

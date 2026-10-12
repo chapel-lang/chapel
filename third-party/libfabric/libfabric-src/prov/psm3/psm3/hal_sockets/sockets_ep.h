@@ -65,7 +65,7 @@
 #include <netinet/in.h>
 
 #ifdef RNDV_MOD
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 #include <infiniband/verbs.h>
 #include <psm_rndv_mod.h>
 #endif

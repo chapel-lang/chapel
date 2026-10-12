@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -434,10 +434,6 @@ operator =(ref a: stencilDist(?), b: stencilDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'Stencil' is deprecated, please use 'stencilDist' instead")
-type Stencil = stencilDist;
 
 
 class StencilImpl : BaseDist, writeSerializable {
@@ -1206,6 +1202,19 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
+  if isOwnedClassType(eltType) {
+    if isNonNilableClassType(eltType) {
+      //
+      // 'owned C' simply doesn't work today, so this creates a clean error
+      //
+      compilerError("'stencilDist'-distributed arrays of non-nilable 'owned' classes are not currently supported");
+    } else {
+      //
+      // 'owned C?' works, but is probably surprising, so warn about it
+      //
+      compilerWarning("Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'");
+    }
+  }
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
@@ -1331,7 +1340,7 @@ proc StencilDom.setup() {
 
       myLocDom.myBlock = dist.getChunk(whole, localeIdx);
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) != 0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.sizeAs(int) != 0 {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       } else {
         myLocDom.myFluff = myLocDom.myBlock;
@@ -1750,7 +1759,6 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
-  var binary = f._binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..rank-1 do
@@ -1758,7 +1766,7 @@ proc StencilArr.dsiSerialWrite(f) {
   label next while true {
     f.write(do_dsiAccess(true, i));
     if i(rank-1) <= (dom.dsiDim(rank-1).high - dom.dsiDim(rank-1).stride:strType) {
-      if ! binary then f.write(" ");
+      f.write(" ");
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {

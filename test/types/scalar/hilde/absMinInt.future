@@ -1,3 +1,0 @@
-bug: abs(min(int)) returns a negative number
-
-... and shouldn't.

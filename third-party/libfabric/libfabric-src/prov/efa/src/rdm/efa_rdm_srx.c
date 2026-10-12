@@ -7,6 +7,7 @@
 #include "efa_rdm_pke_rtm.h"
 #include "efa_rdm_pke_req.h"
 #include "efa_rdm_ope.h"
+#include "efa_rdm_tracepoint.h"
 
 /**
  * @brief update an rxe for a peer rx entry.
@@ -45,7 +46,7 @@ void efa_rdm_srx_update_rxe(struct fi_peer_rx_entry *peer_rxe,
  * the peer_rxe that matches a received message.
  *
  * @param[in] peer_rxe the rxe to be progressed.
- * @return int 0 on success, a negative integer on failure.
+ * @return int 0 unconditionally
  */
 static int efa_rdm_srx_start(struct fi_peer_rx_entry *peer_rxe)
 {
@@ -60,7 +61,17 @@ static int efa_rdm_srx_start(struct fi_peer_rx_entry *peer_rxe)
 	rxe = pkt_entry->ope;
 	efa_rdm_srx_update_rxe(peer_rxe, rxe);
 
+	efa_rdm_tracepoint(recv_unexp_match_found, (size_t) pkt_entry,
+			   pkt_entry->payload_size, rxe->msg_id,
+			   (size_t) rxe->cq_entry.op_context, rxe->total_len);
+
 	rxe->state = EFA_RDM_RXE_MATCHED;
+
+	/**
+	 * Since the rxe is now matched, we need to clean the unexp_pkt
+	 * as the pkts are now processed.
+	 */
+	rxe->unexp_pkt = NULL;
 
 	ret = efa_rdm_pke_proc_matched_rtm(pkt_entry);
 	if (OFI_UNLIKELY(ret)) {
@@ -74,7 +85,7 @@ static int efa_rdm_srx_start(struct fi_peer_rx_entry *peer_rxe)
 		efa_rdm_rxe_release(rxe);
 	}
 
-	return ret;
+	return 0;
 }
 
 /**
@@ -101,7 +112,8 @@ static int efa_rdm_srx_discard(struct fi_peer_rx_entry *peer_rxe)
 	EFA_WARN(FI_LOG_EP_CTRL,
 		"Discarding unmatched unexpected rxe: %p pkt_entry %p\n",
 		rxe, rxe->unexp_pkt);
-	efa_rdm_pke_release_rx(rxe->unexp_pkt);
+	efa_rdm_pke_release_rx_list(rxe->unexp_pkt);
+	rxe->unexp_pkt = NULL;
 	efa_rdm_rxe_release_internal(rxe);
 	return FI_SUCCESS;
 }
@@ -151,7 +163,7 @@ int efa_rdm_peer_srx_construct(struct efa_rdm_ep *ep)
 {
 	int ret;
 	ret = util_ep_srx_context(&efa_rdm_ep_domain(ep)->util_domain,
-				ep->rx_size, EFA_RDM_IOV_LIMIT,
+				ep->base_ep.info->rx_attr->size, EFA_RDM_IOV_LIMIT,
 				ep->min_multi_recv_size,
 				&efa_rdm_srx_update_mr,
 				&efa_rdm_ep_domain(ep)->srx_lock,

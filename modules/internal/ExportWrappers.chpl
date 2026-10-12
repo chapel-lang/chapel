@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,27 +22,6 @@
 module ExportWrappers {
   use ChapelStandard;
   use CTypes;
-
-  private proc _initDynamicEndCount() {
-    var endCount = _endCountAlloc(forceLocalTypes=false);
-    chpl_task_setDynamicEndCount(endCount);
-  }
-
-  private proc _destroyDynamicEndCount() {
-    var endCount = chpl_task_getDynamicEndCount();
-    _waitEndCount(endCount);
-    _endCountFree(endCount);
-  }
-
-  // TODO: Consider moving this to a separate "LibrarySupport" module.
-  export proc chpl_libraryModuleLevelSetup(): void {
-    _initDynamicEndCount();
-  }
-
-  // TODO: Consider moving this to a separate "LibrarySupport" module.
-  export proc chpl_libraryModuleLevelCleanup(): void {
-    _destroyDynamicEndCount();
-  }
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   pragma "export wrapper"

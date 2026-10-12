@@ -1,5 +1,0 @@
-requireNotAtModuleScope.chpl:5: warning: using 'require' on a Chapel source file not at module scope is deprecated
-requireNotAtModuleScope.chpl:10: warning: using 'require' on a Chapel source file not at module scope is deprecated
-requireNotAtModuleScope.chpl:14: warning: using 'require' on a Chapel source file not at module scope is deprecated
-requireNotAtModuleScope.chpl:16: warning: using 'require' on a Chapel source file not at module scope is deprecated
-requireNotAtModuleScope.chpl:18: warning: using 'require' on a Chapel source file not at module scope is deprecated

@@ -104,6 +104,7 @@ struct ucx_global_descriptor{
 	int ep_flush;
 	int enable_spawn;
 	int check_req_leak;
+	int single_thread;
 };
 
 struct ucx_fabric {
@@ -113,6 +114,7 @@ struct ucx_fabric {
 struct ucx_mr {
 	struct ofi_mr omr;
 	ucp_mem_h memh;
+	uint64_t base_addr;
 };
 
 #define FI_UCX_PKEY_SIGNATURE	(0x20230116ULL)
@@ -176,7 +178,10 @@ struct ucx_av {
 	struct ofi_dyn_arr addr_array;
 };
 
-#define UCX_GET_UCP_EP(EP, ADDR) (((struct ucx_ave*)(ADDR))->uep)
+#define UCX_GET_UCP_EP(EP, ADDR) 					\
+		(((struct ucx_ave *)					\
+		ofi_array_at_max(&(EP)->av->ave_array, (ADDR),		\
+				 (EP)->av->count))->uep)
 
 enum ucx_comm_mode {
 	UCX_MSG,
@@ -280,6 +285,7 @@ int ucx_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 ssize_t ucx_mrecv_repost(struct ucx_ep *ep,
 			 struct ucx_mrecv_ctx *mctx);
 
+void ucx_callback_noop( void *request, ucs_status_t status);
 void ucx_send_callback_no_compl(void *request, ucs_status_t status);
 void ucx_send_callback(void *request, ucs_status_t status);
 void ucx_recv_callback_no_compl(void *request, ucs_status_t status,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,7 +44,7 @@ FnSymbol*                 gGenericTupleDestroy  = NULL;
 
 const char*               ftableName = "chpl_ftable";
 const char*               ftableSizeName = "chpl_ftableSize";
-std::map<FnSymbol*, int>  ftableMap;
+std::map<FnSymbol*, int, AstIdLess>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 
 FnSymbol::FnSymbol(const char* initName)
@@ -69,7 +69,6 @@ FnSymbol::FnSymbol(const char* initName)
   userString         = NULL;
   valueFunction      = NULL;
   codegenUniqueNum   = 1;
-  doc                = NULL;
   retSymbol          = NULL;
   llvmDISubprogram   = NULL;
   mIsNormalized      = false;
@@ -244,6 +243,8 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->deprecationMsg = this->deprecationMsg;
   newFn->unstableMsg = this->unstableMsg;
   newFn->parenfulDeprecationMsg = this->parenfulDeprecationMsg;
+  newFn->firstEdition = this->firstEdition;
+  newFn->lastEdition = this->lastEdition;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -573,20 +574,19 @@ Symbol* FnSymbol::getReturnSymbol() {
     return nullptr;
   }
 
-  if (retval == NULL) {
+  if (retval == nullptr) {
     CallExpr* ret = toCallExpr(body->body.last());
 
-    if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
+    if (ret != nullptr && ret->isPrimitive(PRIM_RETURN) == true) {
       if (SymExpr* sym = toSymExpr(ret->get(1))) {
         retval = sym->symbol();
-      } else {
-        INT_FATAL(this, "function is not normal");
       }
     }
   }
 
-  if (retval == NULL) {
-    INT_FATAL(this, "function is not normal");
+  if (!retval && isNormalized()) {
+    // Crash only if we expected to find something.
+    INT_FATAL(this, "Function marked as normalized but is not normal");
   }
 
   return retval;
@@ -602,6 +602,10 @@ FunctionType* FnSymbol::computeAndSetType() {
   auto ret = FunctionType::get(this);
   this->type = ret;
   return ret;
+}
+
+bool FnSymbol::isUsedAsValue() const {
+  return hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
 }
 
 // Removes all statements from body and adds all statements from block.
@@ -844,7 +848,7 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 
   } else {
     // avoid recursing for the function.
-    static std::set<Symbol*> seen;
+    static std::set<Symbol*, AstIdLess> seen;
     if (seen.count(this)) {
       INT_ASSERT(abortOK);
       return TGR_TAGGING_ABORTED;
@@ -1037,7 +1041,7 @@ bool FnSymbol::isSignature() const {
 }
 
 bool FnSymbol::isAnonymous() const {
-  return hasFlag(FLAG_ANONYMOUS_FN) || hasFlag(FLAG_LEGACY_LAMBDA);
+  return hasFlag(FLAG_ANONYMOUS_FN);
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {
@@ -1209,6 +1213,10 @@ bool FnSymbol::isGenericIsValid() const {
   return mIsGenericIsValid;
 }
 
+bool FnSymbol::hasForeignLinkage() const {
+  return hasFlag(FLAG_EXTERN) || hasFlag(FLAG_EXPORT);
+}
+
 void FnSymbol::setGeneric(bool generic) {
   mIsGeneric = generic;
   mIsGenericIsValid = true;
@@ -1282,8 +1290,7 @@ Symbol* FnSymbol::getSubstitutionWithName(const char* name) const {
 }
 
 static bool stringNeedsParens(const std::string& str) {
-  for(std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
-      const char ch = *it;
+  for (const auto ch: str) {
       if (ch == ' ' || ch == '(' || ch == ')' || ch == ':')
         return true;
   }
@@ -1392,7 +1399,7 @@ static std::string argToString(FnSymbol* fn,
         char buf[bufSize];
         snprint_imm(buf, bufSize, *imm);
         value = buf;
-        if (is_imag_type(t))
+        if (isImagType(t))
           value += 'i';
       }
     }

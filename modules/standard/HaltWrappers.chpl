@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -144,6 +144,13 @@ module HaltWrappers {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc divByZeroCheckHalt(s:string) {
+    halt(s);
+  }
+
+  /* Halt wrapper for --union-checks */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc invalidUnionAccessHalt(s:string) {
     halt(s);
   }
 

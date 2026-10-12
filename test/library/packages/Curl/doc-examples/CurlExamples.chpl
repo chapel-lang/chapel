@@ -39,7 +39,7 @@ writeln('~@OK1');
 // This example changes the Curl options before connecting
 use URL, Curl;
 
-var reader = openUrlReader("https://example.com");
+var reader = openUrlReader("http://example.com");
 var str: bytes;
 // Set verbose output from curl
 extern const CURLOPT_VERBOSE: CURLoption;

@@ -1,2 +1,2 @@
 whereClauseNonParam.chpl:1: In function 'foo':
-whereClauseNonParam.chpl:1: error: invalid where clause
+whereClauseNonParam.chpl:1: error: a 'where' clause expression must be a 'param', but got a non-'param'

@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: submitted, submitted (2)
+files: spectralnorm-submitted-40000.dat, spectralnorm2-40000.dat
+graphtitle: Submitted Spectral Norm Shootout Benchmark for 40000x40000
+ylabel: Time (seconds)

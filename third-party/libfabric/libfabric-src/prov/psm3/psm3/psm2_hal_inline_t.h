@@ -112,9 +112,17 @@ static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_free)
 static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_flow_init)
 				(struct ips_flow *flow,
 					struct ips_proto *proto);
-static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_disconnect)
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_start_disconnect)
 				(struct ips_proto *proto,
-					ips_epaddr_t *ipsaddr);
+					ips_epaddr_t *ipsaddr, uint8_t force);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_start_reconnect)
+				(struct ips_proto *proto,
+					ips_epaddr_t *ipsaddr,
+					const struct ips_connect_reqrep *req,
+					unsigned flags);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_done_disconnect)
+				(struct ips_proto *proto,
+					ips_epaddr_t *ipsaddr, uint8_t force);
 static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ibta_init)
 				(struct ips_proto *proto);
 static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_path_rec_init)
@@ -125,13 +133,13 @@ static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_pollintr)
 				(psm2_ep_t ep, struct ips_recvhdrq *recvq,
 					int fd_pipe, int next_timeout,
 					uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr);
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(gdr_close)
 				(void);
 static PSMI_HAL_INLINE void* PSMI_HAL_CAT_INL_SYM(gdr_convert_gpu_to_host_addr)
 				(unsigned long buf,
 					size_t size, int flags, psm2_ep_t ep);
-#endif /* PSM_CUDA || PSM_ONEAPI */
+#endif /* PSM_HAVE_GPU */
 static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_index2pkey)
 				(psm2_ep_t ep, int index);
 static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(poll_type)
@@ -143,7 +151,7 @@ static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(spio_transfer_frame)
 				 uint32_t *payload, uint32_t length,
 				 uint32_t isCtrlMsg, uint32_t cksum_valid,
 				 uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				 , uint32_t is_gpu_payload
 #endif
 					);
@@ -153,7 +161,7 @@ static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(transfer_frame)
 				 uint32_t *payload, uint32_t length,
 				 uint32_t isCtrlMsg, uint32_t cksum_valid,
 				 uint32_t cksum
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 				 , uint32_t is_gpu_payload
 #endif
 					);

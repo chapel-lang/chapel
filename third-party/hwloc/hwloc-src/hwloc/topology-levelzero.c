@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2023 Inria.  All rights reserved.
+ * Copyright © 2020-2024 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -62,19 +62,22 @@ hwloc__levelzero_osdev_array_find(struct hwloc_osdev_array *array,
 }
 
 static void
-hwloc__levelzero_properties_get(ze_device_handle_t h, hwloc_obj_t osdev,
-                                int sysman_maybe_missing,
-                                int *is_integrated_p)
+hwloc__levelzero_properties_get(ze_device_handle_t zeh, zes_device_handle_t zesh,
+                                hwloc_obj_t osdev, ze_device_properties_t *prop)
 {
   ze_result_t res;
-  ze_device_properties_t prop;
+  ze_device_properties_t _prop;
   zes_device_properties_t prop2;
   int is_subdevice = 0;
-  int is_integrated = 0;
 
-  memset(&prop, 0, sizeof(prop));
-  res = zeDeviceGetProperties(h, &prop);
-  if (res == ZE_RESULT_SUCCESS) {
+  if (!prop) {
+    /* no properties were given, get ours */
+    memset(&_prop, 0, sizeof(_prop));
+    res = zeDeviceGetProperties(zeh, &_prop);
+    if (res == ZE_RESULT_SUCCESS)
+      prop = &_prop;
+  }
+  if (prop) {
     /* name is the model name followed by the deviceID
      * flags 1<<0 means integrated (vs discrete).
      */
@@ -83,7 +86,7 @@ hwloc__levelzero_properties_get(ze_device_handle_t h, hwloc_obj_t osdev,
     unsigned i;
     const char *type;
 
-    switch (prop.type) {
+    switch (prop->type) {
     case ZE_DEVICE_TYPE_GPU: type = "GPU"; break;
     case ZE_DEVICE_TYPE_CPU: type = "CPU"; break;
     case ZE_DEVICE_TYPE_FPGA: type = "FPGA"; break;
@@ -91,32 +94,26 @@ hwloc__levelzero_properties_get(ze_device_handle_t h, hwloc_obj_t osdev,
     case ZE_DEVICE_TYPE_VPU: type = "VPU"; break;
     default:
       if (HWLOC_SHOW_ALL_ERRORS())
-        fprintf(stderr, "hwloc/levelzero: unexpected device type %u\n", (unsigned) prop.type);
+        fprintf(stderr, "hwloc/levelzero: unexpected device type %u\n", (unsigned) prop->type);
       type = "Unknown";
     }
     hwloc_obj_add_info(osdev, "LevelZeroDeviceType", type);
-    snprintf(tmp, sizeof(tmp), "%u", prop.numSlices);
+    snprintf(tmp, sizeof(tmp), "%u", prop->numSlices);
     hwloc_obj_add_info(osdev, "LevelZeroNumSlices", tmp);
-    snprintf(tmp, sizeof(tmp), "%u", prop.numSubslicesPerSlice);
+    snprintf(tmp, sizeof(tmp), "%u", prop->numSubslicesPerSlice);
     hwloc_obj_add_info(osdev, "LevelZeroNumSubslicesPerSlice", tmp);
-    snprintf(tmp, sizeof(tmp), "%u", prop.numEUsPerSubslice);
+    snprintf(tmp, sizeof(tmp), "%u", prop->numEUsPerSubslice);
     hwloc_obj_add_info(osdev, "LevelZeroNumEUsPerSubslice", tmp);
-    snprintf(tmp, sizeof(tmp), "%u", prop.numThreadsPerEU);
+    snprintf(tmp, sizeof(tmp), "%u", prop->numThreadsPerEU);
     hwloc_obj_add_info(osdev, "LevelZeroNumThreadsPerEU", tmp);
 
     for(i=0; i<ZE_MAX_DEVICE_UUID_SIZE; i++)
-      snprintf(uuid+2*i, 3, "%02x", prop.uuid.id[i]);
+      snprintf(uuid+2*i, 3, "%02x", prop->uuid.id[i]);
     hwloc_obj_add_info(osdev, "LevelZeroUUID", uuid);
 
-    if (prop.flags & ZE_DEVICE_PROPERTY_FLAG_SUBDEVICE)
+    if (prop->flags & ZE_DEVICE_PROPERTY_FLAG_SUBDEVICE)
       is_subdevice = 1;
-
-    if (prop.flags & ZE_DEVICE_PROPERTY_FLAG_INTEGRATED)
-      is_integrated = 1;
   }
-
-  if (is_integrated_p)
-    *is_integrated_p = is_integrated;
 
   if (is_subdevice)
     /* sysman API on subdevice returns the same as root device, and we don't need those duplicate attributes */
@@ -124,7 +121,7 @@ hwloc__levelzero_properties_get(ze_device_handle_t h, hwloc_obj_t osdev,
 
   /* try to get additional info from sysman if enabled */
   memset(&prop2, 0, sizeof(prop2));
-  res = zesDeviceGetProperties(h, &prop2);
+  res = zesDeviceGetProperties(zesh, &prop2);
   if (res == ZE_RESULT_SUCCESS) {
     /* old implementations may return "Unknown", recent may return "unknown" */
     if (strcasecmp((const char *) prop2.vendorName, "Unknown"))
@@ -137,34 +134,24 @@ hwloc__levelzero_properties_get(ze_device_handle_t h, hwloc_obj_t osdev,
       hwloc_obj_add_info(osdev, "LevelZeroSerialNumber", (const char *) prop2.serialNumber);
     if (strcasecmp((const char *) prop2.boardNumber, "Unknown"))
       hwloc_obj_add_info(osdev, "LevelZeroBoardNumber", (const char *) prop2.boardNumber);
-  } else {
-    static int warned = 0;
-    if (!warned) {
-      if (sysman_maybe_missing == 1 && HWLOC_SHOW_ALL_ERRORS())
-        fprintf(stderr, "hwloc/levelzero: zesDeviceGetProperties() failed (ZES_ENABLE_SYSMAN=1 set too late?).\n");
-      else if (sysman_maybe_missing == 2 && HWLOC_SHOW_ALL_ERRORS())
-        fprintf(stderr, "hwloc/levelzero: zesDeviceGetProperties() failed (ZES_ENABLE_SYSMAN=0).\n");
-      warned = 1;
-    }
-    /* continue in degraded mode, we'll miss locality and some attributes */
   }
 }
 
 static void
-hwloc__levelzero_cqprops_get(ze_device_handle_t h,
+hwloc__levelzero_cqprops_get(ze_device_handle_t zeh,
                              hwloc_obj_t osdev)
 {
   ze_command_queue_group_properties_t *cqprops;
   unsigned nr_cqprops = 0;
   ze_result_t res;
 
-  res = zeDeviceGetCommandQueueGroupProperties(h, &nr_cqprops, NULL);
+  res = zeDeviceGetCommandQueueGroupProperties(zeh, &nr_cqprops, NULL);
   if (res != ZE_RESULT_SUCCESS || !nr_cqprops)
     return;
 
   cqprops = malloc(nr_cqprops * sizeof(*cqprops));
   if (cqprops) {
-    res = zeDeviceGetCommandQueueGroupProperties(h, &nr_cqprops, cqprops);
+    res = zeDeviceGetCommandQueueGroupProperties(zeh, &nr_cqprops, cqprops);
     if (res == ZE_RESULT_SUCCESS) {
       unsigned k;
       char tmp[32];
@@ -182,9 +169,9 @@ hwloc__levelzero_cqprops_get(ze_device_handle_t h,
 }
 
 static int
-hwloc__levelzero_memory_get_from_sysman(zes_device_handle_t h,
-                                        hwloc_obj_t root_osdev,
-                                        unsigned nr_osdevs, hwloc_obj_t *sub_osdevs)
+hwloc__levelzero_memory_get(zes_device_handle_t zesh,
+                            hwloc_obj_t root_osdev,
+                            unsigned nr_osdevs, hwloc_obj_t *sub_osdevs)
 {
   zes_mem_handle_t *mh;
   uint32_t nr_mems;
@@ -193,7 +180,7 @@ hwloc__levelzero_memory_get_from_sysman(zes_device_handle_t h,
   unsigned long long totalDDRkB = 0;
 
   nr_mems = 0;
-  res = zesDeviceEnumMemoryModules(h, &nr_mems, NULL);
+  res = zesDeviceEnumMemoryModules(zesh, &nr_mems, NULL);
   if (res != ZE_RESULT_SUCCESS)
     return -1; /* notify that sysman failed */
 
@@ -204,7 +191,7 @@ hwloc__levelzero_memory_get_from_sysman(zes_device_handle_t h,
 
   mh = malloc(nr_mems * sizeof(*mh));
   if (mh) {
-    res = zesDeviceEnumMemoryModules(h, &nr_mems, mh);
+    res = zesDeviceEnumMemoryModules(zesh, &nr_mems, mh);
     if (res == ZE_RESULT_SUCCESS) {
       unsigned m;
       for(m=0; m<nr_mems; m++) {
@@ -289,94 +276,6 @@ hwloc__levelzero_memory_get_from_sysman(zes_device_handle_t h,
   return 0;
 }
 
-static void
-hwloc__levelzero_memory_get_from_coreapi(ze_device_handle_t h,
-                                         hwloc_obj_t osdev,
-                                         int ignore_ddr)
-{
-  ze_device_memory_properties_t *mh;
-  uint32_t nr_mems;
-  ze_result_t res;
-
-  nr_mems = 0;
-  res = zeDeviceGetMemoryProperties(h, &nr_mems, NULL);
-  if (res != ZE_RESULT_SUCCESS || !nr_mems)
-    return;
-  hwloc_debug("L0/CoreAPI: found %u memories in osdev %s\n",
-              nr_mems, osdev->name);
-
-  mh = malloc(nr_mems * sizeof(*mh));
-  if (mh) {
-    res = zeDeviceGetMemoryProperties(h, &nr_mems, mh);
-    if (res == ZE_RESULT_SUCCESS) {
-      unsigned m;
-      for(m=0; m<nr_mems; m++) {
-        const char *_name = mh[m].name;
-        char name[300], value[64];
-        /* FIXME: discrete GPUs report 95% of the physical memory (what sysman sees)
-         * while integrated GPUs report 80% of the host RAM (sysman sees 0), adjust?
-         */
-        hwloc_debug("L0/CoreAPI: found memory name %s size %llu in osdev %s\n",
-                    mh[m].name, (unsigned long long) mh[m].totalSize, osdev->name);
-        if (!mh[m].totalSize)
-          continue;
-        if (ignore_ddr && !strcmp(_name, "DDR"))
-          continue;
-        if (!_name[0])
-          _name = "Memory";
-        snprintf(name, sizeof(name), "LevelZero%sSize", _name); /* HBM or DDR, or Memory if unknown */
-        snprintf(value, sizeof(value), "%llu", (unsigned long long) mh[m].totalSize >> 10);
-        hwloc_obj_add_info(osdev, name, value);
-      }
-    }
-    free(mh);
-  }
-}
-
-
-static void
-hwloc__levelzero_memory_get(zes_device_handle_t h, hwloc_obj_t root_osdev, int is_integrated,
-                            unsigned nr_subdevices, zes_device_handle_t *subh, hwloc_obj_t *sub_osdevs)
-{
-  static int memory_from_coreapi = -1; /* 1 means coreapi, 0 means sysman, -1 means sysman if available or coreapi otherwise */
-  static int first = 1;
-
-  if (first) {
-    char *env;
-    env = getenv("HWLOC_L0_COREAPI_MEMORY");
-    if (env)
-      memory_from_coreapi = atoi(env);
-
-    if (memory_from_coreapi == -1) {
-      int ret = hwloc__levelzero_memory_get_from_sysman(h, root_osdev, nr_subdevices, sub_osdevs);
-      if (!ret) {
-        /* sysman worked, we're done, disable coreapi for next time */
-        hwloc_debug("levelzero: sysman/memory succeeded, disabling coreapi memory queries\n");
-        memory_from_coreapi = 0;
-        return;
-      }
-      /* sysman failed, enable coreapi */
-      hwloc_debug("levelzero: sysman/memory failed, enabling coreapi memory queries\n");
-      memory_from_coreapi = 1;
-    }
-
-    first = 0;
-  }
-
-  if (memory_from_coreapi > 0) {
-    unsigned k;
-    int ignore_ddr = (memory_from_coreapi != 2) && is_integrated; /* DDR ignored in integrated GPUs, it's like the host DRAM */
-    hwloc__levelzero_memory_get_from_coreapi(h, root_osdev, ignore_ddr);
-    for(k=0; k<nr_subdevices; k++)
-      hwloc__levelzero_memory_get_from_coreapi(subh[k], sub_osdevs[k], ignore_ddr);
-  } else {
-    hwloc__levelzero_memory_get_from_sysman(h, root_osdev, nr_subdevices, sub_osdevs);
-    /* no need to call hwloc__levelzero_memory_get() on subdevices,
-     * the call on the root device is enough (and identical to a call on subdevices)
-     */
-  }
-}
-
 struct hwloc_levelzero_ports {
   unsigned nr_allocated;
   unsigned nr;
@@ -399,7 +298,7 @@ hwloc__levelzero_ports_init(struct hwloc_levelzero_ports *hports)
 }
 
 static void
-hwloc__levelzero_ports_get(zes_device_handle_t dvh,
+hwloc__levelzero_ports_get(zes_device_handle_t zesh,
                            hwloc_obj_t root_osdev,
                            unsigned nr_sub_osdevs, hwloc_obj_t *sub_osdevs,
                            struct hwloc_levelzero_ports *hports)
@@ -409,7 +308,7 @@ hwloc__levelzero_ports_get(zes_device_handle_t dvh,
   unsigned i;
   ze_result_t res;
 
-  res = zesDeviceEnumFabricPorts(dvh, &nr_new, NULL);
+  res = zesDeviceEnumFabricPorts(zesh, &nr_new, NULL);
   if (res != ZE_RESULT_SUCCESS || !nr_new)
     return;
   hwloc_debug("L0 device %s has %u fabric ports\n", root_osdev->name, nr_new);
@@ -432,7 +331,7 @@ hwloc__levelzero_ports_get(zes_device_handle_t dvh,
   ports = malloc(nr_new * sizeof(*ports));
   if (!ports)
     return;
-  res = zesDeviceEnumFabricPorts(dvh, &nr_new, ports);
+  res = zesDeviceEnumFabricPorts(zesh, &nr_new, ports);
 
   for(i=0; i<nr_new; i++) {
     unsigned id = hports->nr;
@@ -478,6 +377,248 @@ hwloc__levelzero_ports_get(zes_device_handle_t dvh,
   }
 
   free(ports);
+}
+
+static int
+hwloc__levelzero_devices_get(struct hwloc_topology *topology,
+                             struct hwloc_osdev_array *oarray,
+                             struct hwloc_levelzero_ports *hports)
+{
+  ze_driver_handle_t *drh;
+  zes_driver_handle_t *zesdrh;
+  uint32_t nbdrivers, i, k, zeidx;
+  ze_result_t res;
+
+  nbdrivers = 0;
+  res = zeDriverGet(&nbdrivers, NULL);
+  if (res != ZE_RESULT_SUCCESS || !nbdrivers)
+    return 0;
+  i = 0;
+  res = zesDriverGet(&i, NULL);
+  if (res != ZE_RESULT_SUCCESS || i != nbdrivers) {
+    if (HWLOC_SHOW_ALL_ERRORS())
+      fprintf(stderr, "hwloc/levelzero: zesDriverGet returned %x and found %u ZES drivers vs %u ZE drivers\n", res, i, nbdrivers);
+    return 0;
+  }
+  hwloc_debug("found %u ZE/ZES drivers\n", (unsigned) nbdrivers);
+
+  drh = malloc(nbdrivers * sizeof(*drh));
+  zesdrh = malloc(nbdrivers * sizeof(*zesdrh));
+  if (!drh || !zesdrh) {
+    free(drh);
+    free(zesdrh);
+    return 0;
+  }
+  res = zeDriverGet(&nbdrivers, drh);
+  if (res != ZE_RESULT_SUCCESS) {
+    free(drh);
+    free(zesdrh);
+    return 0;
+  }
+  res = zesDriverGet(&nbdrivers, zesdrh);
+  if (res != ZE_RESULT_SUCCESS) {
+    free(drh);
+    free(zesdrh);
+    return 0;
+  }
+
+  zeidx = 0;
+  for(i=0; i<nbdrivers; i++) {
+    uint32_t nbdevices, j;
+    ze_device_handle_t *dvh;
+    char buffer[13];
+
+    nbdevices = 0;
+    res = zeDeviceGet(drh[i], &nbdevices, NULL);
+    if (res != ZE_RESULT_SUCCESS || !nbdevices)
+      continue;
+    hwloc_debug("hwloc/L0: found %u devices in driver #%u\n", (unsigned) nbdevices, (unsigned) i);
+    dvh = malloc(nbdevices * sizeof(*dvh));
+    if (!dvh)
+      continue;
+    res = zeDeviceGet(drh[i], &nbdevices, dvh);
+    if (res != ZE_RESULT_SUCCESS) {
+      free(dvh);
+      continue;
+    }
+
+#if 0
+    /* No interesting info attr to get from driver properties for now.
+     * 2022/12/09: Driver UUID is driver version (major>>24|minor>>16|build) | a-uuid-timestamp>>32
+     *  hence it's not stable across multiple runs
+     */
+    ze_driver_properties_t drprop;
+    res = zeDriverGetProperties(drh[i], &drprop);
+#endif
+
+    for(j=0; j<nbdevices; j++) {
+      ze_device_handle_t zeh = dvh[j];
+      zes_device_handle_t zesh;
+      ze_device_handle_t *subzehs = NULL;
+      uint32_t nr_subdevices;
+      hwloc_obj_t osdev, parent, *subosdevs = NULL;
+      ze_device_properties_t props;
+      zes_uuid_t uuid;
+      ze_bool_t onSubdevice = 0;
+      uint32_t subdeviceId = 0;
+
+      res = zeDeviceGetProperties(zeh, &props);
+      if (res != ZE_RESULT_SUCCESS) {
+        if (HWLOC_SHOW_ALL_ERRORS())
+          fprintf(stderr, "hwloc/levelzero: zeDeviceGetProperties() failed %x, skipping driver %u device %u\n",
+                  res, i, j);
+        continue;
+      }
+      memcpy(uuid.id, props.uuid.id, ZE_MAX_DEVICE_UUID_SIZE);
+      res = zesDriverGetDeviceByUuidExp(zesdrh[i], uuid, &zesh, &onSubdevice, &subdeviceId);
+      if (res != ZE_RESULT_SUCCESS) {
+        if (HWLOC_SHOW_ALL_ERRORS())
+          fprintf(stderr, "hwloc/levelzero: zesDriverGetDeviceByUuidExp() failed %x, skipping driver %u device %u\n",
+                  res, i, j);
+        continue;
+      }
+
+      osdev = hwloc_alloc_setup_object(topology, HWLOC_OBJ_OS_DEVICE, HWLOC_UNKNOWN_INDEX);
+      snprintf(buffer, sizeof(buffer), "ze%u", zeidx); // ze0d0 ?
+      osdev->name = strdup(buffer);
+      osdev->depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+      osdev->attr->osdev.type = HWLOC_OBJ_OSDEV_COPROC;
+      osdev->subtype = strdup("LevelZero");
+      hwloc_obj_add_info(osdev, "Backend", "LevelZero");
+
+      snprintf(buffer, sizeof(buffer), "%u", i);
+      hwloc_obj_add_info(osdev, "LevelZeroDriverIndex", buffer);
+      snprintf(buffer, sizeof(buffer), "%u", j);
+      hwloc_obj_add_info(osdev, "LevelZeroDriverDeviceIndex", buffer);
+
+      hwloc__levelzero_properties_get(zeh, zesh, osdev, &props);
+
+      hwloc__levelzero_cqprops_get(zeh, osdev);
+
+      nr_subdevices = 0;
+      res = zeDeviceGetSubDevices(zeh, &nr_subdevices, NULL);
+      /* returns ZE_RESULT_ERROR_INVALID_ARGUMENT if there are no subdevices */
+      if (res == ZE_RESULT_SUCCESS && nr_subdevices > 0) {
+        char tmp[64];
+        snprintf(tmp, sizeof(tmp), "%u", nr_subdevices);
+        hwloc_obj_add_info(osdev, "LevelZeroSubdevices", tmp);
+        subzehs = malloc(nr_subdevices * sizeof(*subzehs));
+        subosdevs = malloc(nr_subdevices * sizeof(*subosdevs));
+        if (subosdevs && subzehs) {
+          zeDeviceGetSubDevices(zeh, &nr_subdevices, subzehs);
+          for(k=0; k<nr_subdevices; k++) {
+            ze_device_handle_t subzeh = subzehs[k];
+            zes_device_handle_t subzesh = NULL;
+
+            res = zeDeviceGetProperties(subzeh, &props);
+            if (res != ZE_RESULT_SUCCESS) {
+              if (HWLOC_SHOW_ALL_ERRORS())
+                fprintf(stderr, "hwloc/levelzero: subdevice zeDeviceGetProperties() failed %x, skipping driver %u device %u\n",
+                        res, i, j);
+              continue;
+            }
+            memcpy(uuid.id, props.uuid.id, ZE_MAX_DEVICE_UUID_SIZE);
+            res = zesDriverGetDeviceByUuidExp(zesdrh[i], uuid, &subzesh, &onSubdevice, &subdeviceId);
+            if (res != ZE_RESULT_SUCCESS) {
+              if (HWLOC_SHOW_ALL_ERRORS())
+                fprintf(stderr, "hwloc/levelzero: subdevice zesDriverGetDeviceByUuidExp() failed %x, skipping driver %u device %u\n",
+                        res, i, j);
+              continue;
+            }
+
+            subosdevs[k] = hwloc_alloc_setup_object(topology, HWLOC_OBJ_OS_DEVICE, HWLOC_UNKNOWN_INDEX);
+            snprintf(tmp, sizeof(tmp), "ze%u.%u", zeidx, k);
+            subosdevs[k]->name = strdup(tmp);
+            subosdevs[k]->depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+            subosdevs[k]->attr->osdev.type = HWLOC_OBJ_OSDEV_COPROC;
+            subosdevs[k]->subtype = strdup("LevelZero");
+            snprintf(tmp, sizeof(tmp), "%u", k);
+            hwloc_obj_add_info(subosdevs[k], "LevelZeroSubdeviceID", tmp);
+            hwloc_obj_add_info(osdev, "Backend", "LevelZero");
+
+            hwloc__levelzero_properties_get(subzeh, subzesh, subosdevs[k], NULL);
+
+            hwloc__levelzero_cqprops_get(subzeh, subosdevs[k]);
+          }
+        } else {
+          free(subosdevs);
+          free(subzehs);
+          subosdevs = NULL;
+          subzehs = NULL;
+          nr_subdevices = 0;
+        }
+      }
+
+      /* get all memory info at once */
+      hwloc__levelzero_memory_get(zesh, osdev, nr_subdevices, subosdevs);
+
+      /* get all ports info at once */
+      if (!(hwloc_topology_get_flags(topology) & HWLOC_TOPOLOGY_FLAG_NO_DISTANCES))
+        hwloc__levelzero_ports_get(zesh, osdev, nr_subdevices, subosdevs, hports);
+
+      parent = NULL;
+#ifdef HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT
+      { /* try getting PCI BDF+speed from core extension */
+        ze_pci_ext_properties_t ext_pci;
+        ext_pci.stype =  ZE_STRUCTURE_TYPE_PCI_EXT_PROPERTIES;
+        ext_pci.pNext = NULL;
+        res = zeDevicePciGetPropertiesExt(zeh, &ext_pci);
+        if (res == ZE_RESULT_SUCCESS) {
+          parent = hwloc_pci_find_parent_by_busid(topology,
+                                                  ext_pci.address.domain,
+                                                  ext_pci.address.bus,
+                                                  ext_pci.address.device,
+                                                  ext_pci.address.function);
+          if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE) {
+            if (ext_pci.maxSpeed.maxBandwidth > 0)
+              parent->attr->pcidev.linkspeed = ((float)ext_pci.maxSpeed.maxBandwidth)/1000/1000/1000;
+          }
+        }
+      }
+#endif /* HWLOC_HAVE_LEVELZERO_CORE_PCI_EXT */
+      if (!parent) {
+        /* try getting PCI BDF+speed from sysman */
+        zes_pci_properties_t pci;
+        res = zesDevicePciGetProperties(zesh, &pci);
+        if (res == ZE_RESULT_SUCCESS) {
+          parent = hwloc_pci_find_parent_by_busid(topology,
+                                                  pci.address.domain,
+                                                  pci.address.bus,
+                                                  pci.address.device,
+                                                  pci.address.function);
+          if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE) {
+            if (pci.maxSpeed.maxBandwidth > 0)
+              parent->attr->pcidev.linkspeed = ((float)pci.maxSpeed.maxBandwidth)/1000/1000/1000;
+          }
+        }
+      }
+      if (!parent)
+        parent = hwloc_get_root_obj(topology);
+
+      /* WARNING: parent and its subdevices are inserted together in oarray[].
+       * this is required when filling the BW matrix at the end of hwloc__levelzero_ports_connect()
+       */
+      hwloc_insert_object_by_parent(topology, parent, osdev);
+      hwloc__levelzero_osdev_array_add(oarray, osdev);
+      if (nr_subdevices) {
+        for(k=0; k<nr_subdevices; k++)
+          if (subosdevs[k]) {
+            hwloc_insert_object_by_parent(topology, osdev, subosdevs[k]);
+            hwloc__levelzero_osdev_array_add(oarray, subosdevs[k]);
+          }
+        free(subosdevs);
+        free(subzehs);
+      }
+      zeidx++;
+    }
+
+    free(dvh);
+  }
+
+  free(drh);
+  free(zesdrh);
+
+  return 0;
 }
 
 static int
@@ -611,12 +752,8 @@ hwloc_levelzero_discover(struct hwloc_backend *backend, struct hwloc_disc_status
   struct hwloc_topology *topology = backend->topology;
   enum hwloc_type_filter_e filter;
   ze_result_t res;
-  ze_driver_handle_t *drh;
-  uint32_t nbdrivers, i, k, zeidx;
   struct hwloc_osdev_array oarray;
   struct hwloc_levelzero_ports hports;
-  int sysman_maybe_missing = 0; /* 1 if ZES_ENABLE_SYSMAN=1 was NOT set early, 2 if ZES_ENABLE_SYSMAN=0 */
-  char *env;
 
   assert(dstatus->phase == HWLOC_DISC_PHASE_IO);
 
@@ -628,34 +765,6 @@ hwloc_levelzero_discover(struct hwloc_backend *backend, struct hwloc_disc_status
 
   hwloc__levelzero_ports_init(&hports);
 
-#ifdef HWLOC_HAVE_ZESINIT
-  res = zesInit(0);
-  if (res != ZE_RESULT_SUCCESS) {
-    hwloc_debug("hwloc/levelzero: Failed to initialize LevelZero Sysman in zesInit(): 0x%x\n", (unsigned)res);
-    hwloc_debug("hwloc/levelzero: Continuing. Hopefully ZES_ENABLE_SYSMAN=1\n");
-  }
-#endif /* HWLOC_HAVE_ZESINIT */
-
-  /* Tell L0 to create sysman devices.
-   * If somebody already initialized L0 without Sysman,
-   * zesDeviceGetProperties() will fail and warn in hwloc__levelzero_properties_get().
-   * The lib constructor and Windows DllMain tried to set ZES_ENABLE_SYSMAN=1 early (see topology.c),
-   * we try again in case they didn't.
-   */
-  env = getenv("ZES_ENABLE_SYSMAN");
-  if (!env) {
-    /* setenv() is safer than putenv() but not available on Windows */
-#ifdef HWLOC_WIN_SYS
-    putenv("ZES_ENABLE_SYSMAN=1");
-#else
-    setenv("ZES_ENABLE_SYSMAN", "1", 1);
-#endif
-    /* we'll warn in hwloc__levelzero_properties_get() if we fail to get zes devices */
-    sysman_maybe_missing = 1;
-  } else if (!atoi(env)) {
-    sysman_maybe_missing = 2;
-  }
-
   res = zeInit(0);
   if (res != ZE_RESULT_SUCCESS) {
     if (HWLOC_SHOW_ALL_ERRORS()) {
@@ -664,179 +773,20 @@ hwloc_levelzero_discover(struct hwloc_backend *backend, struct hwloc_disc_status
     return 0;
   }
 
-  nbdrivers = 0;
-  res = zeDriverGet(&nbdrivers, NULL);
-  if (res != ZE_RESULT_SUCCESS || !nbdrivers)
-    return 0;
-  hwloc_debug("hwloc/L0: found %u drivers\n", (unsigned) nbdrivers);
-  drh = malloc(nbdrivers * sizeof(*drh));
-  if (!drh)
-    return 0;
-  res = zeDriverGet(&nbdrivers, drh);
+  res = zesInit(0);
   if (res != ZE_RESULT_SUCCESS) {
-    free(drh);
+    if (HWLOC_SHOW_ALL_ERRORS()) {
+      fprintf(stderr, "hwloc/levelzero: Failed to initialize in zesInit(): 0x%x\n", (unsigned)res);
+    }
     return 0;
   }
 
-  zeidx = 0;
-  for(i=0; i<nbdrivers; i++) {
-    uint32_t nbdevices, j;
-    ze_device_handle_t *dvh;
-    char buffer[13];
-
-    nbdevices = 0;
-    res = zeDeviceGet(drh[i], &nbdevices, NULL);
-    if (res != ZE_RESULT_SUCCESS || !nbdevices)
-      continue;
-    hwloc_debug("hwloc/L0: found %u devices in driver #%u\n", (unsigned) nbdevices, (unsigned) i);
-    dvh = malloc(nbdevices * sizeof(*dvh));
-    if (!dvh)
-      continue;
-    res = zeDeviceGet(drh[i], &nbdevices, dvh);
-    if (res != ZE_RESULT_SUCCESS) {
-      free(dvh);
-      continue;
-    }
-
-#if 0
-    /* No interesting info attr to get from driver properties for now.
-     * 2022/12/09: Driver UUID is driver version (major>>24|minor>>16|build) | a-uuid-timestamp>>32
-     *  hence it's not stable across multiple runs
-     */
-    ze_driver_properties_t drprop;
-    res = zeDriverGetProperties(drh[i], &drprop);
-#endif
-
-    for(j=0; j<nbdevices; j++) {
-      zes_device_handle_t sdvh = dvh[j];
-      zes_device_handle_t *subh = NULL;
-      uint32_t nr_subdevices;
-      hwloc_obj_t osdev, parent, *subosdevs = NULL;
-      int is_integrated = 0;
-
-      osdev = hwloc_alloc_setup_object(topology, HWLOC_OBJ_OS_DEVICE, HWLOC_UNKNOWN_INDEX);
-      snprintf(buffer, sizeof(buffer), "ze%u", zeidx); // ze0d0 ?
-      osdev->name = strdup(buffer);
-      osdev->depth = HWLOC_TYPE_DEPTH_UNKNOWN;
-      osdev->attr->osdev.type = HWLOC_OBJ_OSDEV_COPROC;
-      osdev->subtype = strdup("LevelZero");
-      hwloc_obj_add_info(osdev, "Backend", "LevelZero");
-
-      snprintf(buffer, sizeof(buffer), "%u", i);
-      hwloc_obj_add_info(osdev, "LevelZeroDriverIndex", buffer);
-      snprintf(buffer, sizeof(buffer), "%u", j);
-      hwloc_obj_add_info(osdev, "LevelZeroDriverDeviceIndex", buffer);
-
-      hwloc__levelzero_properties_get(dvh[j], osdev, sysman_maybe_missing, &is_integrated);
-
-      hwloc__levelzero_cqprops_get(dvh[j], osdev);
-
-      nr_subdevices = 0;
-      res = zeDeviceGetSubDevices(dvh[j], &nr_subdevices, NULL);
-      /* returns ZE_RESULT_ERROR_INVALID_ARGUMENT if there are no subdevices */
-      if (res == ZE_RESULT_SUCCESS && nr_subdevices > 0) {
-        char tmp[64];
-        snprintf(tmp, sizeof(tmp), "%u", nr_subdevices);
-        hwloc_obj_add_info(osdev, "LevelZeroSubdevices", tmp);
-        subh = malloc(nr_subdevices * sizeof(*subh));
-        subosdevs = malloc(nr_subdevices * sizeof(*subosdevs));
-        if (subosdevs && subh) {
-          zeDeviceGetSubDevices(dvh[j], &nr_subdevices, subh);
-          for(k=0; k<nr_subdevices; k++) {
-            subosdevs[k] = hwloc_alloc_setup_object(topology, HWLOC_OBJ_OS_DEVICE, HWLOC_UNKNOWN_INDEX);
-            snprintf(tmp, sizeof(tmp), "ze%u.%u", zeidx, k);
-            subosdevs[k]->name = strdup(tmp);
-            subosdevs[k]->depth = HWLOC_TYPE_DEPTH_UNKNOWN;
-            subosdevs[k]->attr->osdev.type = HWLOC_OBJ_OSDEV_COPROC;
-            subosdevs[k]->subtype = strdup("LevelZero");
-            hwloc_obj_add_info(subosdevs[k], "Backend", "LevelZero");
-            snprintf(tmp, sizeof(tmp), "%u", k);
-            hwloc_obj_add_info(subosdevs[k], "LevelZeroSubdeviceID", tmp);
-
-            hwloc__levelzero_properties_get(subh[k], subosdevs[k], sysman_maybe_missing, NULL);
-
-            hwloc__levelzero_cqprops_get(subh[k], subosdevs[k]);
-          }
-        } else {
-          free(subosdevs);
-          free(subh);
-          subosdevs = NULL;
-          nr_subdevices = 0;
-        }
-      }
-
-      /* get all memory info at once */
-      hwloc__levelzero_memory_get(dvh[j], osdev, is_integrated, nr_subdevices, subh, subosdevs);
-
-      /* get all ports info at once */
-      if (!(hwloc_topology_get_flags(topology) & HWLOC_TOPOLOGY_FLAG_NO_DISTANCES))
-        hwloc__levelzero_ports_get(dvh[j], osdev, nr_subdevices, subosdevs, &hports);
-
-      parent = NULL;
-#ifdef HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT
-      { /* try getting PCI BDF+speed from core extension */
-        ze_pci_ext_properties_t ext_pci;
-        ext_pci.stype =  ZE_STRUCTURE_TYPE_PCI_EXT_PROPERTIES;
-        ext_pci.pNext = NULL;
-        res = zeDevicePciGetPropertiesExt(dvh[j], &ext_pci);
-        if (res == ZE_RESULT_SUCCESS) {
-          parent = hwloc_pci_find_parent_by_busid(topology,
-                                                  ext_pci.address.domain,
-                                                  ext_pci.address.bus,
-                                                  ext_pci.address.device,
-                                                  ext_pci.address.function);
-          if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE) {
-            if (ext_pci.maxSpeed.maxBandwidth > 0)
-              parent->attr->pcidev.linkspeed = ((float)ext_pci.maxSpeed.maxBandwidth)/1000/1000/1000;
-          }
-        }
-      }
-#endif /* HWLOC_HAVE_LEVELZERO_CORE_PCI_EXT */
-      if (!parent) {
-        /* try getting PCI BDF+speed from sysman */
-        zes_pci_properties_t pci;
-        res = zesDevicePciGetProperties(sdvh, &pci);
-        if (res == ZE_RESULT_SUCCESS) {
-          parent = hwloc_pci_find_parent_by_busid(topology,
-                                                  pci.address.domain,
-                                                  pci.address.bus,
-                                                  pci.address.device,
-                                                  pci.address.function);
-          if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE) {
-            if (pci.maxSpeed.maxBandwidth > 0)
-              parent->attr->pcidev.linkspeed = ((float)pci.maxSpeed.maxBandwidth)/1000/1000/1000;
-          }
-        }
-      }
-      if (!parent)
-        parent = hwloc_get_root_obj(topology);
-
-      /* WARNING: parent and its subdevices are inserted together in oarray[].
-       * this is required when filling the BW matrix at the end of hwloc__levelzero_ports_connect()
-       */
-      hwloc_insert_object_by_parent(topology, parent, osdev);
-      hwloc__levelzero_osdev_array_add(&oarray, osdev);
-      if (nr_subdevices) {
-        for(k=0; k<nr_subdevices; k++)
-          if (subosdevs[k]) {
-            hwloc_insert_object_by_parent(topology, osdev, subosdevs[k]);
-            hwloc__levelzero_osdev_array_add(&oarray, subosdevs[k]);
-          }
-        free(subosdevs);
-        free(subh);
-      }
-      zeidx++;
-    }
-
-    free(dvh);
-  }
-
+  hwloc__levelzero_devices_get(topology, &oarray, &hports);
   hwloc__levelzero_ports_connect(topology, &oarray, &hports);
   hwloc__levelzero_ports_destroy(&hports);
 
   hwloc__levelzero_osdev_array_free(&oarray);
 
-  free(drh);
   return 0;
 }
 

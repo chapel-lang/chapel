@@ -1,0 +1,2 @@
+stencilOfOwned.chpl:8: warning: Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'
+stencilOfOwned.chpl:8: warning: Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'

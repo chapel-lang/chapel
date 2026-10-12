@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,7 @@ UniqueString ID::symbolPathWithoutRepeats(Context* context) const {
 
 // find the last '.' but don't count \.
 // returns -1 if none was found
-static ssize_t findLastDot(const char* path) {
+ssize_t findLastDot(const char* path) {
   ssize_t lastDot = -1;
   for (ssize_t i = 1; path[i]; i++) {
     if (path[i] == '.' && path[i-1] != '\\')

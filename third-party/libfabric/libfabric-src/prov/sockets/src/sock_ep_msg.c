@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2014 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2017 DataDirect Networks, Inc. All rights reserved.
+ * Copyright (c) 2025 VDURA, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -183,16 +184,17 @@ static int sock_ep_cm_getpeer(struct fid_ep *ep, void *addr, size_t *addrlen)
 
 static int sock_cm_send(int fd, const void *buf, size_t len)
 {
-	ssize_t ret, done = 0;
+	ssize_t ret;
+	size_t done = 0;
 
-	while ((size_t) done != len) {
+	while (done < len) {
 		ret = ofi_send_socket(fd, (const char*) buf + done,
 				      len - done, MSG_NOSIGNAL);
 		if (ret < 0) {
 			if (OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr()))
 				continue;
 			SOCK_LOG_ERROR("failed to write to fd: %s\n",
-				       strerror(ofi_sockerr()));
+					strerror(ofi_sockerr()));
 			return -FI_EIO;
 		}
 		done += ret;
@@ -202,8 +204,10 @@ static int sock_cm_send(int fd, const void *buf, size_t len)
 
 static int sock_cm_recv(int fd, void *buf, size_t len)
 {
-	ssize_t ret, done = 0;
-	while ((size_t) done != len) {
+	ssize_t ret;
+	size_t done = 0;
+
+	while (done < len) {
 		ret = ofi_recv_socket(fd, (char*) buf + done, len - done, 0);
 		if (ret <= 0) {
 			if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
@@ -1196,7 +1200,7 @@ static void *sock_ep_cm_thread(void *arg)
 			goto skip;
 		}
 		for (i = 0; i < num_fds; i++) {
-			handle = events[i].data.ptr;
+			handle = OFI_EPOLL_EVT_DATA(events[i]);
 
 			if (handle == NULL) { /* Signal event */
 				fd_signal_reset(&cm_head->signal);

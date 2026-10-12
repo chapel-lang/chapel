@@ -1,1 +1,9 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE=4
+#!/usr/bin/env bash
+
+num_threads=4
+num_cores=$(python3 -c 'import multiprocessing as mp; print(mp.cpu_count())')
+if [ $num_cores -lt $num_threads ]; then
+  num_threads=2 # default to 2 if we don't have enough cores
+fi
+
+echo "CHPL_RT_NUM_THREADS_PER_LOCALE=$num_threads"

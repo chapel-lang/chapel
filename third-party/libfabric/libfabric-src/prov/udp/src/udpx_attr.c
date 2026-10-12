@@ -38,7 +38,6 @@
 
 struct fi_tx_attr udpx_tx_attr = {
 	.caps = UDPX_TX_CAPS,
-	.comp_order = FI_ORDER_STRICT,
 	.inject_size = 1472,
 	.size = 1024,
 	.iov_limit = UDPX_IOV_LIMIT
@@ -46,8 +45,6 @@ struct fi_tx_attr udpx_tx_attr = {
 
 struct fi_rx_attr udpx_rx_attr = {
 	.caps = UDPX_RX_CAPS,
-	.comp_order = FI_ORDER_STRICT,
-	.total_buffered_recv = (1 << 16),
 	.size = 1024,
 	.iov_limit = UDPX_IOV_LIMIT
 };
@@ -69,7 +66,7 @@ struct fi_domain_attr udpx_domain_attr = {
 	.data_progress = FI_PROGRESS_AUTO,
 	.resource_mgmt = FI_RM_ENABLED,
 	.av_type = FI_AV_UNSPEC,
-	.mr_mode = FI_MR_BASIC | FI_MR_SCALABLE,
+	.mr_mode = OFI_MR_BASIC | OFI_MR_SCALABLE,
 	.mr_key_size = sizeof(uint64_t),
 	.cq_cnt = 256,
 	.ep_cnt = 256,
@@ -86,7 +83,7 @@ struct fi_fabric_attr udpx_fabric_attr = {
 
 struct fi_info udpx_info = {
 	.caps = UDPX_DOMAIN_CAPS | UDPX_TX_CAPS | UDPX_RX_CAPS,
-	.addr_format = FI_SOCKADDR,
+	.addr_format = FI_SOCKADDR_IP,
 	.tx_attr = &udpx_tx_attr,
 	.rx_attr = &udpx_rx_attr,
 	.ep_attr = &udpx_ep_attr,

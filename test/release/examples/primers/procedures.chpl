@@ -67,7 +67,7 @@ proc factorial(x: int(32)) : int(32)
 // (default) 64-bit integer value, we will get the 64-bit version.
 //
 writeln("Another simple procedure");
-writeln("33! is ", factorial(33));
+writeln("17! is ", factorial(17));
 
 //
 // Whereas passing in a 32-bit integer will cause us to get the

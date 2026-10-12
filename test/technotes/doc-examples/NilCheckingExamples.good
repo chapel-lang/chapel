@@ -1,0 +1,5 @@
+NilCheckingExamples.chpl:11: In function 'main':
+NilCheckingExamples.chpl:13: error: applying postfix-! to nil
+NilCheckingExamples.chpl:12: note: 'obj' is set to nil here
+NilCheckingExamples.chpl:17: error: applying postfix-! to nil
+NilCheckingExamples.chpl:16: note: 'x' is set to nil here

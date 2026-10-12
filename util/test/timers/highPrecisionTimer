@@ -4,7 +4,7 @@ import subprocess, sys, timeit
 # high precision timer that uses the timeit module. Only reports real time, and
 # not cpu or sys time. Subprocess call adds a negligible amount of time.
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     timer = timeit.default_timer
     return_code = 1
     start_time = timer()

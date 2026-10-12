@@ -1,3 +1,5 @@
+# shellcheck shell=sh
+#
 # POSIX-standard compatibility shell script to set the Chapel environment variables
 # Source this for POSIX-standard shells such as 'sh' and 'dash'
 # Due to POSIX-standard limitations, this must be sourced from $CHPL_HOME
@@ -21,7 +23,7 @@ CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
 
 MYPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$PATH"`
 exitcode=$?
-MYMANPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
+MYMANPATH=`$CHPL_PYTHON $CHPL_HOME/util/config/fixpath.py "${MANPATH-}"`
 
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then

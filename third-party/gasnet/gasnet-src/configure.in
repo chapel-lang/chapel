@@ -10,11 +10,11 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2025])
-define([GASNET_RELEASE_VERSION_MINOR_D],[2])
+define([GASNET_RELEASE_VERSION_MINOR_D],[8])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[18])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[19])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
@@ -2448,7 +2448,23 @@ GASNET_TRY_CACHE_RUN_WITHCC(for x86 pause instruction,x86_pause_instruction, [
 ], [AC_DEFINE(GASNETI_PAUSE_INSTRUCTION, "pause")])
 GASNET_POPVAR(CPPFLAGS)
 
-## Misc. builtins (e.g. for bit manipilation)
+## Misc. builtins (e.g. for bit manipulation)
+
+GASNET_PUSHVAR(CFLAGS,"$CFLAGS -I$TOP_SRCDIR/other")
+
+  GASNET_TRY_CACHE_LINK(for __builtin_bswap32, cc_has_builtin_bswap32,
+    [ #include "portable_inttypes.h"
+      uint32_t x;],
+    [__builtin_bswap32(x);],
+    AC_DEFINE(GASNETI_HAVE_CC_BUILTIN_BSWAP32))
+
+  GASNET_TRY_CACHE_LINK(for __builtin_bswap64, cc_has_builtin_bswap64,
+    [ #include "portable_inttypes.h"
+      uint64_t x;],
+    [__builtin_bswap64(x);],
+    AC_DEFINE(GASNETI_HAVE_CC_BUILTIN_BSWAP64))
+
+GASNET_POPVAR(CFLAGS)
 
 GASNET_TRY_CACHE_LINK(for __builtin_clz, cc_has_builtin_clz,
   [unsigned int x;], [__builtin_clz(x);],
@@ -3843,16 +3859,19 @@ if test "$enabled_ibv" = yes; then
   GASNET_PUSHVAR(CFLAGS,"$CFLAGS $IBV_CFLAGS $GASNET_THREAD_DEFINES")
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $IBV_LDFLAGS")
   GASNET_PUSHVAR(LIBS,"$LIBS $IBV_LIBS $GASNET_THREAD_LIBS")
+  pushdef([INCLUDE_VERBS_H],[
+      #if defined(__GNUC__) && !defined(inline)
+        /* ANSI-ify the verbs headers */
+        #define inline __inline__
+        #include <infiniband/verbs.h>
+        #undef inline
+      #else
+        #include <infiniband/verbs.h>
+      #endif
+    ])
 
   GASNET_TRY_CACHE_LINK(for working IB Verbs configuration, ibv_works, [
-    #if defined(__GNUC__) && !defined(inline)
-      /* ANSI-ify the verbs headers */
-      #define inline __inline__
-      #include <infiniband/verbs.h>
-      #undef inline
-    #else
-      #include <infiniband/verbs.h>
-    #endif
+    INCLUDE_VERBS_H
   ], [{
     struct ibv_device device;
     const char *s = ibv_get_device_name(&device);
@@ -3870,22 +3889,22 @@ if test "$enabled_ibv" = yes; then
 
   if test "$have_ibv" = yes; then
     GASNET_TRY_CACHE_LINK(for ibv_device.transport_type, ibv_transport_type, [
-      #if defined(__GNUC__) && !defined(inline)
-        /* ANSI-ify the verbs headers */
-        #define inline __inline__
-        #include <infiniband/verbs.h>
-        #undef inline
-      #else
-        #include <infiniband/verbs.h>
-      #endif
+      INCLUDE_VERBS_H
     ], [
       struct ibv_device device;
       device.transport_type = IBV_TRANSPORT_IB;
     ], [ AC_DEFINE(HAVE_IBV_TRANSPORT_TYPE) ] )
 
     AC_CHECK_FUNCS(ibv_wc_status_str)
+
+    GASNET_TRY_CACHE_LINK(for ibv_create_qp_ex, have_ibv_create_qp_ex, [
+      INCLUDE_VERBS_H
+    ], [
+      (void) ibv_create_qp_ex(NULL, NULL);
+    ], [ AC_DEFINE(HAVE_IBV_CREATE_QP_EX) ] )
   fi
 
+  popdef([INCLUDE_VERBS_H])
   GASNET_POPVAR(CFLAGS)
   GASNET_POPVAR(LDFLAGS)
   GASNET_POPVAR(LIBS)
@@ -3904,6 +3923,13 @@ if test "$enabled_ibv" = yes; then
     GASNET_FH_CFLAGS
 
     # Collect IB-specifc configure options
+
+    GASNET_IF_DISABLED([ibv-atomics],
+      [Disable atomics offload support in ibv-conduit (enabled by default in FAST segment mode)],
+      [:],
+      [if test "$segconfig" = fast; then
+         AC_DEFINE(GASNETC_IBV_ATOMICS_CONFIGURE)
+       fi])
 
     GASNET_IF_ENABLED_WITH_AUTO(ibv-rcv-thread, [See ibv-conduit/README (enabled by default if pthreads available)], 
       [enabled_ibv_rcv_thread=yes
@@ -5148,7 +5174,7 @@ GASNET_HELP_OUTPUT([
 Memory-kinds options:])
 
 GASNET_IF_ENABLED(memory-kinds,
-        [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  However, the individual --enable-kind-* options have precedence.  Use of --enable-memory-kinds=force makes failure to detect at least one supported kind fatal.],
+        [Support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  However, the individual --enable-kind-* options have precedence.  Use of --enable-memory-kinds=force makes failure to detect at least one supported kind fatal.],
         [enable_mk_default=probe], [enable_mk_default=no])
 
 # This is potentially used CUDA_UVA and by HIP

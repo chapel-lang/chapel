@@ -40,8 +40,8 @@
 #include <ofi.h>
 #include <ofi_iov.h>
 
-static inline int cma_copy(struct iovec *local, unsigned long local_cnt,
-			   struct iovec *remote, unsigned long remote_cnt,
+static inline int cma_copy(struct iovec *local, size_t local_cnt,
+			   struct iovec *remote, size_t remote_cnt,
 			   size_t total, pid_t pid, bool write,
 			   void *user_data)
 {
@@ -64,8 +64,8 @@ static inline int cma_copy(struct iovec *local, unsigned long local_cnt,
 		if (!total)
 			return FI_SUCCESS;
 
-		ofi_consume_iov(local, &local_cnt, (size_t) ret);
-		ofi_consume_iov(remote, &remote_cnt, (size_t) ret);
+		ofi_consume_iov(local, &local_cnt, (size_t)ret);
+		ofi_consume_iov(remote, &remote_cnt, (size_t)ret);
 	}
 }
 

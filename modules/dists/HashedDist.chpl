@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -189,10 +189,6 @@ operator =(ref a: hashedDist(?), b: hashedDist(?)) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'Hashed' is deprecated, please use 'hashedDist' instead")
-type Hashed = hashedDist;
 
 
 class HashedImpl : BaseDist, writeSerializable {
@@ -973,31 +969,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
     }
   }
 
-
-  //
-  // how to print out the whole array, sequentially
-  //
-  proc dsiSerialWrite(f) {
-    use IO;
-
-    var binary = f._binary();
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-    var printBraces = (isjson || ischpl);
-
-    if printBraces then f.writeLiteral("[");
-
-    var first = true;
-    for locArr in locArrs {
-      locArr!.myElems._value.dsiSerialReadWrite(f, printBraces=false, first);
-    }
-    if printBraces then f.writeLiteral("]");
-
-  }
-
-  proc dsiSerialWrite(f) throws where f.serializerType != nothing {
+  proc dsiSerialWrite(f) throws {
     use IO;
     if isDefaultSerializerType(f.serializerType) {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);

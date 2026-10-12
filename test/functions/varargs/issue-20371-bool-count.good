@@ -1,0 +1,1 @@
+issue-20371-bool-count.chpl:8: error: variadic arguments count must be a 'param' integer type, not bool

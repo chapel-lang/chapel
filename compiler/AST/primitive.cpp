@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -152,6 +152,20 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   }
   return QualifiedType(dtUnknown);
 }
+
+static QualifiedType
+returnInfoComplex(CallExpr* call) {
+  Type *t = call->get(1)->getValType();
+  if (t == dtReal[FLOAT_SIZE_32] || t == dtImag[FLOAT_SIZE_32]) {
+    return QualifiedType(dtComplex[COMPLEX_SIZE_64], QUAL_VAL);
+  } else if (t == dtReal[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_64]) {
+    return QualifiedType(dtComplex[COMPLEX_SIZE_128], QUAL_VAL);
+  } else {
+    INT_FATAL( call, "unsupported complex size");
+  }
+  return QualifiedType(dtUnknown);
+}
+
 
 static QualifiedType
 returnInfoAbs(CallExpr* call) {
@@ -331,13 +345,13 @@ static QualifiedType
 returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo()->getValType();
   Type* t2 = call->get(2)->typeInfo()->getValType();
-  if (is_int_type(t1) && is_real_type(t2))
+  if (isIntType(t1) && isRealType(t2))
     return QualifiedType(t2, QUAL_VAL);
-  if (is_real_type(t1) && is_int_type(t2))
+  if (isRealType(t1) && isIntType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_int_type(t1) && is_bool_type(t2))
+  if (isIntType(t1) && isBoolType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_bool_type(t1) && is_int_type(t2))
+  if (isBoolType(t1) && isIntType(t2))
     return QualifiedType(t2, QUAL_VAL);
   return QualifiedType(t1, QUAL_VAL);
 }
@@ -362,7 +376,10 @@ returnInfoArrayIndexValue(CallExpr* call) {
 static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
   QualifiedType tmp = returnInfoArrayIndexValue(call);
-  return QualifiedType(tmp.type()->refType, QUAL_REF);
+  auto refType = tmp.type()->refType;
+  if (!refType)
+    INT_FATAL(call, "invalid attempt to get reference type");
+  return QualifiedType(refType, QUAL_REF);
 }
 
 static QualifiedType
@@ -411,15 +428,19 @@ returnInfoGetTupleMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
-  if (type->refType)
-    type = type->refType;
+
+  if (!type->refType) makeRefType(type);
+  INT_ASSERT(type->refType);
+  type = type->refType;
   Qualifier q = QUAL_REF;
+
   if (call->get(1)->isWideRef()) {
     q = QUAL_WIDE_REF;
-    if (Type* t = wideRefMap.get(type)) {
-      type = t;
-    }
+    Type* wideRefT = type->getWideRefType();
+    INT_ASSERT(wideRefT);
+    type = wideRefT;
   }
+
   return QualifiedType(type, q);
 }
 
@@ -906,6 +927,7 @@ initPrimitive() {
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
+  prim_def(PRIM_BUILD_COMPLEX, "build_complex", returnInfoComplex);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
   prim_def(PRIM_QUERY_PARAM_FIELD, "query param field", returnInfoGetMemberRef);
@@ -1032,7 +1054,7 @@ initPrimitive() {
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
   prim_def(PRIM_IS_BOUND, "is bound", returnInfoBool);
-  // PRIM_IS_COERCIBLE arguments are (source type, target type)
+  // PRIM_IS_COERCIBLE arguments are (target type, source type)
   prim_def(PRIM_IS_COERCIBLE, "is_coercible", returnInfoBool);
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
@@ -1184,10 +1206,6 @@ initPrimitive() {
 
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
-  // ('_private_broadcast' sym)
-  // Later, a structure index is inserted ahead
-  // of the symbol, so it ends up as
-  // ('_private_broadcast' index sym).
   prim_def(PRIM_PRIVATE_BROADCAST, "_private_broadcast", returnInfoVoid, true);
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);

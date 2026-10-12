@@ -1,4 +1,4 @@
-.TH "hwlocality_opencl" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_opencl" 3 "Version 2.12.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,16 +10,16 @@ hwlocality_opencl \- Interoperability with OpenCL
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_opencl_get_device_pci_busid\fP (cl_device_id device, unsigned *domain, unsigned *bus, unsigned *dev, unsigned *func)"
+.RI "int \fBhwloc_opencl_get_device_pci_busid\fP (cl_device_id device, unsigned *domain, unsigned *bus, unsigned *dev, unsigned *func)"
 .br
 .ti -1c
-.RI "static int \fBhwloc_opencl_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, cl_device_id device, \fBhwloc_cpuset_t\fP set)"
+.RI "int \fBhwloc_opencl_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, cl_device_id device, \fBhwloc_cpuset_t\fP set)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_opencl_get_device_osdev_by_index\fP (\fBhwloc_topology_t\fP topology, unsigned platform_index, unsigned device_index)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_opencl_get_device_osdev_by_index\fP (\fBhwloc_topology_t\fP topology, unsigned platform_index, unsigned device_index)"
 .br
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_opencl_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, cl_device_id device)"
+.RI "\fBhwloc_obj_t\fP \fBhwloc_opencl_get_device_osdev\fP (\fBhwloc_topology_t\fP topology, cl_device_id device)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -29,7 +29,7 @@ This interface offers ways to retrieve topology information about OpenCL devices
 Only AMD and NVIDIA OpenCL implementations currently offer useful locality information about their devices\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_opencl_get_device_cpuset (\fBhwloc_topology_t\fP topology, cl_device_id device, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_opencl_get_device_cpuset (\fBhwloc_topology_t\fP topology, cl_device_id device, \fBhwloc_cpuset_t\fP set)\fC [inline]\fP"
 
 .PP
 Get the CPU set of processors that are physically close to OpenCL device \fCdevice\fP\&. Store in \fCset\fP the CPU-set describing the locality of the OpenCL device \fCdevice\fP\&.
@@ -48,7 +48,7 @@ This function is currently only implemented in a meaningful way for Linux with t
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev (\fBhwloc_topology_t\fP topology, cl_device_id device)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev (\fBhwloc_topology_t\fP topology, cl_device_id device)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to OpenCL device \fCdeviceX\fP\&. 
@@ -72,7 +72,7 @@ The corresponding hwloc PCI device may be found by looking at the result parent 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned platform_index, unsigned device_index)\fC [inline]\fP, \fC [static]\fP"
+.SS "\fBhwloc_obj_t\fP hwloc_opencl_get_device_osdev_by_index (\fBhwloc_topology_t\fP topology, unsigned platform_index, unsigned device_index)\fC [inline]\fP"
 
 .PP
 Get the hwloc OS device object corresponding to the OpenCL device for the given indexes\&. 
@@ -92,7 +92,7 @@ The corresponding PCI device object can be obtained by looking at the OS device 
 .RE
 .PP
 
-.SS "static int hwloc_opencl_get_device_pci_busid (cl_device_id device, unsigned * domain, unsigned * bus, unsigned * dev, unsigned * func)\fC [inline]\fP, \fC [static]\fP"
+.SS "int hwloc_opencl_get_device_pci_busid (cl_device_id device, unsigned * domain, unsigned * bus, unsigned * dev, unsigned * func)\fC [inline]\fP"
 
 .PP
 Return the domain, bus and device IDs of the OpenCL device \fCdevice\fP\&. Device \fCdevice\fP must match the local machine\&.

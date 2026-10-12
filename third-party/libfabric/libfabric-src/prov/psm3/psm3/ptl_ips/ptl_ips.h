@@ -60,10 +60,8 @@
 
 #include "ips_proto.h"
 
-struct gen1_ptl_shared;	// OPA-only shared context
-
 /*
- * PTL at the ips level (for OPA)
+ * PTL at the ips level (for NIC)
  *
  * This PTL structure glues all the ips components together.
  *
@@ -115,8 +113,6 @@ struct ptl_ips {
 
 	/* context's status check timeout in cycles -- cached */
 	uint64_t status_cyc_timeout;
-	/* Shared contexts context  - OPA only */
-	struct gen1_ptl_shared *recvshc;
 	/* Rcv thread context */
 	struct ptl_rcvthread *rcvthread;
 }

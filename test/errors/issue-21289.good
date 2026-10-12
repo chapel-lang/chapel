@@ -1,0 +1,2 @@
+issue-21289.chpl:10: error: unresolved call 'proc(x: int): int.t'
+issue-21289.chpl:10: note: because no functions named t found in scope

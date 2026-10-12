@@ -3,7 +3,11 @@ name: Weekly Meeting Topics
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
-    - cron: '0 17 * * 2' # Runs every week on Tuesday at 10 PT
+    - cron: '0 16 * * 2' # Runs every week on Tuesday at 10 PT
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
 
 jobs:
   create-discussion:
@@ -13,7 +17,7 @@ jobs:
     permissions:
       discussions: write
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -25,25 +29,26 @@ jobs:
       id: date
       run: |
         date=$(date -d '+7 days' '+%Y-%m-%d')
-        echo "next_meeting_date=$date" >> $GITHUB_ENV
+        echo "next_meeting_date=$date" >> "$GITHUB_ENV"
       shell: bash
 
     - name: create discussion
       run: |
         repositoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${{ env.owner }}",
-                      name: "${{ env.repo_name }}") { id } }' \
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\") { id } }" \
           | jq -r '.data.repository.id')
 
         categoryId=$(gh api graphql \
-          -f query='{ repository(owner: "${{ env.owner }}",
-                      name: "${{ env.repo_name }}")
-                      { discussionCategories(first: 10) { nodes { id, name} } } }' \
-          | jq -r '.data.repository.discussionCategories.nodes | .[] | select(.name=="${{ env.category_name }}") | .id')
+          -f query="{ repository(owner: \"${owner}\",
+                      name: \"${repo_name}\")
+                      { discussionCategories(first: 10) { nodes { id, name} } } }" \
+          | jq -r ".data.repository.discussionCategories.nodes | .[] | select(.name==\"${category_name}\") | .id")
 
-        body="${{ env.agenda_body }}"
-        title="Chapel project meeting: ${{ env.next_meeting_date }} (agenda items, meeting link, notes)"
+        body="${agenda_body}"
+        title="Chapel project meeting: ${next_meeting_date} (agenda items, meeting link, notes)"
 
+        # shellcheck disable=SC2016
         QUERY='mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
           createDiscussion(input: {
             repositoryId: $repositoryId,
@@ -72,8 +77,9 @@ jobs:
             This discussion is for the weekly Chapel project meeting.
             
             **Date/Time: ${{ env.next_meeting_date }} at 10am PT**
-            **Join the meeting using [this Teams link](https://teams.microsoft.com/l/meetup-join/19%3ameeting_N2M5M2E2NTEtNTFkMi00ZjA1LThiNDQtMjFjY2U2ZDc5ODk3%40thread.v2/0?context=%7b%22Tid%22%3a%22105b2061-b669-4b31-92ac-24d304d195dc%22%2c%22Oid%22%3a%22bef28eea-6179-4f21-b284-84c6a0aeacc3%22%7d)**
-            
+            **Join the meeting using [this Zoom link](https://zoom-lfx.platform.linuxfoundation.org/meeting/97154927840?password=96736b6d-0900-4b20-81ba-ff6bf48668af)**
+            See the [Chapel community calendar](https://chapel-lang.org/calendar/) for additional details and dial-in options
+
             ---
             
             Prior to the meeting, propose any agenda items using comments below.  After the meeting, rough notes will be added in comments.

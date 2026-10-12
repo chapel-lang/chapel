@@ -9,6 +9,7 @@
 #include "ofi_hmem.h"
 
 struct efa_env efa_env = {
+	.iface = "all",
 	.tx_min_credits = 32,
 	.tx_queue_size = 0,
 	.enable_shm_transfer = 1,
@@ -33,34 +34,15 @@ struct efa_env efa_env = {
 	.efa_max_gdrcopy_msg_size = 32768,
 	.efa_read_segment_size = 1073741824,
 	.efa_write_segment_size = 1073741824, /* need to confirm this constant. */
-	.rnr_retry = 3, /* Setting this value to EFA_RNR_INFINITE_RETRY makes the firmware retry indefinitey */
 	.host_id_file = "/sys/devices/virtual/dmi/id/board_asset_tag", /* Available on EC2 instances and containers */
 	.use_sm2 = false,
 	.huge_page_setting = EFA_ENV_HUGE_PAGE_UNSPEC,
+	.use_unsolicited_write_recv = 1,
+	.internal_rx_refill_threshold = 8,
+	.use_data_path_direct = true,
+	.implicit_av_size = 0,
+	.track_mr = 0,
 };
-
-/**
- * @brief Define FI_EFA_USE_DEVICE_RDMA as a configuration parameter
- *
- * This function fetches the default value of using EFA device's
- * RDMA capability and defines it as a configuration parameter.
- */
-void efa_env_define_use_device_rdma()
-{
-	char *str = "";
-
-	/* Specify the help info about the usage of RDMA in the device. */
-	if (!efa_device_support_rdma_read()) {
-		str = "  EFA device on your system does not support RDMA,"
-			" so this variable cannot be set to 1.";
-	}
-
-	fi_param_define(&efa_prov, "use_device_rdma", FI_PARAM_BOOL,
-			"Specifies whether to use device's RDMA functionality"
-			" for one-sided and two-sided transfers.%s",
-			str);
-}
-
 
 /* @brief Read and store the FI_EFA_* environment variables.
  */
@@ -98,8 +80,17 @@ void efa_env_param_get(void)
 			"FI_EFA_TX_MIN_CREDITS was set to %d, which is <= 0.\n"
 			"This value will cause EFA communication to deadlock.\n"
 			"Please unset the environment variable or set it to a positive number.\n"
-			"Your application will now abort.",
+			"Your application will now abort.\n",
 			efa_env.tx_min_credits);
+		abort();
+	}
+
+	fi_param_get_str(&efa_prov, "iface", &efa_env.iface);
+	if (strlen(efa_env.iface) < 1) {
+		fprintf(stderr,
+			"FI_EFA_IFACE is empty. Specify full-qualified names separated by comma, "
+			"or \"all\" to use all available devices.\n"
+			"Your application will now abort.\n");
 		abort();
 	}
 
@@ -121,6 +112,8 @@ void efa_env_param_get(void)
 			    &efa_mr_max_cached_size);
 	fi_param_get_size_t(&efa_prov, "tx_size", &efa_env.tx_size);
 	fi_param_get_size_t(&efa_prov, "rx_size", &efa_env.rx_size);
+	fi_param_get_size_t(&efa_prov, "internal_rx_refill_threshold", &efa_env.internal_rx_refill_threshold);
+	fi_param_get_size_t(&efa_prov, "implicit_av_size", &efa_env.implicit_av_size);
 	fi_param_get_bool(&efa_prov, "rx_copy_unexp",
 			  &efa_env.rx_copy_unexp);
 	fi_param_get_bool(&efa_prov, "rx_copy_ooo",
@@ -141,18 +134,26 @@ void efa_env_param_get(void)
 	fi_param_get_size_t(&efa_prov, "inter_max_gdrcopy_message_size",
 			    &efa_env.efa_max_gdrcopy_msg_size);
 	fi_param_get_bool(&efa_prov, "use_sm2", &efa_env.use_sm2);
+	fi_param_get_bool(&efa_prov, "use_unsolicited_write_recv", &efa_env.use_unsolicited_write_recv);
 
 	int use_huge_page;
 	if (fi_param_get_bool(&efa_prov, "use_huge_page", &use_huge_page) ==0) {
 		efa_env.huge_page_setting = use_huge_page ? EFA_ENV_HUGE_PAGE_ENABLED : EFA_ENV_HUGE_PAGE_DISABLED;
 	}
+	fi_param_get_bool(&efa_prov, "use_data_path_direct", &efa_env.use_data_path_direct);
+	fi_param_get_bool(&efa_prov, "track_mr", &efa_env.track_mr);
 
 	efa_fork_support_request_initialize();
 }
 
 void efa_env_define()
 {
-	efa_env_define_use_device_rdma();
+	fi_param_define(&efa_prov, "use_device_rdma", FI_PARAM_BOOL,
+			"Specifies whether to use device's RDMA functionality"
+			" for one-sided and two-sided transfers if supported "
+			"by the EFA device on the instance.");
+	fi_param_define(&efa_prov, "iface", FI_PARAM_STRING,
+			"A comma delimited list of case-sensitive names to restrict eligible EFA NICs (Default: all).");
 	fi_param_define(&efa_prov, "tx_min_credits", FI_PARAM_INT,
 			"Defines the minimum number of credits a sender requests from a receiver (Default: 32).");
 	fi_param_define(&efa_prov, "tx_queue_size", FI_PARAM_INT,
@@ -202,7 +203,7 @@ void efa_env_define()
 	fi_param_define(&efa_prov, "inter_max_gdrcopy_message_size", FI_PARAM_INT,
 			"The maximum message size to use gdrcopy. If instance support gdrcopy, messages whose size is smaller than this value will be sent by eager/longcts protocol (Default 32768).");
 	fi_param_define(&efa_prov, "inter_min_read_write_size", FI_PARAM_INT,
-			"The mimimum message size for inter EFA write to use read write protocol. If firmware support RDMA read, and FI_EFA_USE_DEVICE_RDMA is 1, write requests whose size is larger than this value will use the read write protocol (Default 65536).");
+			"The mimimum message size for inter EFA write to use read write protocol. If firmware support RDMA read, and FI_EFA_USE_DEVICE_RDMA is 1, write requests whose size is larger than this value will use the read write protocol (Default 65536). If the efa device supports RDMA write, device RDMA write will always be used.");
 	fi_param_define(&efa_prov, "inter_read_segment_size", FI_PARAM_INT,
 			"Calls to RDMA read is segmented using this value.");
 	fi_param_define(&efa_prov, "fork_safe", FI_PARAM_BOOL,
@@ -216,6 +217,29 @@ void efa_env_define()
 			"Using huge page memory has a small performance advantage, but can "
 			"cause system to run out of huge page memory. By default, EFA provider "
 			"will use huge page unless FI_EFA_FORK_SAFE is set to 1/on/true.");
+	fi_param_define(&efa_prov, "use_unsolicited_write_recv", FI_PARAM_BOOL,
+			"Use device's unsolicited write recv functionality when it's available. (Default: true)");
+	fi_param_define(&efa_prov, "internal_rx_refill_threshold", FI_PARAM_SIZE_T,
+			"The threshold that EFA provider will refill the internal rx pkt pool. (Default: %zu)", efa_env.internal_rx_refill_threshold);
+	fi_param_define(
+		&efa_prov, "use_data_path_direct", FI_PARAM_BOOL,
+		"Use the direct data path implementation that bypasses rdma-core on data path, including"
+		"the CQ polling and TX/RX submissions, when it's available. Setting this variable as 0"
+		"will disable this feature (Default: %d)",
+		efa_env.use_data_path_direct);
+	fi_param_define(&efa_prov, "implicit_av_size", FI_PARAM_SIZE_T,
+			"The maximum size of the implicit AV used to store AV "
+			"entries of peers that were not explicitly inserted "
+			"into the AV by the application. Setting this variable "
+			"to a positive value will enforce the the maximum "
+			"size. Setting this value to 0 will allow unbounded "
+			"growth of the implicit AV. (Default: 0)",
+			efa_env.implicit_av_size);
+	fi_param_define(&efa_prov, "track_mr", FI_PARAM_BOOL,
+			"Enable tracking of memory registrations to detect if "
+			"any outstanding operations still reference an MR when "
+			"it is closed. This is useful for debugging memory "
+			"registration issues. (Default: false)");
 }
 
 

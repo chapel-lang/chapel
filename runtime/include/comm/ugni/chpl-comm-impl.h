@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,7 +48,7 @@ size_t chpl_comm_impl_regMemAllocThreshold(void);
 #define CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn) \
     chpl_comm_impl_regMemAlloc(size, desc, ln, fn)
 void* chpl_comm_impl_regMemAlloc(size_t size,
-                                 chpl_mem_descInt_t desc, int ln, int32_t fn);
+                                 chpl_mem_descInt_t desc, int32_t ln, int32_t fn);
 
 #define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size) \
   chpl_comm_impl_regMemPostAlloc(p, size)
@@ -58,7 +58,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size);
     chpl_comm_impl_regMemRealloc(p, oldSize, newSize, desc, ln, fn)
 void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
                                    chpl_mem_descInt_t desc,
-                                   int ln, int32_t fn);
+                                   int32_t ln, int32_t fn);
 
 #define CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize) \
     chpl_comm_impl_regMemPostRealloc(oldp, oldSize, newp, newSize)

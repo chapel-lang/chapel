@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,7 +55,6 @@
 #define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 0
 #endif
 
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
 #include "chpl-cache.h"
@@ -71,6 +70,7 @@
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h"
+#include "chpl-prginfo.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -80,7 +80,7 @@
 #include "comm-ugni-heap-pages.h"
 #include "comm-ugni-mem.h"
 #include "config.h"
-#include "error.h"
+#include "chpl-error.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -1938,7 +1938,7 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void)
 {
-  chpl_comm_init_prv_bcast_tab();
+  chpl_rt_comm_init_unified_private_broadcast_table();
 }
 
 
@@ -1947,7 +1947,8 @@ void chpl_comm_post_mem_init(void)
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
+  return 1;
 }
 
 //
@@ -1955,7 +1956,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
-  return 0;
+  chpl_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
+  return 1;
 }
 
 void chpl_comm_impl_unordered_task_fence(void) {
@@ -1988,6 +1990,9 @@ void chpl_comm_post_task_init(void)
                      "needs HUGETLB_NO_RESERVE set to something",
                      0, 0);
       }
+
+      CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                              CHPL_TARGET_MEM);
 
       if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
@@ -3300,6 +3305,9 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
         // Only try to provide a source file if we can give at least some
         // of it, and without using snprintf() in chpl_lookupFilename()).
         //
+        CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                chpl_filenameTableSize);
+
         if (bufi > 10
             && mr_mregs_supplement[mr_i].fn >= 0
             && mr_mregs_supplement[mr_i].fn < chpl_filenameTableSize) {
@@ -3413,7 +3421,7 @@ static void issue_out_of_mem_regions_warning(void)
 }
 
 void* chpl_comm_impl_regMemAlloc(size_t size,
-                                 chpl_mem_descInt_t desc, int ln, int32_t fn)
+                                 chpl_mem_descInt_t desc, int32_t ln, int32_t fn)
 {
   int mr_i;
   mem_region_t* mr;
@@ -3586,7 +3594,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 
 void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
                                    chpl_mem_descInt_t desc,
-                                   int ln, int32_t fn)
+                                   int32_t ln, int32_t fn)
 {
   //
   // If the old allocation isn't separately registered then we just
@@ -3905,7 +3913,7 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
   //
   // Gather the global variables' wide pointers on node 0 into a
   // buffer, and broadcast the address of that buffer to the other
@@ -3913,6 +3921,9 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   //
   wide_ptr_t* buf;
   if (chpl_nodeID == 0) {
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_globals_registry);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_numGlobalsOnHeap);
+
     buf = (wide_ptr_t*) chpl_mem_allocMany(chpl_numGlobalsOnHeap, sizeof(*buf),
                                            CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
     for (int i = 0; i < chpl_numGlobalsOnHeap; i++) {
@@ -3924,11 +3935,11 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size)
-{
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {
   int i;
 
-  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_broadcast_private(%d, %zd)", id, size);
+  DBG_P_LP(DBGF_IFACE, "IFACE chpl_comm_private_broadcast(%d, %zd)", id, size);
 
   //
   // TODO: Currently this does a PUT and wait for remote completion to
@@ -3938,8 +3949,8 @@ void chpl_comm_broadcast_private(int id, size_t size)
   //
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_rt_priv_bcast_tab[id], i,
-                    chpl_rt_priv_bcast_tab[id], size,
+      do_remote_put(chpl_rt_unified_private_broadcast_table[id], i,
+                    chpl_rt_unified_private_broadcast_table[id], size,
                     NULL, may_proxy_true);
     }
   }
@@ -4186,7 +4197,8 @@ void rf_handler(gni_cq_entry_t* ev)
       chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
       if (f_c->comm.fast) {
-        chpl_ftable_call(f_c->comm.fid, f);
+        chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                            f_c->comm.fid, f);
         indicate_done2(f_c->comm.caller, (rf_done_t*) f_c->comm.rf_done);
         // doesn't call release_req_buf, because that
         // is handled on the sender side for fast forks
@@ -4196,6 +4208,8 @@ void rf_handler(gni_cq_entry_t* ev)
         if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
         } else {
+          CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                                  chpl_ftable);
           fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
         }
         chpl_task_startMovedTask(f_c->comm.fid,
@@ -4299,7 +4313,7 @@ static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
   // Call the on body
-  chpl_ftable_call(f->comm.fid, f);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, f->comm.fid, f);
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
 
@@ -4341,7 +4355,8 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
   }
 
   // Call the on body
-  chpl_ftable_call(bundle->comm.fid, bundle);
+  chpl_rt_ftable_call(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, bundle->comm.fid,
+                      bundle);
 
   // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
@@ -5093,7 +5108,7 @@ void consume_all_outstanding_cq_events(int cdi)
 
 
 void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5583,7 +5598,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
                                 c_nodeid_t src_locale, void* src_addr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn)
+                                int32_t ln, int32_t fn)
 {
   assert(dst_addr != NULL);
   assert(src_addr != NULL);
@@ -5619,7 +5634,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5649,7 +5664,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
@@ -5685,7 +5700,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6105,7 +6120,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t dstlocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int32_t ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
   put_strd_common(dstaddr_arg, dststrides,
@@ -6121,7 +6136,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t srclocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int32_t ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
   get_strd_common(dstaddr_arg, dststrides,
@@ -6138,7 +6153,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn)
+                                       int32_t commID, int32_t ln, int32_t fn)
 {
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
@@ -6151,7 +6166,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn)
+                                       int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6270,7 +6285,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,         \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6315,7 +6330,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           mem_region_t* local_mr;                                       \
@@ -6364,7 +6379,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         void* obj,                      \
                                         void* res,                      \
                                         chpl_memory_order order,             \
-                                        int ln, int32_t fn)             \
+                                        int32_t ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6412,7 +6427,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
                                            chpl_bool32* res,            \
                                            chpl_memory_order succ,           \
                                            chpl_memory_order fail,           \
-                                           int ln, int32_t fn)          \
+                                           int32_t ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6465,7 +6480,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                           int32_t loc,                  \
                                           void* obj,                    \
                                           chpl_memory_order order,           \
-                                          int ln, int32_t fn)           \
+                                          int32_t ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6491,7 +6506,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
         void chpl_comm_atomic_##_o##_unordered_##_f(void* opnd,         \
                                                int32_t loc,             \
                                                void* obj,               \
-                                               int ln, int32_t fn)      \
+                                               int32_t ln, int32_t fn)      \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6519,7 +6534,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                 void* obj,              \
                                                 void* res,              \
                                                 chpl_memory_order order,     \
-                                                int ln, int32_t fn)     \
+                                                int32_t ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6581,7 +6596,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6607,7 +6622,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
-                                            int ln, int32_t fn)         \
+                                            int32_t ln, int32_t fn)         \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6635,7 +6650,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              void* obj,                 \
                                              void* res,                 \
                                              chpl_memory_order order,        \
-                                             int ln, int32_t fn)        \
+                                             int32_t ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6675,7 +6690,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6691,7 +6706,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
         void chpl_comm_atomic_sub_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
-                                            int ln, int32_t fn)         \
+                                            int32_t ln, int32_t fn)         \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6709,7 +6724,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
                                              void* obj,                 \
                                              void* res,                 \
                                              chpl_memory_order order,        \
-                                             int ln, int32_t fn)        \
+                                             int32_t ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6938,81 +6953,52 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
 }
 
 
-void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t* arg, size_t arg_size,
-                          int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t* arg,
+                                  size_t arg_size,
+                                  int32_t ln,
+                                  int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on);
-
   PERFSTATS_INC(fork_call_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, true);
 }
 
 
-void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t* arg, size_t arg_size,
-                             int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t* arg,
+                                     size_t arg_size,
+                                     int32_t ln,
+                                     int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("non-blocking", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_nb);
-
   PERFSTATS_INC(fork_call_nb_cnt);
   fork_call_common(locale, subloc, fid, arg, arg_size, false, false);
 }
 
 
-void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t* arg, size_t arg_size,
-                               int ln, int32_t fn)
-{
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t* arg,
+                                       size_t arg_size,
+                                       int32_t ln,
+                                       int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   assert(locale != chpl_nodeID); // locale model code should prevent this ...
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
-         .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_executeOn("fast", locale, ln, fn);
-  chpl_comm_diags_incr(execute_on_fast);
 
   //
   // Note: the rf_handler() logic assumes that fast implies blocking.

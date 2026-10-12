@@ -1,0 +1,1 @@
+FirstClassProceduresInvalidAssignment.chpl:11: error: Cannot assign to proc(x: int, y: int): int from proc(a: int, b: int): int

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct ArgumentState;
 struct ArgumentDescription;
-struct DeprecatedArgument;
 
 typedef void ArgumentFunction(const ArgumentDescription* desc, const char* arg);
 
@@ -60,11 +59,12 @@ struct ArgumentState
 {
   const char**         file_argument;
   int                  nfile_arguments;
+  const char**         env_argument;
+  int                  nenv_arguments;
 
   const char*          program_name;
   const char*          program_loc;
   ArgumentDescription* desc;
-  DeprecatedArgument * deprecated_args;
 };
 
 struct ArgumentDescription
@@ -79,13 +79,6 @@ struct ArgumentDescription
   ArgumentFunction*    pfn;
 };
 
-struct DeprecatedArgument {
-  const char* env;  // name of environment variable that is now deprecated
-  const char* msg;  // message to display if user has value set to env
-  const char* replacementEnv; // if non-null redirect any value from 'env'
-                              // to 'replacementEnv'
-};
-
 void usage(const ArgumentState* arg_state,
            int                  status,
            bool                 printEnvHelp,
@@ -93,8 +86,7 @@ void usage(const ArgumentState* arg_state,
 
 void init_args(ArgumentState* state, const char* argv0, void* mainAddr);
 
-void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
-  DeprecatedArgument* deprecated_args = nullptr);
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
 
 bool process_args(ArgumentState* state, int argc, char* argv[]);
 

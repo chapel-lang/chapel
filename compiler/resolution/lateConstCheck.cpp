@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,7 +41,7 @@
  */
 
 // Map pointing to first occurring use for a symbol.
-typedef std::map<BaseAST*, BaseAST*> UseMap;
+typedef std::map<BaseAST*, BaseAST*, AstIdLess> UseMap;
 
 // Used for debugging this pass.
 static const int breakOnId1 = 0;
@@ -623,8 +623,8 @@ static bool isFunctionToSkip(FnSymbol* calledFn) {
 
    TODO: decide if we also need const checking in functionResolution.cpp.
  */
-void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
-  std::set<FnSymbol*> visitedFunctions;
+void lateConstCheck(std::map<BaseAST*, BaseAST*, AstIdLess>* reasonNotConst) {
+  std::set<FnSymbol*, AstIdLess> visitedFunctions;
 
   forv_Vec(CallExpr, call, gCallExprs) {
 

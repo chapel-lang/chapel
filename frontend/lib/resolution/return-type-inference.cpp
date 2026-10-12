@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -207,18 +207,27 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
+    UniqueString name = c->name();
+
     const BasicClassType* parentClassType =
       processInheritanceExpressionsForAggregateQuery(context, ad,
                                                      substitutions,
                                                      poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
-    // inherit from object.
+    // inherit from object. Unless we are object itself.
     if (!parentClassType) {
-      parentClassType = BasicClassType::getRootClassType(context);
+      auto rootClass = BasicClassType::getRootClassType(context);
+      if (ad->id() != rootClass->id()) {
+        parentClassType = rootClass;
+      } else {
+        /* the object is '_object' in standard modules, but rename it to
+           RootClass. */
+        name = USTR("RootClass");
+      }
     }
 
-    if (!parentClassType->isObjectType() && !substitutions.empty()) {
+    if (parentClassType && !parentClassType->isRootClass() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
       CHPL_ASSERT(parentAst);
@@ -238,7 +247,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     // even if the filtered substitutions are empty. Keep that invariant
     // here, and set instantiatedFrom for this class because its parent
     // was instantiated.
-    if (parentClassType->instantiatedFrom() && !instantiatedFrom) {
+    if (parentClassType && parentClassType->instantiatedFrom() && !instantiatedFrom) {
       instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
     }
 
@@ -256,7 +265,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       }
     }
 
-    ret = BasicClassType::get(context, c->id(), c->name(),
+    ret = BasicClassType::get(context, c->id(), name,
                               parentClassType,
                               insnFromBct, std::move(filteredSubs));
 
@@ -662,6 +671,13 @@ returnTypeForTypeCtorQuery(Context* context,
     if (instantiatedFrom != nullptr) {
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
+        // If we didn't instantiate the formal with anything, don't create
+        // a substitution for the corresponding field. This comes up,
+        // e.g., if we made a type constructor call like R(?). In this
+        // case, we will compute the formal types to be their generic versions,
+        // but these formals oughtn't count as existing substitutions.
+        if (!sig->formalIsInstantiated(i)) continue;
+
         auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
@@ -1247,20 +1263,11 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
     return nullptr;
   }
 
-  bool anyGenericOutFormals = false;
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      anyGenericOutFormals = true;
-      break;
-    }
-  }
 
   // if there are no 'out' formals with generic type, just return 'sig'.
-  // also just return 'sig' if the function needs instantiation;
+  // also just return 'sig' if the function needs instantiation for non-'out' reasons;
   // in that case, we can't infer the 'out' formals by resolving the body.
-  if (anyGenericOutFormals && !sig->needsInstantiation()) {
+  if (sig->instantiationState() == TypedFnSignature::INST_GENERIC_OUT) {
     return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;

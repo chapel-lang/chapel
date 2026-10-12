@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,9 +121,9 @@ const RecordType* ClassType::managerRecordType(Context* context) const {
   //      for `shared C`, produce `_shared(C)`
   if (auto myManager = manager()) {
     if (myManager->isAnyOwnedType()) {
-      return CompositeType::getOwnedRecordType(context, basicClassType());
+      return CompositeType::getOwnedRecordType(context, basicClassType(), decorator());
     } else if (myManager->isAnySharedType()) {
-      return CompositeType::getSharedRecordType(context, basicClassType());
+      return CompositeType::getSharedRecordType(context, basicClassType(), decorator());
     } else if (auto mgr = myManager->toRecordType()) {
       return mgr;
     }

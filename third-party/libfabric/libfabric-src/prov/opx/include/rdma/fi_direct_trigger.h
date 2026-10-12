@@ -42,10 +42,10 @@ extern "C" {
 #ifdef FABRIC_DIRECT
 /* Size must match struct fi_context2 ? */
 struct fi_triggered_context {
-	enum fi_trigger_event	event_type;
+	enum fi_trigger_event event_type;
 	union {
-		struct fi_trigger_threshold	threshold;
-		void				*internal[3];
+		struct fi_trigger_threshold threshold;
+		void			   *internal[3];
 	};
 };
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "iterator.h"
 
 #include "global-ast-vecs.h"
@@ -33,6 +34,10 @@ static const char* nameForUser(const char* className) {
     return className+1;
 
   return className;
+}
+
+const char* decoratorToString(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::decoratorToString(d);
 }
 
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className) {
@@ -362,7 +367,8 @@ ClassTypeDecoratorEnum classTypeDecorator(Type* t) {
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
       t == dtStringC ||
       t == dtCFnPtr ||
-      t == dtCVoidPtr) {
+      t == dtCVoidPtr ||
+      (isFunctionType(t) && fcfs::usePointerImplementation())) {
     return ClassTypeDecorator::UNMANAGED_NILABLE;
   }
 
@@ -418,10 +424,17 @@ void convertClassTypesToCanonical() {
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (isDecoratedClassType(ts->type)) {
-      if (ts->inTree())
+      if (ts->inTree()) {
+        INT_ASSERT(!ts->isUsed());
         ts->defPoint->remove();
-      if (ts->type->refType && ts->type->refType->symbol->inTree())
-        ts->type->refType->symbol->defPoint->remove();
+      }
+
+      if (auto refT = ts->type->refType) {
+        if (refT->symbol->inTree()) {
+          INT_ASSERT(!refT->symbol->isUsed());
+          refT->symbol->defPoint->remove();
+        }
+      }
     }
   }
 

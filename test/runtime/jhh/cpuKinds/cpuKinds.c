@@ -40,6 +40,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  setupProgramInfoHereManually();
   chpl__init_cpuKinds(0, 0); // unsure why this is needed
   chpl_set_num_locales_on_node(1);
   chpl_topo_pre_comm_init(mask);

@@ -193,7 +193,6 @@ int cxip_if_valid_rgroup_vni(struct cxip_if *iface, unsigned int rgroup_id,
 			     unsigned int vni)
 {
 	struct cxi_svc_desc svc_desc;
-	bool vni_found = false;
 	int ret;
 	int i;
 
@@ -205,23 +204,31 @@ int cxip_if_valid_rgroup_vni(struct cxip_if *iface, unsigned int rgroup_id,
 		return -FI_EINVAL;
 	}
 
+	/* The restricted_vnis flag indicates that there are vnis in the
+	 * svc_desc.vnis[] array. If it is not set, then we may have a
+	 * range - vni_min to vni_max, inclusive.
+	 */
 	if (svc_desc.restricted_vnis) {
 		for (i = 0; i < svc_desc.num_vld_vnis; i++) {
-			if (vni == svc_desc.vnis[i]) {
-				vni_found = true;
-				break;
-			}
+			if (vni == svc_desc.vnis[i])
+				return FI_SUCCESS;
 		}
+	} else {
+#ifdef CXI_HAVE_SVC_GET_VNI_RANGE
+		uint16_t vni_min;
+		uint16_t vni_max;
 
-		if (!vni_found) {
-			CXIP_WARN("Invalid VNI %d for %s and svc_id %d\n",
-				  vni, iface->dev->info.device_name,
-				  rgroup_id);
-			return -FI_EINVAL;
-		}
+		ret = cxil_svc_get_vni_range(iface->dev, rgroup_id, &vni_min,
+					     &vni_max);
+		if (!ret && vni >= vni_min && vni <= vni_max)
+#endif /* CXI_HAVE_SVC_GET_VNI_RANGE */
+			return FI_SUCCESS;
 	}
 
-	return FI_SUCCESS;
+	CXIP_WARN("Invalid VNI %d for %s and svc_id %d\n", vni,
+		  iface->dev->info.device_name, rgroup_id);
+
+	return -FI_EINVAL;
 }
 
 /*
@@ -247,7 +254,7 @@ int cxip_alloc_lni(struct cxip_if *iface, uint32_t svc_id,
 	}
 
 	lni->iface = iface;
-	ofi_spin_init(&lni->lock);
+	pthread_rwlock_init(&lni->cp_lock, NULL);
 	dlist_init(&lni->remap_cps);
 
 	CXIP_DBG("Allocated LNI, %s RGID: %u\n",
@@ -301,11 +308,11 @@ void cxip_free_lni(struct cxip_lni *lni)
 static bool netdev_ama_check(char *netdev)
 {
 	int rc;
-	char addr_path[FI_PATH_MAX];
+	char addr_path[CXIP_PATH_MAX];
 	FILE *f;
 	int val;
 
-	rc = snprintf(addr_path, FI_PATH_MAX,
+	rc = snprintf(addr_path, CXIP_PATH_MAX,
 		      "/sys/class/net/%s/addr_assign_type",
 		      netdev);
 	if (rc < 0)
@@ -326,7 +333,7 @@ static bool netdev_ama_check(char *netdev)
 	if (val != 3)
 		return false;
 
-	rc = snprintf(addr_path, FI_PATH_MAX, "/sys/class/net/%s/address",
+	rc = snprintf(addr_path, CXIP_PATH_MAX, "/sys/class/net/%s/address",
 		      netdev);
 	if (rc < 0)
 		return false;
@@ -355,12 +362,12 @@ static bool netdev_ama_check(char *netdev)
 static int netdev_link(char *netdev, int *link)
 {
 	int rc;
-	char path[FI_PATH_MAX];
+	char path[CXIP_PATH_MAX];
 	FILE *f;
 	char state[20];
 	int carrier;
 
-	rc = snprintf(path, FI_PATH_MAX, "/sys/class/net/%s/operstate",
+	rc = snprintf(path, CXIP_PATH_MAX, "/sys/class/net/%s/operstate",
 		      netdev);
 	if (rc < 0)
 		return -1;
@@ -385,7 +392,7 @@ static int netdev_link(char *netdev, int *link)
 	}
 
 	/* operstate is unknown, must check carrier. */
-	rc = snprintf(path, FI_PATH_MAX, "/sys/class/net/%s/carrier",
+	rc = snprintf(path, CXIP_PATH_MAX, "/sys/class/net/%s/carrier",
 		      netdev);
 	if (rc < 0)
 		return -1;
@@ -412,11 +419,11 @@ static int netdev_link(char *netdev, int *link)
 static int netdev_speed(char *netdev, int *speed)
 {
 	int rc;
-	char path[FI_PATH_MAX];
+	char path[CXIP_PATH_MAX];
 	FILE *f;
 	int val;
 
-	rc = snprintf(path, FI_PATH_MAX, "/sys/class/net/%s/speed",
+	rc = snprintf(path, CXIP_PATH_MAX, "/sys/class/net/%s/speed",
 		      netdev);
 	if (rc < 0)
 		return -1;
@@ -446,8 +453,8 @@ static int netdev_lookup(struct cxil_devinfo *info, char **netdev)
 	int rc;
 	int count;
 	int i;
-	char if_path[FI_PATH_MAX];
-	char addr_path[FI_PATH_MAX];
+	char if_path[CXIP_PATH_MAX];
+	char addr_path[CXIP_PATH_MAX];
 	char *addr;
 	unsigned int dom;
 	unsigned int bus;
@@ -461,12 +468,12 @@ static int netdev_lookup(struct cxil_devinfo *info, char **netdev)
 	count = globbuf.gl_pathc;
 
 	for (i = 0; i < count; i++) {
-		rc = snprintf(if_path, FI_PATH_MAX, "%s/device",
+		rc = snprintf(if_path, CXIP_PATH_MAX, "%s/device",
 			      globbuf.gl_pathv[i]);
 		if (rc < 0)
 			goto free_glob;
 
-		rc = readlink(if_path, addr_path, FI_PATH_MAX-1);
+		rc = readlink(if_path, addr_path, CXIP_PATH_MAX-1);
 		if (rc < 0) {
 			/* A virtual device, like a bridge, doesn't have a
 			 * device link.

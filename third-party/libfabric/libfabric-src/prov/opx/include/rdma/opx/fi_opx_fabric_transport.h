@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021 Cornelis Networks.
+ * Copyright (C) 2021,2024-2025 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef _FI_PROV_OPX_FABRIC_TRANSPORT_H_ 
+#ifndef _FI_PROV_OPX_FABRIC_TRANSPORT_H_
 #define _FI_PROV_OPX_FABRIC_TRANSPORT_H_
 
 #define FI_OPX_FABRIC_HFI1
@@ -38,14 +38,14 @@
 #ifdef FI_OPX_FABRIC_HFI1
 #include "rdma/opx/fi_opx_hfi1_transport.h"
 
-#define FI_OPX_FABRIC_TX_INJECT	fi_opx_hfi1_tx_inject
-#define FI_OPX_FABRIC_TX_SEND_EGR	fi_opx_hfi1_tx_send_egr
-#define FI_OPX_FABRIC_TX_SENDV_EGR	fi_opx_hfi1_tx_sendv_egr
-#define FI_OPX_FABRIC_TX_SEND_RZV	fi_opx_hfi1_tx_send_rzv
-#define FI_OPX_FABRIC_TX_SENDV_RZV	fi_opx_hfi1_tx_sendv_rzv
+#define FI_OPX_FABRIC_TX_INJECT		fi_opx_hfi1_tx_inject
+#define OPX_FABRIC_TX_SEND_EGR		opx_hfi1_tx_send_egr_select
+#define OPX_FABRIC_TX_SENDV_EGR		opx_hfi1_tx_sendv_egr_select
+#define OPX_FABRIC_TX_SEND_RZV		opx_hfi1_tx_send_rzv_select
+#define OPX_FABRIC_TX_SENDV_RZV		opx_hfi1_tx_sendv_rzv
 #define FI_OPX_FABRIC_RX_RZV_RTS	fi_opx_hfi1_rx_rzv_rts
+#define FI_OPX_FABRIC_RX_RZV_RTS_ETRUNC fi_opx_hfi1_rx_rzv_rts_etrunc
 #define FI_OPX_FABRIC_RX_RZV_CTS	fi_opx_hfi1_rx_rzv_cts
-#define FI_OPX_FABRIC_TX_DO_PUT     fi_opx_hfi1_do_dput
 
 #endif
 

@@ -1,5 +1,5 @@
 // see issue #24594; same for classes
-// can compile with --minimal-modules upon removal of compilerWarning()
+
 
 record SymEntry {
   type etype;

@@ -50,7 +50,6 @@ static struct fi_tx_attr psmx2_tx_attr = {
 	.mode			= FI_CONTEXT, /* 0 */
 	.op_flags		= PSMX2_OP_FLAGS,
 	.msg_order		= PSMX2_MSG_ORDER,
-	.comp_order		= PSMX2_COMP_ORDER,
 	.inject_size		= 64, /* psmx2_env.inject_size */
 	.size			= UINT64_MAX,
 	.iov_limit		= PSMX2_IOV_MAX_COUNT,
@@ -62,8 +61,6 @@ static struct fi_rx_attr psmx2_rx_attr = {
 	.mode			= FI_CONTEXT, /* 0 */
 	.op_flags		= PSMX2_OP_FLAGS,
 	.msg_order		= PSMX2_MSG_ORDER,
-	.comp_order		= PSMX2_COMP_ORDER,
-	.total_buffered_recv	= UINT64_MAX,
 	.size			= UINT64_MAX,
 	.iov_limit		= 1,
 };
@@ -92,7 +89,7 @@ static struct fi_domain_attr psmx2_domain_attr = {
 	.data_progress		= FI_PROGRESS_AUTO,
 	.resource_mgmt		= FI_RM_ENABLED,
 	.av_type		= FI_AV_UNSPEC,
-	.mr_mode		= FI_MR_SCALABLE | FI_MR_BASIC,
+	.mr_mode		= OFI_MR_SCALABLE | OFI_MR_BASIC,
 	.mr_key_size		= sizeof(uint64_t),
 	.cq_data_size		= 0, /* 4, 8 */
 	.cq_cnt			= 65535,
@@ -338,6 +335,7 @@ void psmx2_update_prov_info(struct fi_info *info,
 			    struct psmx2_ep_name *dest_addr)
 {
 	struct fi_info *p;
+	int ret;
 
 	for (p = info; p; p = p->next) {
 		psmx2_dup_addr(p->addr_format, src_addr,
@@ -366,10 +364,17 @@ void psmx2_update_prov_info(struct fi_info *info,
 		}
 
 		free(p->domain_attr->name);
-		if (unit == PSMX2_DEFAULT_UNIT)
+		if (unit == PSMX2_DEFAULT_UNIT) {
 			p->domain_attr->name = strdup(psmx2_hfi_info.default_domain_name);
-		else
-			asprintf(&p->domain_attr->name, "hfi1_%d", unit);
+		} else {
+			ret = asprintf(&p->domain_attr->name, "hfi1_%d", unit);
+			if (ret < 0) {
+				p->domain_attr->name = NULL;
+				FI_WARN(&psmx2_prov, FI_LOG_CORE,
+					"Failed to allocate domain name for HFI unit %d\n",
+					unit);
+			}
+		}
 
 		p->tx_attr->inject_size = psmx2_env.inject_size;
 	}
@@ -419,17 +424,12 @@ void psmx2_alter_prov_info(uint32_t api_version,
 	 */
 	for (; info; info = info->next) {
 		if (!hints || !hints->domain_attr ||
-		    !hints->domain_attr->control_progress)
-			info->domain_attr->control_progress =
-				FI_PROGRESS_MANUAL;
-
-		if (!hints || !hints->domain_attr ||
 		    !hints->domain_attr->data_progress)
 			info->domain_attr->data_progress =
 				FI_PROGRESS_MANUAL;
 
-		if (info->domain_attr->mr_mode == (FI_MR_BASIC | FI_MR_SCALABLE))
-			info->domain_attr->mr_mode = FI_MR_SCALABLE;
+		if (info->domain_attr->mr_mode == (OFI_MR_BASIC | OFI_MR_SCALABLE))
+			info->domain_attr->mr_mode = OFI_MR_SCALABLE;
 
 		/*
 		 * Avoid automatically adding secondary caps that may negatively

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -84,6 +84,11 @@ module ChapelHashing {
     pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
+    if boundsChecking {
+      if n >= 64 {
+        halt("rotation amount must be between 0 and 63 - got " + n:string);
+      }
+    }
     return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
@@ -158,7 +163,7 @@ module ChapelHashing {
   inline proc range.hash(): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numImplementationFields(this.type) {
+    for param i in 0..<numImplementationFields(this.type) {
       if isParam(getImplementationField(this, i)) == false &&
          isType(getImplementationField(this, i)) == false &&
          isNothingType(getImplementationField(this, i).type) == false {

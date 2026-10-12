@@ -1,0 +1,4 @@
+badTypeAssign.chpl:7: error: could not find a copy initializer ('init=') for type 'string' from type 'int(64)'
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match: string.init=(s: string)
+badTypeAssign.chpl:7: note: because actual argument #1 with type 'int(64)'
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 's: string'

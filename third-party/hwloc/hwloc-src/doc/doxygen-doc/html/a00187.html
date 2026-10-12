@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Looking at Ancestor and Child Objects</title>
+<title>Hardware Locality (hwloc): Exporting Topologies to Synthetic</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -18,7 +18,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.11.2</span>
+   <div id="projectname">Hardware Locality (hwloc)<span id="projectnumber">&#160;2.12.2</span>
    </div>
   </td>
  </tr>
@@ -40,53 +40,89 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">Looking at Ancestor and Child Objects</div></div>
+  <div class="headertitle"><div class="title">Exporting Topologies to Synthetic</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga7ac6f97cc40bd50c40285084f869ba63" id="r_ga7ac6f97cc40bd50c40285084f869ba63"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga7ac6f97cc40bd50c40285084f869ba63">hwloc_topology_export_synthetic_flags_e</a> { <a class="el" href="a00187.html#gga7ac6f97cc40bd50c40285084f869ba63a3b3bd4ba2ef9990810865e561034ccc9">HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_EXTENDED_TYPES</a>
+, <a class="el" href="a00187.html#gga7ac6f97cc40bd50c40285084f869ba63aaa2702ffba050bab079b3041aec737d4">HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_ATTRS</a>
+, <a class="el" href="a00187.html#gga7ac6f97cc40bd50c40285084f869ba63a7896bdf4ccfcdcd09a9f76c0f5e3a5b8">HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_V1</a>
+, <a class="el" href="a00187.html#gga7ac6f97cc40bd50c40285084f869ba63a22c57cf18e1da4a6c584fb783b552f9f">HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_IGNORE_MEMORY</a>
+ }</td></tr>
+<tr class="separator:ga7ac6f97cc40bd50c40285084f869ba63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga9f8c93fde236e9642a96957af01a11cb" id="r_ga9f8c93fde236e9642a96957af01a11cb"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga9f8c93fde236e9642a96957af01a11cb">hwloc_get_ancestor_obj_by_depth</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int depth, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj)</td></tr>
-<tr class="separator:ga9f8c93fde236e9642a96957af01a11cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga70f0c7583291da707c15ae4daa850f41" id="r_ga70f0c7583291da707c15ae4daa850f41"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga70f0c7583291da707c15ae4daa850f41">hwloc_get_ancestor_obj_by_type</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj)</td></tr>
-<tr class="separator:ga70f0c7583291da707c15ae4daa850f41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab1fa883021928b5c476911c4102e9be3" id="r_gab1fa883021928b5c476911c4102e9be3"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#gab1fa883021928b5c476911c4102e9be3">hwloc_get_common_ancestor_obj</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj1, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj2)</td></tr>
-<tr class="separator:gab1fa883021928b5c476911c4102e9be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga408cf74f5bf9ed497911a320c7f8cc56" id="r_ga408cf74f5bf9ed497911a320c7f8cc56"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga408cf74f5bf9ed497911a320c7f8cc56">hwloc_obj_is_in_subtree</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> subtree_root)</td></tr>
-<tr class="separator:ga408cf74f5bf9ed497911a320c7f8cc56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga12d8565a3436c565e791ed02a0353621" id="r_ga12d8565a3436c565e791ed02a0353621"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga12d8565a3436c565e791ed02a0353621">hwloc_get_next_child</a> (<a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> parent, <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
-<tr class="separator:ga12d8565a3436c565e791ed02a0353621"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24b7864a1c588309c4749f621f03b4c7" id="r_ga24b7864a1c588309c4749f621f03b4c7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00187.html#ga24b7864a1c588309c4749f621f03b4c7">hwloc_topology_export_synthetic</a> (<a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, char *buffer, size_t buflen, unsigned long flags)</td></tr>
+<tr class="separator:ga24b7864a1c588309c4749f621f03b4c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>Be sure to see the figure in <a class="el" href="a00377.html">Terms and Definitions</a> that shows a complete topology tree, including depths, child/sibling/cousin relationships, and an example of an asymmetric topology where one package has fewer caches than its peers. </p>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga7ac6f97cc40bd50c40285084f869ba63" name="ga7ac6f97cc40bd50c40285084f869ba63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7ac6f97cc40bd50c40285084f869ba63">&#9670;&#160;</a></span>hwloc_topology_export_synthetic_flags_e</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="a00187.html#ga7ac6f97cc40bd50c40285084f869ba63">hwloc_topology_export_synthetic_flags_e</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Flags for exporting synthetic topologies. </p>
+<p>Flags to be given as a OR'ed set to <a class="el" href="a00187.html#ga24b7864a1c588309c4749f621f03b4c7" title="Export the topology as a synthetic string.">hwloc_topology_export_synthetic()</a>. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7ac6f97cc40bd50c40285084f869ba63a3b3bd4ba2ef9990810865e561034ccc9" name="gga7ac6f97cc40bd50c40285084f869ba63a3b3bd4ba2ef9990810865e561034ccc9"></a>HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_EXTENDED_TYPES&#160;</td><td class="fielddoc"><p>Export extended types such as L2dcache as basic types such as Cache. </p>
+<p>This is required if loading the synthetic description with hwloc &lt; 1.9. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7ac6f97cc40bd50c40285084f869ba63aaa2702ffba050bab079b3041aec737d4" name="gga7ac6f97cc40bd50c40285084f869ba63aaa2702ffba050bab079b3041aec737d4"></a>HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_NO_ATTRS&#160;</td><td class="fielddoc"><p>Do not export level attributes. </p>
+<p>Ignore level attributes such as memory/cache sizes or PU indexes. This is required if loading the synthetic description with hwloc &lt; 1.10. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7ac6f97cc40bd50c40285084f869ba63a7896bdf4ccfcdcd09a9f76c0f5e3a5b8" name="gga7ac6f97cc40bd50c40285084f869ba63a7896bdf4ccfcdcd09a9f76c0f5e3a5b8"></a>HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_V1&#160;</td><td class="fielddoc"><p>Export the memory hierarchy as expected in hwloc 1.x. </p>
+<p>Instead of attaching memory children to levels, export single NUMA node child as normal intermediate levels, when possible. This is required if loading the synthetic description with hwloc 1.x. However this may fail if some objects have multiple local NUMA nodes. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7ac6f97cc40bd50c40285084f869ba63a22c57cf18e1da4a6c584fb783b552f9f" name="gga7ac6f97cc40bd50c40285084f869ba63a22c57cf18e1da4a6c584fb783b552f9f"></a>HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_IGNORE_MEMORY&#160;</td><td class="fielddoc"><p>Do not export memory information. </p>
+<p>Only export the actual hierarchy of normal CPU-side objects and ignore where memory is attached. This is useful for when the hierarchy of CPUs is what really matters, but it behaves as if there was a single machine-wide NUMA node. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga9f8c93fde236e9642a96957af01a11cb" name="ga9f8c93fde236e9642a96957af01a11cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9f8c93fde236e9642a96957af01a11cb">&#9670;&#160;</a></span>hwloc_get_ancestor_obj_by_depth()</h2>
+<a id="ga24b7864a1c588309c4749f621f03b4c7" name="ga24b7864a1c588309c4749f621f03b4c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga24b7864a1c588309c4749f621f03b4c7">&#9670;&#160;</a></span>hwloc_topology_export_synthetic()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_ancestor_obj_by_depth </td>
+          <td class="memname">int hwloc_topology_export_synthetic </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00166.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>depth</em>, </td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>buflen</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>flags</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -94,210 +130,18 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Returns the ancestor object of <code>obj</code> at depth <code>depth</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>the ancestor if any. </dd>
+<p>Export the topology as a synthetic string. </p>
+<p>At most <code>buflen</code> characters will be written in <code>buffer</code>, including the terminating \0.</p>
+<p>This exported string may be given back to <a class="el" href="a00172.html#ga4fab186bb6181a00bcf585825fddd38d" title="Enable synthetic topology.">hwloc_topology_set_synthetic()</a>.</p>
+<p><code>flags</code> is a OR'ed set of <a class="el" href="a00187.html#ga7ac6f97cc40bd50c40285084f869ba63" title="Flags for exporting synthetic topologies.">hwloc_topology_export_synthetic_flags_e</a>.</p>
+<dl class="section return"><dt>Returns</dt><dd>The number of characters that were written, not including the terminating \0.</dd>
 <dd>
-<code>NULL</code> if no such ancestor exists.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd><code>depth</code> should not be the depth of PU or NUMA objects since they are ancestors of no objects (except Misc or I/O). This function rather expects an intermediate level depth, such as the depth of Packages, Cores, or Caches. </dd></dl>
-
-</div>
-</div>
-<a id="ga70f0c7583291da707c15ae4daa850f41" name="ga70f0c7583291da707c15ae4daa850f41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga70f0c7583291da707c15ae4daa850f41">&#9670;&#160;</a></span>hwloc_get_ancestor_obj_by_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_ancestor_obj_by_type </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00173.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the ancestor object of <code>obj</code> with type <code>type</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>the ancestor if any. </dd>
+-1 if the topology could not be exported, for instance if it is not symmetric.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>I/O and Misc children are ignored, the synthetic string only describes normal children.</dd>
 <dd>
-<code>NULL</code> if no such ancestor exists.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>if multiple matching ancestors exist (e.g. multiple levels of <a class="el" href="a00173.html#ggacd37bb612667dc437d66bfb175a8dc55a5269ef95be72f88465559d35c9b7ad56" title="Group objects. Objects which do not fit in the above but are detected by hwloc and are useful to take...">HWLOC_OBJ_GROUP</a>) the lowest one is returned.</dd>
-<dd>
-<code>type</code> should not be <a class="el" href="a00173.html#ggacd37bb612667dc437d66bfb175a8dc55abca6887e80cb291353b0a0c1da83f661" title="Processing Unit, or (Logical) Processor. An execution unit (may share a core with some other logical ...">HWLOC_OBJ_PU</a> or <a class="el" href="a00173.html#ggacd37bb612667dc437d66bfb175a8dc55a9d917a3e5497950c6d8948b8e183db5a" title="NUMA node. An object that contains memory that is directly and byte-accessible to the host processors...">HWLOC_OBJ_NUMANODE</a> since these objects are ancestors of no objects (except Misc or I/O). This function rather expects an intermediate object type, such as <a class="el" href="a00173.html#ggacd37bb612667dc437d66bfb175a8dc55ab16ab8c0dbffc234921d86f3dfb63129" title="Physical package. The physical package that usually gets inserted into a socket on the motherboard....">HWLOC_OBJ_PACKAGE</a>, <a class="el" href="a00173.html#ggacd37bb612667dc437d66bfb175a8dc55ac793958f330bca371aa1535de8aff45f" title="Core. A computation unit (may be shared by several PUs, aka logical processors).">HWLOC_OBJ_CORE</a>, etc. </dd></dl>
-
-</div>
-</div>
-<a id="gab1fa883021928b5c476911c4102e9be3" name="gab1fa883021928b5c476911c4102e9be3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab1fa883021928b5c476911c4102e9be3">&#9670;&#160;</a></span>hwloc_get_common_ancestor_obj()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_common_ancestor_obj </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj2</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the common parent object to objects <code>obj1</code> and <code>obj2</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>the common ancestor.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>This function cannot return <code>NULL</code>. </dd></dl>
-
-</div>
-</div>
-<a id="ga12d8565a3436c565e791ed02a0353621" name="ga12d8565a3436c565e791ed02a0353621"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga12d8565a3436c565e791ed02a0353621">&#9670;&#160;</a></span>hwloc_get_next_child()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_child </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>parent</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>prev</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the next child. </p>
-<p>Return the next child among the normal children list, then among the memory children list, then among the I/O children list, then among the Misc children list.</p>
-<dl class="section return"><dt>Returns</dt><dd>the first child if <code>prev</code> is <code>NULL</code>. </dd>
-<dd>
-the next child if <code>prev</code> is not <code>NULL</code>. </dd>
-<dd>
-<code>NULL</code> when there is no next child. </dd></dl>
-
-</div>
-</div>
-<a id="ga408cf74f5bf9ed497911a320c7f8cc56" name="ga408cf74f5bf9ed497911a320c7f8cc56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga408cf74f5bf9ed497911a320c7f8cc56">&#9670;&#160;</a></span>hwloc_obj_is_in_subtree()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int hwloc_obj_is_in_subtree </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00175.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00174.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>subtree_root</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns true if <code>obj</code> is inside the subtree beginning with ancestor object <code>subtree_root</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>1 is the object is in the subtree, 0 otherwise.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>This function cannot work if <code>obj</code> and <code>subtree_root</code> objects do not have CPU sets (I/O or Misc objects). </dd></dl>
+A 1024-byte buffer should be large enough for exporting topologies in the vast majority of cases. </dd></dl>
 
 </div>
 </div>

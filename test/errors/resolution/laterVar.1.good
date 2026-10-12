@@ -1,13 +1,23 @@
 laterVar.chpl:19: In function 'anotherone':
-laterVar.chpl:20: error: statement references a variable before it is defined
+laterVar.chpl:20: error: statement references variable 'g' before it is defined
+laterVar.chpl:21: note: the variable 'g' is defined here
 laterVar.chpl:32: error: Cannot establish type for call expression
 laterVar.chpl:25: In function 'bar':
-laterVar.chpl:27: error: statement references a variable before it is defined
+laterVar.chpl:27: error: statement references variable 'ly' before it is defined
+laterVar.chpl:28: note: the variable 'ly' is defined here
 laterVar.chpl:1: In function 'helper':
-laterVar.chpl:2: error: statement references a variable before it is defined
+laterVar.chpl:2: error: statement references variable 'b' before it is defined
+laterVar.chpl:3: note: the variable 'b' is defined here
 laterVar.chpl:7: In function 'other':
-laterVar.chpl:8: error: statement references a variable before it is defined
-laterVar.chpl:37: error: statement references a variable before it is defined
-laterVar.chpl:41: error: statement references a variable before it is defined
+laterVar.chpl:8: error: statement references variable 'x' before it is defined
+laterVar.chpl:9: note: the variable 'x' is defined here
+laterVar.chpl:37: error: statement references variable 'g' before it is defined
+laterVar.chpl:38: note: the variable 'g' is defined here
+laterVar.chpl:41: error: statement references variable 'ly' before it is defined
+laterVar.chpl:42: note: the variable 'ly' is defined here
 laterVar.chpl:46: In function 'foo':
-laterVar.chpl:46: error: statement references a variable before it is defined
+laterVar.chpl:46: error: statement references variable 'x' before it is defined
+laterVar.chpl:46: note: the variable 'x' is defined here
+laterVar.chpl:44: error: unable to resolve call to 'foo': no matching candidates
+laterVar.chpl:46: note: call resolution was not completed because formal 1 of this candidate was ill-formed
+laterVar.chpl:44: note: omitting 1 more candidates that didn't match

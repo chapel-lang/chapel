@@ -12,7 +12,7 @@ proc main() {
     var TomlData = parseToml(str);
     var dob = TomlData["owner"]!["name"];
 
-  } catch e: TomlError{
+  } catch e: TomlError {
     writeln(e.message());
     exit(1);
   }

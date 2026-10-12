@@ -16,11 +16,23 @@ extern "union namedUnion" union namedUnion {
   var a : c_int;
 }
 
+// Anonymous union or struct was encountered within and skipped.
+extern "struct nestedAnon" record nestedAnon {}
+
+// Anonymous union or struct was encountered within and skipped.
+extern "struct nestedAnonWithUnion" record nestedAnonWithUnion {}
+
 // ==== c2chapel typedefs ====
 
 extern union anonymousUnion {
   var a : c_int;
 }
+
+// Anonymous union or struct was encountered within and skipped.
+extern record nestedAnonWithUnion_t {}
+
+// Anonymous union or struct was encountered within and skipped.
+extern record nestedAnon_t {}
 
 extern record sports {
   var a : c_int;

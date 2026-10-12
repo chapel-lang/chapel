@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,8 +60,6 @@ class Stmt;
 class SymExpr;
 struct InterfaceReps;
 
-typedef std::bitset<NUM_FLAGS> FlagSet;
-
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
 
@@ -121,6 +119,7 @@ public:
   bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
   void               addFlag(Flag flag);
+  void               addFlags(FlagSet flags);
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
@@ -459,16 +458,6 @@ enum AlignmentStatus {
   // >1 ==> the ABI alignment
 };
 
-// Given a Chapel function type, fetch the associated local LLVM type.
-#ifdef HAVE_LLVM
-struct LlvmFunctionInfo {
-  llvm::FunctionType* type = nullptr;
-  llvm::AttributeList attrs;
-};
-
-const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* t);
-#endif
-
 class TypeSymbol final : public Symbol {
  public:
   // We need to know whether or not the definition
@@ -501,6 +490,7 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
+  llvm::MDNode* llvmDIForwardType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
@@ -515,6 +505,7 @@ class TypeSymbol final : public Symbol {
   void* llvmTbaaStructCopyNode;
   void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
+  void* llvmDIForwardType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
@@ -536,8 +527,6 @@ class TypeSymbol final : public Symbol {
   void codegenCplxMetadata();
   // TBAA metadata for aggregates
   void codegenAggMetadata();
-
-  const char* doc;
 
   BlockStmt* instantiationPoint;
   astlocT userInstantiationPointLoc;
@@ -711,6 +700,10 @@ inline bool Symbol::hasFlag(Flag flag) const {
 inline void Symbol::addFlag(Flag flag) {
   CHECK_FLAG(flag);
   flags.set(flag);
+}
+
+inline void Symbol::addFlags(FlagSet newFlags) {
+  flags |= newFlags;
 }
 
 inline void Symbol::copyFlags(const Symbol* other) {
@@ -891,6 +884,8 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 extern const char* astr_autoDestroy;
+extern const char* astr__fn;
+extern const char* astr__ln;
 
 bool isAstrOpName(const char* name);
 

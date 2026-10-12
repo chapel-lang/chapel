@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.5.0
+        export CHPL_HOME=~/chapel-2.10.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -319,25 +319,11 @@ CHPL_TARGET_CPU
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
-        **Architecture-specific values**
-
-        =========== ================ ================
-        intel       amd              arm
-        =========== ================ ================
-        core2           k8           aarch64
-        nehalem         k8sse3       thunderx
-        westmere        barcelona    thunderx2t99
-        sandybridge     bdver1
-        ivybridge       bdver2
-        haswell         bdver3
-        broadwell       bdver4
-        skylake
-        =========== ================ ================
-
-   These values are defined to be the same as in GCC 7:
-
-        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
-        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
+   You can also manually specify the architecture to specialize for. See
+   https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-march-15 and
+   https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html#index-march for a
+   list of possibly valid options. The exact architecture specific options
+   supported will depend on the backend C compiler being used.
 
    If you do not want ``CHPL_TARGET_CPU`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
@@ -347,6 +333,14 @@ CHPL_TARGET_CPU
    result in an invalid binary that will not run on the intended machine.
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
+
+   ``CHPL_TARGET_CPU`` affects what runtime the Chapel compiler will use, so to
+   switch between different ``CHPL_TARGET_CPU`` settings you must rebuild the
+   runtime. However, it is possible to instead set ``CHPL_RUNTIME_CPU`` when
+   building Chapel, which will affect only the runtime used, and not the
+   specialization of user code. If both are set, ``CHPL_RUNTIME_CPU`` will
+   select the runtime build and ``CHPL_TARGET_CPU`` will select the specialization
+   of user code.
 
    The default value for this setting will vary based on settings in your
    environment, in order of application these rules are:
@@ -663,7 +657,7 @@ CHPL_NETWORK_ATOMICS
    ``CHPL_COMM``. Note that with ``CHPL_NETWORK_ATOMICS=ofi`` support for
    network atomics is provider-specific, and the provider is selected at
    runtime. If the selected provider does not support network atomics then
-   atomics will be implemeted using active messages and processor atomics.
+   atomics will be implemented using active messages and processor atomics.
 
    Current options are:
 
@@ -969,23 +963,25 @@ CHPL_LLVM_GCC_INSTALL_DIR
 
 CHPL_UNWIND
 ~~~~~~~~~~~
-   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
-   an unwind library for stack tracing. Current options are:
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to enable
+   stack tracing support with libunwind. Current options are:
 
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       bundled   use the libunwind bundled with Chapel in third-party
        system    assume libunwind is already installed on the system
-       none      don't use an unwind library, disabling stack tracing
+       bundled   use the libunwind bundled with Chapel in third-party
+       none      don't use libunwind, disabling stack tracing
        ========= =======================================================
 
-   If unset, ``CHPL_UNWIND`` defaults to ``none``
+   If unset, ``CHPL_UNWIND`` has the following defaults:
 
-   .. note::
+      * If libunwind is detected on the system, ``CHPL_UNWIND`` defaults to ``system``.
 
-      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
-      ``CHPL_UNWIND=system`` should be used instead on that system.
+      * Otherwise, ``CHPL_UNWIND`` defaults to ``bundled`` on linux64.
+
+      * On MacOS, ``CHPL_UNWIND`` always defaults to ``system``.
+        ``CHPL_UNWIND=bundled`` is not supported on MacOS.
 
 .. _readme-chplenv.CHPL_LIB_PIC:
 
@@ -1027,6 +1023,9 @@ the option via an environment variable.  To see a list of the environment
 variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
+
+.. index::
+   single: chplconfig; Chapel configuration file
 
 .. _readme-chplenv.chplconfig:
 

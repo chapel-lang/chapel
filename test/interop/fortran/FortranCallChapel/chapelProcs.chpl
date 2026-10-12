@@ -2,12 +2,15 @@ var chplInt: int;
 var chplReal: real;
 
 export proc chpl_library_init_ftn() {
-
-use CTypes;
+  use CTypes;
 
   extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
-  var filename = "fake":c_ptrConst(c_char);;
-  chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));
+
+  var filenamePtr1 = "fake" : c_ptr(c_char);
+  const argc: c_int = 1;
+  const argv: c_ptr(c_ptr(c_char)) = c_ptrTo(filenamePtr1);
+
+  chpl_library_init(argc, argv);
   chpl__init_chapelProcs();
 }
 

@@ -1,0 +1,12 @@
+─── error in throwNonThrowing.chpl:3 [ThrowInNonThrowingFunction] ───
+  Cannot throw in a non-throwing function
+      |
+    3 |     throw new owned Error();
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Either put the throw inside a try block, or add 'throws' to the function declaration.
+  The function is declared here:
+      |
+    2 |   proc canThrow() {
+      |
+

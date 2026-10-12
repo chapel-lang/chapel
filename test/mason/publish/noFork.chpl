@@ -13,5 +13,6 @@ proc badDryRun() throws {
   }
 }
 
-
-badDryRun();
+proc main() {
+  badDryRun();
+}

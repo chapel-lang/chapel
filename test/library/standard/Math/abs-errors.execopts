@@ -1,0 +1,4 @@
+--testCase=TestCases.Min64 # abs-errors.64.good
+--testCase=TestCases.Min32 # abs-errors.32.good
+--testCase=TestCases.Min16 # abs-errors.16.good
+--testCase=TestCases.Min8 # abs-errors.8.good

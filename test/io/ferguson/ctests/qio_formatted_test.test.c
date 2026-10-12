@@ -102,6 +102,7 @@ void test_readwriteint(void)
   int sizes[] = {1, -1, 2, -2, 4, -4, 8, -8, 0};
   int byteorder[] = {QIO_NATIVE, QIO_BIG, QIO_LITTLE, 0};
   char got[16];
+  char tempdata[16];
   int i,j,k;
 
   if( verbose ) printf("Testing binary integer I/O\n");
@@ -113,22 +114,18 @@ void test_readwriteint(void)
   for( i = 0; testdata[i]; i++ ) {
     for( j = 0; sizes[j]; j++ ) {
       for( k = 0; byteorder[k]; k++ ) {
-        const char* data = testdata[i];
         int sz = sizes[j];
         int b_order = byteorder[k];
-        int len;
+        int len = sz < 0 ? -sz : sz;
 
-        len = sz;
-        if( len < 0 ) len = - sz;
-
-
+        memcpy(tempdata, testdata + i, len);
         memset(got, 0, sizeof(got));
 
         // Create a "write to file" channel.
         err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
         assert(!err);
 
-        err = qio_channel_write_int(true, b_order, writing, data, len, sz < 0);
+        err = qio_channel_write_int(true, b_order, writing, tempdata, len, sz < 0);
         assert(!err);
 
         qio_channel_release(writing);
@@ -143,7 +140,7 @@ void test_readwriteint(void)
         assert(!err);
 
         // Check that we read back what we wrote.
-        assert( 0 == memcmp(got, data, len) );
+        assert( 0 == memcmp(got, tempdata, len) );
 
         qio_channel_release(reading);
         reading = NULL;

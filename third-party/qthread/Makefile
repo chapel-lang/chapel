@@ -132,6 +132,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_SCHEDULER=$(SCHEDULER)
 
+
+# sanitizers won't work with fastcontext switching
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+	CHPL_QTHREAD_CFG_OPTIONS += -DDQTHREADS_CONTEXT_SWAP_IMPL=system
+endif
+
 # only do this on M1+ Macs
 ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
@@ -147,7 +153,7 @@ endif
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CONDWAIT_QUEUE=ON
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

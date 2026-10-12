@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+OUTFILE=$2
+
+sed -e '/^pkgconf/d' -e '/^pkg-config/d' $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE

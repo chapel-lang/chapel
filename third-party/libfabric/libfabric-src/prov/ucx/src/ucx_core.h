@@ -113,10 +113,12 @@ static inline ssize_t ucx_do_inject(struct fid_ep *ep, const void *buf,
 
 	u_ep = container_of(ep, struct ucx_ep, ep.ep_fid);
 	dst_ep = UCX_GET_UCP_EP(u_ep, dest_addr);
+	if (!dst_ep)
+		return -FI_EINVAL;
 
 	status = ucp_tag_send_nb(dst_ep, buf, len,
 				 ucp_dt_make_contig(1),
-				 tag, ucx_send_callback_no_compl);
+				 tag, ucx_callback_noop);
 
 	if (status == NULL) {
 		ofi_ep_cntr_inc(&u_ep->ep, CNTR_TX);
@@ -132,6 +134,8 @@ static inline ssize_t ucx_do_inject(struct fid_ep *ep, const void *buf,
 
 	while ((ret = ucp_request_check_status(status)) == UCS_INPROGRESS)
 		ucp_worker_progress(u_ep->worker);
+
+	ucx_req_release(status);
 
 	return -ucx_translate_errcode(ret);
 }

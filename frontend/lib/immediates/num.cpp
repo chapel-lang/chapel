@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -386,18 +386,18 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
     if (base == 1) {                                     \
       res = 1;                                           \
     } else if (base == -1) {                             \
-      res = exp % 2 == 0 ? 1 : -1;                       \
+      res = exp & 1 ? -1 : 1;                            \
     } else {                                             \
       res = 0;                                           \
     }                                                    \
   } else {                                               \
     type i = exp;                                        \
     type z = base;                                       \
-    while (i != 0) {                                     \
-      if (i % 2 == 1)                                    \
-        res *= z;                                        \
+    for (;;) {                                           \
+      if (i & 1) res *= z;                               \
+      i >>= 1;                                           \
+      if (!i) break;                                     \
       z *= z;                                            \
-      i /= 2;                                            \
     }                                                    \
   }
 
@@ -407,11 +407,11 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
   type res = 1;                                      \
   type i = exp;                                      \
   type z = base;                                     \
-  while (i != 0) {                                   \
-    if (i % 2 == 1)                                  \
-      res *= z;                                      \
+  for (;;) {                                         \
+    if (i & 1) res *= z;                             \
+    i >>= 1;                                         \
+    if (!i) break;                                   \
     z *= z;                                          \
-    i /= 2;                                          \
   }
 
 #define DO_FOLDPOW() \
@@ -483,9 +483,79 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
           } \
           break; \
         } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
-          CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
+        case NUM_KIND_REAL:                                             \
+          switch (imm->num_index) {                                     \
+            case FLOAT_SIZE_32:                                         \
+              {                                                         \
+                imm->v_float32 = powf(im1.v_float32, im2.v_float32);    \
+                break;                                                  \
+              }                                                         \
+            case FLOAT_SIZE_64:                                         \
+              {                                                         \
+                imm->v_float64 = pow(im1.v_float64, im2.v_float64);     \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexPow64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexPow128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        case NUM_KIND_IMAG:                                             \
+          CHPL_ASSERT(false && "Cannot fold ** on imaginary values");   \
           break; \
+      }
+
+#define DO_FOLDDIV()                                                    \
+      switch (imm->const_kind) {                                        \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexDiv64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexDiv128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        default:                                                        \
+          DO_FOLD(/, false, false);                                     \
+          break;                                                        \
+      }
+
+#define DO_FOLDMUL()                                                    \
+      switch (imm->const_kind) {                                        \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexMul64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexMul128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        default:                                                        \
+          DO_FOLD(*, false, false);                                     \
+          break;                                                        \
       }
 
 static void doFoldSqrt(chpl::Context* context,
@@ -643,6 +713,27 @@ static void doFoldGetImag(chpl::Context* context,
           break;
         case COMPLEX_SIZE_128:
           imm->v_float64 = im1.v_complex128.i;
+          break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+  }
+}
+
+static void doFoldBuildComplex(chpl::Context* context,
+                               Immediate &im1, /* input */
+                               Immediate &im2, /* input */
+                               Immediate *imm  /* output */) {
+  switch (imm->const_kind) {
+    case NUM_KIND_COMPLEX:
+      switch (imm->num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_complex64.r = im1.v_float32;
+          imm->v_complex64.i = im2.v_float32;
+          break;
+        case COMPLEX_SIZE_128:
+          imm->v_complex128.r = im1.v_float64;
+          imm->v_complex128.i = im2.v_float64;
           break;
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
@@ -1070,6 +1161,20 @@ fold_constant(chpl::Context* context, int op,
         imm->num_index = im1.num_index;
       }
       break;
+    case P_prim_build_complex:
+      if ((im1.const_kind == NUM_KIND_REAL || im1.const_kind == NUM_KIND_IMAG) &&
+          (im2.const_kind == NUM_KIND_REAL || im2.const_kind == NUM_KIND_IMAG)) {
+        imm->const_kind = NUM_KIND_COMPLEX;
+        if (im1.num_index == FLOAT_SIZE_32 && im2.num_index == FLOAT_SIZE_32)
+          imm->num_index = COMPLEX_SIZE_64;
+        else if (im1.num_index == FLOAT_SIZE_64 && im2.num_index == FLOAT_SIZE_64)
+          imm->num_index = COMPLEX_SIZE_128;
+        else
+          CHPL_ASSERT(false && "build_complex numeric kind not supported");
+      } else {
+        CHPL_ASSERT(false && "build_complex numeric kind not supported");
+      }
+      break;
   }
   if (coerce.const_kind) {
     coerce_immediate(context, &im1, &coerce);
@@ -1081,8 +1186,8 @@ fold_constant(chpl::Context* context, int op,
   }
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
-    case P_prim_mult: DO_FOLD(*, false, false); break;
-    case P_prim_div: DO_FOLD(/, false, false); break;
+    case P_prim_mult: DO_FOLDMUL(); break;
+    case P_prim_div: DO_FOLDDIV(); break;
     case P_prim_mod: DO_FOLDI(%); break;
     case P_prim_add: DO_FOLD(+, true, false); break;
     case P_prim_subtract: DO_FOLD(-, false, true); break;
@@ -1121,6 +1226,10 @@ fold_constant(chpl::Context* context, int op,
     }
     case P_prim_get_real: {
       doFoldGetReal(context, im1, imm);
+      break;
+    }
+    case P_prim_build_complex: {
+      doFoldBuildComplex(context, im1, im2, imm);
       break;
     }
   }

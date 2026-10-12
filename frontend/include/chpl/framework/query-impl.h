@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -730,7 +730,7 @@ Context::querySetterUpdateResult(
 
   To do this in a way that works out of the box using the query system,
   use the QUERY_STORE_RESULT macro, which sets certain flags to avoid
-  running into these issues (but could result in redunant recomputations).
+  running into these issues (but could result in redundant recomputations).
  */
 #define QUERY_UNSAFE_STORE_RESULT(func, context, result, ...) \
   context->querySetterUpdateResult(func, \

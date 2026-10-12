@@ -16,7 +16,7 @@ Name:    %{name}
 Version: %{version}
 Release: %{pkg_release}
 Prefix:  %{platform_prefix}
-License: Copyright 2023-2025 Hewlett Packard Enterprise Development LP All Rights Reserved.
+License: Copyright 2023-2026 Hewlett Packard Enterprise Development LP All Rights Reserved.
 Packager: Hewlett Packard Enterprise
 Group:   Development/Languages/Other
 Source:  %{chpl_home_basename}.tar.gz
@@ -37,6 +37,18 @@ Requires:   python
 
 %description
 Chapel language compiler and libraries
+
+# Workarounds
+
+# Disable shebang mangling, due to errors encountered with shebangs in included
+# third-party code.
+# Anna, 2026-03-10
+%define __brp_mangle_shebangs %{nil}
+
+# Avoid generating build-id links, for which we get symlinks that are broken
+# outside the build container.
+# Anna, 2026-03-25
+%define _build_id_links none
 
 %prep
 
@@ -96,7 +108,14 @@ chmod 644 $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version
 fi
 chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
 
+# Set prefix in TCL modulefile
 sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
+# Set prefix in Lua modulefile(s)
+lmod_prefix_abs="%{lmod_prefix}"
+platform_prefix_abs="%{platform_prefix}"
+lmod_prefix_rel="${lmod_prefix_abs#${platform_prefix_abs}/}"
+find $RPM_INSTALL_PREFIX/$lmod_prefix_rel -name "*.lua" -type f -exec sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" {} \;
+
 %postun
 if [ $1 == 1 ]
 then
@@ -119,4 +138,4 @@ fi
 %{prefix}/%{real_name}/%{pkg_version}
 %{prefix}/modulefiles/%{real_name}/%{pkg_version}
 %{prefix}/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
-%{lmod_prefix}/*/*/%{lmod_suffix}/%{real_name}/%{pkg_version}.lua
+%{lmod_prefix}

@@ -1,5 +1,4 @@
 use Collectives;
-use DistributedBagDeprecated;
 use DistributedDeque;
 
 /*
@@ -33,10 +32,7 @@ N x N | Total | Unique
 25 x 25 	 2,207,893,435,808,350 	 275,986,683,743,434
 26 x 26 	 22,317,699,616,364,000 	 2,789,712,466,510,280 */
 
-
 config param nQueens = 8;
-config param isDeque = false;
-config param isBag = false;
 
 inline proc getTotalSolutions() {
   var retval = 0;
@@ -135,17 +131,10 @@ proc canPlaceQueen(board, row, col) {
   return true;
 }
 
-
-
-
 type boardType = nQueens * int;
 const totalSolutions = getTotalSolutions();
 var found : atomic int;
-var c = (
-  if isDeque then new DistDeque(boardType)
-  else if isBag then new DistBag(boardType)
-  else compilerError("Require 'isDeque' or 'isBag' to be set...")
-);
+var c = new DistDeque(boardType);
 
 // Fill with initial board...
 c.add(_defaultOf(boardType));

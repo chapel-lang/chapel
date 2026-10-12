@@ -190,7 +190,7 @@ ssize_t ofi_eq_sread(struct fid_eq *eq_fid, uint32_t *event, void *buf,
 		if (ofi_adjust_timeout(endtime, &timeout))
 			return -FI_EAGAIN;
 
-		ret = fi_wait(&eq->wait->wait_fid, timeout);
+		ret = ofi_wait(&eq->wait->wait_fid, timeout);
 	} while (!ret);
 
 	return ret == -FI_ETIMEDOUT ? -FI_EAGAIN : ret;
@@ -240,8 +240,8 @@ int ofi_eq_cleanup(struct fid *fid)
 	}
 
 	if (eq->wait) {
-		fi_poll_del(&eq->wait->pollset->poll_fid,
-			    &eq->eq_fid.fid, 0);
+		ofi_poll_del(&eq->wait->pollset->poll_fid,
+			     &eq->eq_fid.fid, 0);
 		if (eq->internal_wait)
 			fi_close(&eq->wait->wait_fid.fid);
 	}
@@ -306,7 +306,7 @@ static int util_eq_init(struct fid_fabric *fabric, struct util_eq *eq,
 		memset(&wait_attr, 0, sizeof wait_attr);
 		wait_attr.wait_obj = attr->wait_obj;
 		eq->internal_wait = 1;
-		ret = fi_wait_open(fabric, &wait_attr, &wait);
+		ret = ofi_wait_open(fabric, &wait_attr, &wait);
 		if (ret)
 			return ret;
 		eq->wait = container_of(wait, struct util_wait, wait_fid);
@@ -431,8 +431,8 @@ int ofi_eq_init(struct fid_fabric *fabric_fid, struct fi_eq_attr *attr,
 
 	/* EQ must be fully operational before adding to wait set */
 	if (eq->wait) {
-		ret = fi_poll_add(&eq->wait->pollset->poll_fid,
-				  &eq->eq_fid.fid, 0);
+		ret = ofi_poll_add(&eq->wait->pollset->poll_fid,
+				   &eq->eq_fid.fid, 0);
 		if (ret) {
 			ofi_eq_cleanup(&eq->eq_fid.fid);
 			return ret;

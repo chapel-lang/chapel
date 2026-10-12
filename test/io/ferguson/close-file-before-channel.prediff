@@ -8,5 +8,6 @@ if [ $? -eq 0 ]
 then
   mv $outfile.2 $outfile
 else
+  rm $outfile.2
   echo OtherError > $outfile
 fi

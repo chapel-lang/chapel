@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+$CHPL_HOME/test/mason/PRETEST $@

@@ -1,0 +1,8 @@
+returnNonArray6.chpl:1: In function 'doit':
+returnNonArray6.chpl:1: error: unresolved call '_build_tuple([domain(1,int(64),one)] domain(1,int(64),one), type [domain(1,int(64),one)] real(64))'
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:42: note: this candidate did not match: _build_tuple(type t ...)
+returnNonArray6.chpl:1: note: because non-type actual argument #1
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:42: note: is passed to formal '_e0_t'
+returnNonArray6.chpl:1: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:48: note:   _build_tuple(x ...)
+  returnNonArray6.chpl:1: called as doit(D: domain(1,int(64),one))

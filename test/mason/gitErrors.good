@@ -1,2 +1,18 @@
 MasonError: Command failed: 'git ini'
 MasonError: Command failed: 'git init'
+Downloading dependency: dummy-0.1.0
+Downloading dependency: dummy2-0.1.0
+MasonError: The following errors were encountered while installing source dependencies:
+- Failed to clone from this-url-will-not-exist
+- Failed to clone from this-url-will-not-exist-either
+MasonError: The following errors were encountered while installing source dependencies:
+- Dependency dummy-0.1.0 cannot be installed in offline mode
+- Dependency dummy2-0.1.0 cannot be installed in offline mode
+Downloading dependency: dummy-HEAD
+Downloading dependency: dummy2-HEAD
+MasonError: The following errors were encountered while installing git dependencies:
+- Failed to clone from this-url-will-not-exist
+- Failed to clone from this-url-will-not-exist-either
+MasonError: The following errors were encountered while installing git dependencies:
+- Dependency dummy-HEAD cannot be installed in offline mode
+- Dependency dummy2-HEAD cannot be installed in offline mode

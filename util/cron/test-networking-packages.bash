@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test HDFS and Curl package modules
+# Test Curl and URL package modules
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash

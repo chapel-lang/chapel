@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,14 +23,15 @@
 #include "chpl-comm.h"
 #include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
+#include "chpl-exec.h"
 #include "chplexit.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-#include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-linefile-support.h"
+#include "chpl-prginfo.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -43,25 +44,11 @@
 #include <assert.h>
 #include <unistd.h>
 
-// Helper functions
-
-static int mysystem(const char* command, const char* description,
-                    int ignorestatus) {
-  int status = system(command);
-
-  if (status == -1) {
-    chpl_error("system() fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);
-  } else if (status != 0 && !ignorestatus) {
-    chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE);
-  }
-
-  return status;
-}
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   assert(node == 0);
   memmove(raddr, addr, size);
@@ -70,7 +57,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   assert(node == 0);
   memmove(addr, raddr, size);
@@ -141,54 +128,96 @@ static const char* chpl_get_debugger_cmd_file(void) {
   return debuggerCmdFile;
 }
 
+static chpl_bool chpl_lldb_supports_python(void);
+static chpl_bool chpl_lldb_supports_python(void) {
+  char output[256];
+  const char* command = "lldb --python-path";
+  if (!chpl_get_command_output(command, output, sizeof(output))) {
+    return false;
+  }
+
+  if (output[0] == '\0') {
+    return false;
+  }
+  // remove trailing newline if present
+  size_t len = strlen(output);
+  if (len > 0 && output[len - 1] == '\n') {
+    output[len - 1] = '\0';
+  }
+  return access(output, R_OK) == 0;
+}
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
+  char* command = (char*)"gdb -q";
+
+  const char* gdb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/gdb.commands");
+  if (access(gdb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " -x \"", gdb_commands, "\"");
+  } else {
+    chpl_warning(
+      "Could not find 'gdb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -ex 'break debuggerBreakHere'");
+  }
 
   const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
-  char* command;
   if (debuggerCmdFile != NULL) {
-    command = chpl_glom_strings(4,
-      "gdb -q -ex 'break debuggerBreakHere' --command ",
-      debuggerCmdFile,
-      " --args ",
-      argv[0]);
-  } else {
-    command = chpl_glom_strings(2,
-      "gdb -q -ex 'break debuggerBreakHere' --args ",
-      argv[0]);
+    command = chpl_glom_strings(4, command, " --command \"", debuggerCmdFile, "\"");
   }
+
+  command = chpl_glom_strings(3, command, " --args ", argv[0]);
 
   for (int i=1; i<argc; i++) {
     if (i != gdbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running gdb", 0);
+  *status = chpl_invoke_using_system(command, "running gdb", 0);
 
   return 1;
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_HOME);
+  char* command = (char*)"lldb";
+
+  const char* lldb_commands = NULL;
+
+  if (chpl_lldb_supports_python()) {
+    lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb_with_python.commands");
+  } else {
+    lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb.commands");
+    chpl_warning(
+      "LLDB does not support scripting with Python"
+      ", pretty-printer will not be used",
+      0, CHPL_FILE_IDX_COMMAND_LINE
+    );
+  }
+
+  if (access(lldb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " --source \"", lldb_commands, "\"");
+  } else {
+    chpl_warning(
+      "Could not find 'lldb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -o 'b debuggerBreakHere'");
+  }
 
   const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
-  char* command;
   if (debuggerCmdFile != NULL) {
-    command = chpl_glom_strings(4,
-      "lldb -o 'b debuggerBreakHere' --source ",
-      debuggerCmdFile,
-      " -- ",
-      argv[0]);
-  } else {
-    command = chpl_glom_strings(2,
-      "lldb -o 'b debuggerBreakHere' -- ",
-      argv[0]);
+    command = chpl_glom_strings(4, command, " --source \"", debuggerCmdFile, "\"");
   }
+
+  command = chpl_glom_strings(3, command, " -- ", argv[0]);
+
 
   for (int i=1; i<argc; i++) {
     if (i != lldbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running lldb", 0);
+  *status = chpl_invoke_using_system(command, "running lldb", 0);
 
   return 1;
 }
@@ -199,9 +228,12 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) { return NULL; }
+wide_ptr_t* chpl_rt_comm_broadcast_global_vars_impl(chpl_rt_prginfo* prg) {
+  return NULL;
+}
 
-void chpl_comm_broadcast_private(int id, size_t size) { }
+void chpl_rt_comm_private_broadcast_impl(chpl_rt_prginfo* prg, int32_t id,
+                                         size_t size) {}
 
 void chpl_comm_impl_barrier(const char *msg) { }
 
@@ -210,14 +242,14 @@ void chpl_comm_pre_task_exit(int all) { }
 void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   assert(node==0);
 
   memmove(raddr, addr, size);
 }
 
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   assert(node==0);
 
   memmove(addr, raddr, size);
@@ -226,7 +258,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn)
+                         int32_t ln, int32_t fn)
 {
   assert(dstnode==0);
   put_strd_common(dstaddr_arg, dststrides, dstnode,
@@ -239,7 +271,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstno
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn)
+                         int32_t ln, int32_t fn)
 {
   assert(srcnode==0);
   get_strd_common(dstaddr_arg, dststrides, srcnode,
@@ -252,7 +284,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn)
+                                int32_t ln, int32_t fn)
 {
   assert(srcnode==0);
   assert(dstnode==0);
@@ -260,14 +292,14 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   assert(node == 0);
   memmove(addr, raddr, size);
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   assert(node == 0);
   memmove(raddr, addr, size);
@@ -281,34 +313,42 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
-void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid,
-                          chpl_comm_on_bundle_t *arg, size_t arg_size,
-                          int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                  c_sublocid_t subloc,
+                                  chpl_fn_int_t fid,
+                                  chpl_comm_on_bundle_t *arg,
+                                  size_t arg_size,
+                                  int32_t ln,
+                                  int32_t fn) {
   assert(node==0);
-
-  chpl_ftable_call(fid, arg);
+  chpl_rt_ftable_call(prg, fid, arg);
 }
 
-void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid,
-                             chpl_comm_on_bundle_t *arg, size_t arg_size,
-                             int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                     c_sublocid_t subloc,
+                                     chpl_fn_int_t fid,
+                                     chpl_comm_on_bundle_t *arg,
+                                     size_t arg_size,
+                                     int32_t ln,
+                                     int32_t fn) {
   assert(node==0);
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
 
   chpl_task_startMovedTask(fid, chpl_ftable[fid],
                            chpl_comm_on_bundle_task_bundle(arg), arg_size,
                            subloc, chpl_nullTaskID);
 }
 
-// Same as chpl_comm_execute_on()
-void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid,
-                               chpl_comm_on_bundle_t *arg, size_t arg_size,
-                               int ln, int32_t fn) {
+void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
+                                       c_sublocid_t subloc,
+                                       chpl_fn_int_t fid,
+                                       chpl_comm_on_bundle_t *arg,
+                                       size_t arg_size,
+                                       int32_t ln,
+                                       int32_t fn) {
+  // Same as chpl_rt_comm_execute_on_impl()
   assert(node==0);
-
-  chpl_ftable_call(fid, arg);
+  chpl_rt_ftable_call(prg, fid, arg);
 }
 
 void chpl_comm_ensure_progress(void) { }

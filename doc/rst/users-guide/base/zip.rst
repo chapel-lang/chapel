@@ -1,5 +1,3 @@
-:title: Users Guide: Zippered Iteration
-
 .. _ug-zip:
 
 Zippered Iteration

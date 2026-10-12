@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,28 +39,32 @@ namespace resolution {
 
 class CanPassResult {
  public:
-  enum ConversionKind {
+  using ConversionKind = uint8_t;
+
+  /// \cond DO_NOT_DOCUMENT
+  enum {
     /** No implicit conversion is needed */
-    NONE,
+    NONE = 0,
     /** A narrowing param conversion is needed.
         These are only applicable to the particular param
         value -- e.g. 1:int converting to int(8) because 1 fits in int(8).
         The input of such a conversion must be param and the result
         is always a param. */
-    PARAM_NARROWING,
+    PARAM_NARROWING = 0x1,
     /** A numeric or bool conversion. */
-    NUMERIC,
+    NUMERIC = 0x2,
     /** A conversion that implements subtyping */
-    SUBTYPE,
+    SUBTYPE = 0x4,
     /** A conversion that borrows a managed type (without subtyping) */
-    BORROWS,
-    /** A conversion that implements subtyping AND borrows a managed type */
-    BORROWS_SUBTYPE,
+    BORROWS = 0x8,
+    /** A conversion for 'sync' types that invokes .read??() */
+    READS = 0x10,
     /** Non-subtype conversion that doesn't produce a param */
-    OTHER,
+    OTHER = 0x20,
     /** A conversion from a tuple to its referential tuple type equivalent */
-    TO_REFERENTIAL_TUPLE,
+    TO_REFERENTIAL_TUPLE = 0x40,
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  private:
   optional<PassingFailureReason> failReason_ = {};
@@ -198,8 +202,13 @@ class CanPassResult {
  */
 bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const types::Type* const & mightBeManagerRecord,
+                                             const types::Type* const& mightBeManagerRecord,
                                              const types::Type*& mightBeClass);
+
+bool
+tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
+                                              const types::Type*& mightBeManagerRecord,
+                                              const types::Type* const& mightBeClass);
 
 /**
   Given an argument with QualifiedType actualType,
@@ -227,7 +236,7 @@ CanPassResult canPassScalar(Context* context,
    'instances' is an instantiation of a type with substitutions 'generics'.
 
    If 'allowMissing' is true, considers missing substitutions in 'generics'
-   to be "any type". Otherwise, requires that each susbtitution in
+   to be "any type". Otherwise, requires that each substitution in
    instances is matched by an existing substitution in generics. */
 bool canInstantiateSubstitutions(Context* context,
                                  const SubstitutionsMap& instances,
@@ -317,6 +326,7 @@ class KindProperties {
 
   /* Creates a corresponding kind that is not a reference */
   static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
+  static types::QualifiedType removeRef(types::QualifiedType type);
 };
 
 /**

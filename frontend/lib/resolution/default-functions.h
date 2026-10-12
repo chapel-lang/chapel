@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,8 +47,8 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
 
 /**
   Same as getCompilerGeneratedMethod, but for operators. Here, we are more
-  discerning: the other argument to the oeprator is also considered when
-  determing if compiler generation is needed.
+  discerning: the other argument to the operator is also considered when
+  determining if compiler generation is needed.
  */
 bool needCompilerGeneratedBinaryOp(Context* context,
                                    const types::QualifiedType& lhs,
@@ -71,12 +71,12 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
 /**
   Given the name of a binary operation and the types of its operands,
   determine if the compiler needs to provide a generated implementation,
-  and if so, generates and returns a TypedFnSignature representing the
+  and if so, generates and returns TypedFnSignatures representing the
   generated binary operation.
 
-  If no operation was generated, returns nullptr.
+  Multiple signatures may be returned if promotion was used.
  */
-const TypedFnSignature*
+std::vector<const TypedFnSignature*> const&
 getCompilerGeneratedBinaryOp(ResolutionContext* rc,
                              const types::QualifiedType lhsType,
                              const types::QualifiedType rhsType,

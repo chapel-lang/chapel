@@ -145,11 +145,4 @@ field-queries-ok.chpl:64: warning:   hasField        true
 field-queries-ok.chpl:64: warning:   getFieldIndex   5
 field-queries-ok.chpl:64: warning:   isFieldBound 5  true
 field-queries-ok.chpl:64: warning:   isFieldBound f6 true
-field-queries-ok.chpl:71: warning: ===== UGen
-field-queries-ok.chpl:71: warning:   getNumFields    6
-field-queries-ok.chpl:71: warning:   getFieldName    f6
-field-queries-ok.chpl:71: warning:   hasField        true
-field-queries-ok.chpl:71: warning:   getFieldIndex   5
-field-queries-ok.chpl:71: warning:   isFieldBound 5  false
-field-queries-ok.chpl:71: warning:   isFieldBound f6 false
-field-queries-ok.chpl:74: error: === done ===
+field-queries-ok.chpl:67: error: === done ===

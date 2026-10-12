@@ -1,20 +1,15 @@
 use DistributedDeque;
-use DistributedBagDeprecated;
-
-
 
 // Here we test the capabilities of the utility methods, 'addBulk' and 'removeBulk'.
 config param isBoundedDeque = false;
 config param isDeque = false;
-config param isBag = false;
 
 config param nElems = 1000;
 
 var c = (
   if isBoundedDeque then new DistDeque(int, cap=nElems)
   else if isDeque then new DistDeque(int)
-  else if isBag then new DistBag(int)
-  else compilerError("Require 'isBoundedDeque', 'isDeque', or 'isBag' to be set...")
+  else compilerError("Require 'isBoundedDeque' or 'isDeque' to be set...")
 );
 
 // Add Bulk Test

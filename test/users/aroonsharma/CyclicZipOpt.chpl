@@ -81,7 +81,7 @@ class CyclicZipOpt: BaseDist {
     }
 
     for param i in 1..rank do
-      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).size);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).size):idxType;
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and

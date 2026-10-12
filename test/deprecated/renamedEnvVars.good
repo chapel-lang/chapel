@@ -1,7 +1,0 @@
-warning: The environment variable 'CHPL_NO_CHECKS' has been deprecated use 'CHPL_CHECKS' instead.
-warning: The environment variable 'CHPL_NO_BOUNDS_CHECKING' has been deprecated use 'CHPL_BOUNDS_CHECKING instead.
-warning: The environment variable 'CHPL_NO_NIL_CHECKS' has been deprecated use 'CHPL_NIL_CHECKS' instead.
-warning: The environment variable 'CHPL_NO_CODEGEN' has been deprecated use 'CHPL_CODEGEN' instead.
-warning: The environment variable 'CHPL_NO_COMPILE_TIME_NIL_CHECKS' has been deprecated use 'CHPL_COMPILE_TIME_NIL_CHECKS  instead.
-warning: The environment variable 'CHPL_DISABLE_WARNINGS' has been deprecated use 'CHPL_WARNINGS' instead.
-error: source file 'renamedEnvVars.chpl' is either empty or a directory

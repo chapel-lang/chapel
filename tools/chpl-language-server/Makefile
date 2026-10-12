@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -41,13 +41,15 @@ chpl-language-server-test-venv: chpl-language-server-venv
 chpl-language-server: chpl-language-server-venv
 
 test-chpl-language-server: chpl-language-server chpl-language-server-test-venv
-	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		$(CHPL_MAKE_PYTHON) -m pytest test/*.py
+	JOBSFLAGS=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-n \2/p'`; \
+    $(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+      $(CHPL_MAKE_PYTHON) -m pytest $$JOBSFLAGS test/*.py
 
 # Same as above, but generates XML report
 test-chpl-language-server-junit: chpl-language-server chpl-language-server-test-venv
-	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		$(CHPL_MAKE_PYTHON) -m pytest test/*.py --junit-xml=test-chpl-language-server-report.xml
+	JOBSFLAGS=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-n \2/p'`; \
+    $(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+      $(CHPL_MAKE_PYTHON) -m pytest $$JOBSFLAGS test/*.py --junit-xml=test-chpl-language-server-report.xml
 
 clean: clean-link clean-link-shim clean-pycache
 

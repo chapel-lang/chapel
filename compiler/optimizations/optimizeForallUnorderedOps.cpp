@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -445,7 +445,7 @@ static const char* blockStateString(MayBlockState state) {
   return ret;
 }
 
-static std::map<FnSymbol*, MayBlockState> fnMayBlock;
+static std::map<FnSymbol*, MayBlockState, AstIdLess> fnMayBlock;
 
 class GatherBlockingFunctions final : public AstVisitorTraverse {
 

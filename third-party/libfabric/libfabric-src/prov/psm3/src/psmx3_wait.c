@@ -195,7 +195,7 @@ STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 	struct util_wait *wait_priv;
 	struct psmx3_fid_fabric *fabric;
 	int err;
-	
+
 	wait_priv = container_of(wait, struct util_wait, wait_fid);
 	fabric = container_of(wait_priv->fabric, struct psmx3_fid_fabric, util_fabric);
 
@@ -213,8 +213,6 @@ STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 	// don't seem extensible and they have no way to determine if they are empty
 	// so we depend on FI_PSM3_YIELD_MODE=1 to disable normal waitset handling
 	// and allow this simplified use to meet Intel MPI needs.
-	//if (wait_priv->pollset is empty && wait_priv->wait_obj == FI_WAIT_YIELD)
-	//	psm3_wait();
 	if (psmx3_env.yield_mode) {
 		switch (psm3_wait(timeout)) {
 		case PSM2_OK:
@@ -224,6 +222,16 @@ STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 		default:
 			return -FI_EINVAL;
 		}
+	}
+
+	/* outside of YIELD_MODE, one must explicitly enable support for
+	 * fi_wait().  user beware... this is not supported by PSM3 proper,
+	 * but instead only plumbed within the PSMX3 provider shim.
+	 */
+	if (!psmx3_env.wait_enable) {
+		PSMX3_WARN(fabric->util_fabric.prov, FI_LOG_FABRIC,
+			"fi_wait() not enabled (see FI_PSM3_WAIT_ENABLE)\n");
+		return -FI_ENOSYS;
 	}
 
 	psmx3_wait_start_progress(fabric);
@@ -239,20 +247,61 @@ DIRECT_FN
 int psmx3_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
 		   struct fid_wait **waitset)
 {
+	struct util_fabric *util_fabric = container_of(fabric, struct util_fabric, fabric_fid);
 	struct fid_wait *wait;
 	int err;
-	if (psmx3_env.yield_mode && attr->wait_obj == FI_WAIT_YIELD) {
-		// CQ and CNTR won't be allowed to be added to waitset, so
-		// we simply create an UNSPEC fd waitset for simplicity here
-		// It should not actually be used
-		struct fi_wait_attr tmp = *attr;
-		tmp.wait_obj = FI_WAIT_UNSPEC;
-		err = ofi_wait_fd_open(fabric, &tmp, &wait);
-	} else {
+
+	switch (attr->wait_obj) {
+	case FI_WAIT_UNSPEC:
+	case FI_WAIT_FD:
+	case FI_WAIT_POLLFD:
 		err = ofi_wait_fd_open(fabric, attr, &wait);
+		if (err)
+			return err;
+
+		break;
+
+	case FI_WAIT_YIELD:
+		// NOTE: we use the YIELD type only as a special indicator for
+		// the Intel MPI yield mode global wait set.  it is otherwise
+		// unsupported
+		if (!psmx3_env.yield_mode) {
+			PSMX3_WARN(util_fabric->prov, FI_LOG_FABRIC,
+				"wait object %u not supported outside of yield mode\n",
+				attr->wait_obj);
+			return -FI_ENOSYS;
+		}
+
+		// if not in YIELD_MODE, create a yield wait object.
+		//
+		// if in YIELD_MODE, we want callers to only ever wait by
+		// invoking a top-level fi_wait(), since YIELD_MODE will turn
+		// all waits into a global wait.  can also use a yield wait
+		// object for this, justified by:
+		//
+		// - it is not valid to call fi_control(...GETWAIT...) on a
+		//   YIELD object, which is what we want to force callers to
+		//   wait via fi_wait().
+		// - CQ and CNTR won't be allowed to be added to waitset by
+		//   an explicit yield mode check in their open() calls, so the
+		//   object type shouldn't matter.
+		// - in yield mode, fi_wait() will never interact with the wait
+		//   set directly, but instead just delegate to psm3_wait(), so
+		//   the underlying wait set type doesn't matter.
+		//
+		err = ofi_wait_yield_open(fabric, attr, &wait);
+		if (err)
+			return err;
+
+		break;
+
+	case FI_WAIT_MUTEX_COND:
+	default:
+		PSMX3_WARN(util_fabric->prov, FI_LOG_FABRIC,
+			"wait object %u not supported\n",
+			attr->wait_obj);
+		return -FI_ENOSYS;
 	}
-	if (err)
-		return err;
 
 	psmx3_wait_ops_save = wait->ops;
 	psmx3_wait_ops = *psmx3_wait_ops_save;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,8 @@ PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
+PARSER_SYNTAX_CLASS(EmptyEnum)
+PARSER_SYNTAX_CLASS(UnsupportedMatchExpr)
 
 // ParseErr and ParseSyntax are catch-alls for simple parsing errors that do not
 // have a specialized error class
@@ -60,6 +62,7 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
+POSTPARSE_ERROR_CLASS(DuplicateMatchExpr, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidReturns, const uast::Return*, const uast::Return*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)

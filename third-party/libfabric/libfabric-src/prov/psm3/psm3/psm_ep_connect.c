@@ -157,17 +157,37 @@ psm3_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epid,
 	if (! psm3_getenv("PSM3_CONNECT_TIMEOUT",
 		    "End-point minimum connection timeout. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)(timeout/SEC_ULL), &timeout_intval)){
-		timeout = timeout_intval.e_uint * SEC_ULL;
+		    (union psmi_envvar_val)(timeout / NSEC_PER_SEC), &timeout_intval)){
+		timeout = timeout_intval.e_uint * NSEC_PER_SEC;
 	} else if (timeout > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic
 		 * is used to scale up the timeout linearly with the number of
 		 * endpoints, and we allow one second per 100 endpoints. */
-		timeout = max(timeout, (num_toconnect * SEC_ULL) / 100);
+		timeout = max(timeout, (num_toconnect * NSEC_PER_SEC) / 100);
 	}
 
 	if (timeout > 0 && timeout < PSMI_MIN_EP_CONNECT_TIMEOUT)
 		timeout = PSMI_MIN_EP_CONNECT_TIMEOUT;
+
+#ifdef PSM_FI
+	// up to this point in this function we have only analyzed our args
+	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_delayconn, "delayconn",
+				"delay start of connect",
+				1, EP_FAULTINJ_DELAYCONN);
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_delayconn, ep, " %u secs",
+				EP_DELAYCONN_DELAY_SECS)) {
+			// delay enough to force misalignment with our peer
+			// so we will connect after they have completed
+			// their connect
+			uint64_t delay = get_cycles()
+				+ nanosecs_to_cycles(EP_DELAYCONN_DELAY_SECS * NSEC_PER_SEC);
+			while (get_cycles() < delay)
+				psm3_poll_internal(ep, 1, 1);
+		}
+	}
+#endif // PSM_FI
+
 	_HFI_PRDBG("Connect to %d endpoints with time-out of %.2f secs\n",
 		   num_toconnect, (double)timeout / 1e9);
 
@@ -280,8 +300,8 @@ connect_fail:
 			} else
 			    if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
 				deverr =
-				    "there is no OPA PSM3 device (nic)";
-				eperr = " OPA";
+				    "there is no PSM3 device (nic)";
+				eperr = " nic";
 			}
 
 			len = snprintf(errbuf, sizeof(errbuf) - 1,
@@ -429,16 +449,36 @@ psm2_error_t psm3_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 		    "End-point disconnection timeout over-ride. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 		    (union psmi_envvar_val)0, &timeout_intval)) {
-		timeout = timeout_intval.e_uint * SEC_ULL;
+		timeout = timeout_intval.e_uint * NSEC_PER_SEC;
 	} else if (timeout > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic
 		 * is used to scale up the timeout linearly with the number of
 		 * endpoints, and we allow one second per 100 endpoints. */
-		timeout = max(timeout, (num_todisconnect * SEC_ULL) / 100);
+		timeout = max(timeout, (num_todisconnect * NSEC_PER_SEC) / 100);
 	}
 
 	if (timeout > 0 && timeout < PSMI_MIN_EP_CONNECT_TIMEOUT)
 		timeout = PSMI_MIN_EP_CONNECT_TIMEOUT;
+
+#ifdef PSM_FI
+	// up to this point in this function we have only analyzed our args
+	if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_delaydisc, "delaydisc",
+				"delay start of disconnect",
+				1, EP_FAULTINJ_DELAYDISC);
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_delaydisc, ep, " %u secs",
+				EP_DELAYDISC_DELAY_SECS)) {
+			// delay enough to force misalignment with our peer
+			// so we will disconnect after they have completed
+			// their disconnect
+			uint64_t delay = get_cycles()
+				+ nanosecs_to_cycles(EP_DELAYDISC_DELAY_SECS * NSEC_PER_SEC);
+			while (get_cycles() < delay)
+				psm3_poll_internal(ep, 1, 1);
+		}
+	}
+#endif // PSM_FI
+
 	_HFI_PRDBG("Disconnect %d endpoints with time-out of %.2f secs\n",
 		   num_todisconnect, (double)timeout / 1e9);
 
@@ -540,8 +580,8 @@ disconnect_fail:
 			} else
 			    if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
 				deverr =
-				    "there is no OPA PSM3 device (nic)";
-				eperr = " OPA";
+				    "there is no PSM3 device (nic)";
+				eperr = " nic";
 			}
 
 			len = snprintf(errbuf, sizeof(errbuf) - 1,

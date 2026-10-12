@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,6 +53,7 @@ class UastConverter {
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
   virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
+  virtual void eraseSymbolToIgnore(chpl::ID ignore) = 0;
 
   // Indicate which module is the main module
   virtual void setMainModule(chpl::ID mainModule) = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -289,6 +289,14 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(loc);
 }
 
+void ErrorEmptyEnum::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info_);
+  wr.heading(kind_, type_, loc,
+             "enums cannot be empty.");
+  wr.message("Empty enum here:");
+  wr.code(loc);
+}
+
 // catch-alls for simple parsing errors
 
 void ErrorParseErr::write(ErrorWriterBase& wr) const {
@@ -332,6 +340,25 @@ void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
   wr.note(when, "however, the following 'when' clause is found below it:");
   wr.code(when);
   wr.message("Chapel requires 'otherwise' clauses to occur last within 'select' statements.");
+}
+
+void ErrorUnsupportedMatchExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<0>(info_);
+  wr.heading(kind_, type_, loc, "unsupported expression in 'union select' statement.");
+  wr.message("In the following 'when' statement:");
+  wr.code(loc);
+  wr.message("Chapel currently only supports plain identifiers as expressions in 'when' statements.");
+}
+
+void ErrorDuplicateMatchExpr::write(ErrorWriterBase& wr) const {
+  auto when = std::get<0>(info_);
+  auto expr = std::get<1>(info_);
+  auto prevWhen = std::get<2>(info_);
+  wr.heading(kind_, type_, expr, "duplicate expression in 'union select' statement.");
+  wr.message("In the following 'when' statement:");
+  wr.code(when);
+  wr.note(prevWhen, "the same expression was previously used in this 'when' statement:");
+  wr.code(prevWhen);
 }
 
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {

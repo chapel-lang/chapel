@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -842,6 +842,13 @@ class Context {
   void advanceToNextRevision(bool prepareToGC);
 
   /**
+    Returns the current revision number
+  */
+  int currentRevision() const {
+    return int(currentRevisionNumber);
+  }
+
+  /**
     Returns the number of query bodies executed in this revision.
    */
   int numQueriesRunThisRevision() const {
@@ -959,6 +966,19 @@ class Context {
     The ID is used to compute a Location using parsing::locateId.
    */
   void warning(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an IdOrLocation and a printf-style format string.
+   */
+  void warning(const IdOrLocation& loc, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.

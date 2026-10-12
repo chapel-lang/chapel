@@ -198,7 +198,7 @@ usd_vnic_hang_notify(
     struct usd_qp *uqp)
 {
     struct usd_qp_impl *qp;
-    u64 a0;
+    u64 a0 = 0;
     int ret;
 
     qp = to_qpi(uqp);

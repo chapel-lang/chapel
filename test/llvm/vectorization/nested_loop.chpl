@@ -1,5 +1,5 @@
 
-proc loop (A, B, C, D, E, F, n) {
+proc loop (ref A, const B, ref C, D, ref E, const F, n) {
   foreach i in 1..n {
     A[i] = 3*B[i];
     foreach j in 1..n {
@@ -12,14 +12,14 @@ proc loop (A, B, C, D, E, F, n) {
   }
 }
 
-config const n = 1000;
+config const n = 256;
 
- var A : [1..n] int(32);
- var B : [1..n] int(32);
- var C : [1..n,1..n] int(32);
- var D : [1..n,1..n] int(32);
- var E : [1..n,1..n,1..n] int(32);
- var F : [1..n,1..n,1..n] int(32);
+var A : [1..n] int(32);
+var B : [1..n] int(32);
+var C : [1..n,1..n] int(32);
+var D : [1..n,1..n] int(32);
+var E : [1..n,1..n,1..n] int(32);
+var F : [1..n,1..n,1..n] int(32);
 
 loop(A, B, C, D, E, F, n);
 writeln("Sum of A is ", + reduce A);

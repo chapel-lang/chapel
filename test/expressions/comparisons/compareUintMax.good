@@ -1,0 +1,3 @@
+foo: 15 vs 18446744073709551615
+types: uint(64) vs uint(64)
+passed if

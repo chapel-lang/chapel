@@ -1,0 +1,16 @@
+mason build
+Compiling [debug] target: CompflagsBug
+Build Successful
+
+mason build -- -sUnknownFlag=1
+Build Failed
+Compiling [debug] target: CompflagsBug
+error: Trying to set unrecognized config 'UnknownFlag' via -s flag
+mason build -- -sUnknownFlag=1
+Build Failed
+Compiling [debug] target: CompflagsBug
+error: Trying to set unrecognized config 'UnknownFlag' via -s flag
+mason build
+Compiling [debug] target: CompflagsBug
+Build Successful
+

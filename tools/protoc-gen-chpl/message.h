@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,6 @@
 #define PB_MESSAGE_HH
 
 #include <string>
-#include <vector>
 
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/io/printer.h>
@@ -30,7 +29,6 @@
 
 namespace chapel {
 
-  using namespace std;
   using namespace google::protobuf;
   using namespace google::protobuf::compiler;
   using namespace google::protobuf::io;
@@ -50,7 +48,7 @@ namespace chapel {
     FieldGeneratorBase* CreateFieldGeneratorInternal(
     const FieldDescriptor* descriptor);
 
-    string record_name();
+    std::string record_name();
   };
 
 }  // namespace chapel

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+tgt_platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
+tgt_arch=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_ARCH)
+
+if [ "$tgt_platform" == "darwin" ]; then
+  echo "False"
+  exit 0
+fi
+if [ "$tgt_platform" == "linux32" ]; then
+  echo "True"
+  exit 0
+fi
+if [[ "$tgt_arch" == "x86_64" ]]; then
+  echo "False"
+  exit 0
+fi
+
+echo "True"

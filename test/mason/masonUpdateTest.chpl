@@ -8,13 +8,13 @@ use FileSystem;
 config const goodLock: string;
 config const tf: string;
 
-proc main() {
+proc main() throws {
   // In order to avoid updating the .good/lock file every release we store
   // a sentinel 'CHPL_CUR_FULL' representing the current Chapel version. Before
   // passing anything to UpdateLock we need to replace that sentinel with the
   // actual current version.
 
-  const currentVersion = getChapelVersionStr();
+  const currentVersion = getChapelVersionInfo():string;
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');
@@ -26,7 +26,7 @@ proc main() {
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.path);
+  var configs = try! updateLock(true, tf=tf, lf=temp.path);
   var lock = open(temp.path, ioMode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);

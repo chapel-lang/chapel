@@ -1,8 +1,8 @@
-proc start_block() {}
-proc if_branch() {}
-proc while_loop() {}
-proc while_body() {}
-proc end_block() {}
+proc start_block() { return 1; }
+proc if_branch() { return 2; }
+proc while_loop() { return 3; }
+proc while_body() { return 4; }
+proc end_block() { return 5; }
 
 //Check whether we generate parallel_loop_access metadata
 //inside basic blocks in the loop like

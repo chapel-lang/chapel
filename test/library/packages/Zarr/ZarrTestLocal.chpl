@@ -53,7 +53,7 @@ proc localIOTest(type dtype) {
     forall i in D do
       assert(A[i] == B[i], "Mismatch on indices %?. Written: %?.\n Read: %?.\nFailure on locale %?\n".format(i, A[i], B[i], loc.id));
   }
-  
+
   // 2 dimensional stores with different low bounds
   coforall loc in Locales do on loc {
     const storeName = "LocalIOStore_%?".format(loc.id);
@@ -109,12 +109,12 @@ proc updateChunkTest(type dtype) {
   if exists("Test2D") then rmTree("Test2D");
   writeZarrArray("Test2D", A2, (7,18));
 
-  A2[10,10] *= 3;
+  A2[10,10] /= 3;
   updateZarrChunk("Test2D", A2, (1,0));
 
   var B2 = readZarrArray("Test2D", dtype, 2);
   assert(B2[10,10] == A2[10,10], "Failed to update chunk in 2D array");
-  
+
 }
 
 proc main() {

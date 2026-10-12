@@ -154,7 +154,7 @@ static int gasnete_coll_pf_bcast_TreePutSeg(gasnete_coll_op_t *op GASNETI_THREAD
       size_t sent_bytes=0;
       int i;
       
-      impl->fn_ptr = NULL;
+      impl->fn_ptr.untyped_fn = NULL;
       /*strip the last argument off which contains the pipeline segment size*/
       impl->num_params = op->num_coll_params;
       GASNETI_MEMCPY_SAFE_IDENTICAL(impl->param_list, op->param_list, sizeof(uint32_t)*op->num_coll_params);
@@ -728,7 +728,7 @@ static int gasnete_coll_pf_scat_TreePutSeg(gasnete_coll_op_t *op GASNETI_THREAD_
       handle_vec = data->private_data;
       handle_vec->num_handles = num_segs;
       handle_vec->handles = gasneti_malloc(sizeof(gex_Event_t)*num_segs);
-      impl->fn_ptr = NULL;
+      impl->fn_ptr.untyped_fn = NULL;
       /*strip the last argument off which contains the pipeline segment size*/
       impl->num_params = op->num_coll_params;
       GASNETI_MEMCPY_SAFE_IDENTICAL(impl->param_list, op->param_list, sizeof(uint32_t)*op->num_coll_params);
@@ -1154,7 +1154,7 @@ static int gasnete_coll_pf_gath_TreePutSeg(gasnete_coll_op_t *op GASNETI_THREAD_
       
       int i;
       gasnete_coll_implementation_t impl = gasnete_coll_get_implementation();
-      impl->fn_ptr = NULL;
+      impl->fn_ptr.untyped_fn = NULL;
       /*strip the last argument off which contains the pipeline segment size*/
       impl->num_params = op->num_coll_params;
       GASNETI_MEMCPY_SAFE_IDENTICAL(impl->param_list, op->param_list, sizeof(uint32_t)*op->num_coll_params);

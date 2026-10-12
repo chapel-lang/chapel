@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,10 @@
 
 #include "chplrt.h"
 
+#ifdef CHPL_RT_IS_BUILDING_RUNTIME
+  #error "This header should not be included within runtime code!"
+#endif
+
 #include <errno.h>
 #include <math.h>
 #include <float.h>
@@ -39,7 +43,6 @@
 #include "arg.h"
 #include "config.h"
 #include "chplcast.h"
-#include "chplcgfns.h"
 #include "chpl-atomics.h"
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
@@ -70,7 +73,8 @@
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-visual-debug.h"
-#include "error.h"
+#include "chpl-error.h"
+#include "chpl-prginfo-program-only-decls.h"
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"

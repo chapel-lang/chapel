@@ -60,6 +60,10 @@ setenv CHPL_GMP none
 echo "Setting CHPL_RE2 to none"
 setenv CHPL_RE2 none
 
+set USE_UNWIND = `$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_unwind.py --quickstart`
+echo "Setting CHPL_UNWIND to $USE_UNWIND"
+setenv CHPL_UNWIND $USE_UNWIND
+
 set USE_LLVM = `$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to $USE_LLVM"
 setenv CHPL_LLVM $USE_LLVM

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,9 +57,6 @@ module JSON {
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._writeOne(_iokind.dynamic, val, here);
     }
@@ -97,11 +94,15 @@ module JSON {
       :arg val: The value to be serialized
     */
     proc ref serializeValue(writer: jsonWriter, const val:?t) throws {
-      if t == string  || isEnumType(t) || t == bytes {
+      if t == string || t == bytes {
         // for quotes around things
         _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
         _oldWrite(writer, val);
+      } else if isEnumType(t) {
+        writer.writeLiteral('"');
+        writer.writeLiteral(val:string);
+        writer.writeLiteral('"');
       } else if isClassType(t) {
         if val == nil {
           writer.writeLiteral("null");
@@ -183,21 +184,14 @@ module JSON {
         fields. For example, the following classes with values ``x=5`` and
         ``y=2``:
 
-        .. code-block:: chapel
-
-          class Parent {
-            var x : int;
-          }
-
-          class Child: Parent {
-            var y : int;
-          }
+        .. literalinclude:: ../../../../test/library/standard/JSON/doc-examples/JsonSerializeClass.chpl
+           :language: chapel
+           :start-after: START_EXAMPLE_0
+           :end-before: STOP_EXAMPLE_0
 
         would be serialized as:
 
-        .. code-block:: text
-
-          {"x":5, "y":2}
+        .. literalinclude:: ../../../../test/library/standard/JSON/doc-examples/JsonSerializeClass.good
 
         :arg writer: The ``fileWriter`` to be used when serializing. Must match
           the writer used to create current AggregateSerializer
@@ -620,9 +614,6 @@ module JSON {
       st.realfmt = 2;
       st.bytes_prefix = 0;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._readOne(_iokind.dynamic, val, here);
     }
@@ -649,6 +640,8 @@ module JSON {
       if isNilableClassType(readType) && reader.matchLiteral("null") {
         return nil:readType;
       }
+
+      private use Reflection;
 
       // TODO:
       // - escaped strings
@@ -695,6 +688,8 @@ module JSON {
       :arg val: The value into which this Deserializer will deserialize
     */
     proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
+      private use Reflection;
+
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {

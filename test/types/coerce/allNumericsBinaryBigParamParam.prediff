@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+EXPECTED_MSG='-128 + -2147483648 cannot be represented' $CHPL_HOME/util/test/prediff-for-ok-param-overflow "$@"
+EXPECTED_MSG='-128 + -9223372036854775808 cannot be represented' $CHPL_HOME/util/test/prediff-for-ok-param-overflow "$@"

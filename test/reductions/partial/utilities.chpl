@@ -57,7 +57,7 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
 /* Cannot create a domain for resDims for non-rectangular domain maps:
     const resDom = if isSubtype(dist.type, DefaultDist)
       then {(...resDims)}
-      else {(...resDims)} dmapped new dmap(dist);
+      else {(...resDims)} dmapped dist;
 */
     // For now, the result will always be a dense DR domain/array.
     // TODO: support distributions like Block.

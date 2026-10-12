@@ -1,4 +1,5 @@
 Active rules:
+  BoolComparison               Warn for comparing booleans to 'true' or 'false'.
   BoolLitInCondStmt            Warn for boolean literals like 'true' in a conditional statement.
   CamelCaseFunctions           Warn for functions that are not 'camelCase'.
   CamelCaseRecords             Warn for records that are not 'camelCase'.
@@ -17,7 +18,12 @@ Active rules:
   NestedCoforalls              Warn for nested 'coforall' loops, which could lead to performance hits.
   PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   PascalCaseModules            Warn for modules that are not 'PascalCase'.
+  SimpleBoolConditional        Warn for boolean conditionals that can be simplified.
   SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
+  ThenKeywordAndBlock          Warn for redundant 'then' keyword before a curly brace '{'.
+  UnattachedCatch              Warn for 'catch' blocks that do not start on the same line as the closing brace of the 'try' block.
+  UnattachedCurly              Warn for blocks that do not have their opening curly brace on the same line as the controlling statement.
+  UnattachedElse               Warn for 'else' blocks that do not start on the same line as the closing brace of the 'then' block.
   UnusedFormal                 Warn for unused formals in functions.
   UnusedLoopIndex              Warn for unused index variables in loops.
   UnusedTaskIntent             Warn for unused task intents in functions.

@@ -1,0 +1,3 @@
+throwInNonThrowNonThrowsMod.chpl:6: error: call to throwing function 'canThrow' from a non-throwing context
+throwInNonThrowNonThrowsMod.chpl:2: In module 'M':
+throwInNonThrowNonThrowsMod.chpl:3: note: The function was declared to throw here

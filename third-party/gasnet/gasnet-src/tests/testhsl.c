@@ -60,15 +60,15 @@ void donothing(gex_Token_t token) {
 int main(int argc, char **argv) {
   int mynode, nodes;
   gex_AM_Entry_t htable[] = { 
-    { 203, okhandler3,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { 203, (gex_AM_Fn_t)okhandler3,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
 
-    { 221, increq,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-    { 222, increp,      GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 0 },
+    { 221, (gex_AM_Fn_t)increq,      GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { 222, (gex_AM_Fn_t)increp,      GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 0 },
 
-    { 231, badhandler1, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
-    { 232, badhandler2, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { 231, (gex_AM_Fn_t)badhandler1, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
+    { 232, (gex_AM_Fn_t)badhandler2, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 },
 
-    { 250, donothing,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 }
+    { 250, (gex_AM_Fn_t)donothing,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 0 }
   };
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testhsl", &argc, &argv, 0));

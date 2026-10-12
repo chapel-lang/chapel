@@ -8,7 +8,7 @@ Compiler Driver Mode
 
    The compiler driver mode is relatively new. If you use it and encounter a bug
    or limitation not yet documented as a
-   `Github issue <https://github.com/chapel-lang/chapel/issues>`_, consider
+   `GitHub issue <https://github.com/chapel-lang/chapel/issues>`_, consider
    filing an issue as described in :ref:`readme-bugs`. Driver mode can be
    disabled with the ``--no-compiler-driver`` compiler flag, to determine if the
    problem is specific to driver mode or as a temporary workaround before it is
@@ -37,9 +37,8 @@ Motivation for Driver
 There are a few potential advantages provided by the compiler driver approach,
 which are not necessarily accomplished by the present implementation yet.
 
-- Reduced memory pressure. Different driver phases phases are separate
-  subprocesses, and the memory used by each can be completely reclaimed after
-  it is done.
+- Reduced memory pressure. Different driver phases are separate subprocesses,
+  and the memory used by each can be completely reclaimed after it is done.
 - Ability to perform some parts of compilation but not others, to avoid
   unnecessary work. For example, some compilers provide ways to check if code
   is valid without generating a binary, supporting a faster edit-recompile
@@ -56,7 +55,7 @@ Several flags are available to control the actions performed by the driver. Some
 are intended for the user, and others are considered internal and likely only
 to be useful to compiler developers. Both are documented here.
 
-- ``--compiler-driver``: Enable compiler driver mode. This flag mut be present
+- ``--compiler-driver``: Enable compiler driver mode. This flag must be present
   to set any other driver flags. Without this flag, the compiler will run
   monolithically as usual.
 - ``--driver-debug-phase``: Set which phase of compilation to run in the
@@ -64,9 +63,9 @@ to be useful to compiler developers. Both are documented here.
   compilation, makeBinary will be skipped entirely as it is unlikely to be
   useful.
 - ``--driver-compilation-phase``: Internal flag. The driver re-invokes itself
-  with this flag to to trigger execution of the compilation phase.
+  with this flag to trigger execution of the compilation phase.
 - ``--driver-makebinary-phase``: Internal flag. The driver re-invokes itself
-  with this flag to to trigger execution of the makeBinary phase.
+  with this flag to trigger execution of the makeBinary phase.
 - ``--driver-tmp-dir``: Internal flag, specifying where the current phase will
   look for temporary files that must be carried between phases. The driver sets
   this flag during re-invocations for the different phases, and will provide the

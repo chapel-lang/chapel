@@ -1,1 +1,3 @@
--M ../../../../tools/mason/
+#!/usr/bin/env bash
+
+exec $CHPL_HOME/test/mason/COMPOPTS $@

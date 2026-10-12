@@ -306,6 +306,8 @@ Chapel code. Users may wish to add this to their ``.bashrc``:
    export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
    export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
 
+See also :ref:`readme-libfabric-CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES` and
+:ref:`readme-libfabric-CHPL_RT_COMM_OFI_CONNECT_EAGERLY`.
 
 For best performance, users should also set ``export
 FI_EFA_USE_DEVICE_RDMA=1``. This enables higher network performance by using

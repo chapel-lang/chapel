@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,28 +19,29 @@
  */
 
 #include <string>
+#include <string_view>
 
-#include <helpers.h>
-#include <primitive_field.h>
-#include <repeated_primitive_field.h>
-#include <enum_field.h>
-#include <repeated_enum_field.h>
-#include <message_field.h>
-#include <repeated_message_field.h>
-#include <map_field.h>
-#include <field_base.h>
+#include "helpers.h"
+#include "primitive_field.h"
+#include "repeated_primitive_field.h"
+#include "enum_field.h"
+#include "repeated_enum_field.h"
+#include "message_field.h"
+#include "repeated_message_field.h"
+#include "map_field.h"
+#include "field_base.h"
 
 namespace chapel {
 
-  string StripDotProto(const std::string& proto_file) {
+  std::string_view StripDotProto(std::string_view proto_file) {
     int lastindex = proto_file.find_last_of(".");
     return proto_file.substr(0, lastindex);
   }
 
-  string InvalidCharsToUnderscores(const string& input) {
-    string result;
+  std::string InvalidCharsToUnderscores(std::string_view input) {
+    std::string result;
     for (int i = 0; i < input.size(); i++) {
-      if ( isalnum(input[i]) || input[i] == '_') {
+      if (isalnum(input[i]) || input[i] == '_') {
         result += input[i];
       } else {
         result += '_';
@@ -49,15 +50,15 @@ namespace chapel {
     return result;
   }
 
-  string GetFileNameBase(const FileDescriptor* descriptor) {
-      string proto_file = descriptor->name();
+  std::string GetFileNameBase(const FileDescriptor* descriptor) {
+      auto proto_file = descriptor->name();
       int lastslash = proto_file.find_last_of("/");
-      string base = proto_file.substr(lastslash + 1);
+      auto base = proto_file.substr(lastslash + 1);
       return InvalidCharsToUnderscores(StripDotProto(base));
   }
 
   bool ValidateInputFileName(const FileDescriptor* descriptor) {
-    string proto_file = descriptor->name();
+    auto proto_file = descriptor->name();
     int lastindex = proto_file.find_last_of(".");
     if (proto_file.substr(lastindex+1) != "proto") {
       return false;
@@ -65,52 +66,52 @@ namespace chapel {
     return true;
   }
 
-  string GetPackageName(const FileDescriptor* descriptor) {
+  std::string GetPackageName(const FileDescriptor* descriptor) {
     return InvalidCharsToUnderscores(descriptor->package());
   }
 
-  string GetModuleName(const FileDescriptor* descriptor) {
-    string package_name = GetPackageName(descriptor);
+  std::string GetModuleName(const FileDescriptor* descriptor) {
+    std::string package_name = GetPackageName(descriptor);
     if (!package_name.empty()) {
       return package_name;
     }
-    string proto_filename = GetFileNameBase(descriptor);
+    std::string proto_filename = GetFileNameBase(descriptor);
     return proto_filename;
   }
 
-  string GetOutputFile(const FileDescriptor* descriptor, string* error) {
-    string file_extension = ".chpl";
+  std::string GetOutputFile(const FileDescriptor* descriptor, std::string& error) {
+    std::string file_extension = ".chpl";
 
     bool valid_input_filename = ValidateInputFileName(descriptor);
     if (!valid_input_filename) {
-      *error = "Input file should be a .proto file";
+      error = "Input file should be a .proto file";
       return "";
     }
 
-    string base_filename = GetModuleName(descriptor);
+    std::string base_filename = GetModuleName(descriptor);
     return base_filename + file_extension;
   }
 
-  string GetFieldName(const FieldDescriptor* descriptor) {
-      return descriptor->name();
+  std::string GetFieldName(const FieldDescriptor* descriptor) {
+      return std::string(descriptor->name());
   }
 
-  string GetNestedTypeName(const Descriptor* descriptor, string name) {
+  std::string GetNestedTypeName(const Descriptor* descriptor, std::string_view name) {
     if (descriptor != NULL) {
-      return descriptor->name() + "_" + name;
+      return std::string(descriptor->name()) + "_" + std::string(name);
     }
-    return name;
+    return std::string(name);
   }
 
-  string GetMessageName(const Descriptor* descriptor) {
+  std::string GetMessageName(const Descriptor* descriptor) {
     return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
   }
 
-  string GetEnumName(const EnumDescriptor* descriptor) {
+  std::string GetEnumName(const EnumDescriptor* descriptor) {
     return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
   }
 
-  string GetOneofName(const OneofDescriptor* descriptor) {
+  std::string GetOneofName(const OneofDescriptor* descriptor) {
     return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
   }
 

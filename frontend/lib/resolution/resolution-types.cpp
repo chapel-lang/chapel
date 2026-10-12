@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,16 +47,6 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
-
-SubstitutionsMap substituteInMap(Context* context,
-                                 const SubstitutionsMap& substituteIn,
-                                 const PlaceholderMap& subs) {
-  SubstitutionsMap into;
-  for (auto [id, qt] : substituteIn) {
-    into.emplace(id, qt.substitute(context, subs));
-  }
-  return into;
-}
 
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
@@ -115,6 +105,8 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const*
       bool hasDefault = false;
       if (auto formal = decl->toFormal()) {
         name = formal->name();
+        hasDefault = formal->initExpression() != nullptr;
+      } else if (auto formal = decl->toTupleDecl()) {
         hasDefault = formal->initExpression() != nullptr;
       } else if (auto varargs = decl->toVarArgFormal()) {
         name = varargs->name();
@@ -241,6 +233,16 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
                   {CallInfoActual(arg1type), CallInfoActual(arg2type)});
 }
 
+CallInfo CallInfo::createSimple(UniqueString calledFnName,
+                                std::vector<CallInfoActual> actuals) {
+  return CallInfo(calledFnName,
+                  /* calledType */ types::QualifiedType(),
+                  /* isMethodCall */ false,
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  std::move(actuals));
+}
+
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -251,8 +253,8 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // set the name (simple cases only)
   name = getCallName(call);
 
-  int i = 0;
-  for (auto actual : call->actuals()) {
+  for (int i = 0; i < call->numActuals(); i++) {
+    auto actual = call->actual(i);
     if (isQuestionMark(actual)) {
       hasQuestionArg = true;
     } else {
@@ -261,7 +263,6 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
         byName = call->actualName(i);
       }
       actuals.push_back(CallInfoActual(QualifiedType(), byName));
-      i++;
     }
   }
 
@@ -284,6 +285,17 @@ void CallInfo::prepareActuals(Context* context,
     prepareActual(context, call, actual, i, byPostorder, raiseErrors,
                   actuals, questionArg, actualAsts);
   }
+}
+
+template <typename Err, typename ... Args>
+static bool const& reportOnce(Context* context, Args...args) {
+  auto thisFn = &reportOnce<Err, Args...>;
+  QUERY_BEGIN(thisFn, context, args...);
+
+  bool result = true;
+  context->report(Err::get(std::make_tuple(args...)));
+
+  return QUERY_END(result);
 }
 
 void CallInfo::prepareActual(Context* context,
@@ -309,7 +321,7 @@ void CallInfo::prepareActual(Context* context,
     } else if (questionArg == nullptr) {
       questionArg = actual;
     } else {
-      CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+      reportOnce<ErrorMultipleQuestionArgs>(context, fnCall, questionArg, actual);
       // Keep questionArg pointing at the first question argument we found
     }
   } else {
@@ -326,7 +338,7 @@ void CallInfo::prepareActual(Context* context,
     bool handledTupleExpansion = false;
     if (auto op = actual->toOpCall()) {
       if (op->op() == USTR("...")) {
-        if (op->numActuals() != 1) {
+        if (!op->isUnaryOp()) {
           if (raiseErrors) {
             context->error(op, "tuple expansion can only accept one argument");
           }
@@ -347,22 +359,28 @@ void CallInfo::prepareActual(Context* context,
           // let it stay erroneous type
         } else if (!actualType.type()->isTupleType()) {
           if (raiseErrors) {
-            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
+            reportOnce<ErrorTupleExpansionNonTuple>(context, fnCall, op, actualType);
           }
           actualType = QualifiedType(QualifiedType::VAR,
               ErroneousType::get(context));
         } else {
           if (!byName.isEmpty()) {
-            CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+            reportOnce<ErrorTupleExpansionNamedArgs>(context, op, fnCall);
           }
 
           auto tupleType = actualType.type()->toTupleType();
           int n = tupleType->numElements();
           for (int i = 0; i < n; i++) {
-            tupleType->elementType(i);
+            auto qt = tupleType->elementType(i);
+            // the type expression (int, string) is that of a value tuple,
+            // so it has 'var' intents for the elements. But if we're splatting
+            // the type expression, we want to insert type actuals.
+            if (actualType.isType()) {
+              qt = QualifiedType(QualifiedType::TYPE, qt.type());
+            }
             // intentionally use the empty name (to ignore it if it was
             // set and we issued an error above)
-            actuals.push_back(CallInfoActual(tupleType->elementType(i),
+            actuals.push_back(CallInfoActual(qt,
                   UniqueString()));
             if (actualAsts != nullptr) {
               actualAsts->push_back(op);
@@ -420,13 +438,76 @@ static QualifiedType convertToInitReceiverType(const QualifiedType original) {
   return original;
 }
 
+static void prependActualFromSubstitutions(Context* context,
+                                           const QualifiedType& calledType,
+                                           std::vector<CallInfoActual>& actuals,
+                                           std::vector<const uast::AstNode*>* actualAsts) {
+  if (!calledType.type()) {
+    return;
+  }
+
+  std::vector<CallInfoActual> generatedActuals;
+  std::vector<const uast::AstNode*> generatedActualAsts;
+  if (!addExistingSubstitutionsAsActuals(context, calledType.type(),
+                                         generatedActuals, generatedActualAsts)) {
+    // didn't do anything; just return.
+    return;
+  }
+
+  // if the user is explicitly overriding a substitution, don't include the
+  // previous value, since that would double up the named actuals.
+  // Unnamed actuals are assumed to be sequentially mapped to the remaining
+  // (non-substituted) formals.
+
+  // find the user-mentioned actuals
+  std::set<UniqueString> existingNames;
+  for (const auto& actual : actuals) {
+    existingNames.insert(actual.byName());
+  }
+
+  // remove any generated actuals that the user has overridden
+  //   idx points to current element
+  //   firstToRemove points to the next available index to keep elements
+  // two-list implementation of: https://en.cppreference.com/w/cpp/algorithm/remove.html
+  size_t firstToRemove = 0;
+  for(; firstToRemove < generatedActuals.size(); firstToRemove++) {
+    if (existingNames.count(generatedActuals[firstToRemove].byName()) != 0) {
+      break;
+    }
+  }
+  for (size_t idx = firstToRemove; idx < generatedActuals.size(); idx++) {
+    if (existingNames.count(generatedActuals[idx].byName()) == 0) {
+      generatedActuals[firstToRemove] = std::move(generatedActuals[idx]);
+      generatedActualAsts[firstToRemove] = generatedActualAsts[idx];
+      firstToRemove++;
+    }
+  }
+  generatedActuals.erase(generatedActuals.begin() + firstToRemove,generatedActuals.end());
+  generatedActualAsts.erase(generatedActualAsts.begin() + firstToRemove,generatedActualAsts.end());
+
+  // move the user-provided actuals into the generated lists, then swap
+  generatedActuals.insert(generatedActuals.end(),
+                          std::make_move_iterator(actuals.begin()),
+                          std::make_move_iterator(actuals.end()));
+  actuals.swap(generatedActuals);
+  if (actualAsts != nullptr) {
+    generatedActualAsts.insert(generatedActualAsts.end(),
+                               std::make_move_iterator(actualAsts->begin()),
+                               std::make_move_iterator(actualAsts->end()));
+    actualAsts->swap(generatedActualAsts);
+  }
+}
+
+
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
                           std::vector<const uast::AstNode*>* actualAsts,
                           ID* moduleScopeId,
-                          UniqueString rename) {
+                          UniqueString rename,
+                          bool* outIncompleteTypeConstructor) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -489,6 +570,14 @@ CallInfo CallInfo::create(Context* context,
         makeCallToDotThis();
       } else {
         calledType = *calledExprType;
+        prependActualFromSubstitutions(context, calledType, actuals, actualAsts);
+      }
+    } else if (calledExprType && calledExprType->isUnknown() && calledExprType->isType()) {
+      // it looks like we're invoking a type constructor, but we don't know
+      // what type. We don't know enough to set calledType, and the call
+      // shouldn't be resolved. Signal this via outIncompleteTypeConstructor.
+      if (outIncompleteTypeConstructor != nullptr) {
+        *outIncompleteTypeConstructor = true;
       }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
@@ -533,7 +622,8 @@ CallInfo CallInfo::create(Context* context,
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                                       QualifiedType receiverType,
-                                      UniqueString rename) {
+                                      UniqueString rename,
+                                      bool isImplicitMethodCall) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
 
@@ -549,6 +639,7 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   auto name = rename.isEmpty() ? ci.name_ : rename;
   return CallInfo(name, QualifiedType(),
                   /* isMethodCall */ true,
+                  isImplicitMethodCall,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
                   std::move(newActuals));
@@ -557,6 +648,22 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
 CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
   return CallInfo(rename, ci.calledType(), ci.isMethodCall(),
                   ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
+}
+
+CallInfo CallInfo::copyAndMarkSplitInitActuals(const CallInfo &ci, const std::unordered_set<int>& actualIndices) {
+  std::vector<CallInfoActual> newActuals;
+  int idx = 0;
+  for (auto& actual : ci.actuals_) {
+    CHPL_ASSERT(actual.expectSplitInit() == false);
+    if (actualIndices.count(idx) != 0) {
+      newActuals.push_back(CallInfoActual(actual.type(), actual.byName(), /* isSplitInitActual */ true));
+    } else {
+      newActuals.push_back(actual);
+    }
+    idx++;
+  }
+  return CallInfo(ci.name_, ci.calledType(), ci.isMethodCall(),
+                  ci.hasQuestionArg_, ci.isParenless_, std::move(newActuals));
 }
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
@@ -579,6 +686,30 @@ bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
                                            ResolutionResultByPostorderID& addin)
 {
   return defaultUpdate(keep, addin);
+}
+
+void FormalActualMap::updateOutFormalTypes(const TypedFnSignature* adjustedSignature) {
+  for (auto& entry : byFormalIdx_) {
+    if (entry.formalType().kind() != QualifiedType::OUT) {
+      continue;
+    }
+
+    auto newQt = adjustedSignature->formalType(entry.formalIdx());
+    if (newQt.isUnknownOrErroneous()) {
+      continue;
+    }
+
+    if (auto tt = newQt.type()->toTupleType()) {
+      if (tt->isVarArgTuple()) {
+        // how could we be at this point if we couldn't compute the number
+        // of varargs?
+        CHPL_ASSERT(tt->isStarTuple());
+        newQt = tt->starType();
+      }
+    }
+
+    entry.formalType_ = QualifiedType(entry.formalType_.kind(), newQt.type(), newQt.param());
+  }
 }
 
 bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
@@ -647,6 +778,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
       // zero-sized varargs not currently supported
       int numExtra = call.numActuals() - numFormals;
+
+      // Any formals-with-defaults past the vararg are also assumed to not
+      // be positionally provided, which means more of numActuals map to varargs.
+      for (int j = i + 1; j < numFormals; j++) {
+        if (untyped->formalMightHaveDefault(j) == true) {
+          numExtra++;
+        }
+      }
+
       attemptedNumVarArgs = std::max(numExtra + 1, 1);
       numEntries = numFormals + attemptedNumVarArgs - 1;
       byFormalIdx_.resize(numEntries);
@@ -854,7 +994,6 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   return true;
 }
 
-
 void ResolvedFields::validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const {
   // Check if all fields preceding the current field have substitutions.
   // We do this in case this ResolvedFields is computed for a particular
@@ -875,6 +1014,29 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
   }
 
   for (auto& field : fields_) {
+    // Check for generic memory management in class-typed fields
+    bool issuedMemoryManagementWarning = false;
+    if (field.type.type() && field.type.type()->isClassType()) {
+      auto ct = field.type.type()->toClassType();
+      if (ct->decorator().isUnknownManagement()) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        reportOnce<ErrorFieldWithGenericManagement>(context, ast);
+        issuedMemoryManagementWarning = true;
+      }
+    }
+
+
+    // there are two possible ways in which syntactic genericity can diverge.
+    // 2. A resolution-based (useLightResolution = true) check. This is
+    //    the default check. If we got it wrong (the type looked concrete
+    //    but eventually was found to be generic), this is an error, because
+    //    we use this logic to make important resolution decisions.
+    //    Emit SyntacticGenericityMismatch in that case.
+    // 1. The non-resolution based (useLightResolution = false) check. In that
+    //    case, the user wrote code that looks "at a glance" to be concrete,
+    //    but turned out generic. Production emits a a warning for this case,
+    //    and we do too.
+
     auto isGeneric = isFieldSyntacticallyGeneric(context, field.declId, nullptr);
     if (!isGeneric) {
       // Check if the type is actually concrete according to the type we have stored.
@@ -883,8 +1045,23 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
       if (g != Type::CONCRETE) {
         auto ast = parsing::idToAst(context, field.declId)->toDecl();
         CHPL_REPORT(context, SyntacticGenericityMismatch, ast, g, Type::CONCRETE, field.type);
+        continue;
       }
-    } else {
+    }
+
+    auto isGenericWithoutResolution =
+      isFieldSyntacticallyGeneric(context, field.declId, nullptr, /* useLightResolution */ false);
+    if (!isGenericWithoutResolution && !issuedMemoryManagementWarning) {
+      std::set<const Type*> ignore = {fieldsOfType};
+      auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+      if (g != Type::CONCRETE &&
+          fieldsOfType->instantiatedFromCompositeType() == nullptr) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        reportOnce<ErrorGenericFieldWithoutMark>(context, ast, field.type);
+      }
+    }
+
+    if (isGeneric) {
       // Type is syntactically generic. If it doesn't have a substitution,
       // the type may be partially instantiated, so the remaining fields,
       // which may eventually be concrete, might not be at this time, and that's
@@ -942,26 +1119,33 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     const UntypedFnSignature* untypedSignature,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
-                    bool needsInstantiation,
+                    InstantiationState instantiationState,
                     bool isRefinementOnly,
+                    bool usePlaceholders,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     Bitmap formalsInstantiated,
+                    Bitmap formalsErrored,
                     OuterVariables outerVariables) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
-              formalsInstantiated,
+              instantiationState, isRefinementOnly, usePlaceholders,
+              instantiatedFrom, parentFn,
+              formalsInstantiated, formalsErrored,
               outerVariables);
+
+  if (instantiatedFrom) CHPL_ASSERT(formalsErrored.size() == 0 || isRefinementOnly);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
-                                             needsInstantiation,
+                                             instantiationState,
                                              isRefinementOnly,
+                                             usePlaceholders,
                                              instantiatedFrom,
                                              parentFn,
                                              std::move(formalsInstantiated),
+                                             std::move(formalsErrored),
                                              std::move(outerVariables)));
 
   return QUERY_END(result);
@@ -972,19 +1156,23 @@ TypedFnSignature::get(Context* context,
                       const UntypedFnSignature* untypedSignature,
                       std::vector<types::QualifiedType> formalTypes,
                       TypedFnSignature::WhereClauseResult whereClauseResult,
-                      bool needsInstantiation,
+                      InstantiationState instantiationState,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
-                      OuterVariables outerVariables) {
+                      Bitmap formalsErrored,
+                      OuterVariables outerVariables,
+                      bool usePlaceholders) {
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
                              whereClauseResult,
-                             needsInstantiation,
+                             instantiationState,
                              /* isRefinementOnly */ false,
+                             usePlaceholders,
                              instantiatedFrom,
                              parentFn,
                              std::move(formalsInstantiated),
+                             std::move(formalsErrored),
                              std::move(outerVariables)).get();
 }
 
@@ -997,11 +1185,13 @@ TypedFnSignature::getInferred(
                              inferredFrom->untyped(),
                              formalTypes,
                              inferredFrom->whereClauseResult(),
-                             inferredFrom->needsInstantiation(),
+                             inferredFrom->instantiationState(),
                              /* isRefinementOnly */ true,
+                             /* usePlaceholders */ false,
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
                              inferredFrom->formalsInstantiatedBitmap(),
+                             inferredFrom->formalsErroredBitmap(),
                              inferredFrom->outerVariables()).get();
 }
 
@@ -1018,11 +1208,13 @@ TypedFnSignature::substitute(Context* context,
   return getTypedFnSignature(context, untyped(),
                              std::move(newFormalTypes),
                              whereClauseResult(),
-                             needsInstantiation(),
+                             instantiationState(),
                              isRefinementOnly_,
+                             usePlaceholders_,
                              instantiatedFrom(),
                              parentFn(),
                              formalsInstantiatedBitmap(),
+                             formalsErroredBitmap(),
                              outerVariables()).get();
 }
 
@@ -1104,6 +1296,48 @@ void CandidatesAndForwardingInfo::stringify(
   }
 }
 
+const char* candidateFailureReasonToString(CandidateFailureReason reason) {
+  switch(reason) {
+    case FAIL_ERRORS_THROWN: return "FAIL_ERRORS_THROWN";
+    case FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD: return "FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD";
+    case FAIL_VARARG_MISMATCH: return "FAIL_VARARG_MISMATCH";
+    case FAIL_INTERFACE_NOT_TYPE_INTENT: return "FAIL_INTERFACE_NOT_TYPE_INTENT";
+    case FAIL_WHERE_CLAUSE: return "FAIL_WHERE_CLAUSE";
+    case FAIL_CANNOT_PASS: return "FAIL_CANNOT_PASS";
+    case FAIL_NO_TYPE_CONSTRUCTOR: return "FAIL_NO_TYPE_CONSTRUCTOR";
+    case FAIL_FORMAL_ACTUAL_MISMATCH: return "FAIL_FORMAL_ACTUAL_MISMATCH";
+    case FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API: return "FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API";
+    case FAIL_PARENLESS_MISMATCH: return "FAIL_PARENLESS_MISMATCH";
+    case FAIL_CANDIDATE_OTHER: return "FAIL_CANDIDATE_OTHER";
+  }
+  CHPL_ASSERT(false && "missing case for candidate failure reason");
+  return "<unknown reason>";
+}
+
+const char* passingFailureReasonToString(PassingFailureReason reason) {
+  switch (reason) {
+    case FAIL_INCOMPATIBLE_NILABILITY: return "FAIL_INCOMPATIBLE_NILABILITY";
+    case FAIL_INCOMPATIBLE_MGMT: return "FAIL_INCOMPATIBLE_MGMT";
+    case FAIL_INCOMPATIBLE_MGR: return "FAIL_INCOMPATIBLE_MGR";
+    case FAIL_EXPECTED_SUBTYPE: return "FAIL_EXPECTED_SUBTYPE";
+    case FAIL_INCOMPATIBLE_TUPLE_SIZE: return "FAIL_INCOMPATIBLE_TUPLE_SIZE";
+    case FAIL_INCOMPATIBLE_TUPLE_STAR: return "FAIL_INCOMPATIBLE_TUPLE_STAR";
+    case FAIL_CANNOT_CONVERT: return "FAIL_CANNOT_CONVERT";
+    case FAIL_CANNOT_INSTANTIATE: return "FAIL_CANNOT_INSTANTIATE";
+    case FAIL_DID_NOT_INSTANTIATE: return "FAIL_DID_NOT_INSTANTIATE";
+    case FAIL_TYPE_VS_NONTYPE: return "FAIL_TYPE_VS_NONTYPE";
+    case FAIL_NOT_PARAM: return "FAIL_NOT_PARAM";
+    case FAIL_MISMATCHED_PARAM: return "FAIL_MISMATCHED_PARAM";
+    case FAIL_UNKNOWN_ACTUAL_TYPE: return "FAIL_UNKNOWN_ACTUAL_TYPE";
+    case FAIL_UNKNOWN_FORMAL_TYPE: return "FAIL_UNKNOWN_FORMAL_TYPE";
+    case FAIL_GENERIC_TO_NONTYPE: return "FAIL_GENERIC_TO_NONTYPE";
+    case FAIL_NOT_EXACT_MATCH: return "FAIL_NOT_EXACT_MATCH";
+    case FAIL_VARARG_TQ_MISMATCH: return "FAIL_VARARG_TQ_MISMATCH";
+    case FAIL_FORMAL_OTHER: return "FAIL_FORMAL_OTHER";
+  }
+  CHPL_ASSERT(false && "missing case for passing failure reason");
+  return "<unknown reason>";
+}
 
 // Note (Daniel): the code for 'overloaded' below comes from cppreference:
 //   https://en.cppreference.com/w/cpp/utility/variant/visit2
@@ -1223,20 +1457,25 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false;
 }
 
+size_t hashPromotedFormalMap(const PromotedFormalMap& map) {
+  return hashUnorderedMap(map);
+}
+
 MostSpecificCandidate
 MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const TypedFnSignature* fn,
+                                            const CallInfo& ci,
                                             const FormalActualMap& faMap,
                                             const Scope* scope,
                                             const PoiScope* poiScope,
-                                            const SubstitutionsMap& promotedFormals) {
+                                            const PromotedFormalMap& promotedFormals) {
   auto newFaMap = faMap;
 
   // Earlier, we didn't resolve the body of the function, but when it's an
   // initializer, it can have substitution-producing statements such
   // as `this.typeField = int`. Now that we have picked this candidate
   // as most specific, it's safe to resolve the body without worrying about
-  // spurious errors from other andidates.
+  // spurious errors from other candidates.
   if (fn->isInitializer()) {
     auto instantiationPoiScope =
       Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
@@ -1250,6 +1489,10 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
 
   int coercionFormal = -1;
   int coercionActual = -1;
+  int raceyOutFormal = -1;
+  int raceyOutActual = -1;
+  bool promoted = !promotedFormals.empty();
+  SyncReadsList syncReads;
   for (auto fa : faMap.byFormals()) {
     auto& formalType = fa.formalType();
     auto& actualType = fa.actualType();
@@ -1265,13 +1508,31 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto got = canPassFn(rc->context(), actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
         got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
-      coercionFormal = fa.formalIdx();
-      coercionActual = fa.actualIdx();
-      break;
+      if (coercionFormal == -1 && coercionActual == -1) {
+        coercionFormal = fa.formalIdx();
+        coercionActual = ci.originalActualIdx(fa.actualIdx());
+      }
+    }
+
+    // If this candidate is being turned into an iterator via promotion,
+    // flag any formals that are scalar but 'out' or 'inout', since they will
+    // be potentially written to in parallel and thus racey / invalid.
+    if (promoted && (formalType.kind() == QualifiedType::OUT ||
+                     formalType.kind() == QualifiedType::INOUT)) {
+      if (promotedFormals.find(fa.formalIdx()) == promotedFormals.end()) {
+        if (raceyOutFormal == -1 && raceyOutActual == -1) {
+          raceyOutFormal = fa.formalIdx();
+          raceyOutActual = ci.originalActualIdx(fa.actualIdx());
+        }
+      }
+    }
+
+    if (got.conversionKind() & CanPassResult::READS) {
+      syncReads.push_back(std::make_pair(fa.formalIdx(), fa.actualIdx()));
     }
   }
 
-  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, ci.isExplicitMethodCall(), coercionFormal, coercionActual, raceyOutFormal, raceyOutActual, syncReads);
 }
 
 MostSpecificCandidate
@@ -1280,9 +1541,9 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const CallInfo& ci,
                                             const Scope* scope,
                                             const PoiScope* poiScope,
-                                            const SubstitutionsMap& promotedFormals) {
+                                            const PromotedFormalMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
+  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, ci, faMap, scope, poiScope, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
@@ -1296,7 +1557,14 @@ MostSpecificCandidates::inferOutFormals(ResolutionContext* rc,
   for (int i = 0; i < NUM_INTENTS; i++) {
     if (MostSpecificCandidate& c = candidates[i]) {
       constexpr auto f = chpl::resolution::inferOutFormals;
-      c.fn_ = f(rc, c.fn(), instantiationPoiScope);
+      auto oldFn = c.fn();
+      c.fn_ = f(rc, oldFn, instantiationPoiScope);
+
+      // We changed an arbitrary number of formal types. The FormalActualMap
+      // now might contain stale formal types. Update it.
+      if (c.fn_ != oldFn && c.faMap_) {
+        c.faMap_->updateOutFormalTypes(c.fn_);
+      }
     }
   }
 }
@@ -1350,6 +1618,8 @@ const char* AssociatedAction::kindToString(Action a) {
   switch (a) {
     case ASSIGN:
       return "assign";
+    case MOVE_INIT:
+      return "move-init";
     case COPY_INIT:
       return "copy-init";
     case DEFAULT_INIT:
@@ -1378,6 +1648,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "enter-context";
     case EXIT_CONTEXT:
       return "exit-context";
+    case TUPLE_CAST:
+      return "tuple-cast";
     // no default to get a warning if new Actions are added
   }
 
@@ -1401,6 +1673,19 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " type=";
     type_.stringify(ss, stringKind);
   }
+  if (tupleEltIdx_) {
+    ss << " tuple-elt-idx=" << *tupleEltIdx_;
+  }
+
+  ss << " sub-actions: {";
+  for (size_t i = 0; i < subActions_.size(); i++) {
+    ss << "";
+    subActions_[i].stringify(ss, stringKind);
+    if (i < subActions_.size() - 1) {
+      ss << ", ";
+    }
+  }
+  ss << "}";
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,
@@ -1450,6 +1735,51 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
     }
     std::cout << "\n";
   }
+}
+
+void
+ResolvedFunction::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  ss << "ResolvedFunction: " << std::endl;
+
+  if (signature_) {
+    signature_->stringify(ss, stringKind);
+  } else {
+    ss << "<no signature>";
+  }
+  ss << std::endl;
+
+  ss << "return intent: ";
+  ss << Function::returnIntentToString(returnIntent_);
+  ss << std::endl;
+
+  ss << "return type: ";
+  returnType_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "----- resolution results -----" << std::endl;
+  resolutionById_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << "----- end resolution results -----" << std::endl;
+}
+
+void ResolvedFieldResults::stringify(std::ostream& ss,
+                                   chpl::StringifyKind stringKind) const {
+  ss << "ResolvedFieldResults: " << std::endl;
+
+  ss << "type: ";
+  type_->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "field ID: ";
+  fieldID_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "syntax only?: ";
+  ss << (syntaxOnly_ ? "true" : "false") << std::endl;
+
+  ss << "----- resolution results -----" << std::endl;
+  results_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << "----- end resolution results -----" << std::endl;
 }
 
 
@@ -1605,10 +1935,14 @@ simpleMethodLookupQuery(Context* context, ID typeId) {
   return QUERY_END(result);
 }
 
+static const TypedMethodLookupHelper&
+typedMethodLookupQuery(Context* context, QualifiedType receiverType, bool checkScalarTypes);
+
 /* Gather scopes for a given receiver type and all its parents */
 static TypedMethodLookupHelper::ReceiverScopesVec
 gatherReceiverAndParentScopesForType(Context* context,
-                                     const types::Type* thisType) {
+                                     const types::Type* thisType,
+                                     bool checkScalarTypes) {
   TypedMethodLookupHelper::ReceiverScopesVec scopes;
 
   if (thisType != nullptr) {
@@ -1635,16 +1969,28 @@ gatherReceiverAndParentScopesForType(Context* context,
     } else if (const ExternType* et = thisType->toExternType()) {
       scopes.push_back(scopeForId(context, et->id()));
     }
+
+
+    auto thisQt = QualifiedType(QualifiedType::VAR, thisType);
+    if (checkScalarTypes) {
+      if (auto pqt = getPromotionType(context, thisQt, true); !pqt.isUnknownOrErroneous()) {
+        // also get scopes from the element type, so that (array of things).method() works.
+        auto& eltHelper = typedMethodLookupQuery(context, pqt, checkScalarTypes);
+        std::copy(eltHelper.receiverScopes().begin(),
+                  eltHelper.receiverScopes().end(),
+                  std::back_inserter(scopes));
+      }
+    }
   }
 
   return scopes;
 }
 
 static const TypedMethodLookupHelper&
-typedMethodLookupQuery(Context* context, QualifiedType receiverType) {
-  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType);
+typedMethodLookupQuery(Context* context, QualifiedType receiverType, bool checkScalarTypes) {
+  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType, checkScalarTypes);
 
-  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type());
+  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type(), checkScalarTypes);
   auto result = TypedMethodLookupHelper(receiverType, std::move(vec));
 
   return QUERY_END(result);
@@ -1771,7 +2117,8 @@ void TypedMethodLookupHelper::stringify(std::ostream& ss,
 
 const TypedMethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForType(Context* context,
-                                              QualifiedType type) const {
+                                              QualifiedType type,
+                                              bool checkScalarTypes) const {
   if (const Type* typePtr = type.type()) {
     if (typePtr->getCompositeType() ||
         typePtr->isPtrType() ||
@@ -1784,7 +2131,7 @@ ReceiverScopeTypedHelper::methodLookupForType(Context* context,
         kind = QualifiedType::VAR;
       }
       const TypedMethodLookupHelper& got =
-        typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+        typedMethodLookupQuery(context, QualifiedType(kind, typePtr), checkScalarTypes);
 
       if (!got.isEmpty())
         return &got;
@@ -1822,8 +2169,10 @@ IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);
 IMPLEMENT_DUMP(CallResolutionResult);
+IMPLEMENT_DUMP(AssociatedAction);
 IMPLEMENT_DUMP(SimpleMethodLookupHelper);
 IMPLEMENT_DUMP(TypedMethodLookupHelper);
+IMPLEMENT_DUMP(ResolvedFunction);
 
 } // end namespace resolution
 } // end namespace chpl

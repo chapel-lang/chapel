@@ -1,0 +1,55 @@
+testCoforall: 55
+testForeach: 55
+testFor: 55
+testForall: 55
+testBracket: 55
+testCustomIter with for: 55
+testCustomIter with foreach: 55
+testCustomIter with forall: 55
+testCustomIter with brackets: 55
+testBegin: 1
+testCobegin: 6
+testOn: 1
+testForOn: 55
+testCoforallOn: 55
+testBeginOn: 1
+testCobeginOn: 6
+================================================================================
+static void coforall_fn_ChapelRange_line_NN_chpl
+static void coforall_fn_ChapelRange_line_NN_chpl
+static void coforall_fn_namedTaskFunctions_line_16_chpl
+static void coforall_fn_namedTaskFunctions_line_9_chpl
+static void coforall_fn_namedTaskFunctions_line_9_chpl
+static void wrapcoforall_fn_ChapelRange_line_NN_chpl
+static void wrapcoforall_fn_ChapelRange_line_NN_chpl
+static void wrapcoforall_fn_namedTaskFunctions_line_16_chpl
+static void wrapcoforall_fn_namedTaskFunctions_line_9_chpl
+static void wrapcoforall_fn_namedTaskFunctions_line_9_chpl
+static void on_fn_namedTaskFunctions_line_103_chpl
+static void on_fn_namedTaskFunctions_line_113_chpl
+static void on_fn_namedTaskFunctions_line_123_chpl
+static void on_fn_namedTaskFunctions_line_134_chpl
+static void on_fn_namedTaskFunctions_line_135_chpl
+static void on_fn_namedTaskFunctions_line_136_chpl
+static void on_fn_namedTaskFunctions_line_95_chpl
+static void wrapon_fn_namedTaskFunctions_line_103_chpl
+static void wrapon_fn_namedTaskFunctions_line_113_chpl
+static void wrapon_fn_namedTaskFunctions_line_123_chpl
+static void wrapon_fn_namedTaskFunctions_line_134_chpl
+static void wrapon_fn_namedTaskFunctions_line_135_chpl
+static void wrapon_fn_namedTaskFunctions_line_136_chpl
+static void wrapon_fn_namedTaskFunctions_line_95_chpl
+static void begin_fn_namedTaskFunctions_line_75_chpl
+static void wrapbegin_fn_namedTaskFunctions_line_75_chpl
+static void cobegin_fn_namedTaskFunctions_line_134_chpl
+static void cobegin_fn_namedTaskFunctions_line_135_chpl
+static void cobegin_fn_namedTaskFunctions_line_136_chpl
+static void cobegin_fn_namedTaskFunctions_line_86_chpl
+static void cobegin_fn_namedTaskFunctions_line_87_chpl
+static void cobegin_fn_namedTaskFunctions_line_88_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_134_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_135_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_136_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_86_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_87_chpl
+static void wrapcobegin_fn_namedTaskFunctions_line_88_chpl

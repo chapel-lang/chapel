@@ -3,9 +3,6 @@
 //
 
 /* START_EXAMPLE_0 */
-// Compile with: 'chpl Test.chpl -suseProcedurePointers=true'
-//
-
 use DynamicLoading;
 
 // A binary may or may not exist at this path.

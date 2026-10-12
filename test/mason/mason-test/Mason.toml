@@ -12,6 +12,7 @@ tests = ["sampletest.chpl",
          "shallnotpass.chpl",
          "docs/exampletest.chpl",
          "compileerror.chpl"]
+type = "library"
 
 [dependencies]
 _MasonTest1 = "0.2.0"

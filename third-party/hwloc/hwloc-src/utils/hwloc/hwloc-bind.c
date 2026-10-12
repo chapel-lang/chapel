@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2024 Inria.  All rights reserved.
+ * Copyright © 2009-2025 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2009-2018 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -46,6 +46,8 @@ void usage(const char *name, FILE *where)
 		 "                 Change policy that --membind applies (default is bind)\n");
   fprintf(where, "  --best-memattr <attr>\n");
   fprintf(where, "                 Select the best target node in the given memory binding\n");
+  fprintf(where, "  --default-nodes\n");
+  fprintf(where, "                 Keep default memory nodes only\n");
   fprintf(where, "  -l --logical   Take logical object indexes (default)\n");
   fprintf(where, "  -p --physical  Take physical object indexes\n");
   fprintf(where, "  --single       Bind on a single CPU to prevent migration\n");
@@ -73,7 +75,7 @@ int main(int argc, char *argv[])
 {
   hwloc_topology_t topology;
   int depth = -1;
-  hwloc_bitmap_t cpubind_set, membind_set;
+  hwloc_bitmap_t cpubind_set, membind_set, dummy_set;
   int got_cpubind = 0, got_membind = 0;
   int working_on_cpubind = 1; /* membind if 0 */
   int get_binding = 0;
@@ -99,8 +101,10 @@ int main(int argc, char *argv[])
   hwloc_pid_t pid = 0; /* only valid when pid_number > 0, but gcc-4.8 still reports uninitialized warnings */
   hwloc_memattr_id_t best_memattr_id = (hwloc_memattr_id_t) -1;
   char *best_memattr_str = NULL;
+  int default_nodes = 0;
   char *callname;
   char *restrictstring = NULL;
+  const char *env;
   struct hwloc_calc_location_context_s lcontext;
   struct hwloc_calc_set_context_s scontext;
 
@@ -118,6 +122,7 @@ int main(int argc, char *argv[])
 
   cpubind_set = hwloc_bitmap_alloc();
   membind_set = hwloc_bitmap_alloc();
+  dummy_set = hwloc_bitmap_alloc();
 
   while (argc >= 1) {
     opt = 0;
@@ -174,6 +179,10 @@ int main(int argc, char *argv[])
       opt = 1;
       goto next_config;
     }
+    if (!strcmp (argv[0], "--default-nodes")) {
+      default_nodes = 1;
+      goto next_config;
+    }
 
     break;
 
@@ -182,9 +191,12 @@ int main(int argc, char *argv[])
     argv += opt+1;
   }
 
-  /* show all error messages, e.g. PREFERRED_MANY not supported by Linux kernel */
-  if (!getenv("HWLOC_HIDE_ERRORS"))
-    putenv((char *) "HWLOC_HIDE_ERRORS=0");
+  /* show binding error messages, e.g. PREFERRED_MANY not supported by Linux kernel */
+  env = getenv("HWLOC_HIDE_ERRORS");
+  if (!env || atoi(env) != 2) {
+    if (!getenv("HWLOC_SHOW_ERRORS"))
+      putenv((char *) "HWLOC_SHOW_ERRORS=bind");
+  }
 
   hwloc_topology_init(&topology);
   hwloc_topology_set_all_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_ALL);
@@ -354,9 +366,9 @@ int main(int argc, char *argv[])
     lcontext.logical = logical;
     lcontext.verbose = verbose;
     scontext.nodeset_input = use_nodeset || nodeset_location;
-    scontext.nodeset_output = working_on_cpubind ? 0 : 1;
     scontext.cpuset_input_format = HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN;
-    scontext.output_set = working_on_cpubind ? cpubind_set : membind_set;
+    scontext.output_cpuset = working_on_cpubind ? cpubind_set : dummy_set; /* don't modify cpubind_set if adding membind locations */
+    scontext.output_nodeset = working_on_cpubind ? dummy_set : membind_set; /* don't modify membind_set if adding cpubind locations */
     ret = hwloc_calc_process_location_as_set(&lcontext, &scontext, location);
     if (ret < 0) {
       fprintf(stderr, "argument `%s' unrecognized, assuming this is the executable.\n", argv[0]);
@@ -523,7 +535,7 @@ int main(int argc, char *argv[])
           i++, j=hwloc_bitmap_next(membind_set, j))
         nodes[i] = hwloc_get_numanode_obj_by_os_index(topology, j);
 
-      ret = hwloc_utils_get_best_node_in_array_by_memattr(topology, best_memattr_id, nrnodes, nodes, &loc, best_node_flags, membind_set);
+      ret = hwloc_utils_get_best_node_in_array_by_memattr(topology, best_memattr_id, nrnodes, nodes, &loc, best_node_flags, membind_set, verbose);
 
       free(nodes);
 
@@ -538,6 +550,24 @@ int main(int argc, char *argv[])
         fprintf(stderr, "memory binding is now  %s after filtering by best memattr\n", s);
         free(s);
       }
+    }
+
+    if (default_nodes && !hwloc_bitmap_iszero(membind_set)) {
+      hwloc_bitmap_t default_nodeset = hwloc_bitmap_alloc();
+      if (!default_nodeset) {
+        fprintf(stderr, "failed to allocate default nodeset.\n");
+        return EXIT_FAILURE;
+      }
+
+      ret = hwloc_topology_get_default_nodeset(topology, default_nodeset, 0);
+      if (ret < 0) {
+        fprintf(stderr, "failed to get default nodeset.\n");
+        return EXIT_FAILURE;
+      }
+
+      hwloc_bitmap_and(membind_set, membind_set, default_nodeset);
+
+      hwloc_bitmap_free(default_nodeset);
     }
 
     if (verbose > 0) {
@@ -636,6 +666,7 @@ int main(int argc, char *argv[])
 
   hwloc_bitmap_free(cpubind_set);
   hwloc_bitmap_free(membind_set);
+  hwloc_bitmap_free(dummy_set);
 
   hwloc_topology_destroy(topology);
 
@@ -665,6 +696,7 @@ int main(int argc, char *argv[])
 failed_binding:
   hwloc_bitmap_free(cpubind_set);
   hwloc_bitmap_free(membind_set);
+  hwloc_bitmap_free(dummy_set);
   hwloc_topology_destroy(topology);
   return EXIT_FAILURE;
 }

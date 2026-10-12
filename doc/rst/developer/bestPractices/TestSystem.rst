@@ -668,7 +668,7 @@ Finally, add the ``.graph`` file to ``$CHPL_HOME/test/GRAPHFILES``.  This file
 is separated into a number of suites (indicated by comments) followed by graphs
 that should appear in those suites (a graph may appear in multiple suites).
 This file determines how graphs are organized on the Chapel performance graphing
-webpages (currently hosted at ``http://chapel-lang.org/perf/``).
+webpages (currently hosted at ``https://chapel-lang.org/perf/``).
 
 Once the ``.graph`` file exists and is listed in ``GRAPHFILES``, running
 ``start_test -performance`` will cause the test system to not only create

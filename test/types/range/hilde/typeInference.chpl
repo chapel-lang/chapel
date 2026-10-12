@@ -39,9 +39,9 @@ writeln((1..4294967294).type:string);
 writeln((1..4294967295).type:string);
 writeln((1..4294967296).type:string);
 
-param minS = -9223372036854775807-1; // min(int(64));
-param maxS =  9223372036854775807; // max(int(64));
-param maxU = 18446744073709551615; // max(uint(64));
+param minS = min(int(64));
+param maxS = max(int(64));
+param maxU = max(uint(64));
 
 writeln(((minS+1)..).type:string);
 writeln((minS..).type:string);

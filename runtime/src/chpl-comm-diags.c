@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-comm-internal.h"
 #include "chpl-mem-consistency.h"
-#include "error.h"
+#include "chpl-error.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -44,11 +44,12 @@ chpl_atomic_commDiagnostics chpl_comm_diags_counters;
 
 static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
+static void broadcast_print_unstable(void) {
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_setCommDiagsTemporarilyDisabled);
 
-static
-void broadcast_print_unstable(void) {
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
-  chpl_comm_bcast_rt_private(chpl_comm_diags_print_unstable);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diags_print_unstable);
   (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
@@ -68,9 +69,12 @@ void chpl_comm_startVerbose(chpl_bool stacktrace,
   }
   chpl_verbose_comm = 1;
 
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_setCommDiagsTemporarilyDisabled);
+
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
-  chpl_comm_bcast_rt_private(chpl_verbose_comm);
-  chpl_comm_bcast_rt_private(chpl_verbose_comm_stacktrace);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm_stacktrace);
   (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
@@ -83,8 +87,11 @@ void chpl_comm_stopVerbose(int32_t lineno,
   }
   chpl_verbose_comm = 0;
 
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_setCommDiagsTemporarilyDisabled);
+
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
-  chpl_comm_bcast_rt_private(chpl_verbose_comm);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_verbose_comm);
   (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
@@ -129,8 +136,11 @@ void chpl_comm_startDiagnostics(chpl_bool print_unstable,
   }
   chpl_comm_diagnostics = 1;
 
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_setCommDiagsTemporarilyDisabled);
+
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
-  chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diagnostics);
   (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
@@ -144,8 +154,11 @@ void chpl_comm_stopDiagnostics(int32_t lineno, int32_t filename) {
   }
   chpl_comm_diagnostics = 0;
 
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_task_setCommDiagsTemporarilyDisabled);
+
   chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
-  chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
+  chpl_rt_comm_broadcast_rt_symbol(chpl_comm_diagnostics);
   (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 

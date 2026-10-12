@@ -1,0 +1,1 @@
+complexOrderedCompareErrors.chpl:16: error: ordered comparison of complex numbers is not supported

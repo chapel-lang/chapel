@@ -1,0 +1,1 @@
+complexOrderedCompareErrors.chpl:25: error: min() and max() are not supported for complex arguments

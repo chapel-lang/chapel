@@ -185,6 +185,12 @@ removeTitle $file
 removeUsage $file
 ## End ChapelArray ##
 
+## ChapelUnion ##
+file="./ChapelUnion.rst"
+removeTitle $file
+removeUsage $file
+## End ChapelUnion ##
+
 ## Atomics ##
 
 file="./Atomics.rst"

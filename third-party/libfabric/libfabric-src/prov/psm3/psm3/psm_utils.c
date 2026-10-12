@@ -130,7 +130,7 @@ uint32_t psm3_ceil_log2(uint64_t val)
 // so that psm2_epid_t contents can remain opaque to psm2 API callers
 // who will not see this more detailed psmi_epid_t but will just see psm2_epid_t
 // A psm2_nid_t also uses this format, but has 0 in the protocol and process
-// specific fields (protocol, context, subcontext, qpn, pri_sock, aux_sock).
+// specific fields (protocol, context, qpn, pri_sock, aux_sock).
 typedef union {
 	psm2_epid_t psm2_epid;	// to cast to/from psm2_epid_t
 	uint64_t w[3];	// word by word access
@@ -884,7 +884,6 @@ uint8_t psm3_epid_prefix_len(psm2_epid_t epid)
 }
 
 // The locally unique identifiers for the HW resources
-// OPA Native - Context (also need sub-context)
 // Verbs - 24b QPN (IB, OPA and RoCE Verbs)
 // Sockets - 16b primary socket number (sin_port) (UDP/TCP)
 // This should not be called for psm2_nid_t
@@ -2496,7 +2495,7 @@ int psm3_parse_memmode(void)
 	}
 }
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 // we need PSM3_GPUDIRECT config early to influence rdmamode defaults,
 // MR Cache mode and whether we need to open RV.
 // As such we don't check PSMI_HAL_CAP_GPUDIRECT flag here, but
@@ -2553,7 +2552,7 @@ unsigned psmi_parse_gpudirect_rdma_send_limit(int force)
 	psm3_getenv_range("PSM3_GPUDIRECT_RDMA_SEND_LIMIT",
 		    "GPUDirect RDMA feature on send side will be switched off for messages larger than limit.", NULL,
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)UINT_MAX,
+		    (union psmi_envvar_val)psm3_gpu_gpudirect_rdma_send_limit_default,
 		    (union psmi_envvar_val)0, (union psmi_envvar_val)UINT_MAX, 
 		    NULL, NULL, &envval);
 
@@ -2585,11 +2584,7 @@ unsigned psmi_parse_gpudirect_rdma_recv_limit(int force)
 	psm3_getenv_range("PSM3_GPUDIRECT_RDMA_RECV_LIMIT",
 		    "GPUDirect RDMA feature on receive side will be switched off for messages larger than limit.", NULL,
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-#ifdef PSM_CUDA
-		    (union psmi_envvar_val)UINT_MAX,
-#elif defined(PSM_ONEAPI)
-		    (union psmi_envvar_val)1,
-#endif
+		    (union psmi_envvar_val)psm3_gpu_gpudirect_rdma_recv_limit_default,
 		    (union psmi_envvar_val)0, (union psmi_envvar_val)UINT_MAX, 
 		    NULL, NULL, &envval);
 
@@ -2598,9 +2593,9 @@ done:
 	have_value = 1;
 	return saved;
 }
-#endif // PSM_CUDA || PSM_ONEAPI
+#endif // PSM_HAVE_GPU
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_GPU
 /* Size of RV GPU Cache - only used for PSM3_GPUDIRECT=1
  * otherwise returns 0
  */
@@ -2620,7 +2615,7 @@ unsigned psmi_parse_gpudirect_rv_gpu_cache_size(int reload)
 	// min size is (HFI_TF_NFLOWS + ep->hfi_num_send_rdma) *
 	// chunk size (psm3_mq_max_window_rv(mq, 1) after
 	// psmi_mq_initialize_params)
-	if (PSMI_IS_GPU_ENABLED && psmi_parse_gpudirect() ) {
+	if (PSM3_GPU_IS_ENABLED && psmi_parse_gpudirect() ) {
 		psm3_getenv("PSM3_RV_GPU_CACHE_SIZE",
 				"kernel space GPU cache size"
 				" (MBs, 0 lets rv module decide) [0]",
@@ -2635,7 +2630,7 @@ unsigned psmi_parse_gpudirect_rv_gpu_cache_size(int reload)
 	return saved;
 }
 
-#endif	// PSM_CUDA || PSM_ONEAPI
+#endif	// PSM_HAVE_GPU
 
 #ifdef PSM_HAVE_REG_MR
 /* Send DMA Enable */
@@ -2818,32 +2813,13 @@ void psm3_print_rank_identify(void)
 	if (identify_shown)
 		return;
 
-#ifdef PSM_CUDA
-	char cudart_ver[64] = "unknown";
-	if (cuda_runtime_ver)
-		snprintf(cudart_ver, sizeof(cudart_ver), "%d.%d",
-			cuda_runtime_ver / 1000, (cuda_runtime_ver % 1000) / 10);
-	snprintf(accel_vers, sizeof(accel_vers), "%s %s CUDA Runtime %s built against interface %d.%d\n",
-		psm3_get_mylabel(), psm3_ident_tag,
-		cudart_ver, CUDA_VERSION / 1000, (CUDA_VERSION % 1000) / 10);
-#elif defined(PSM_ONEAPI)
-	char ze_api_ver[64] = "unknown";
-	char ze_loader_ver[64] = "unknown";
-	if (zel_api_version)
-		snprintf(ze_api_ver, sizeof(ze_api_ver), "%d.%d",
-			ZE_MAJOR_VERSION(zel_api_version), ZE_MINOR_VERSION(zel_api_version));
-	if (zel_lib_version.major || zel_lib_version.minor || zel_lib_version.patch)
-		snprintf(ze_loader_ver, sizeof(ze_loader_ver), "v%d.%d.%d",
-			zel_lib_version.major, zel_lib_version.minor, zel_lib_version.patch);
-	snprintf(accel_vers, sizeof(accel_vers), "%s %s Level-Zero Runtime %s (%s) built against interface %d.%d\n",
-		psm3_get_mylabel(), psm3_ident_tag,
-		ze_api_ver, ze_loader_ver,
-		ZE_MAJOR_VERSION(ZE_API_VERSION_CURRENT), ZE_MINOR_VERSION(ZE_API_VERSION_CURRENT));
+#ifdef PSM_HAVE_GPU
+	PSM3_GPU_IDENTIFY(accel_vers, sizeof(accel_vers));
 #endif
 
 	identify_shown = 1;
 	strcat(strcat(ofed_delta," built for IEFS OFA DELTA "),psm3_IEFS_version);
-	psm3_print_identify("%s %s PSM3 v%d.%d%s%s\n"
+	psm3_print_identify("%s %s PSM3 v%d.%d"PSM3_GPU_TYPES"%s\n"
 		"%s %s location %s\n"
 		"%s %s build date %s\n"
 		"%s %s src checksum %s\n"
@@ -2854,13 +2830,6 @@ void psm3_print_rank_identify(void)
 		"%s %s CPU Core %d NUMA %d PID %d\n",
 		psm3_get_mylabel(), psm3_ident_tag,
 			PSM2_VERNO_MAJOR,PSM2_VERNO_MINOR,
-#ifdef PSM_CUDA
-			"-cuda",
-#elif defined(PSM_ONEAPI)
-			"-oneapi-ze",
-#else
-			"",
-#endif
 			(strcmp(psm3_IEFS_version,"") != 0) ? ofed_delta : "",
 		psm3_get_mylabel(), psm3_ident_tag,
 			dladdr(psm3_init, &info_psm) ?
@@ -4033,6 +4002,28 @@ psmi_coreopt_ctl(const void *core_obj, int optname,
 				epaddr->usr_ep_ctxt = optval;
 		}
 		break;
+	case PSM2_CORE_OPT_EP_CUDA_PERMITTED:
+		{
+			psm2_ep_t ep_core = (psm2_ep_t)core_obj;
+			if (!ep_core)
+				return psm3_handle_error(NULL, PSM2_PARAM_ERR, "Invalid endpoint");
+
+			if (*optlen < sizeof(bool)) {
+				err = psm3_handle_error(NULL, PSM2_PARAM_ERR,
+					"Option len insufficient for bool (%"PRIu64")", *optlen);
+				*optlen = sizeof(bool);
+				return err;
+			}
+
+			PSM_EP_FOR_EACH_MCTXT(ep_core, ep) {
+				err = get
+					? PSM3_GPU_GET_CUDA_PERMITTED(ep,  (bool *)optval)
+					: PSM3_GPU_SET_CUDA_PERMITTED(ep, *(bool *)optval);
+				if (err)
+					return err;
+			}
+		}
+		break;
 	default:
 		/* Unknown/unrecognized option */
 		err = psm3_handle_error(NULL,
@@ -5068,12 +5059,51 @@ void psm3_touch_mmap(void *m, size_t bytes)
 
 void psm3_memcpy(void *dest, const void *src, uint32_t len)
 {
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	if (len && PSMI_IS_GPU_ENABLED &&
-	    (PSMI_IS_GPU_MEM(dest) || PSMI_IS_GPU_MEM((void *)src))) {
+#ifdef PSM_HAVE_GPU
+	if (len && 
+	    (PSM3_IS_GPU_MEM(dest) || PSM3_IS_GPU_MEM((void *)src))) {
 		PSM3_GPU_MEMCPY(dest, src, len);
 		return;
 	}
 #endif
+	memcpy(dest, src, len);
+}
+
+void psm3_ep_memcpy(psm2_ep_t ep, void *dest, const void *src, uint32_t len)
+{
+#ifdef PSM_HAVE_GPU
+	// if CUDA is disallowed, attempt gdrcopy instead
+	if_pf (!len)
+		return;
+
+	const bool src_is_gpu  = PSM3_IS_GPU_MEM(src);
+	const bool dest_is_gpu = PSM3_IS_GPU_MEM(dest);
+
+	if (src_is_gpu || dest_is_gpu) {
+		// if the GPU HAL provides memcpy, prefer it
+		if (PSM3_GPU_IS_MEMCPY_PERMITTED(ep)) {
+			PSM3_GPU_MEMCPY(dest, src, len);
+			return;
+		}
+
+		// otherwise, avoid GPU-driven memcpy paths by mapping the
+		// device buffer and issuing a CPU driven gdrcopy
+		if (src_is_gpu) {
+			src = psmi_hal_gdr_convert_gpu_to_host_addr(
+				(unsigned long)src, len, 0, ep);
+			psmi_assert_always(src);
+		}
+		if (dest_is_gpu) {
+			dest = psmi_hal_gdr_convert_gpu_to_host_addr(
+				(unsigned long)dest, len, 0, ep);
+			psmi_assert_always(dest);
+		}
+
+		// buffers cpu-accessible; fall through to host memcpy
+	}
+#else
+	// no GPU support: fall through to host memcpy
+#endif
+
 	memcpy(dest, src, len);
 }

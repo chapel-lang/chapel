@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,7 @@
 
 #include <set>
 
-std::map<ArgSymbol*, std::string> exportedDefaultValues;
+std::map<ArgSymbol*, std::string, AstIdLess> exportedDefaultValues;
 
 struct ConversionsTableValue {
   FnSymbol* assign;
@@ -64,7 +64,8 @@ struct ConversionsTableValue {
 };
 
 typedef std::pair<Type*,Type*> ConversionsTableKey;
-typedef std::map<ConversionsTableKey, ConversionsTableValue> ConversionsTable;
+typedef std::map<ConversionsTableKey, ConversionsTableValue, AstIdLess>
+  ConversionsTable;
 
 static ConversionsTable conversionsTable;
 
@@ -332,10 +333,6 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
              recordContainingCopyMutatesField(formal->getValType())) {
     retval = true;
     *needRefIntent = true;
-
-  } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
-             isRecordWrappedType(formal->type) == true) {
-    retval = true;
 
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
@@ -1117,7 +1114,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           call->insertAtTail(unrefCall);
 
-          if (array && isAliasingArrayType(rhs->getValType()) == false) {
+          SymExpr* rhsse = toSymExpr(rhs);
+          if (array && isAliasingArrayType(rhs->getValType()) == false &&
+              (rhsse == NULL || !rhsse->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW))) {
             // If the function does not have this flag, this must
             // be a non-view array. Remove the unref call.
             unrefCall->replace(rhs->copy());
@@ -1248,8 +1247,8 @@ class SplitInitVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  std::map<Symbol*, Expr*>& preventMap;
-  SplitInitVisitor(std::map<Symbol*, Expr*>& preventMap)
+  std::map<Symbol*, Expr*, AstIdLess>& preventMap;
+  SplitInitVisitor(std::map<Symbol*, Expr*, AstIdLess>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
 
@@ -1340,8 +1339,8 @@ class FixPrimInitsVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  std::map<Symbol*, Expr*>& preventMap;
-  FixPrimInitsVisitor(std::map<Symbol*, Expr*>& preventMap)
+  std::map<Symbol*, Expr*, AstIdLess>& preventMap;
+  FixPrimInitsVisitor(std::map<Symbol*, Expr*, AstIdLess>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
 
@@ -1490,7 +1489,7 @@ void MarkTempsVisitor::handleStmtGroup() {
     allEndOfBlock = true;
   }
 
-  std::set<VarSymbol*> endOfBlockSet;
+  std::set<VarSymbol*, AstIdLess> endOfBlockSet;
   {
     // compute endOfBlockSet
 
@@ -1654,7 +1653,7 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
   // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
   // This function needs to lower these.
 
-  std::map<Symbol*, Expr*> splitInitPreventers;
+  std::map<Symbol*, Expr*, AstIdLess> splitInitPreventers;
 
   // Convert PRIM_DEFAULT_INIT_VAR to split init where possible
   if (fNoSplitInit == false) {
@@ -2036,6 +2035,153 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
   USR_PRINT(fn, "a non-void return type must be declared explicitly");
 }
 
+// Helper function to find a common parent type for class hierarchies.
+// Returns nullptr if no common parent can be found.
+// This is used when return type inference has multiple return types that
+// are different subclasses of a common parent class.
+static Type* findCommonParentForClasses(Vec<Type*>& retTypes, Vec<Symbol*>& retSymbols, FnSymbol* fn, const char*& errorContext) {
+  INT_ASSERT(retTypes.n > 1);
+
+  // Track the decorator (managed/borrowed/unmanaged) and nilability.
+  // If decorators don't match and one of them is borrowed, guess borrowed.
+  chpl::optional<ClassTypeDecoratorEnum> commonDecorator;
+  bool anyNilable = false, managerMismatch = false, decoratorMismatch = false;
+  AggregateType* seenManager = nullptr;
+
+  // Extract canonical class types (strip decorators)
+  llvm::SmallVector<AggregateType*> canonicalClasses;
+
+  for (int i = 0; i < retTypes.n; i++) {
+    Type* t = retTypes.v[i];
+
+    // Determine the decorator for this type
+    ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
+    AggregateType* manager = nullptr;
+
+    if (isManagedPtrType(t)) {
+      decorator = classTypeDecorator(t);
+      manager = getManagedPtrManagerType(t);
+    } else if (DecoratedClassType* dt = toDecoratedClassType(t)) {
+      decorator = dt->getDecorator();
+    } else if (isClass(t)) {
+      // Bare class type, use borrowed as default
+      decorator = ClassTypeDecorator::BORROWED;
+    } else {
+      // Not a class type
+      errorContext = nullptr;
+      return nullptr;
+    }
+    anyNilable |= isDecoratorNilable(decorator);
+    decorator = removeNilableFromDecorator(decorator);
+
+    // use this if we wanted to allow borrowing conversions (currently not allowed in spec)
+    // if (!commonDecorator || isDecoratorBorrowed(decorator)) commonDecorator = decorator;
+    if (!commonDecorator) {
+      commonDecorator = decorator;
+    } else if (*commonDecorator != decorator) {
+      if (!decoratorMismatch) {
+        decoratorMismatch = true;
+        errorContext =
+          astr("did not attempt to find common parent type because some return types are ",
+                decoratorToString(*commonDecorator),
+                " while others are ",
+                decoratorToString(decorator));
+      }
+    }
+
+    if (manager) {
+      if (seenManager && seenManager != manager && !managerMismatch) {
+        managerMismatch = true;
+        if (!decoratorMismatch) {
+          errorContext =
+            astr("did not attempt to find common parent type because some return types are ",
+                  toString(seenManager),
+                  " while others are ",
+                  toString(manager));
+        }
+      }
+      seenManager = manager;
+    }
+
+    // use this if we wanted to allow borrowing conversions (currently not allowed in spec)
+    // if (commonDecorator && !isDecoratorBorrowed(*commonDecorator) &&
+    //     *commonDecorator != decorator) {
+    //   // Mixing owned/shared with unmanaged - cannot unify
+    //   return nullptr;
+    // }
+
+    // Get the canonical class type (strips decorator)
+    Type* canonical = canonicalClassType(t);
+    AggregateType* at = toAggregateType(canonical);
+
+    if (at && isClass(at)) {
+      canonicalClasses.push_back(at);
+    } else {
+      // Not a class type
+      errorContext = nullptr;
+      return nullptr;
+    }
+  }
+
+  INT_ASSERT(commonDecorator);
+  if (managerMismatch || decoratorMismatch) {
+    // Cannot unify managed types with different managers, or e.g. owned with borrowed
+    return nullptr;
+  }
+  if (anyNilable) *commonDecorator = addNilableToDecorator(*commonDecorator);
+
+  // All types should be canonical classes now
+  INT_ASSERT(canonicalClasses.size() == (size_t) retTypes.n);
+
+  // Build a list of ancestors for the first class
+  llvm::SmallVector<AggregateType*> ancestors;
+  AggregateType* current = canonicalClasses.front();
+  ancestors.push_back(current);
+
+  // Walk up the parent chain
+  while (current->dispatchParents.n > 0) {
+    current = current->dispatchParents.v[0];
+    if (current == dtObject) break;
+    ancestors.push_back(current);
+  }
+
+  // For each ancestor (starting from most specific), check if all
+  // return types are subclasses of it.
+  // Iterate over classes first, so that if one class doesn't find any ancestor,
+  // we can bail out early.
+  ssize_t ancestorIdx = -1;
+  for (auto canonicalClass : canonicalClasses) {
+    bool foundAncestor = false;
+    for (ssize_t i = 0; i < (ssize_t) ancestors.size(); i++) {
+      AggregateType* candidate = ancestors[i];
+      if (isSubClass(canonicalClass, candidate)) {
+        ancestorIdx = std::max(ancestorIdx, i);
+        foundAncestor = true;
+        break;
+      }
+    }
+    if (!foundAncestor) {
+      // This class has no common ancestor with the first class
+      errorContext = "could not find a common parent type for the returned class types";
+      return nullptr;
+    }
+  }
+
+  INT_ASSERT(ancestorIdx >= 0);
+  auto candidate = ancestors[ancestorIdx];
+
+  // Found the common ancestor!
+  // Now apply the decorator back to get the unified type
+
+  if (seenManager && isDecoratorManaged(*commonDecorator)) {
+    // Use the function's definition point as context for type construction
+    Expr* ctx = fn->defPoint;
+    return computeDecoratedManagedType(candidate, *commonDecorator, seenManager, ctx);
+  } else {
+    return candidate->getDecoratedClass(*commonDecorator);
+  }
+}
+
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
@@ -2067,6 +2213,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   Vec<Type*>   retTypes;
   Vec<Symbol*> retSymbols;
 
+  const char* errorContext = nullptr;
   if (isUnresolvedOrGenericReturnType(retType)) {
 
     computeReturnTypeParamVectors(fn, ret, retTypes, retSymbols);
@@ -2123,6 +2270,19 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
           break;
         }
       }
+
+      // If we didn't find a best type via dispatch, try to find a common
+      // parent type for class hierarchies (addresses issue #14765).
+      //
+      // This is a new feature, currently only in the preview edition.
+      if (isEditionApplicable("preview", "preview", fn)) {
+        if (retType == dtUnknown && retTypes.n > 1) {
+          if (auto commonParent =
+                findCommonParentForClasses(retTypes, retSymbols, fn, errorContext)) {
+            retType = commonParent;
+          }
+        }
+      }
     }
 
     if (!fn->iteratorInfo) {
@@ -2160,7 +2320,9 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
         USR_FATAL(callStack.v[callStack.n-2],
                   "can't compute a unified element type for this array");
       } else {
-        USR_FATAL(fn, "unable to resolve return type");
+        USR_FATAL_CONT(fn, "unable to resolve return type");
+        if (errorContext) USR_PRINT(fn, "%s", errorContext);
+        USR_STOP();
       }
     }
 
@@ -2319,6 +2481,25 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
       (backendRequiresCopyForIn(formal->type) ||
        fn->hasFlag(FLAG_INLINE) ||
        fn->hasFlag(FLAG_ITERATOR_FN)))
+    );
+}
+
+// Matches the logic above for the case when we don't have an FnSymbol to work
+// with.
+bool formalRequiresTemp(FunctionType::Formal formal) {
+  return
+    //
+    // 'out' requires a temp currently
+    //
+    (formal.intent() == INTENT_OUT ||
+     //
+     // 'in' and 'const in' also require a copy, but for simple types
+     // (like ints or class references), we can rely on C's copy when
+     // passing the argument, as long as the routine is not
+     // inlined or an iterator.
+     //
+     ((formal.intent() == INTENT_IN || formal.intent() == INTENT_CONST_IN) &&
+      backendRequiresCopyForIn(formal.type()))
     );
 }
 
@@ -2752,6 +2933,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
   USR_FATAL_CONT(where,
                  "cannot initialize %s of type '%s' from %s'%s'",
                  toName, toTypeStr, sep, fromStr);
+  maybeSuggestToByteCall(from, from->type, toType->type, where);
 }
 
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
@@ -3113,6 +3295,28 @@ void ensureInMethodList(FnSymbol* fn) {
 
     if (found == false) {
       thisType->methods.add(fn);
+    }
+  }
+}
+
+void maybeSuggestToByteCall(Symbol* from,
+                            Type* fromType, Type* toType,
+                            BaseAST* where) {
+  // if attempted conversion to int(8)/uint(8) from param string/bytes of length 1
+  // then suggest toByte()
+  auto fromValType = fromType->getValType();
+  auto toValType = toType->getValType();
+  if (isIntegralByteType(toValType) &&
+      (fromValType == dtString || fromValType == dtBytes) &&
+      (from->hasEitherFlag(FLAG_CHAPEL_STRING_LITERAL,
+                           FLAG_CHAPEL_BYTES_LITERAL))) {
+    if (auto var = toVarSymbol(from)) {
+      if (var->immediate) {
+        const char* str = var->immediate->string_value();
+        if (str[0] != '\0' && str[1] == '\0') {
+          USR_PRINT(where, "did you mean to call '.toByte()'?");
+        }
+      }
     }
   }
 }

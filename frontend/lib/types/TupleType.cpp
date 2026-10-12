@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2026 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,7 +101,7 @@ TupleType::getTupleType(Context* context, const TupleType* instantiatedFrom,
                             isVarArgTuple);
 
   auto [id, name] =
-      parsing::getSymbolFromTopLevelModule(context, "ChapelTuple", "_tuple");
+      parsing::getTupleTypeFromTopLevelChapelTupleModule(context);
   auto result = toOwned(new TupleType(id, name, instantiatedFrom,
                                       std::move(subs), isVarArgTuple));
 
@@ -224,8 +224,8 @@ const TupleType* TupleType::toValueTuple(Context* context, bool makeConst) const
       allValue = false;
     allConst &= elementType(i).isConst();
     if (eltType.type() && eltType.type()->isTupleType()) {
-      // Conservatively throw off 'allValue' because the nested tuple might
-      // have a reference inside it.
+      // Conservatively throw off 'allValue' and 'allConst', because the nested
+      // tuple might have a reference or non-const element inside it.
       allValue = false;
       allConst = false;
     }
@@ -262,8 +262,8 @@ const TupleType* TupleType::toReferentialTuple(Context* context, bool makeConst)
     allConst &= elementType(i).isConst();
 
     if (eltType.type() && eltType.type()->isTupleType()) {
-      // Conservatively throw off 'allRef' because the nested tuple might
-      // have a reference inside it.
+      // Conservatively throw off 'allRef' and 'allConst', because the nested
+      // tuple might have a non-reference or non-const element inside it.
       allRef = false;
       allConst = false;
     }

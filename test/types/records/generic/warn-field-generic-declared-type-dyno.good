@@ -1,0 +1,13 @@
+warn-field-generic-declared-type-dyno.chpl:12: warning: field is declared with generic memory management
+warn-field-generic-declared-type-dyno.chpl:12: note: Consider adding 'owned', 'shared', or 'borrowed'
+warn-field-generic-declared-type-dyno.chpl:12: note: If generic memory management is desired, use a 'type' field to store the class type
+warn-field-generic-declared-type-dyno.chpl:21: warning: field is declared with generic memory management
+warn-field-generic-declared-type-dyno.chpl:21: note: Consider adding 'owned', 'shared', or 'borrowed'
+warn-field-generic-declared-type-dyno.chpl:21: note: If generic memory management is desired, use a 'type' field to store the class type
+warn-field-generic-declared-type-dyno.chpl:30: warning: field is declared with generic memory management
+warn-field-generic-declared-type-dyno.chpl:30: note: Consider adding 'owned', 'shared', or 'borrowed'
+warn-field-generic-declared-type-dyno.chpl:30: note: If generic memory management is desired, use a 'type' field to store the class type
+warn-field-generic-declared-type-dyno.chpl:56: warning: field 'myfield' has generic type 'GR' but is not marked with '?'
+warn-field-generic-declared-type-dyno.chpl:56: note: generic fields must be marked with '?'
+warn-field-generic-declared-type-dyno.chpl:96: warning: field 'myfield' has generic type 'domain(?)' but is not marked with '?'
+warn-field-generic-declared-type-dyno.chpl:96: note: generic fields must be marked with '?'

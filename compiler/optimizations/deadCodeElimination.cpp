@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,11 +44,9 @@
 #include <algorithm>
 #include <cstdio>
 
-typedef std::set<BasicBlock*> BasicBlockSet;
-
 static void deadBlockElimination(FnSymbol* fn);
-static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
-static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
+static void findReachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable);
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable);
 static bool         isInCForLoopHeader(Expr* expr);
 
 static unsigned int deadBlockCount;
@@ -87,7 +85,7 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  std::set<Symbol*> symSet;
+  std::set<Symbol*, AstIdLess> symSet;
   collectSymbolSet(fn, symSet);
 
   // Use 'symSet' and 'todo' together for a unique queue of symbols to process
@@ -112,7 +110,7 @@ void deadVariableElimination(FnSymbol* fn) {
       continue;
 
     if (isDeadVariable(sym)) {
-      std::set<Symbol*> potentiallyChanged;
+      std::set<Symbol*, AstIdLess> potentiallyChanged;
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         collectSymbolSet(call->getStmtExpr(), potentiallyChanged);
@@ -311,11 +309,9 @@ static void deadStringLiteralElimination() {
     // A quick review of a portion of test/release/examples shows that
     // this pass removes 85 - 95% of the string literals.  Signal an
     // error if this pass doesn't reclaim at least 10% of all string
-    // literals unless this is minimal modules
+    // literals
     //
-    if (fMinimalModules == false) {
-      INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
-    }
+    INT_ASSERT((1.0 * numDeadLiteral) / numStmt > 0.10);
   }
 }
 
@@ -425,6 +421,55 @@ static void deadModuleElimination() {
   }
 }
 
+//
+// returns true if the function was removed
+//
+static bool removeVoidFunction(FnSymbol* fn) {
+
+  // do not remove 'main', even if its empty
+  if (fn == chplUserMain) return false;
+  // various functions that should not be removed
+  if (fn->hasEitherFlag(FLAG_EXPORT, FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_MODULE_INIT) ||  fn->hasFlag(FLAG_MODULE_DEINIT) ||
+      fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
+      fn->hasFlag(FLAG_VIRTUAL) ||
+      fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
+    return false;
+
+  // don't remove on functions
+  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK))
+    return false;
+
+  // remove functions which return void and do nothing
+  if (fn->retType == dtVoid && fn->body && fn->body->length() == 1) {
+    if (auto lastCall = toCallExpr(fn->body->body.only())) {
+      if (lastCall->isPrimitive(PRIM_RETURN)) {
+        computeAllCallSites(fn);
+        auto calledBy = fn->calledBy;
+        for_alive_in_Vec(CallExpr, call, *calledBy) {
+          // remove the call to the function
+          call->remove();
+        }
+        if (!fn->isUsed()) {
+          fn->defPoint->remove();
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static void deadFunctionElimination() {
+  bool changed;
+  do {
+    changed = false;
+    for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+      changed = removeVoidFunction(fn) || changed;
+    }
+  } while (changed);
+}
+
 
 // called in copyPropagation.cpp
 void eliminateLiteralExpressions(FnSymbol* fn) {
@@ -469,8 +514,9 @@ void deadCodeElimination() {
 
     deadStringLiteralElimination();
 
+    deadFunctionElimination();
 
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
       // 2014/10/17   Noakes and Elliot
       // Dead Block Elimination may convert valid loops to "malformed" loops.
@@ -523,7 +569,7 @@ static void deadBlockElimination(FnSymbol* fn)
   BasicBlock::buildBasicBlocks(fn);
 
   // Find the reachable basic blocks within this function.
-  BasicBlockSet reachable;
+  BasicBlock::BasicBlockSet reachable;
 
   findReachableBlocks(fn, reachable);
   deleteUnreachableBlocks(fn, reachable);
@@ -532,7 +578,7 @@ static void deadBlockElimination(FnSymbol* fn)
 // Muchnick says we can enumerate the unreachable blocks first and then just
 // remove them.  We only need to do this once, because removal of an
 // unreachable block cannot possibly make any reachable block unreachable.
-static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+static void findReachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable)
 {
   // We set up a work queue to perform a BFS on reachable blocks, and seed it
   // with the first block in the function.
@@ -563,7 +609,7 @@ static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
   }
 }
 
-static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlock::BasicBlockSet& reachable)
 {
   // Visit all the blocks, deleting all those that are not reachable
   for_vector(BasicBlock, bb, *fn->basicBlocks)

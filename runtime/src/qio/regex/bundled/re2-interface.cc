@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,7 @@
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
 #include "chpltypes.h" // must be before "error.h" to prevent include errors
-#include "error.h"
+#include "chpl-error.h"
 #include "encoding/encoding-support.h"
 #undef printf
 
@@ -196,6 +196,7 @@ re_t* local_cache_get(const char* str, int64_t str_len,
     if (!re) continue;
     const std::string& pat = re->re2.pattern();
     if ((uint64_t) pat.length() == (uint64_t) str_len &&
+        str_len != 0 &&
         re->optionFlags == optionFlags &&
         0 == memcmp(pat.data(), str, str_len)) {
       // Make the date current.
@@ -645,7 +646,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
   re_t* re = (re_t*) regex->regex;
-  RE2* re2 = &re->re2;
+  RE2* re2;
   qioerr err = NULL;
   void* bufstart = NULL;
   void* bufend = NULL;
@@ -676,6 +677,8 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   end_offset = qio_channel_end_offset_unlocked(ch);
 
   if (err) goto error;
+
+  re2 = &re->re2;
 
   end = end_offset;
   if( maxlen != std::numeric_limits<int64_t>::max() ) {

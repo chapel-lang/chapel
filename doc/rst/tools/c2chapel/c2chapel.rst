@@ -112,22 +112,35 @@ probably not be able to parse the given C99 file. Usage of these fake headers
 can be disabled with the ``--no-fake-headers`` flag. You can extend the fake
 headers by modifying ``tools/c2chapel/utils/custom.h``.
 
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+``c2chapel`` ought to parse all C99 files and should handle some C11
+files as well; however, our testing is far from complete.  If you
+encounter parsing errors, you can try the following:
+
+* Use the ``--gnu-extensions`` flag to allow GNU extensions in the C file.
+
+* Comment out the offending lines in the C file and re-run ``c2chapel``. You
+  can use the generated Chapel code to help you determine which lines are
+  causing parsing errors.
+
+* Pass additional flags to the C preprocessor to help massage the file into
+  something that can be parsed.
+
+    For example, ``c2chapel`` does not understand ``__alignof`` (a clang
+    extension), so you can define it as ``__alignof__`` (a GNU extension) or
+    ``sizeof`` (a C99 operator, not semantically correct but good enough for
+    ``c2chapel``) to get around parsing errors related to this macro:
+
+    .. code-block:: bash
+
+        c2chapel myComplexHeader.h -D__alignof=sizeof
+
 Future Work
 -----------
-
-``c2chapel`` does not currently handle the entirety of C99, so some human
-intervention may be required (e.g. commenting out unhandled portions of the
-file). There are also some limitations based on Chapel's extern capability.
-See https://chapel-lang.org/bugs.html for instructions on reporting bugs.
 
 Known issues:
 
 - fake standard headers are incomplete
 - choice between ``ref``/``c_ptr`` for formals is not intuitive or easily controlled
-
-Contributors
-------------
-| Ben Harshbarger [HPE]
-| Nikhil Padmanabhan [Yale University]
-| Ben McDonald [HPE]
-|

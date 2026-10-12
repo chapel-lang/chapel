@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -172,45 +172,6 @@ module MemMove {
       _move(x, y);
       _move(y, temp);
     }
-  }
-
-  private inline proc _haltBadIndex(a, idx, indexName: string) {
-    import HaltWrappers.boundsCheckHalt;
-
-    if !a.domain.contains(idx) then
-      boundsCheckHalt('Cannot move-initialize array because its domain ' +
-                      'does not contain: ' + indexName);
-  }
-
-  // Call to 'indexOrder' assumes 'idx' is a valid index.
-  private inline proc _haltBadElementRange(a, idx, numElements: int) {
-    import HaltWrappers.boundsCheckHalt;
-
-    if numElements > a.size then
-      boundsCheckHalt('Cannot move-initialize array because number of ' +
-                      'elements to copy exceeds array size');
-
-    if numElements <= 0 then
-      boundsCheckHalt('Cannot move-initialize array because number of ' +
-                      'elements to copy is <= 0');
-
-    const order = a.domain.indexOrder(idx);
-    const hi = order + numElements;
-
-    if hi > a.size then
-      boundsCheckHalt('Cannot move-initialize array because one or ' +
-                      'more indices fall outside its domain');
-  }
-
-  private inline proc _haltRangeOverlap(dstIndex, srcIndex, numElements) {
-    import HaltWrappers.boundsCheckHalt;
-
-    const dstRange = dstIndex..#numElements;
-    const srcRange = srcIndex..#numElements;
-
-    if dstRange[srcRange].size != 0 then
-      boundsCheckHalt('Cannot move-initialize array because source and ' +
-                      'destination ranges intersect');
   }
 
   // TODO: Relax this restriction in the future.

@@ -1,10 +1,12 @@
 BootStrap: docker
-From: rockylinux:8
+From: rockylinux/rockylinux:8
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
+    /provision-scripts/dnf-upgrade.sh
+    /provision-scripts/dnf-epel.sh
     /provision-scripts/dnf-deps.sh
     # installs LLVM 16
     /provision-scripts/dnf-llvm.sh

@@ -2,7 +2,7 @@
 
 # Skip this test if we cannot connect to github, which is required to
 # run the test
-ping -c 1 github.com &> /dev/null
+curl -I https://github.com &> /dev/null
 status=$?
 if ! [ $status -eq 0 ]; then
   echo "True"

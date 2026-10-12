@@ -66,7 +66,7 @@ extern "C" {
  * @file psm2.h
  * @page psm2_main PSM2 API
  *
- * @brief PSM2 OPA Messaging Library
+ * @brief PSM2 Messaging Library
  *
  * The PSM2 OPA Messaging API, or PSM2 API, is Intel's low-level
  * user-level communications interface for the OPA family of products.
@@ -314,8 +314,8 @@ enum psm2_error {
 	/*! PSM2 is finalized */
 	PSM2_IS_FINALIZED = 13,
 
-	/*! TCP data send is successful */
-	PSM2_TCP_DATA_SENT = 14,
+	/*! data was sent reliably */
+	PSM2_RELIABLE_DATA_SENT = 14,
 
 	/*! Endpoint was closed */
 	PSM2_EP_WAS_CLOSED = 20,
@@ -360,8 +360,8 @@ enum psm2_error {
 	PSM2_EPID_INVALID_PKEY = 50,
 	/*! Unable to resolve path for endpoint */
 	PSM2_EPID_PATH_RESOLUTION = 51,
-	/*! Unable to connect rv QP */
-	PSM2_EPID_RV_CONNECT_ERROR = 52,
+	/*! Unable to connect rv or user RC QP */
+	PSM2_EPID_RC_CONNECT_ERROR = 52,
 	/*! Recovering rv QP conection */
 	PSM2_EPID_RV_CONNECT_RECOVERING = 53,
 
@@ -666,11 +666,11 @@ typedef psm2_epid_t psm2_nid_t;
  */
 psm2_nid_t psm3_epid_nid(psm2_epid_t epid);
 
-/** @brief Get Endpoint identifier's OPA context number */
+/** @brief Get Endpoint identifier's context number */
 uint64_t psm3_epid_context(psm2_epid_t epid);
 #endif // 0
 
-/** @brief Get Endpoint identifier's OPA port (deprecated, use
+/** @brief Get Endpoint identifier's network port (deprecated, use
  * @ref psm3_epid_context instead) */
 uint64_t psm3_epid_port(psm2_epid_t epid);
 
@@ -743,10 +743,10 @@ struct psm3_ep_open_opts {
 	int imm_size;		/* Immediate data size for endpoint */
 };
 
-/** @brief OPA endpoint creation
+/** @brief PSM3 endpoint creation
  *
- * Function used to create a new local communication endpoint on an OPA
- * adapter.  The returned endpoint handle is required in all PSM2 communication
+ * Function used to create a new local communication endpoint on an adapter/NIC.
+ * The returned endpoint handle is required in all PSM2 communication
  * operations, as PSM2 can manage communication over multiple endpoints.  An
  * opened endpoint has no global context until the user connects the endpoint
  * to other global endpoints by way of @ref psm3_ep_connect.  All local endpoint
@@ -1325,10 +1325,19 @@ void *psm3_epaddr_getctxt(psm2_epaddr_t epaddr);
    * option value: Context associated with PSM2 endpoint address.
    */
 
+/* PSM2 endpoint CUDA_PERMITTED flag */
+#define PSM2_CORE_OPT_EP_CUDA_PERMITTED   0x103
+  /**< [@b uint32_t ] Set/Get the CUDA_PERMITTED flag associated with a PSM2
+   * endpoint (psm2_ep_t).
+   *
+   * component object: PSM2 endpoint (@ref psm2_ep_t).
+   * option value: Boolean flag.
+   */
+
 /* PSM2_COMPONENT_IB options */
 /* Default service level to use to communicate with remote endpoints */
 #define PSM2_IB_OPT_DF_SL 0x201
-  /**< [@b uint32_t ] Default OPA SL to use for all remote communication.
+  /**< [@b uint32_t ] Default OPA/IB SL to use for all remote communication.
    * If unset defaults to Service Level 0.
    *
    * component object: Opened PSM2 endpoint id (@ref psm2_ep_t).
@@ -1337,7 +1346,7 @@ void *psm3_epaddr_getctxt(psm2_epaddr_t epaddr);
 
 /* Set IB service level to use for communication to an endpoint */
 #define PSM2_IB_OPT_EP_SL 0x202
-  /**< [@b uint32_t ] OPA SL to use for communication to specified
+  /**< [@b uint32_t ] OPA/IB SL to use for communication to specified
    * remote endpoint.
    *
    * component object: PSM2 endpoint (@ ref psm2_epaddr_t) address.
@@ -1348,7 +1357,7 @@ void *psm3_epaddr_getctxt(psm2_epaddr_t epaddr);
 /* MQ options that can be set in psm3_mq_init and psm2_{set,get}_opt */
 #define PSM2_MQ_OPT_RNDV_IB_SZ       0x301
   /**< [@b uint32_t ] Size at which to start enabling rendezvous
-   * messaging for OPA messages (if unset, defaults to values
+   * messaging for PSM3 messages (if unset, defaults to values
    * between 56000 and 72000 depending on the system configuration)
    *
    * component object: PSM2 Matched Queue (@ref psm2_mq_t).
@@ -1615,19 +1624,11 @@ typedef enum psm2_info_query_et
                      active.  */
 	PSM2_INFO_QUERY_UNIT_PORT_STATUS,
 
-/*! Required input arguments: 1
-   1.  type: uint32_t, description: the unit for which the number of
-       free contexts is desired (use: psm2_info_query_arg_t.unit).
-   Output parameter: uint32_t, description: the number of free
-                     contexts..  */
-	PSM2_INFO_QUERY_NUM_FREE_CONTEXTS,
+/*! removed QUERY_NUM_FREE_CONTEXTS, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_NUM_FREE_CONTEXTS,
 
-/*! Required input arguments: 1
-   1.  type: uint32_t, description: the unit for which the number of
-       contexts is desired (use: psm2_info_query_arg_t.unit).
-   Output parameter: uint32_t, description: the number of
-                     contexts..  */
-	PSM2_INFO_QUERY_NUM_CONTEXTS,
+/*! removed QUERY_NUM_CONTEXTS, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_NUM_CONTEXTS,
 
 /*! removed QUERY_CONFIG, but kept placeholder to retain values in enum */
 	PSM2_WAS_INFO_QUERY_CONFIG,
@@ -1725,6 +1726,14 @@ typedef enum psm2_info_query_et
        Output parameter: char*, description: name of the device's address. */
 	PSM2_INFO_QUERY_UNIT_ADDR_NAME,
 
+/*! Required input arguments 0
+   Output parameter: uint32_t*, description: configured PSM3_GPU_THRESH_RNDV */
+	PSM2_INFO_QUERY_GPU_THRESH_RNDV,
+
+/*! Required input arguments 0
+   Output parameter: uint32_t*, description: default for PSM3_MQ_RNDV_SHM_GPU_THRESH */
+	PSM2_INFO_QUERY_MQ_RNDV_SHM_GPU_THRESH_DEFAULT,
+
 	PSM2_INFO_QUERY_LAST, /* must appear last, and the info query
 				 constants are used as an index. */
 } psm2_info_query_t;
@@ -1780,14 +1789,14 @@ psm2_error_t psm3_info_query(psm2_info_query_t, void *out,
  * Used to support interrupt driven progress with CPU release when
  * >1 process per core
  *
- * @param[in] int timeout  timeout in milliseconds.  <0 is infinite timeout
+ * @param[in] int timeout_ms  timeout in milliseconds.  <0 is infinite timeout
  *
  * @returns PSM2_OK if wait completed and some progress may have been made
  * @returns PSM2_TIMEOUT if wait timeout exceeded with no progress made
  * @returns PSM2_INTERNAL_ERR if wait mode not allowed for given HAL
  * @returns PSM2_PARAM_ERR if not allowed for use with current PSM settings/mode
  */
-psm2_error_t psm3_wait(int timeout);
+psm2_error_t psm3_wait(int timeout_ms);
 
 /** @brief PSM2 env initialization
  *
@@ -1913,6 +1922,7 @@ int psm3_getenv_str(const char *name, const char *descr, int visible,
  * @param[in] unint32_t parameter copy length
  */
 void psm3_memcpy(void *dest, const void *src, uint32_t len);
+void psm3_ep_memcpy(psm2_ep_t ep, void *dest, const void *src, uint32_t len);
 
 /*! @} */
 

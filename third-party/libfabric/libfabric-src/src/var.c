@@ -226,7 +226,7 @@ int DEFAULT_SYMVER_PRE(fi_param_define)(const struct fi_provider *provider,
 		ret = asprintf(&tmp_str, "%s: %s", provider->name, v->help_string);
 		free(v->help_string);
 		if (ret < 0)
-			v->help_string = NULL;
+			tmp_str = NULL;
 		v->help_string = tmp_str;
 		ret = asprintf(&v->env_var_name, "FI_%s_%s", provider->name, param_name);
 		if (ret < 0)

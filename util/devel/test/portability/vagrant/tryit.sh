@@ -1,9 +1,20 @@
 #!/bin/bash
 
-# Runs a command (or series of commands) on all the VMs.
-# Launches each VM, runs the command, and then shuts it down.
+# Runs a command (or series of commands) on a VM.
+# Launches the VM, runs the command, and then shuts it down.
 # Prints a summary of the output at the end.
 # Saves all the command output in the file called log.
+
+# Expects the VM name to be given as an environment variable. The special name
+# "all" can be used to run the command on all VMs.
+
+set -exuo pipefail
+
+if [ -z "$VM_NAME" ]
+then
+  echo "Please set the VM_NAME environment variable to the name of the VM you want to run this on."
+  exit 1
+fi
 
 LOG=log
 
@@ -35,10 +46,19 @@ do
   fi
 done
 
+exit_status=0
 for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
+    # skip if this isn't a desired VM to run on
+    if [ "$VM_NAME" != "all" ]
+    then
+      if [ "$name" != "current/$VM_NAME" ]
+      then
+        continue
+      fi
+    fi
     cd $name
     display=`printf "%${maxlen}s" $name`
     NAME[$i]=$display
@@ -64,6 +84,7 @@ do
       echo "     " $*
       echo
       echo
+      exit_status=1
       #uncomment the below line to make errors fatal
       #exit 1
       ;;
@@ -72,7 +93,7 @@ do
     vagrant halt 2>&1 | tee -a "$DIR"/log
     cd "$DIR"
 
-    ((i++))
+    ((++i))
   fi
 done
 
@@ -83,8 +104,19 @@ for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
+    # skip if this isn't a desired VM to run on
+    if [ "$VM_NAME" != "all" ]
+    then
+      if [ "$name" != "current/$VM_NAME" ]
+      then
+        continue
+      fi
+    fi
+
     echo "${NAME[$i]}:${RESULT[$i]}"
 
-    ((i++))
+    ((++i))
   fi
 done
+
+exit $exit_status

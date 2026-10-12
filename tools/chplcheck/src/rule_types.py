@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2026 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,15 @@ from dataclasses import dataclass
 from fixits import Fixit, Edit
 from config import RuleSetting
 
+BUILTIN_AUTO_ARGS = {"ChplcheckSilencedRules"}
+
+
+def _builtin_auto_args_in_fn(check_func: typing.Callable) -> typing.Set[str]:
+    import inspect
+
+    argspec = inspect.getfullargspec(check_func)
+    return set(argspec.args) & BUILTIN_AUTO_ARGS
+
 
 def _build_ignore_fixit(
     anchor: chapel.AstNode, lines: typing.List[str], rule_name: str
@@ -37,6 +46,7 @@ def _build_ignore_fixit(
     text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
+    ignore.default_ignore = True
     return ignore
 
 
@@ -112,9 +122,12 @@ class BasicRuleResult:
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
 """The type of values that can be returned by basic rule functions"""
 
+AstNodeType = typing.TypeVar("AstNodeType", bound=chapel.AstNode)
+"""Type variable for AstNode types used in basic rule checks. Special type
+variable to allow for more specific node types in checks."""
 
 BasicRuleCheck = typing.Callable[
-    [chapel.Context, chapel.AstNode], _BasicRuleResult
+    [chapel.Context, AstNodeType], _BasicRuleResult
 ]
 """Function type for basic rules; (context, node) -> _BasicRuleResult"""
 
@@ -155,13 +168,13 @@ class AdvancedRuleResult:
 
 
 _AdvancedRuleResult = typing.Iterator[
-    typing.Union[chapel.AstNode, AdvancedRuleResult]
+    typing.Union[AstNodeType, AdvancedRuleResult]
 ]
 """Internal type for advanced rule results"""
 
 
 AdvancedRuleCheck = typing.Callable[
-    [chapel.Context, chapel.AstNode], _AdvancedRuleResult
+    [chapel.Context, AstNodeType], _AdvancedRuleResult
 ]
 """Function type for advanced rules"""
 
@@ -260,6 +273,13 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
         if fixit_func.__doc__ is not None:
             fixit.description = fixit_func.__doc__.strip()
 
+    def _get_internal_auto_args(self) -> typing.Set[str]:
+        """
+        Which of the arguments that can be auto-supplied by chplcheck
+        does this rule use?
+        """
+        return set()
+
     def run_fixit_hooks(
         self, context: chapel.Context, result: VarResultType
     ) -> typing.List[Fixit]:
@@ -291,6 +311,14 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
             driver_setting = self.driver.config.rule_settings.get(setting)
             setting_kwargs[setting.setting_name] = driver_setting
 
+        auto_args = self._get_internal_auto_args()
+
+        silenced_rules_key = "ChplcheckSilencedRules"
+        assert silenced_rules_key in BUILTIN_AUTO_ARGS
+        if silenced_rules_key in auto_args:
+            silenced_rules = list(self.driver.SilencedRules)
+            setting_kwargs[silenced_rules_key] = silenced_rules
+
         return setting_kwargs
 
     @abstractmethod
@@ -316,6 +344,9 @@ class BasicRule(Rule[BasicRuleResult]):
         super().__init__(driver, name, settings)
         self.pattern = pattern
         self.check_func = check_func
+
+    def _get_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
 
     def _check_single(
         self, context: chapel.Context, node: chapel.AstNode
@@ -370,6 +401,9 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
         super().__init__(driver, name, settings)
         self.check_func = check_func
 
+    def _get_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
+
     def check(
         self, context: chapel.Context, root: chapel.AstNode
     ) -> typing.Iterable[CheckResult]:
@@ -418,6 +452,9 @@ class LocationRule(Rule[LocationRuleResult]):
     ) -> None:
         super().__init__(driver, name, settings)
         self.check_func = check_func
+
+    def _get_internal_auto_args(self) -> typing.Set[str]:
+        return _builtin_auto_args_in_fn(self.check_func)
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -275,9 +275,15 @@ proc chpl_toExternProcType(type t) type where isProcedureType(t) do
 // locales).
 inline proc chpl_toLocalProc(x: ?t) where chpl_isLocalProc(t) do return x;
 inline proc chpl_toLocalProc(x: ?t) where chpl_isWideProc(t) {
+  use CTypes only c_ptr;
+
+  // Declare extern instead of 'use' to work around circular dependencies.
+  extern proc chpl_dynamicProcIdxToLocalPtr(idx: int(64)): c_ptr(void);
+
   const idx = __primitive("cast", int, x);
   const ptr = chpl_dynamicProcIdxToLocalPtr(idx);
-  return __primitive("cast", chpl_toLocalProcType(t), ptr);
+  const ret = __primitive("cast", chpl_toLocalProcType(t), ptr);
+  return ret;
 }
 
 /*
@@ -436,16 +442,12 @@ proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
 @chpldoc.nodoc
 proc isHomogeneousTupleValue(x) param do return __primitive("is star tuple type", x);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isOwnedClassValue(e)     param do return isOwnedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isSharedClassValue(e)    param do return isSharedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isUnmanagedClassValue(e) param do return isUnmanagedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isBorrowedClassValue(e)  param do return isBorrowedClassType(e.type);
 @chpldoc.nodoc
@@ -614,8 +616,6 @@ proc isArray(e)     param do  return isArrayValue(e);
 proc isDmap(e)      param do  return isDmapValue(e);
 /* Returns ``true`` if the argument is a ``sync`` type or a ``sync`` variable. */
 proc isSync(e)      param do  return isSyncValue(e);
-/* Returns ``true`` if the argument is a ``single`` type or a ``single`` variable. */
-proc isSingle(e)    param do  return isSingleValue(e);
 /*Returns ``true`` if the argument is an ``atomic`` type or an ``atomic`` variable.*/
 proc isAtomic(e)    param do  return isAtomicValue(e);
 
@@ -625,16 +625,12 @@ proc isHomogeneousTuple(e)  param do  return isHomogeneousTupleValue(e);
 /* Returns ``true`` if the argument is a generic type, and ``false`` otherwise. */
 proc isGeneric(e)   param do  return false;
 /* Returns ``true`` if the argument is an ``owned`` class type. */
-pragma "no borrow convert"
 proc isOwnedClass(e)     param do  return isOwnedClassValue(e);
 /* Returns ``true`` if the argument is a ``shared`` class type. */
-pragma "no borrow convert"
 proc isSharedClass(e)     param do  return isSharedClassValue(e);
 /* Returns ``true`` if the argument is a ``unmanaged`` class type. */
-pragma "no borrow convert"
 proc isUnmanagedClass(e)     param do  return isUnmanagedClassValue(e);
 /* Returns ``true`` if the argument is a ``borrowed`` class type. */
-pragma "no borrow convert"
 proc isBorrowedClass(e)     param do  return isBorrowedClassValue(e);
 /* Returns ``true`` if the argument is a class type that can store ``nil``. */
 proc isNilableClass(e)     param do  return isNilableClassValue(e);
@@ -774,7 +770,7 @@ proc toNilableIfClassType(type arg) type {
 Returns the number of bits used to store the values of type ``t``.
 This is available for all numeric types.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc numBits(type t) param where t == bool {
   compilerError("'bool' does not have a well-defined size");
 }
@@ -829,7 +825,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -868,7 +864,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-pragma "no where doc"
+@chpldoc.noWhereClause
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc
@@ -1001,8 +997,12 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
 
 @unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
-  if this != 0 && this != 1 then
-    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  if castChecking then
+    if this != 0 && this != 1 then
+      HaltWrappers.safeCastCheckHalt(
+        "casting "+this.type:string+
+        " to 'bool' requires it to have a value of either 0 or 1,"+
+        " but the current value is " + this:string);
   return this: bool;
 }
 
@@ -1072,9 +1072,9 @@ inline proc _bxor_id(type t) do return 0:t;
    or if ``isSubtype(from, to)`` would return ``true``. See
    :ref:`Implicit_Conversion_Call`.
  */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isCoercible(type from, type to) param {
-  return __primitive("is_coercible", from, to);
+  return __primitive("is_coercible", to, from);
 }
 
 /* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
@@ -1088,7 +1088,7 @@ proc isCoercible(type from, type to) param {
      * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isSubtype(type sub, type sup) param {
   return __primitive("is_subtype", sup, sub);
 }
@@ -1096,7 +1096,7 @@ proc isSubtype(type sub, type sup) param {
 /* Similar to :proc:`isSubtype` but returns ``false`` if
    ``sub`` and ``sup`` refer to the same type.
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isProperSubtype(type sub, type sup) param {
   return __primitive("is_proper_subtype", sup, sub);
 }

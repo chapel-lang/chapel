@@ -9,6 +9,7 @@ from lsprotocol.types import ClientCapabilities
 from lsprotocol.types import CompletionList, CompletionParams
 from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InitializeParams
+from lsprotocol.types import HoverParams, Hover, MarkupContent
 import pytest
 import pytest_lsp
 from pytest_lsp import ClientServerConfig, LanguageClient
@@ -424,3 +425,129 @@ async def test_go_to_enum(client: LanguageClient):
         # check A.a
         await check_goto_decl_def(client, doc, pos((5, 8)), pos((1, 5)))
         await check_goto_decl_def(client, doc, pos((5, 10)), pos((2, 2)))
+
+
+@pytest.mark.asyncio
+async def test_hover(client: LanguageClient):
+    """
+    Ensure that `: string` as a type inlay does not break
+    """
+
+    file = """
+            module M {
+              iter myIter() { }
+              proc myFunc(myFormal: int) { }
+              operator +(x, y) do return 1;
+              var myVar: int;
+              config const myConfig: int;
+
+              record myRec {
+                iter myMethodIter() { }
+                proc myMethod(myFormal: real(32)) { }
+                operator *(x, y) do return 1;
+                var myField: int;
+              }
+
+              class myClass {
+                proc init() { }
+                proc deinit() { }
+                proc init=(other) { }
+                operator :(x, type t) { }
+              }
+
+              proc myRec.secondary(myFormal) { }
+              proc getType() type { return myRec; }
+              proc (getType()).secondary2(myFormal) { }
+
+              proc takesTuples(myTup: (int, real) = (1, 2.0)) { }
+              proc takesTuples2(myTup: 2 * int) { }
+            }
+           """
+
+    hovers = [
+        ("module M", rng(pos((0, 7)), pos((0, 8))), pos((0, 7))),
+        ("iter myIter()", rng(pos((1, 7)), pos((1, 13))), pos((1, 8))),
+        (
+            "proc myFunc(myFormal: int)",
+            rng(pos((2, 7)), pos((2, 13))),
+            pos((2, 9)),
+        ),
+        ("myFormal: int", rng(pos((2, 14)), pos((2, 22))), pos((2, 15))),
+        ("operator +(x, y)", rng(pos((3, 11)), pos((3, 12))), pos((3, 11))),
+        ("var myVar: int", rng(pos((4, 6)), pos((4, 11))), pos((4, 8))),
+        (
+            "config const myConfig: int",
+            rng(pos((5, 15)), pos((5, 23))),
+            pos((5, 15)),
+        ),
+        ("record myRec", rng(pos((7, 9)), pos((7, 14))), pos((7, 10))),
+        ("iter myMethodIter()", rng(pos((8, 9)), pos((8, 21))), pos((8, 18))),
+        (
+            "proc myMethod(myFormal: real(32))",
+            rng(pos((9, 9)), pos((9, 17))),
+            pos((9, 11)),
+        ),
+        ("myFormal: real(32)", rng(pos((9, 18)), pos((9, 26))), pos((9, 22))),
+        ("operator *(x, y)", rng(pos((10, 13)), pos((10, 14))), pos((10, 13))),
+        ("var myField: int", rng(pos((11, 8)), pos((11, 15))), pos((11, 8))),
+        ("class myClass", rng(pos((14, 8)), pos((14, 15))), pos((14, 8))),
+        ("proc init()", rng(pos((15, 9)), pos((15, 13))), pos((15, 12))),
+        ("proc deinit()", rng(pos((16, 9)), pos((16, 15))), pos((16, 12))),
+        ("proc init=(other)", rng(pos((17, 9)), pos((17, 14))), pos((17, 12))),
+        (
+            "operator :(x, type t)",
+            rng(pos((18, 13)), pos((18, 14))),
+            pos((18, 14)),
+        ),
+        (
+            "proc myRec.secondary(myFormal)",
+            rng(pos((21, 13)), pos((21, 22))),
+            pos((21, 13)),
+        ),
+        # myRec is a use, so the hover gives us the location of the def
+        ("record myRec", rng(pos((7, 9)), pos((7, 14))), pos((21, 12))),
+        ("myFormal", rng(pos((21, 23)), pos((21, 31))), pos((21, 31))),
+        (
+            "proc getType() type",
+            rng(pos((22, 7)), pos((22, 14))),
+            pos((22, 9)),
+        ),
+        (
+            "proc (getType()).secondary2(myFormal)",
+            rng(pos((23, 19)), pos((23, 29))),
+            pos((23, 19)),
+        ),
+        # getType() is a use, so the hover gives us the location of the def
+        ("proc getType() type", rng(pos((22, 7)), pos((22, 14))), pos((23, 9))),
+        # (getType()) is just an expression, so it just shows the text
+        ("(getType())", rng(pos((23, 7)), pos((23, 18))), pos((23, 7))),
+        (
+            "takesTuples(myTup: (int, real) = (1, 2.0))",
+            rng(pos((25, 7)), pos((25, 18))),
+            pos((25, 9)),
+        ),
+        (
+            "myTup: (int, real) = (1, 2.0)",
+            rng(pos((25, 19)), pos((25, 24))),
+            pos((25, 24)),
+        ),
+        (
+            "takesTuples2(myTup: 2 * int)",
+            rng(pos((26, 7)), pos((26, 19))),
+            pos((26, 9)),
+        ),
+        ("myTup: 2 * int", rng(pos((26, 20)), pos((26, 25))), pos((26, 25))),
+    ]
+
+    async with source_file(client, file) as doc:
+
+        for expected_text, expected_rng, p in hovers:
+            # try to hover over the inlay/inlay location, make sure it does something
+            actual = await client.text_document_hover_async(
+                params=HoverParams(doc, p)
+            )
+            print(actual)
+            assert actual is not None
+            assert expected_rng == actual.range
+            assert isinstance(actual.contents, MarkupContent)
+            assert expected_text in actual.contents.value

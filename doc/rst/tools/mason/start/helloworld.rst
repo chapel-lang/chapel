@@ -1,23 +1,23 @@
-:title: Mason Guide: *Hello World*
-
 .. _using-a-package:
-        
+
 Using a Mason Package
 =====================
 
-Once mason has been installed, you are all ready to get started using mason
+Once Mason has been installed, you are all ready to get started using Mason
 packages! This section outlines a quick hands-on approach to getting started
-with mason packages as dependencies in your own code.
+with Mason packages as dependencies in your own code.
 
 A Mason Hello World!
 ~~~~~~~~~~~~~~~~~~~~
 
-So, mason is installed and ``mason --help`` is working, showing the available
-mason subcommands. What now?
+So, Mason is installed and ``mason --help`` is working, showing the available
+Mason subcommands. What now?
 
-First, let's create a new directory to house our mason project. This will give
-us everything we need to start installing dependencies from the mason registry
-while keeping our directory structure nice and clean.
+First, let's create a new directory to house our Mason project. This will give
+us everything we need to start installing dependencies from the Mason registry
+while keeping our directory structure nice and clean. You can name your
+package whatever you would like, as long as it is a valid Chapel identifier,
+but for simplicity, let's name our package ``HelloPackage``
 
   .. code-block:: sh
 
@@ -25,24 +25,15 @@ while keeping our directory structure nice and clean.
     mason new HelloPackage
     cd HelloPackage
 
-At this point, mason will start prompting you for some basic information about
-your package. Since this package is just for getting started, all that you need
-to worry about for now is the package name.
-
-You can name your package whatever you would like, as long as it is a valid
-Chapel identifier, but for simplicity, let's name our package ``HelloPackage``
-and then go with the default values for all other prompts, leaving them blank.
-
-If everything has gone as planned, you should be met with the prompt:
-"Initialized new library project: HelloPackage". Now, let's get installing
-our first mason package...
+If everything has gone as planned, you should now have a new directory called ``HelloPackage/`` with a basic ``Mason.toml`` file and some additional project
+structure.
 
 To view all available packages, run the ``mason search`` command. This will
-output a list of all packages registered to the mason registry, which can be
+output a list of all packages registered to the Mason registry, which can be
 viewed at https://github.com/chapel-lang/mason-registry.
 
 The package that we are interested in with this tutorial is the ``HelloWorld``
-package. Let's signal to mason that we would like to install that package:
+package. Let's signal to Mason that we would like to install that package:
 
   .. code-block:: sh
 
@@ -82,7 +73,7 @@ Now, the code should look like this:
 
 At this point, everything should be good to go! Time to run the program.
 
-After double-checking that you are in the top-level directory of the mason
+After double-checking that you are in the top-level directory of the Mason
 project that you've been working in (named ``HelloWorld/`` in this tutorial),
 now we can install our dependency and build our program with the command:
 
@@ -92,7 +83,7 @@ now we can install our dependency and build our program with the command:
 
 After running this command, the ``HelloWorld`` package will be installed
 to ``MASON_HOME``, which defaults to ``~/.mason``, so, assuming ``MASON_HOME``
-has not been modified, the source code of all mason dependencies can be found
+has not been modified, the source code of all Mason dependencies can be found
 at ``~/.mason``.
 
 If everything has worked up until now, it's time to run our program!
@@ -102,7 +93,7 @@ If everything has worked up until now, it's time to run our program!
   mason run
 
 You should see a "Hello Chapel friends from Mason" message printed to the
-screen. Congratulations! You can now install mason dependencies and use them
+screen. Congratulations! You can now install Mason dependencies and use them
 in your code.
 
 Hello World Tutorial Cheat Sheet

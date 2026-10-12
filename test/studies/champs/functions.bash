@@ -63,7 +63,9 @@ function apply_patch() {
 }
 
 function test_compile() {
-  local kind=$@
+  local kind=$1
+  shift
+  local extra_make=$@
   local make_vars="MOD=$kind NPROCS=0"
   local reset_chpl_stop_after_pass=false
 
@@ -86,13 +88,16 @@ function test_compile() {
     echo "[Building $kind in normal mode]"
   fi
 
+  make_vars+=" $extra_make"
+  echo "[make_vars: $make_vars]"
+
   test_start "make $kind"
   make $version $make_vars 2> $kind.comp.out.tmp
-  local status=$?
+  export test_compile_status=$?
   cat $kind.comp.out.tmp
 
-  if [[ $status -ne 0 ]] ; then
-    log_fatal_error "compiling ${kind}"
+  if [[ $test_compile_status -ne 0 ]] ; then
+    log_error "compiling ${kind}"
   else
     log_success "make output"
   fi
@@ -103,15 +108,20 @@ function test_compile() {
     unset CHPL_STOP_AFTER_PASS
   fi
 
+  # early return if compilation failed, to prevent spurious perf stats errors
+  if [[ $test_compile_status -ne 0 ]] ; then
+    return
+  fi
+
   if [ -z "$CHAMPS_QUICKSTART" ]; then
     $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
     if [[ $? -ne 0 ]] ; then
-      log_fatal_error "computing compile time stats for ${kind}"
+      log_error "computing compile time stats for ${kind}"
     fi
 
     $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
     if [[ $? -ne 0 ]] ; then
-      log_fatal_error "computing emitted code size stats for ${kind}"
+      log_error "computing emitted code size stats for ${kind}"
     fi
   fi
 }
@@ -125,12 +135,12 @@ function test_run() {
   # Why?
   eval $CHPL_TEST_LAUNCHCMD --walltime=2:00:00 ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $kind.in 2>&1 >$kind.exec.out.tmp
 
-  local status=$?
+  export test_run_status=$?
   cat $kind.exec.out.tmp
 
-  if [[ $status -ne 0 ]] ; then
+  if [[ $test_run_status -ne 0 ]] ; then
     log_fatal_error "running ${kind}"
-  else 
+  else
     log_success "$kind output"
   fi
   test_end

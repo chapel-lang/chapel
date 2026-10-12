@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -290,42 +290,17 @@ record LinkedList : serializable {
     destroy();
   }
 
-  @chpldoc.nodoc
-  proc _defaultWriteHelper(f) throws {
-    var binary = f._binary();
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-    if binary {
-      // Write the number of elements.
-      f.write(size);
-    }
-    if isjson || ischpl {
-      f.writeLiteral("[");
-    }
-
-    var first = true;
-    for e in this {
-      if first then first = false;
-      else {
-        if isspace then f.writeLiteral(" ");
-        else if isjson || ischpl then f.writeLiteral(", ");
-      }
-
-      f.write(e);
-    }
-
-    if isjson || ischpl {
-      f.writeLiteral("]");
-    }
-
-  }
-
   proc serialize(writer, ref serializer) throws {
-    if isDefaultSerializerType(writer.serializerType) {
-      _defaultWriteHelper(writer);
+    if writer.serializerType == IO.defaultSerializer {
+      var first = true;
+      for e in this {
+        if first then first = false;
+        else {
+          writer.writeLiteral(" ");
+        }
+
+        writer.write(e);
+      }
     } else {
       var ser = serializer.startList(writer, size);
       for e in this do

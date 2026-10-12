@@ -1,0 +1,1 @@
+cast-to-string-error.chpl:2: error: Cannot cast an array to a string, use 'try! "%?".format(array)' from IO.FormattedIO instead

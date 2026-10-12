@@ -1,0 +1,16 @@
+in func: (x = 11)
+after in func: (x = 10)
+ref func: (x = 11)
+after ref func: (x = 11)
+x is 11
+const ref func: (x = 11)
+after const ref func: (x = 11)
+x is 11
+const func: (x = 11)
+after const func: (x = 11)
+x is 11
+blank func: (x = 11)
+after blank func: (x = 11)
+x is 11
+const in func: (x = 11)
+after const in func: (x = 11)

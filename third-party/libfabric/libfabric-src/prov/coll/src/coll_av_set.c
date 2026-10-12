@@ -226,20 +226,38 @@ int coll_av_set(struct fid_av *av_fid, struct fi_av_set_attr *attr,
 	if (!av_set)
 		return -FI_ENOMEM;
 
-	if (ofi_mutex_init(&av_set->lock))
+	ret = ofi_mutex_init(&av_set->lock);
+	if (ret)
 		goto err1;
 
 	av_set->max_array_size = attr->count ? attr->count : av_attr.count;
 	av_set->fi_addr_array = calloc(av_set->max_array_size,
 				       sizeof(*av_set->fi_addr_array));
-	if (!av_set->fi_addr_array)
+	if (!av_set->fi_addr_array) {
+		ret = -FI_ENOMEM;
 		goto err2;
+	}
 
-	for (i = attr->start_addr; i <= attr->end_addr; i += attr->stride) {
-		if (av_set->fi_addr_count >= av_set->max_array_size)
-			goto err3;
+	if (attr->start_addr != FI_ADDR_NOTAVAIL &&
+	    attr->end_addr != FI_ADDR_NOTAVAIL) {
+		for (i = attr->start_addr; i <= attr->end_addr;
+		     i += attr->stride) {
+			if (av_set->fi_addr_count >= av_set->max_array_size) {
+				FI_WARN(av_set->av->prov, FI_LOG_AV,
+					"AV set size (%zu) not large enough\n",
+					av_set->max_array_size);
+				ret = -FI_EINVAL;
+				goto err3;
+			}
 
-		av_set->fi_addr_array[av_set->fi_addr_count++] = i;
+			av_set->fi_addr_array[av_set->fi_addr_count++] = i;
+		}
+	} else if (attr->start_addr != attr->end_addr) {
+		FI_WARN(av_set->av->prov, FI_LOG_AV,
+			"AV set start and end addr must both be set to"
+			"FI_ADDR_NOTAVAIL when creating empty AV set\n");
+		ret = -FI_EINVAL;
+		goto err3;
 	}
 
 	ofi_atomic_initialize32(&av_set->ref, 0);
@@ -260,5 +278,5 @@ err2:
 	ofi_mutex_destroy(&av_set->lock);
 err1:
 	free(av_set);
-	return -FI_ENOMEM;
+	return ret;
 }

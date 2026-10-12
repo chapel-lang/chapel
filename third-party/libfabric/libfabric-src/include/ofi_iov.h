@@ -86,7 +86,7 @@ static inline size_t ofi_total_rma_ioc_cnt(const struct fi_rma_ioc *rma_ioc,
 static inline size_t ofi_iov_bytes_to_copy(const struct iovec *iov,
 			size_t *size, size_t *offset, char **copy_buf)
 {
-	uint64_t len;
+	size_t len;
 
 	len = iov->iov_len;
 
@@ -105,16 +105,16 @@ static inline size_t ofi_iov_bytes_to_copy(const struct iovec *iov,
 	return len;
 }
 
-uint64_t ofi_copy_iov_buf(const struct iovec *iov, size_t iov_count, uint64_t iov_offset,
-			  void *buf, uint64_t bufsize, int dir);
+size_t ofi_copy_iov_buf(const struct iovec *iov, size_t iov_count, size_t iov_offset,
+			void *buf, size_t bufsize, int dir);
 
-static inline uint64_t
-ofi_copy_to_iov(const struct iovec *iov, size_t iov_count, uint64_t iov_offset,
-		void *buf, uint64_t bufsize)
+static inline size_t
+ofi_copy_to_iov(const struct iovec *iov, size_t iov_count, size_t iov_offset,
+		void *buf, size_t bufsize)
 {
 	if (iov_count == 1) {
-		uint64_t size = ((iov_offset > iov[0].iov_len) ?
-				 0 : MIN(bufsize, iov[0].iov_len - iov_offset));
+		size_t size = ((iov_offset > iov[0].iov_len) ?
+			       0 : MIN(bufsize, iov[0].iov_len - iov_offset));
 
 		memcpy((char *)iov[0].iov_base + iov_offset, buf, size);
 		return size;
@@ -124,13 +124,13 @@ ofi_copy_to_iov(const struct iovec *iov, size_t iov_count, uint64_t iov_offset,
 	}
 }
 
-static inline uint64_t
-ofi_copy_from_iov(void *buf, uint64_t bufsize,
-		  const struct iovec *iov, size_t iov_count, uint64_t iov_offset)
+static inline size_t
+ofi_copy_from_iov(void *buf, size_t bufsize,
+		  const struct iovec *iov, size_t iov_count, size_t iov_offset)
 {
 	if (iov_count == 1) {
-		uint64_t size = ((iov_offset > iov[0].iov_len) ?
-				 0 : MIN(bufsize, iov[0].iov_len - iov_offset));
+		size_t size = ((iov_offset > iov[0].iov_len) ?
+			       0 : MIN(bufsize, iov[0].iov_len - iov_offset));
 
 		memcpy(buf, (char *)iov[0].iov_base + iov_offset, size);
 		return size;

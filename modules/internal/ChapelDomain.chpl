@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -349,6 +349,12 @@ module ChapelDomain {
         HaltWrappers.boundsCheckHalt("domain mismatch on return");
       }
     }
+  }
+
+  pragma "last resort"
+  proc chpl__checkDomainsMatch(a, b) {
+    compilerError("expected an array or iterator but got a value of type ",
+                  a.type:string);
   }
 
   proc chpl_countDomHelp(dom, counts) {
@@ -2270,8 +2276,8 @@ module ChapelDomain {
       :type size: int
     */
     @unstable("createIndexBuffer() is subject to change in the future.")
-    inline proc createIndexBuffer(size: int) {
-      return _value.dsiCreateIndexBuffer(size);
+    inline proc createIndexBuffer(size: int, dataSorted=false, isUnique=false) {
+      return _value.dsiCreateIndexBuffer(size, dataSorted, isUnique);
     }
 
     /*
@@ -2794,7 +2800,7 @@ module ChapelDomain {
        Returns a local view of the sub-domain (slice) defined by the provided
        range(s), halting if the slice contains elements that are not local.
     */
-    pragma "no where doc"
+    @chpldoc.noWhereClause
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
           !_value.isDefaultRectangular()
@@ -2920,7 +2926,7 @@ module ChapelDomain {
        do not fit in the new idxType or when the original stride(s)
        are not legal for the new `strides` parameter.
      */
-    pragma "no where doc"
+    @chpldoc.noWhereClause
     proc tryCast(type t: domain)
       where chpl__isRectangularDomType(t) && this.isRectangular()
         &&  this.chpl_domainTryCastIsSafe(t)

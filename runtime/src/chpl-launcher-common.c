@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,29 +28,18 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include "chplcgfns.h"
+#include "chpl-prginfo.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
 #include "chplexit.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
-#include "error.h"
+#include "chpl-error.h"
 #include "whereami.c"
 
 // used in get_enviro_keys
 extern char** environ;
-
-// This global variable stores the arguments to main
-// that should be handled by the program.
-chpl_main_argument chpl_gen_main_arg;
-// This variable is normally declared in config.h
-// and comes from the generated code.
-extern const int mainHasArgs;
-extern const int mainPreserveDelimiter;
-extern const int launcher_is_mli;
-extern const char* launcher_mli_real_name;
-
 
 //
 // Are we doing a dry run, printing the system launcher command but
@@ -126,22 +115,25 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
   }
 
   // Determine additional characters to be written
-  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  // vsnprintf does not include the space for the null terminator, so plus one
+  const int requiredLength = vsnprintf(NULL, 0, format, argsForLen) + 1;
   va_end(argsForLen);
-  int newLen = *charsWritten + addedLen;
+  int newCmdBufSize = *charsWritten + requiredLength;
 
   // Allocate more memory if needed
-  if (newLen >= initialSize) {
-    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newLen * sizeof(char),
+  if (newCmdBufSize >= initialSize) {
+    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newCmdBufSize * sizeof(char),
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
-  // Write the new characters
-  vsnprintf(*cmdBufPtr + *charsWritten, addedLen + 1, format, argsForPrint);
-  va_end(argsForPrint);
-  *charsWritten = newLen;
-}
+  char* currentBufEnd = *cmdBufPtr + *charsWritten;
+  int currentBufEndLen = requiredLength;
 
+  // Write the new characters
+  const int actuallyWrote = vsnprintf(currentBufEnd, currentBufEndLen, format, argsForPrint);
+  va_end(argsForPrint);
+  *charsWritten += actuallyWrote;
+}
 //
 // Use this function to run short utility programs that will return less
 //  than 1024 characters of output.  The program must not expect any input.
@@ -643,9 +635,13 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   }
 
   if (numHandled == 0) {
-    if (mainHasArgs) {
-      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
-      chpl_gen_main_arg.argc++;
+    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+
+    if (CHPL_RT_PRGINFO_DATA(prg, mainHasArgs)) {
+      chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
+
+      main_arg_ptr->argv[main_arg_ptr->argc] = argv[argNum];
+      main_arg_ptr->argc++;
     } else {
       char* message;
       message = chpl_glom_strings(3,"Unexpected flag:  \"",argv[argNum],"\"");
@@ -716,6 +712,8 @@ void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
 // on-the-fly in runtime/etc/Makefile.launcher.
 extern const char launcher_real_suffix[];
 extern const char launcher_exe_suffix[];    // May be the empty string.
+extern const int launcher_is_mli;
+extern const char* launcher_mli_real_name;
 
 static char* chpl_real_binary_name;
 
@@ -809,15 +807,20 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
   int32_t execNumLocales;
   int32_t execNumLocalesPerNode;
   int argc = *c_argc;
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  chpl_main_argument* main_arg_ptr = chpl_rt_prginfo_main_argument(prg);
 
   // Set up main argument parsing.
-  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  chpl_gen_main_arg.argv[0] = argv[0];
-  chpl_gen_main_arg.argc = 1;
-  chpl_gen_main_arg.return_value = 0;
+  main_arg_ptr->argv = chpl_mem_allocMany(argc, sizeof(char*),
+                                          CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  main_arg_ptr->argv[0] = argv[0];
+  main_arg_ptr->argc = 1;
+  main_arg_ptr->return_value = 0;
 
-  CreateConfigVarTable();
+  // Call a callback to create the table which stores config vars.
+  CHPL_RT_PRGINFO_DATA(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
+                       CreateConfigVarTable)();
+
   parseArgs(true, parse_normally, &argc, argv);
 
   execNumLocales = getArgNumLocales();
@@ -881,6 +884,7 @@ int chpl_launcher_main(int argc, char* argv[]) {
 void chpl_launcher_no_colocales_error(const char *name) {
   char msg[100];
   if (name == NULL) {
+    CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER, CHPL_LAUNCHER);
     name = CHPL_LAUNCHER;
   }
   snprintf(msg, sizeof(msg), "'%s' launcher does not support co-locales.", name);

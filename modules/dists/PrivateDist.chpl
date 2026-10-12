@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,10 +148,6 @@ operator =(ref a: privateDist, b: privateDist) {
       _reprivatize(a._value);
   }
 }
-
-
-@deprecated("'Private' is deprecated, please use 'privateDist' instead")
-type Private = privateDist;
 
 
 @chpldoc.nodoc
