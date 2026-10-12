@@ -314,6 +314,7 @@ _chpl ()
 --no-warn-domain-literal \
 --no-warn-float-to-float \
 --no-warn-implicit-numeric-conversions \
+--no-warn-incremental-optimized \
 --no-warn-int-to-uint \
 --no-warn-integral-to-float \
 --no-warn-integral-to-integral \
@@ -427,6 +428,7 @@ _chpl ()
 --warn-domain-literal \
 --warn-float-to-float \
 --warn-implicit-numeric-conversions \
+--warn-incremental-optimized \
 --warn-int-to-uint \
 --warn-integral-to-float \
 --warn-integral-to-integral \
