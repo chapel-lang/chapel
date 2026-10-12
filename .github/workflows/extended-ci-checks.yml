@@ -52,6 +52,10 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        create-symlink: true
     - name: build chapel
       run: |
         ./util/buildRelease/smokeTest chpl mason
@@ -109,8 +113,17 @@ jobs:
 
           sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
       - name: Check desired GCC version is default
         run: |
+          which gcc
+
           actual_gcc_version=$(gcc -dumpversion)
           gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
           if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
@@ -118,9 +131,6 @@ jobs:
             echo "Expected Version: $GCC_VERSION Actual Version: $gcc_major_version"
             exit 2
           fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
@@ -162,8 +172,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
       - name: Check desired Python version is default
         run: |
+          which python || true
+          which python3 || true
+
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
       - name: Install LLVM dependency
@@ -211,8 +228,17 @@ jobs:
           sudo $set_var ./llvm.sh "${{ matrix.llvm_version }}" all
 
           echo "CHPL_LLVM_CONFIG=$(which llvm-config-${{ matrix.llvm_version }})" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
       - name: Check desired LLVM version is default
         run: |
+          which llvm-config-${{ matrix.llvm_version }}
+
           # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
           llvm_version=$($CHPL_LLVM_CONFIG --version)
           llvm_version_major=$(cut -d. -f1 <<< "$llvm_version")
@@ -221,9 +247,6 @@ jobs:
             echo "Expected Version: ${{ matrix.llvm_version }} Actual Version: $llvm_version"
             exit 2
           fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash
@@ -250,6 +273,10 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        create-symlink: true
     - name: set vars to make tarball from correct branch
       run: |
         {
@@ -280,6 +307,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -301,6 +332,10 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        create-symlink: true
     - name: find pycparser tarball
       id: find-pycparser-tarball
       run: |
