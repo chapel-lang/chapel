@@ -917,13 +917,7 @@ OPTIONS
 **\--[no-]chplenv-cache**
 
     Reuses [doesn't reuse] cached output of printchplenv from a previous
-    compilation. The cache is keyed off of the compiler version, the
-    $CHPL\_\* environment variables, $PATH, and the contents of any
-    chplconfig files. Use **\--no-chplenv-cache** to ignore and refresh the
-    cache, for example after building additional third-party packages.
-    Cached output is stored in $HOME/.chpl by default, or in
-    $CHPL\_ENV\_CACHE\_DIR if set. This flag corresponds with the
-    $CHPL\_ENV\_CACHE environment variable (defaults to true).
+    compilation.
 
 .. _man-detailed-errors:
 .. index:: --detailed-errors, --no-detailed-errors

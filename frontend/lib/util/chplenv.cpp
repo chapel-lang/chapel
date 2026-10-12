@@ -29,21 +29,24 @@
 namespace chpl {
 
 static void parseChplEnv(const std::string& output, ChplEnvMap& into) {
-  size_t lineStart = 0;
-  size_t lineEnd = 0;
+  const char lineDelimiter = '\n';
+  const char tokenDelimiter = '=';
 
-  while ((lineEnd = output.find('\n', lineStart)) != std::string::npos) {
-    std::string line = output.substr(lineStart, lineEnd - lineStart);
+  std::string::size_type lineStart = 0;
+  std::string::size_type lineEnd = 0;
+
+  while ((lineEnd = output.find(lineDelimiter, lineStart)) != std::string::npos) {
+    auto line = std::string_view(output).substr(lineStart, lineEnd - lineStart);
 
     // Key is substring up until "=" on a given line
-    size_t delimiterPos = line.find('=');
-    std::string key = line.substr(0, delimiterPos);
+    auto delimiterPos = line.find(tokenDelimiter);
+    auto key = line.substr(0, delimiterPos);
 
     // Value is substring after "=" on a given line
-    std::string value = line.substr(delimiterPos + 1);
+    auto value = line.substr(delimiterPos + sizeof(tokenDelimiter));
 
-    into[key] = value;
-    lineStart = lineEnd + 1;
+    into[std::string(key)] = std::string(value);
+    lineStart = lineEnd + sizeof(lineDelimiter);
   }
 }
 

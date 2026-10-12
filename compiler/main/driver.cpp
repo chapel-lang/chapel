@@ -1884,19 +1884,24 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
 
 static void addChplenvCacheKeyField(std::string& key, const std::string& name,
                                     const std::string& value) {
-  // length-prefixed so that distinct inputs can't produce the same key
   key += std::to_string(name.size()) + ":" + name + "=" +
          std::to_string(value.size()) + ":" + value + "\n";
 }
 
-// Collect the inputs that printchplenv's output depends on.
 static std::string computeChplenvCacheKey() {
   std::string key;
   addChplenvCacheKeyField(key, "version", chpl::getVersion());
 
+  // need envMap and chplVars so we count things both as CHPL_COMM and `--comm`
+  std::vector<std::pair<std::string, std::string>> inputs;
+  inputs.reserve(envMap.size());
   for (const auto& pair : envMap) {
-    addChplenvCacheKeyField(key, "input:" + pair.first,
-                            pair.second ? pair.second : "");
+    inputs.emplace_back(pair.first, pair.second ? pair.second : "");
+  }
+  // sort explicitly so the key doesn't depend on envMap's iteration order
+  std::sort(inputs.begin(), inputs.end());
+  for (const auto& pair : inputs) {
+    addChplenvCacheKeyField(key, "input:" + pair.first, pair.second);
   }
 
   std::vector<std::string> chplVars;
@@ -1912,7 +1917,7 @@ static std::string computeChplenvCacheKey() {
   addChplenvCacheKeyField(key, "PATH", path ? path : "");
 
   // chplconfig locations searched by util/chplenv/overrides.py
-  std::vector<std::string> configDirs;
+  llvm::SmallVector<std::string, 8> configDirs;
   if (const char* dir = getenv("CHPL_CONFIG")) configDirs.push_back(dir);
   if (const char* dir = getenv("HOME")) configDirs.push_back(dir);
   configDirs.push_back(CHPL_HOME);
@@ -1937,7 +1942,7 @@ static std::string chplenvCachePath(const std::string& key) {
     dir = std::string(home) + "/.chpl";
   }
   return dir + "/printchplenv-" +
-         chpl::fileHashToHex(chpl::hashString(key)) + ".txt";
+         chpl::fileHashToHex(chpl::hashString(key));
 }
 
 // Cache files contain the key's length, the key, then printchplenv's output.
@@ -2012,13 +2017,11 @@ static void populateEnvMap() {
         [&printchplenvOutput](std::string_view restoredOutput) {
           printchplenvOutput = restoredOutput;
         });
-  } else {
+  } else if (fChplenvCache) {
     // Monolithic mode or initial driver invocation, so try the cache.
     cacheKey = computeChplenvCacheKey();
     cachePath = chplenvCachePath(cacheKey);
-    if (fChplenvCache) {
-      usedCache = readChplenvCache(cachePath, cacheKey, printchplenvOutput);
-    }
+    usedCache = readChplenvCache(cachePath, cacheKey, printchplenvOutput);
   }
 
   // Get printchplenv output and collect into a map. This reuses
@@ -2034,7 +2037,7 @@ static void populateEnvMap() {
     }
   }
 
-  if (!restoreFromDriver && !usedCache) {
+  if (!restoreFromDriver && fChplenvCache && !usedCache) {
     writeChplenvCache(cachePath, cacheKey, printchplenvOutput);
   }
 
