@@ -8,6 +8,11 @@ on:
     types:
       - completed
 
+# Prevent concurrent runs of this workflow to avoid hitting API rate limits.
+concurrency:
+  group: ${{ github.workflow }}
+  queue: max
+
 permissions:
   contents: read
   packages: read
