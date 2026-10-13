@@ -689,7 +689,7 @@ void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
   CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%"PRId64" blk_dim=%d"
                  " %d params, %d pids and %d reduction buffers\n", fn_name,
                  num_threads, blk_dim, n_params, n_pids, n_reduce_vars);
-  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_rt_lookup_filename(fn), ln);
 
   return ret;
 }
@@ -710,7 +710,7 @@ void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
                    grd_dim_x, grd_dim_y, grd_dim_z,
                    blk_dim_x, blk_dim_y, blk_dim_z);
 
-  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_rt_lookup_filename(fn), ln);
 
   return ret;
 
@@ -932,7 +932,7 @@ inline void chpl_gpu_launch_kernel(void* _cfg) {
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %"PRId64"\n",
                  cfg->dev,
-                 chpl_lookupFilename(cfg->fn),
+                 chpl_rt_lookup_filename(cfg->fn),
                  cfg->ln,
                  cfg->fn_name,
                  cfg->stream,
@@ -1466,7 +1466,7 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%zu file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
+               chpl_rt_lookup_filename(filename), lineno);
 
   void *ptr = NULL;
   if (size > 0) {
@@ -1488,7 +1488,7 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
-                 size, chpl_lookupFilename(filename), lineno);
+                 size, chpl_rt_lookup_filename(filename), lineno);
 
   int dev = chpl_task_getRequestedSubloc();
   chpl_gpu_impl_use_device(dev);
@@ -1523,7 +1523,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           int32_t lineno, int32_t filename) {
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%zu file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
+               chpl_rt_lookup_filename(filename), lineno);
 
   void *ptr = NULL;
 

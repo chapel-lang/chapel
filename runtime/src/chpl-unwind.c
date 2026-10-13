@@ -359,7 +359,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
           case CHPL_STACK_UNWIND_MODE_FILE:
             fprintf((FILE*)out, "%s() at %s:%d%c",
                      chpl_funSymTable[t+1],
-                     chpl_lookupFilename(chpl_filenumSymTable[t]),
+                     chpl_rt_lookup_filename(chpl_filenumSymTable[t]),
                      line,
                      sep);
           break;
@@ -371,7 +371,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
             append_to_string(&bufsz, &strsz, strPtr, chpl_funSymTable[t+1]);
             append_to_string(&bufsz, &strsz, strPtr, "() at ");
             append_to_string(&bufsz, &strsz, strPtr,
-                            chpl_lookupFilename(chpl_filenumSymTable[t]));
+                            chpl_rt_lookup_filename(chpl_filenumSymTable[t]));
             append_to_string(&bufsz, &strsz, strPtr, ":");
             append_to_string(&bufsz, &strsz, strPtr, buffer); // line number
             append_to_string(&bufsz, &strsz, strPtr, sepstr);

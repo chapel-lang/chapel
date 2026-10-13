@@ -36,7 +36,7 @@ CHPL_TLS_DECL(fileBuff, unknownFileBuffer);
 // See note in chpl-linefile-support.h
 void chpl_saveFilename(const char *filename) { savedFilename = filename; }
 
-c_string chpl_lookupFilename(const int32_t idx) {
+c_string chpl_rt_lookup_filename(const int32_t idx) {
   if (idx < 0) {
     switch (idx) {
     case CHPL_FILE_IDX_COMMAND_LINE:

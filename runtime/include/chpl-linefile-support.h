@@ -30,13 +30,13 @@ extern "C" {
 #endif
 
 // chpl_saveFilename stores the passed in char*, subsequent calls to
-// chpl_lookupFilename(CHPL_FILE_IDX_SAVED_FILENAME) will return that stored
+// chpl_rt_lookup_filename(CHPL_FILE_IDX_SAVED_FILENAME) will return that stored
 // pointer. CHPL_FILE_IDX_SAVED_FILENAME may only be used while the original
 // filename pointer is still valid.  This was added to support reporting errors
 // in a user-supplied file for config vars.
 void chpl_saveFilename(const char *filename);
 
-c_string chpl_lookupFilename(const int32_t idx);
+c_string chpl_rt_lookup_filename(const int32_t idx);
 
 #ifdef __cplusplus
 }
