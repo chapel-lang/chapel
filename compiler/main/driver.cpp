@@ -80,8 +80,9 @@ extern char** environ;
 #endif
 
 
+// envMap MUST be a std::map so we get a deterministic iteration order
+// (ascending order of keys)
 std::map<std::string, const char*> envMap;
-
 // envMap used as input to getChplEnv
 static std::map<std::string, const char*> envMapChplEnvInput;
 
@@ -1890,23 +1891,20 @@ static void addChplenvCacheKeyField(std::string& key, const std::string& name,
 
 static std::string computeChplenvCacheKey() {
   std::string key;
+  // reserve some space to avoid frequent reallocations
+  key.reserve(4096);
   addChplenvCacheKeyField(key, "version", chpl::getVersion());
 
   // need envMap and chplVars so we count things both as CHPL_COMM and `--comm`
-  std::vector<std::pair<std::string, std::string>> inputs;
-  inputs.reserve(envMap.size());
+  // relies on envMap being a std::map with a deterministic iteration order
+  // (ascending order of keys)
   for (const auto& pair : envMap) {
-    inputs.emplace_back(pair.first, pair.second ? pair.second : "");
-  }
-  // sort explicitly so the key doesn't depend on envMap's iteration order
-  std::sort(inputs.begin(), inputs.end());
-  for (const auto& pair : inputs) {
-    addChplenvCacheKeyField(key, "input:" + pair.first, pair.second);
+    addChplenvCacheKeyField(key, "input:" + pair.first, pair.second ? pair.second : "");
   }
 
-  std::vector<std::string> chplVars;
+  llvm::SmallVector<std::string, 8> chplVars;
   for (char** env = environ; *env != nullptr; env++) {
-    if (strncmp(*env, "CHPL_", 5) == 0) chplVars.push_back(*env);
+    if (strncmp(*env, "CHPL", 4) == 0) chplVars.push_back(*env);
   }
   std::sort(chplVars.begin(), chplVars.end());
   for (const auto& var : chplVars) {
