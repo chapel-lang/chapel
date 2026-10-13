@@ -222,8 +222,7 @@ def main():
     # subdirs.sort(key=fixname)
     subdirs.sort(
         key=lambda s: [
-            int(p) if p.isdigit() else p
-            for p in re.split(r"(\d+)", fixname(s))
+            int(p) if p.isdigit() else p for p in re.split(r"(\d+)", fixname(s))
         ]
     )
 
