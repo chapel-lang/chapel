@@ -607,7 +607,7 @@ jobs:
       run: |
         ./util/cron/test-make-install-check.bash
 
-          define-portability-test-configs:
+  define-portability-test-configs:
     runs-on: ubuntu-slim
     outputs:
       apptainer_configs: ${{ steps.configs.outputs.apptainer_configs }}
