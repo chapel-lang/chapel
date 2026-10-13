@@ -589,3 +589,106 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+
+  # TEMPORARY: copied from full-ci-checks.yml to diagnose ubuntu-26.04 failures
+  diag-portability-tests-apptainer:
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        apptainer_config: [ubuntu-noble, alpine-3.22-nollvm]
+    env:
+      APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
+      apptainer_dir: ./util/devel/test/portability/apptainer
+    steps:
+      - name: install Apptainer
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
+          max_attempts=5
+          for attempt in $(seq "$max_attempts"); do
+            sudo timeout 90 add-apt-repository --yes ppa:apptainer/ppa && break
+            if [[ "$attempt" -eq "$max_attempts" ]]; then
+              exit 1
+            fi
+            sleep 30
+          done
+          sudo apt-get update
+          sudo apt-get install -y apptainer
+      - name: print Apptainer version
+        run: |
+          apptainer --version
+      - name: diagnose Apptainer install
+        if: always()
+        run: |
+          dpkg --print-architecture
+          apt-config dump | grep -iE 'arch|variant' || true
+          ls /var/lib/apt/lists | grep -i apptainer || true
+          apt-cache policy apptainer
+          dpkg -L apptainer | grep -iE 'apparmor|bin/starter' || true
+          ls -la /etc/apparmor.d | grep -iE 'apptainer|userns' || true
+          sysctl kernel.apparmor_restrict_unprivileged_userns || true
+          sysctl kernel.unprivileged_userns_clone || true
+          sysctl user.max_user_namespaces || true
+          unshare --user --map-root-user --mount true && echo "unshare userns+mount OK" || echo "unshare userns+mount FAILED"
+          findmnt /tmp || true
+          df -h /tmp "$RUNNER_TEMP" "$HOME"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set vars to work from correct branch
+        run: |
+          {
+            echo "GIT_REPO_URL=$PWD"
+            echo "GIT_COMMIT=${{ github.sha }}"
+          } >> "$GITHUB_ENV"
+      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }}
+        run: |
+          export APPTAINER_IMAGE
+          cd "$apptainer_dir"
+          ./image-rebuild.sh
+      - name: diagnose kernel log after failure
+        if: failure()
+        run: |
+          sudo dmesg | grep -iE 'apparmor|userns' | tail -50 || true
+          df -h /tmp "$RUNNER_TEMP"
+      - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
+        run: |
+          MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
+          export MAKEJ
+
+          export APPTAINER_IMAGE
+          cd "$apptainer_dir"
+          ./chapel-quickstart.sh
+          # Default config requires LLVM
+          if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
+              ./chapel-clean.sh
+              ./chapel-default.sh
+          fi
+
+  # TEMPORARY: copied from full-ci-checks.yml to diagnose ubuntu-26.04 failures
+  diag-test-make-install-check:
+    runs-on: ubuntu-26.04
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: diagnose /tmp
+      run: |
+        findmnt /tmp || true
+        df -h /tmp "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+        quota -u "$(id -un)" 2>/dev/null || true
+        systemctl show tmp.mount -p Options -p What 2>/dev/null || true
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        create-symlink: true
+    - name: run test-make-install-check.bash
+      run: |
+        ./util/cron/test-make-install-check.bash
+    - name: diagnose /tmp usage after run
+      if: always()
+      run: |
+        df -h /tmp "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+        sudo du -sh /tmp/tmp.* 2>/dev/null || true
