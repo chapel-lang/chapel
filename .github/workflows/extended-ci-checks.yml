@@ -79,12 +79,62 @@ jobs:
       fail-fast: false
       matrix:
         gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
-    runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+        include:
+          - gcc_version: 7.4.0
+            build_from_source: true
+            gcc_sha512: 8864d8e4b97c2e1a4f17422f6e68120172ebefeab97b1757734f7185ca68a6b9a89011c6833c03fa454c17b0ac35b15e1d284881e6971035948ac6100f3aa45e
+          - gcc_version: 8.5.0
+            build_from_source: true
+            gcc_sha512: 92f599680e6b7fbce88bcdda810f468777d541e5fddfbb287f7977d51093de2a5178bd0e6a08dfe37090ea10a0508a43ccd00220041abbbec33f1179bfc174d8
+    runs-on: ${{ (matrix.build_from_source || matrix.gcc_version <= 10) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
     steps:
       - name: save matrix properties to env
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+      - name: Restore cached GCC ${{ matrix.gcc_version }} build
+        if: matrix.build_from_source
+        id: gcc-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ~/gcc-${{ matrix.gcc_version }}
+          key: gcc-${{ matrix.gcc_version }}-${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-v1
+      - name: Install GCC build dependencies
+        if: matrix.build_from_source
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          sudo apt-get update
+          sudo apt-get install -y libgmp-dev libmpc-dev libmpfr-dev
+      - name: Build GCC ${{ matrix.gcc_version }} from source
+        if: matrix.build_from_source && steps.gcc-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ runner.temp }}
+        env:
+          GCC_SHA512: ${{ matrix.gcc_sha512 }}
+        run: |
+          tarball="gcc-$GCC_VERSION.tar.xz"
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 \
+            "https://gcc.gnu.org/pub/gcc/releases/gcc-$GCC_VERSION/$tarball"
+          sha512sum --check --strict <<< "$GCC_SHA512  $tarball"
+          tar -xf "$tarball"
+
+          mkdir gcc-build
+          cd gcc-build
+          "../gcc-$GCC_VERSION/configure" \
+            --prefix="$HOME/gcc-$GCC_VERSION" \
+            --enable-languages=c,c++ \
+            --disable-bootstrap \
+            --disable-multilib \
+            --disable-libsanitizer \
+            --disable-nls \
+            --without-isl
+          make -j"$(nproc)"
+          make install-strip
+      - name: Use GCC ${{ matrix.gcc_version }} built from source
+        if: matrix.build_from_source
+        run: |
+          echo "$HOME/gcc-$GCC_VERSION/bin" >> "$GITHUB_PATH"
       - name: Install GCC ${{ matrix.gcc_version }}
+        if: ${{ !matrix.build_from_source }}
         env:
           VERSION: ${{ matrix.gcc_version }}
         run: |
@@ -124,11 +174,10 @@ jobs:
         run: |
           which gcc
 
-          actual_gcc_version=$(gcc -dumpversion)
-          gcc_major_version=$(cut -d. -f1 <<< "$actual_gcc_version")
-          if [ "$gcc_major_version" != "$GCC_VERSION" ]; then
+          actual_gcc_version=$(gcc -dumpfullversion)
+          if [[ "$actual_gcc_version" != "$GCC_VERSION" && "$actual_gcc_version" != "$GCC_VERSION".* ]]; then
             echo "Wrong gcc version"
-            echo "Expected Version: $GCC_VERSION Actual Version: $gcc_major_version"
+            echo "Expected Version: $GCC_VERSION Actual Version: $actual_gcc_version"
             exit 2
           fi
       - name: Compile Chapel and run example tests
