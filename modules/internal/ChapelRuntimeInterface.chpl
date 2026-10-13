@@ -56,6 +56,12 @@ module ChapelRuntimeInterface {
     fn(ptrToPrgInfoHere);
   }
 
+  export /** So the compiler can see it. */
+  proc chpl_lookupFilename(idx: int(32)): c_ptrConst(c_char) {
+    extern var chpl_filenameTable: c_ptr(c_ptrConst(c_char));
+    return chpl_filenameTable[idx];
+  }
+
   // These pragmas will be useful for debugging what is going on when a RT
   // shim is called. As well, some runtime functions need this information
   // to be passed.
