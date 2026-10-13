@@ -71,7 +71,7 @@ jobs:
         run: |
           diff_lines=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT "$(jq -r '.base.sha' "$PR_JSON")" "$(jq -r '.head.sha' "$PR_JSON")")
           # Cut off long diff output, and indent diff lines
-          diff_lines=$(echo "$diff" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }" | sed 's/^/  /')
+          diff_lines=$(echo "$diff_lines" | awk "NR <= $DIFF_MAX_LINES; NR > $DIFF_MAX_LINES { print \"(diff output truncated at $DIFF_MAX_LINES lines)\"; exit }" | sed 's/^/  /')
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
           Branch: $(jq -r '.head.ref' "$PR_JSON")
