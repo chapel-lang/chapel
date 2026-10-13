@@ -65,6 +65,7 @@
 #include <regex>
 #include <csignal>
 #include <numeric>
+#include <sys/time.h>
 #include <unistd.h>
 
 extern char** environ;
@@ -1962,21 +1963,26 @@ static bool readChplenvCache(const std::string& path, const std::string& key,
 
   std::string header = std::to_string(key.size()) + "\n";
   output = contents.substr(header.size() + key.size());
-  return !output.empty();
+  if (output.empty()) return false;
+
+  // bump use time for lru cache
+  utimes(path.c_str(), nullptr);
+  return true;
 }
 
-static void writeChplenvCache(const std::string& path, const std::string& key,
+// Returns true if a new cache file was written.
+static bool writeChplenvCache(const std::string& path, const std::string& key,
                               const std::string& output) {
-  if (path.empty() || output.empty()) return;
+  if (path.empty() || output.empty()) return false;
   if (chpl::makeDir(llvm::sys::path::parent_path(path), /* makeParents */ true)) {
-    return;
+    return false;
   }
 
   // write a unique file then rename, so concurrent runs never see partial output
   int fd;
   llvm::SmallString<128> tmpPath;
   if (llvm::sys::fs::createUniqueFile(path + "-%%%%%%%%.tmp", fd, tmpPath)) {
-    return;
+    return false;
   }
   {
     llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
@@ -1989,11 +1995,49 @@ static void writeChplenvCache(const std::string& path, const std::string& key,
     if (os.has_error()) {
       os.clear_error();
       llvm::sys::fs::remove(tmpPath);
-      return;
+      return false;
     }
   }
   if (llvm::sys::fs::rename(tmpPath, path)) {
     llvm::sys::fs::remove(tmpPath);
+    return false;
+  }
+  return true;
+}
+
+// evicts cache entries based on lru
+static void evictChplenvCache(const std::string& dir) {
+  const size_t maxEntries = 5;
+  const std::string prefix = "printchplenv-";
+  const std::string tmpSuffix = ".tmp";
+
+  llvm::SmallVector<std::pair<llvm::sys::TimePoint<>, std::string>, 8> entries;
+  std::error_code ec;
+  for (llvm::sys::fs::directory_iterator it(dir, ec), end;
+       it != end && !ec; it.increment(ec)) {
+    std::string name = llvm::sys::path::filename(it->path()).str();
+    // skip unrelated files and in-progress writes from concurrent runs
+    if (name.compare(0, prefix.size(), prefix) != 0) continue;
+    if (name.size() >= tmpSuffix.size() &&
+        name.compare(name.size() - tmpSuffix.size(), tmpSuffix.size(),
+                     tmpSuffix) == 0) {
+      continue;
+    }
+    // only evict files owned by the current user
+    llvm::sys::fs::file_status status;
+    if (llvm::sys::fs::status(it->path(), status) ||
+        status.getUser() != geteuid()) {
+      continue;
+    }
+    entries.emplace_back(status.getLastModificationTime(), it->path());
+  }
+
+  if (entries.size() <= maxEntries) return;
+
+  std::sort(entries.begin(), entries.end(),
+            [](const auto& a, const auto& b) { return a.first > b.first; });
+  for (size_t i = maxEntries; i < entries.size(); i++) {
+    llvm::sys::fs::remove(entries[i].second);
   }
 }
 
@@ -2039,7 +2083,9 @@ static void populateEnvMap() {
   }
 
   if (!restoreFromDriver && fChplenvCache && !usedCache) {
-    writeChplenvCache(cachePath, cacheKey, printchplenvOutput);
+    if (writeChplenvCache(cachePath, cacheKey, printchplenvOutput)) {
+      evictChplenvCache(llvm::sys::path::parent_path(cachePath).str());
+    }
   }
 
   // If in initial driver invocation, save printchplenv command output to disk
