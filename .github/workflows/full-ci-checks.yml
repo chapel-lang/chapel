@@ -85,6 +85,19 @@ jobs:
           done
           sudo apt-get update
           sudo apt-get install -y apptainer
+      - name: allow Apptainer to create user namespaces
+        # allow apptainer to create user namespaces
+        # this may not be available by default
+        run: |
+          sudo tee /etc/apparmor.d/apptainer <<'EOF'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile apptainer /usr/{lib/*,libexec}/apptainer/bin/starter{,-suid} flags=(unconfined) {
+            userns,
+            include if exists <local/apptainer>
+          }
+          EOF
+          sudo apparmor_parser -r /etc/apparmor.d/apptainer
       - name: print Apptainer version
         run: |
           apptainer --version
@@ -96,6 +109,7 @@ jobs:
           {
             echo "GIT_REPO_URL=$PWD"
             echo "GIT_COMMIT=${{ github.sha }}"
+            echo "APPTAINER_TMPDIR=$RUNNER_TEMP"
           } >> "$GITHUB_ENV"
       - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }} (retrying)
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -134,6 +148,8 @@ jobs:
       with:
         create-symlink: true
     - name: run test-make-install-check.bash
+      env:
+        TMPDIR: ${{ runner.temp }}
       run: |
         ./util/cron/test-make-install-check.bash
 
