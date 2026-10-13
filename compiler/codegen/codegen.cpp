@@ -85,7 +85,6 @@
 #include <inttypes.h>
 
 #include <algorithm>
-#include <charconv>
 #include <cctype>
 
 #include <cmath>
@@ -103,10 +102,12 @@ class TableRowFormatter {
   void append(const char* text) { buffer.append(text, text + strlen(text)); }
 
   void append(int value) {
+    // TODO: replace with std::to_chars once GCC 7.4 is dropped and we fully
+    // support C++17
     char digits[32];
-    auto result = std::to_chars(digits, digits + sizeof(digits), value);
-    INT_ASSERT(result.ec == std::errc());
-    buffer.append(digits, result.ptr);
+    int len = snprintf(digits, sizeof(digits), "%d", value);
+    INT_ASSERT(len > 0 && (size_t)len < sizeof(digits));
+    buffer.append(digits, digits + len);
   }
 
 public:
