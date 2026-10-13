@@ -39,7 +39,8 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
 
-SET_PROGRAM_DATA_MODULE=$(CHPL_MAKE_HOME)/modules/internal/gen/ChapelSetProgramInfoDataEntries.chpl
+SET_PROGRAM_DATA_MODULE_DIR=$(CHPL_MAKE_HOME)/modules/internal/gen
+SET_PROGRAM_DATA_MODULE=$(SET_PROGRAM_DATA_MODULE_DIR)/ChapelSetProgramInfoDataEntries.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
@@ -81,10 +82,14 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MAKE_PROGRAM_DATA_SCRIPT=$(CHPL_MAKE_HOME)/util/config/gen-set-program-data-module.cpp
 MAKE_PROGRAM_DATA_HEADER=$(CHPL_MAKE_HOME)/runtime/include/chpl-prginfo-data-macro.h
 COMPILELINE=$(CHPL_MAKE_HOME)/util/config/compileline
+PRINTCHPLENV=$(CHPL_MAKE_HOME)/util/printchplenv
 
 $(SET_PROGRAM_DATA_MODULE): $(MAKE_PROGRAM_DATA_SCRIPT) $(MAKE_PROGRAM_DATA_HEADER)
+	@echo "Building $(SET_PROGRAM_DATA_MODULE)..."
 	mkdir -p $(@D)
-	cd $(@D) && `$(COMPILELINE) --compile-c++` $< && (./a.out $(@F); rm a.out)
+	cd $(@D) && `$(COMPILELINE) --compile-c++` $<
+	cd $(@D) && $(PRINTCHPLENV) --all --simple --no-tidy | ./a.out $(@F)
+	cd $(@D) && rm a.out
 
 MODULES_TO_DOCUMENT = \
 	standard/Allocators.chpl \
