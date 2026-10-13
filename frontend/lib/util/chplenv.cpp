@@ -54,12 +54,12 @@ static void parseChplEnv(const std::string& output, ChplEnvMap& into) {
 template <typename InputMap>
 llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
                                          const char* chplHome,
-                                         std::string* printchplenvOutput) {
+                                         std::string& printchplenvOutput) {
   ChplEnvMap result;
 
-  if (printchplenvOutput && !printchplenvOutput->empty()) {
+  if (!printchplenvOutput.empty()) {
     // Just re-use passed-in command output
-    parseChplEnv(*printchplenvOutput, result);
+    parseChplEnv(printchplenvOutput, result);
   } else {
     // Construct and run printchplenv command
     std::string command;
@@ -79,13 +79,10 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
       return commandOutput.getError();
     }
 
-    // Save copy of command output if out-parameter was supplied
-    if (printchplenvOutput) {
-      assert(printchplenvOutput->empty());
-      *printchplenvOutput = commandOutput.get();
-    }
+    // save a copy of the command output into the out-parameter
+    printchplenvOutput = std::move(commandOutput.get());
 
-    parseChplEnv(commandOutput.get(), result);
+    parseChplEnv(printchplenvOutput, result);
   }
 
   return result;
@@ -93,13 +90,13 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome, std::string& printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome, std::string& printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 

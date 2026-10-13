@@ -282,8 +282,10 @@ UniqueString Context::adjustPathForErrorMsg(UniqueString path) {
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (config_.chplHome.empty() || computedChplEnv) return chplEnv;
+  std::string printchplenvOutput;
   auto chplEnvResult = ::chpl::getChplEnv(config_.chplEnvOverrides,
-                                          config_.chplHome.c_str());
+                                          config_.chplHome.c_str(),
+                                          printchplenvOutput);
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;

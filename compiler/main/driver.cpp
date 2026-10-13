@@ -2025,7 +2025,7 @@ static void populateEnvMap() {
   // Get printchplenv output and collect into a map. This reuses
   // printchplenvOutput if it is non-empty, otherwise sets it.
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME.c_str(),
-                                        &printchplenvOutput);
+                                        printchplenvOutput);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
       USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
