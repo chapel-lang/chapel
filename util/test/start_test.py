@@ -379,7 +379,9 @@ def test_directory(test, test_type, num_workers):
                     os.path.join(dir, "sub_test"), os.X_OK
                 )
 
-            has_pretest = "PRETEST" in files
+            has_unsafe_par_pretest = (
+                "PRETEST" in files and "PRETEST_PARALLEL_SAFE" not in files
+            )
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
@@ -394,7 +396,7 @@ def test_directory(test, test_type, num_workers):
                         # generate new tests).
                         if (
                             parallel_mode
-                            and not has_pretest
+                            and not has_unsafe_par_pretest
                             and not run_local_sub_test
                         ):
                             parallel_dirs.append((dir, root))
