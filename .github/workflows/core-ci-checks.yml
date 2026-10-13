@@ -589,3 +589,12 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+
+  paratest-linux64:
+    name: Chapel paratest on linux64
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64
+      cron-script: util/cron/test-linux64.bash
+      start-test-args: --futures
+      make-targets: all test-venv chpldoc mason protoc-gen-chpl
