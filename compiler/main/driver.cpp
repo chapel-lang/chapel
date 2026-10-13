@@ -247,6 +247,7 @@ bool fWarnParamImplicitNumericConversions = false;
 // other warnings
 bool fWarnArrayOfRange = true;
 bool fWarnConstLoops = true;
+static bool fWarnIncrementalOptimized = true;
 bool fWarnUnstable = false;
 bool fWarnUnstableStandard = false;
 bool fWarnUnstableInternal = false;
@@ -1693,6 +1694,7 @@ static ArgumentDescription arg_desc[] = {
  {"force-vectorize", ' ', NULL, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, NULL, NULL},
  {"warn-array-of-range", ' ', NULL, "Enable [disable] warnings about arrays of range literals", "N", &fWarnArrayOfRange, "CHPL_WARN_ARRAY_OF_RANGE", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
+ {"warn-incremental-optimized", ' ', NULL, "Enable [disable] warnings about using '--incremental' with optimizations", "N", &fWarnIncrementalOptimized, "CHPL_WARN_INCREMENTAL_OPTIMIZED", NULL},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
@@ -2429,9 +2431,9 @@ static void checkEditionFlag() {
 }
 
 static void checkIncrementalAndOptimized() {
-  std::size_t optimizationsEnabled = ccflags.find("-O");
-  if(fIncrementalCompilation && ( optimizeCCode ||
-      optimizationsEnabled!=std::string::npos ))
+  auto optimizationsEnabled = ccflags.find("-O") != std::string::npos;
+  if (fWarnIncrementalOptimized && fIncrementalCompilation &&
+      (optimizeCCode || optimizationsEnabled))
     USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
              "optimizations enabled may lead to a slower execution time "
              "due to the use of separate compilation in the back-end.");
