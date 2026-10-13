@@ -65,6 +65,7 @@
 #include <regex>
 #include <csignal>
 #include <numeric>
+#include <type_traits>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -1897,8 +1898,9 @@ static std::string computeChplenvCacheKey() {
   addChplenvCacheKeyField(key, "version", chpl::getVersion());
 
   // need envMap and chplVars so we count things both as CHPL_COMM and `--comm`
-  // relies on envMap being a std::map with a deterministic iteration order
-  // (ascending order of keys)
+  static_assert(
+      std::is_same_v<decltype(envMap), std::map<std::string, const char*>>,
+      "envMap must be a std::map for a deterministic cache key");
   for (const auto& pair : envMap) {
     addChplenvCacheKeyField(key, "input:" + pair.first, pair.second ? pair.second : "");
   }
