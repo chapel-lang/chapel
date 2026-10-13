@@ -1957,11 +1957,10 @@ static bool readChplenvCache(const std::string& path, const std::string& key,
   std::string contents, err;
   if (!chpl::readFile(path.c_str(), contents, err)) return false;
 
+  // if the file exists, we know the cache is valid because the file
+  // is named based on the hash of the key.
+
   std::string header = std::to_string(key.size()) + "\n";
-  if (contents.compare(0, header.size(), header) != 0 ||
-      contents.compare(header.size(), key.size(), key) != 0) {
-    return false;
-  }
   output = contents.substr(header.size() + key.size());
   return !output.empty();
 }
@@ -1981,6 +1980,10 @@ static void writeChplenvCache(const std::string& path, const std::string& key,
   }
   {
     llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
+    // writes the key's length, the key, and the output to the temporary file.
+    // technically, we don't need the key in the cache file at all
+    // but it helps with debugging and observability.
+    // we never check that the key matches when reading from the cache.
     os << key.size() << "\n" << key << output;
     os.close();
     if (os.has_error()) {
