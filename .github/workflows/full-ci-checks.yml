@@ -167,7 +167,7 @@ jobs:
         export CHPL_TEST_TIMEOUT=1200
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         export CHPL_PAR_MAKE=$num_procs
-        export CHPL_WARN_INCREMENTAL_OPTIMIZED=true
+        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
@@ -187,7 +187,7 @@ jobs:
       pre-build-steps: |
         num_procs=$(util/buildRelease/chpl-make-cpu_count)
         export CHPL_PAR_MAKE=$num_procs
-        export CHPL_WARN_INCREMENTAL_OPTIMIZED=true
+        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
       make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
