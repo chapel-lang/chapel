@@ -596,6 +596,7 @@ jobs:
     with:
       configuration: linux64-c-backend-gasnet
       start-test-args: -multilocale-only
+      make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
   paratest-linux64-clang:
     name: Chapel paratest on linux64 using Clang as the host/target compiler
