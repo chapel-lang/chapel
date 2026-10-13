@@ -8,6 +8,11 @@ on:
     types:
       - completed
 
+# Prevent concurrent runs of this workflow to avoid hitting API rate limits.
+concurrency:
+  group: ${{ github.workflow }}
+  queue: max
+
 permissions:
   contents: read
   packages: read
@@ -31,7 +36,7 @@ jobs:
           run_url: ${{ github.event.workflow_run.html_url }}
         with:
           max_attempts: 3
-          timeout_seconds: 360
+          timeout_seconds: 900
           retry_wait_seconds: 30
           command: |
             set -exuo pipefail

@@ -10,5 +10,4 @@ rules:
       - release-tarball.yml
   dangerous-triggers:
     ignore:
-      - email.yml:2
       - ga-paratest-cleanup.yml:3

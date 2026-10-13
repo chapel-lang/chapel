@@ -8,46 +8,103 @@ single-node (CHPL_COMM=none)
      - CHPL_LAUNCHER
      - CHPL_TARGET_MEM
      - CHPL_SANITIZE_EXE
+     - CHPL_LIB_PIC
      - OS compatibility
    * - llvm
      - none
      - jemalloc
      - none
+     - none
+     -
+   * - llvm
+     - none
+     - jemalloc
+     - none
+     - pic
      -
    * - llvm
      - none
      - cstdlib
      - address
+     - none
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
+   * - llvm
+     - none
+     - cstdlib
+     - address
+     - pic
      - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - llvm
      - slurm-srun
      - jemalloc
      - none
+     - none
+     -
+   * - llvm
+     - slurm-srun
+     - jemalloc
+     - none
+     - pic
      -
    * - llvm
      - slurm-srun
      - cstdlib
      - address
+     - none
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
+   * - llvm
+     - slurm-srun
+     - cstdlib
+     - address
+     - pic
      - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - clang
      - none
      - jemalloc
      - none
+     - none
+     -
+   * - clang
+     - none
+     - jemalloc
+     - none
+     - pic
      -
    * - clang
      - none
      - cstdlib
      - address
+     - none
+     -
+   * - clang
+     - none
+     - cstdlib
+     - address
+     - pic
      -
    * - clang
      - slurm-srun
      - jemalloc
      - none
+     - none
+     -
+   * - clang
+     - slurm-srun
+     - jemalloc
+     - none
+     - pic
      -
    * - clang
      - slurm-srun
      - cstdlib
      - address
+     - none
+     -
+   * - clang
+     - slurm-srun
+     - cstdlib
+     - address
+     - pic
      -
 
 
@@ -66,35 +123,83 @@ Common settings:
      - CHPL_GASNET_SEGMENT
      - CHPL_TARGET_MEM
      - CHPL_SANITIZE_EXE
+     - CHPL_LIB_PIC
      - OS compatibility
    * - llvm
      - udp
      - everything
      - jemalloc
      - none
+     - none
+     -
+   * - llvm
+     - udp
+     - everything
+     - jemalloc
+     - none
+     - pic
      -
    * - llvm
      - udp
      - everything
      - cstdlib
      - address
+     - none
+     - unsupported on Debian 12, Ubuntu 22, and AL2023
+   * - llvm
+     - udp
+     - everything
+     - cstdlib
+     - address
+     - pic
      - unsupported on Debian 12, Ubuntu 22, and AL2023
    * - llvm
      - udp
      - fast
      - jemalloc
      - none
+     - none
+     -
+   * - llvm
+     - udp
+     - fast
+     - jemalloc
+     - none
+     - pic
      -
    * - llvm
      - smp
      - fast
      - jemalloc
      - none
+     - none
+     -
+   * - llvm
+     - smp
+     - fast
+     - jemalloc
+     - none
+     - pic
      -
    * - clang
      - udp
      - everything
      - jemalloc
+     - none
+     - none
+     -
+   * - clang
+     - udp
+     - everything
+     - jemalloc
+     - none
+     - pic
+     -
+   * - clang
+     - udp
+     - everything
+     - cstdlib
+     - address
      - none
      -
    * - clang
@@ -102,11 +207,27 @@ Common settings:
      - everything
      - cstdlib
      - address
+     - pic
      -
    * - clang
      - udp
      - fast
      - jemalloc
+     - none
+     - none
+     -
+   * - clang
+     - udp
+     - fast
+     - jemalloc
+     - none
+     - pic
+     -
+   * - clang
+     - smp
+     - fast
+     - jemalloc
+     - none
      - none
      -
    * - clang
@@ -114,6 +235,7 @@ Common settings:
      - fast
      - jemalloc
      - none
+     - pic
      -
 
 
