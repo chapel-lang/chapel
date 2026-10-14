@@ -596,7 +596,10 @@ jobs:
 
           git config --system --add safe.directory "*"
 
-          ./util/cron/test-linux32.bash
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv chpldoc mason
+
+          start_test --parallel "$num_procs"
           '
 
   docs-checks:
