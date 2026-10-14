@@ -577,6 +577,7 @@ jobs:
       run: |
         echo "Arch in container: $(uname -m)"
     - name: run test-linux32.bash
+      shell: run-in-container.sh {0}
       run: |
         ./util/cron/test-linux32.bash
 
