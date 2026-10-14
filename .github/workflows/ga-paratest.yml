@@ -195,7 +195,6 @@ jobs:
             source "$CRON_SCRIPT"
           fi
 
-          TEST_DIRS="$CHPL_HOME/test $CHPL_HOME/test/library/standard"
           requested_tests=()
           while read -ra line_tests; do
             requested_tests+=("${line_tests[@]}")
