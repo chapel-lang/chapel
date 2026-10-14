@@ -582,6 +582,8 @@ jobs:
       - name: run test-linux32.bash
         run: |
           docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
+          set -exuo pipefail
+
           apt update && apt install -y \
             cmake \
             doxygen \
