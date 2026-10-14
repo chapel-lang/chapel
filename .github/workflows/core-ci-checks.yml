@@ -584,8 +584,13 @@ jobs:
           docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
           apt update && apt install -y \
             cmake \
+            doxygen \
             gcc \
+            g++ \
             git \
+            m4 \
+            make \
+            pkg-config \
             python3 \
             time
 
