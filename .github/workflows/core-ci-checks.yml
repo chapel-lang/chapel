@@ -582,6 +582,13 @@ jobs:
       - name: run test-linux32.bash
         run: |
           docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
+          apt update && apt install -y \
+            cmake \
+            gcc \
+            git \
+            python3 \
+            time
+
           ./util/cron/test-linux32.bash
           '
 
