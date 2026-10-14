@@ -697,7 +697,7 @@ jobs:
           fi
 
   portability-tests-vagrant:
-    runs-on: macos-26-intel
+    runs-on: macos-latest
     needs: define-portability-test-configs
     strategy:
       fail-fast: false
