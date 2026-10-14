@@ -570,7 +570,7 @@ jobs:
           persist-credentials: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-      - name: Run an arm64 container
+      - name: Check arch
         shell: docker run --rm --platform linux/386 alpine {0}
         run: uname -m
       - name: run test-linux32.bash
