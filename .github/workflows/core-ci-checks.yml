@@ -562,6 +562,23 @@ jobs:
       run: |
         ./util/cron/test-networking-packages.bash
 
+  test-linux32:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: sandervocke/setup-qemu-container@486217ca10cc5c51fcd7dfd1bc7dfbf9351e4990 #v1.3.1
+      with:
+        container: alpine
+        arch: arm
+    - name: Print architecture from within container
+      shell: run-in-container.sh {0}
+      run: echo "Arch in container: $(uname -m)"
+    - name: run test-linux32.bash
+      run: |
+        ./util/cron/test-linux32.bash
+
   docs-checks:
     runs-on: ubuntu-slim
     env:
