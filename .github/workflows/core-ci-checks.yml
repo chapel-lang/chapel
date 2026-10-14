@@ -565,18 +565,18 @@ jobs:
   test-linux32:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-    - name: Run an arm64 container
-      shell: docker run --rm --platform linux/386 alpine {0}
-      run: uname -m
-    - name: run test-linux32.bash
-      shell: docker run --rm --platform linux/386 alpine {0}
-      run: |
-        ./util/cron/test-linux32.bash
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - name: Run an arm64 container
+        shell: docker run --rm --platform linux/386 alpine {0}
+        run: uname -m
+      - name: run test-linux32.bash
+        shell: docker run --rm --platform linux/386 alpine {0}
+        run: |
+          ./util/cron/test-linux32.bash
 
   docs-checks:
     runs-on: ubuntu-slim
