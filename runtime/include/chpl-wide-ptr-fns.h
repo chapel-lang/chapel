@@ -23,7 +23,7 @@
 
 #include "chpltypes.h"
 
-// chpl_error needed for some of the packed wide pointer error cases.
+// chpl_rt_error needed for some of the packed wide pointer error cases.
 #include "chpl-error.h"
 
 #ifdef __cplusplus

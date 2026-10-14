@@ -936,7 +936,7 @@ static void *comm_task_trampoline(void *arg)
     }
     int rc = pthread_create(rarg->thread, NULL, comm_task_wrapper, rarg);
     if (rc) {
-        chpl_error("pthread_create of comm_task_wrapper failed", 0, 0);
+        chpl_rt_error("pthread_create of comm_task_wrapper failed", 0, 0);
     }
     return NULL;
 }
@@ -984,7 +984,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     if (rc == 0) {
         rc = pthread_detach(dummy);
         if (rc) {
-            chpl_error("pthread_detach of comm_task_trampoline failed", 0, 0);
+            chpl_rt_error("pthread_detach of comm_task_trampoline failed", 0, 0);
         }
     }
     return rc;

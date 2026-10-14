@@ -81,7 +81,7 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
 
   if (!requestingNewIdx && idxToUse != got) {
     // TODO: Propagate errors outwards from this function?
-    chpl_error("Failed to map index!\n", 0, 0);
+    chpl_rt_error("Failed to map index!\n", 0, 0);
   }
 
   ret = (chpl_rt_prg_id) got;
@@ -123,7 +123,7 @@ chpl_rt_prginfo* chpl_rt_prginfo_from_id_here(chpl_rt_prg_id id) {
   chpl_rt_prginfo* ret = chpl_getPtrForIdxHere(idx);
 
   if (ret == NULL) {
-    chpl_error("Failed to fetch program data for ID", 0, 0);
+    chpl_rt_error("Failed to fetch program data for ID", 0, 0);
   }
 
   // This should hold...

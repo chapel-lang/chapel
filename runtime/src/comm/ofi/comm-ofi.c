@@ -1186,7 +1186,7 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1194,7 +1194,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 // No support for lldb for now
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -2176,7 +2176,7 @@ void init_ofiFabricDomain(void) {
     snprintf(msg, sizeof(msg),
              "Selected incorrect provider: %s != %s",
              ofi_info->fabric_attr->prov_name, envExpectedProvider);
-    chpl_error(msg, 0, 0);
+    chpl_rt_error(msg, 0, 0);
   }
 
   if (DBG_TEST_MASK(DBG_PROV_ALL)) {
@@ -3704,7 +3704,7 @@ void init_fixedHeap(void) {
       } while (start == NULL && size > decrement);
 
       if (start == NULL)
-        chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+        chpl_rt_error("cannot create fixed heap: cannot get memory", 0, 0);
     } else {
       //
       // We'll make a fixed heap on whole hugepages.
@@ -3719,7 +3719,7 @@ void init_fixedHeap(void) {
 #endif
       start = chpl_comm_ofi_hp_get_huge_pages(size);
       if (start == NULL) {
-        chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
+        chpl_rt_error("cannot create fixed heap: cannot get huge pages", 0, 0);
       }
     }
 
@@ -3775,10 +3775,10 @@ void init_hugepageSize(void) {
 
   if (use_hugepages && (hugepageSize == 0)) {
     if (chpl_comm_ofi_hp_supported()) {
-      chpl_error("Unable to get hugepage size. "
+      chpl_rt_error("Unable to get hugepage size. "
                  "Ensure that a hugepage module is loaded.", 0, 0);
     } else {
-      chpl_error("Chapel was not built with hugepage support.", 0, 0);
+      chpl_rt_error("Chapel was not built with hugepage support.", 0, 0);
     }
  }
 
@@ -5686,7 +5686,7 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
         char msg[128];
         snprintf(msg, sizeof(msg),
                  "Thread did not create non-blocking handle %p", handle);
-        chpl_error(msg, 0, 0);
+        chpl_rt_error(msg, 0, 0);
       }
       pending = true;
       // determine if this handle is now complete by checking the completion

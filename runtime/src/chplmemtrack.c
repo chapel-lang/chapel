@@ -210,7 +210,7 @@ static void increaseMemStat(size_t chunk, int32_t lineno, int32_t filename) {
   totalMem += chunk;
   totalAllocated += chunk;
   if (memMax && (totalMem > memMax)) {
-    chpl_error("Exceeded memory limit", lineno, filename);
+    chpl_rt_error("Exceeded memory limit", lineno, filename);
   }
   if (totalMem > maxMem)
     maxMem = totalMem;
@@ -263,7 +263,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
 
   memEntry = (memTableEntry*) sys_calloc(1, sizeof(memTableEntry));
   if (!memEntry) {
-    chpl_error("memtrack fault: out of memory allocating memtrack table",
+    chpl_rt_error("memtrack fault: out of memory allocating memtrack table",
                lineno, filename);
   }
 
@@ -579,7 +579,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   // allocate the table
   table = (memTableEntry*)sys_malloc(n*sizeof(memTableEntry));
   if (!table)
-    chpl_error("out of memory printing memory table", lineno, filename);
+    chpl_rt_error("out of memory printing memory table", lineno, filename);
   // save the relevant memTable entries to 'table' to get a snapshot
   j = 0;
   for (i = 0; i < hashSize; i++) {

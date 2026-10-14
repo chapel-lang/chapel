@@ -72,7 +72,7 @@ c_string chpl_format(c_string format, ...) {
 
   va_start(ap, format);
   if (vsnprintf(z, sizeof(z), format, ap) >= sizeof(z))
-    chpl_error("overflow encountered in format", 0, 0);
+    chpl_rt_error("overflow encountered in format", 0, 0);
   va_end(ap);
   return string_copy(z, 0, 0);
 }

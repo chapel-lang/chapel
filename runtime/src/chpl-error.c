@@ -154,10 +154,14 @@ void chpl_error_preformatted(const char* message) {
   chpl_exit_any(1);
 }
 
-void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
+void chpl_rt_error(const char *message, int32_t lineno, int32_t filenameIdx) {
   const char *filename = NULL;
   if (filenameIdx != 0)
     filename= chpl_rt_lookup_filename(filenameIdx);
+  chpl_error_explicit(message, lineno, filename);
+}
+
+void chpl_prg_error(const char *message, int32_t lineno, const char *filename) {
   chpl_error_explicit(message, lineno, filename);
 }
 

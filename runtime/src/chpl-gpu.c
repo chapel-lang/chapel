@@ -56,12 +56,12 @@ static void override_number_of_devices(void) {
   int32_t num = -1;
   if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
     if (sscanf(env, "%" SCNi32, &num) != 1) {
-      chpl_error("Cannot parse CHPL_RT_NUM_GPUS_PER_LOCALE environment "
+      chpl_rt_error("Cannot parse CHPL_RT_NUM_GPUS_PER_LOCALE environment "
                  "variable", 0, 0);
     }
 
     if (num < 0) {
-      chpl_error("CHPL_RT_NUM_GPUS_PER_LOCALE must be >= 0", 0, 0);
+      chpl_rt_error("CHPL_RT_NUM_GPUS_PER_LOCALE must be >= 0", 0, 0);
     }
 
 #ifndef GPU_RUNTIME_CPU
@@ -881,7 +881,7 @@ static void launch_kernel(const char* name,
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
   if (cfg_get_halt_flag(cfg)) {
-    chpl_error("halt reached in GPU kernel", cfg->ln, cfg->fn);
+    chpl_rt_error("halt reached in GPU kernel", cfg->ln, cfg->fn);
   }
 
   cfg_finalize_reductions(cfg);

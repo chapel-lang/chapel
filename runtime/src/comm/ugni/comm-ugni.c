@@ -1947,7 +1947,7 @@ void chpl_comm_post_mem_init(void)
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 {
-  chpl_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1956,7 +1956,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
-  chpl_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -3113,7 +3113,7 @@ void make_registered_heap(void)
   } while (start == NULL && size > decrement);
 
   if (start == NULL)
-    chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
+    chpl_rt_error("cannot initialize heap: cannot get hugepage space", 0, 0);
 
   DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
            start, size);

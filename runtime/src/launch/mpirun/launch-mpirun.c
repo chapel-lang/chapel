@@ -41,10 +41,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   // TODO When MPI Comm layer is supported, support -nl>1 && CHPL_COMM!=none
   if (numLocales != 1) {
-    chpl_error("For mpirun, specify number of SPMD images via --spmd <#> instead of -nl", 0, 0);
+    chpl_rt_error("For mpirun, specify number of SPMD images via --spmd <#> instead of -nl", 0, 0);
   }
   if (strcmp(CHPL_COMM_RT, "none") != 0) {
-    chpl_error("mpirun only supports CHPL_COMM=none", 0, 0);
+    chpl_rt_error("mpirun only supports CHPL_COMM=none", 0, 0);
   }
   // Get the number of ranks
   if (mpi_num_ranks == NULL) {

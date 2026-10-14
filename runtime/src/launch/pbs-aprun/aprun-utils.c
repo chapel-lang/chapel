@@ -93,7 +93,7 @@ void initAprunAttributes() {
   memset(CNA, 0, CNAbuflen);
   // We assume here that 'cnselect -l' will always return something meaningful
   if (chpl_run_utility1K("cnselect", argv, CNA, CNAbuflen) <= 0) {
-    chpl_error("Error trying to run 'cnselect'", 0, 0);
+    chpl_rt_error("Error trying to run 'cnselect'", 0, 0);
   }
 
 }
@@ -129,10 +129,10 @@ int getCoresPerLocale() {
 
     memset(buf, 0, buflen);
     if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
-      chpl_error("Error trying to determine number of cores per node", 0, 0);
+      chpl_rt_error("Error trying to determine number of cores per node", 0, 0);
 
     if (sscanf(buf, "%d", &numCores) != 1)
-      chpl_error("unable to determine number of cores per locale; "
+      chpl_rt_error("unable to determine number of cores per locale; "
                  "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
 
     return numCores;
@@ -149,14 +149,14 @@ int getCoresPerLocale() {
 
     memset(buf, 0, buflen);
     if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
-      chpl_error("Error trying to determine number coremask on node", 0, 0);
+      chpl_rt_error("Error trying to determine number coremask on node", 0, 0);
 
     {
       int coreMask;
       int bitMask = 0x1;
 
       if (sscanf(buf, "%d", &coreMask) != 1)
-        chpl_error("unable to determine coremask for locale; "
+        chpl_rt_error("unable to determine coremask for locale; "
                    "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
 
       coreMask >>= 1;
@@ -171,7 +171,7 @@ int getCoresPerLocale() {
   }
 
   // neither numcores nor coremask is available in this version
-  chpl_error("Error trying to determine number of cores per node", 0, 0);
+  chpl_rt_error("Error trying to determine number of cores per node", 0, 0);
 
   return 0;
 }
