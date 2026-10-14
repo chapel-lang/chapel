@@ -85,6 +85,19 @@ jobs:
           done
           sudo apt-get update
           sudo apt-get install -y apptainer
+      - name: allow Apptainer to create user namespaces
+        # allow apptainer to create user namespaces
+        # this may not be available by default
+        run: |
+          sudo tee /etc/apparmor.d/apptainer <<'EOF'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile apptainer /usr/{lib/*,libexec}/apptainer/bin/starter{,-suid} flags=(unconfined) {
+            userns,
+            include if exists <local/apptainer>
+          }
+          EOF
+          sudo apparmor_parser -r /etc/apparmor.d/apptainer
       - name: print Apptainer version
         run: |
           apptainer --version
@@ -96,6 +109,7 @@ jobs:
           {
             echo "GIT_REPO_URL=$PWD"
             echo "GIT_COMMIT=${{ github.sha }}"
+            echo "APPTAINER_TMPDIR=$RUNNER_TEMP"
           } >> "$GITHUB_ENV"
       - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }} (retrying)
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -134,6 +148,8 @@ jobs:
       with:
         create-symlink: true
     - name: run test-make-install-check.bash
+      env:
+        TMPDIR: ${{ runner.temp }}
       run: |
         ./util/cron/test-make-install-check.bash
 
@@ -146,6 +162,20 @@ jobs:
     with:
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
+  paratest-linux64-c-backend-gasnet:
+    name: Chapel paratest on linux64 with C backend using GASNet
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-c-backend-gasnet
+      start-test-args: -multilocale-only
+      make-targets: all test-venv mason-deps
+      cron-script: util/cron/test-gasnet.c-backend.bash
+  paratest-linux64-clang:
+    name: Chapel paratest on linux64 using Clang as the host/target compiler
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-clang
+      cron-script: util/cron/test-linux64-clang.bash
   paratest-darwin:
     name: Chapel paratest on darwin
     uses: $/.github/workflows/ga-paratest.yml
@@ -165,6 +195,9 @@ jobs:
       timeout-minutes: 360
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        export CHPL_PAR_MAKE=$num_procs
+        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
@@ -181,6 +214,10 @@ jobs:
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
       timeout-minutes: 360
+      pre-build-steps: |
+        num_procs=$(util/buildRelease/chpl-make-cpu_count)
+        export CHPL_PAR_MAKE=$num_procs
+        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
       make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment

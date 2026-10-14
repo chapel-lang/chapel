@@ -1,4 +1,5 @@
 # running lldb on multi-locale code is not yet well supported
+# this also has a timeout to avoid just hanging on gasnet
 CHPL_COMM!=none
 COMPOPTS <= --no-local
 COMPOPTS <= --verify

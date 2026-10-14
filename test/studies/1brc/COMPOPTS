@@ -1,0 +1,2 @@
+# always run with backend ops so these tests run faster
+--optimize

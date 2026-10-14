@@ -212,6 +212,8 @@ jobs:
               slow_directories["test/library"] = 1
               slow_directories["test/library/standard"] = 1
               slow_directories["test/types"] = 1
+              slow_directories["test/functions"] = 1
+              slow_directories["test/studies"] = 1
               # explicitly requested directories are always their own jobs
               n = split(requested_dirs, req)
               for (i = 1; i <= n; i++) {
