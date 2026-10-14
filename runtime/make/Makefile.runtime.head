@@ -52,6 +52,7 @@ LAUNCHER_INCLS = \
         -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include \
+        -I$(RUNTIME_ROOT)/include/gen/$(CHPL_MAKE_RUNTIME_SUBDIR) \
         -I$(THIRD_PARTY_DIR)/whereami/whereami-src
 
 ifeq ($(CHPL_MAKE_HWLOC),none)

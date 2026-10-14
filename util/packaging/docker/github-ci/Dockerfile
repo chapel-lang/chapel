@@ -18,6 +18,7 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
+    ccache \
     clang-19 \
     cmake \
     cscope \

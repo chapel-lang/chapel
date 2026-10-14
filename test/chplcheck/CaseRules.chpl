@@ -84,4 +84,26 @@ module CaseRules {
     // because the parent controls the name.
     override proc badly_capitalized() {}
   }
+
+  enum BadEnum {
+    BadValue, OtherBadValue, okValue
+  }
+  enum goodEnum {
+    goodValue, otherGoodValue, okValue, Bad
+  }
+  enum onewordenum {
+    onewordvalue
+  }
+
+  union BadUnion {
+    var BadField: int;
+    var goodField: real;
+  }
+  union goodUnion {
+    var goodField: int;
+    var otherGoodField: real;
+  }
+  union onewordunion {
+    var onewordfield: int;
+  }
 }

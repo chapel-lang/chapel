@@ -57,7 +57,7 @@ jobs:
 
   build-packaging-tarball:
     if: ${{ inputs.tarball_url == '' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
@@ -67,6 +67,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
       - name: build tarball
         run: |
             export CHPL_VERSION='release'
@@ -106,7 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: ${{ fromJSON(needs.define-linux-package-configs.outputs.distro_configs) }}
-        runner: [ubuntu-latest, ubuntu-26.04-arm]
+        runner: [ubuntu-26.04, ubuntu-26.04-arm]
     env:
       DISTRO: ${{ matrix.distro }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}

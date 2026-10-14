@@ -26,20 +26,12 @@ jobs:
       WEBSITE_PATH: ${{ secrets.WEBSITE_PATH }}
 
   extended-checks:
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     uses: $/.github/workflows/extended-ci-checks.yml
     secrets:
       DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
       DOCKERHUB_PAT: ${{ secrets.DOCKERHUB_PAT }}
 
   full-checks:
-    permissions:
-      contents: read
-      packages: read
-      actions: write
     uses: $/.github/workflows/full-ci-checks.yml
 
   send-failure-mail:

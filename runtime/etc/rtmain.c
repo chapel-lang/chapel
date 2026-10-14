@@ -21,6 +21,8 @@
 // This file is used in LLVM backend compiles to compile the header
 // declarations for the Chapel runtime into an LLVM module.
 
+#include "chpl-prginfo.h"
+
 #include "stdchpl.h"
 
 #include "chpl-gen-includes.h"

@@ -70,7 +70,7 @@ on:
         description: The runner to use for the workflow
         required: false
         type: string
-        default: ubuntu-latest
+        default: ubuntu-26.04
       use-container:
         description: Run build and test jobs in the Chapel CI container
         required: false
@@ -124,6 +124,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
@@ -131,6 +133,9 @@ jobs:
         run: |
           rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
           {
+            # put ccache executables at front of PATH
+            export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+
             echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
             # shellcheck source=/dev/null
             source "$RUNNER_TEMP/pre-build-steps.bash"
@@ -139,8 +144,8 @@ jobs:
               source "$CRON_SCRIPT"
             fi
 
-            "$CHPL_HOME/util/printchplenv" --all --internal \
-              > "$RUNNER_TEMP/printchplenv.txt"
+            "$CHPL_HOME/util/printchplenv" --all --internal | \
+              tee "$RUNNER_TEMP/printchplenv.txt"
 
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
             # shellcheck source=/dev/null
@@ -206,6 +211,8 @@ jobs:
               slow_directories["test/classes"] = 1
               slow_directories["test/library"] = 1
               slow_directories["test/types"] = 1
+              slow_directories["test/functions"] = 1
+              slow_directories["test/studies"] = 1
               # explicitly requested directories are always their own jobs
               n = split(requested_dirs, req)
               for (i = 1; i <= n; i++) {
@@ -484,8 +491,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-      # To delete per-directory result artifacts
-      actions: write
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: checkout
@@ -654,28 +659,3 @@ jobs:
         with:
           path: ${{ env.PARATEST_TIMINGS_DIR }}
           key: paratest-timings-${{ inputs.configuration }}-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: clean up individual test dir result artifacts (retrying)
-        # Skip on pull_request runs, because they don't have permission to delete artifacts.
-        if: ${{ !cancelled() && steps.upload_aggregated.outcome == 'success' && github.event_name != 'pull_request' }}
-        # if this step fails, don't fail the job
-        continue-on-error: true
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        env:
-          GH_TOKEN: ${{ github.token }}
-          configuration: ${{ inputs.configuration }}
-        with:
-          max_attempts: 3
-          timeout_seconds: 360
-          retry_wait_seconds: 30
-          command: |
-            set -exuo pipefail
-
-            gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts | jq '.' | tee artifacts_raw.json
-            jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
-
-            readarray -t config_dir_results_artifacts < <(jq ".[] | select(.name | startswith(\"paratest-$configuration-dir-results-\")) | .id" artifacts_array.json)
-            for artifact_id in "${config_dir_results_artifacts[@]}"; do
-              echo "Deleting artifact $artifact_id"
-              gh api --method DELETE "/repos/${{ github.repository }}/actions/artifacts/$artifact_id" || echo "Failed to delete artifact $artifact_id" >&2
-              sleep 0.25
-            done

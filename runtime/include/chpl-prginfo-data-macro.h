@@ -261,11 +261,6 @@ E_CONSTANT_RT(chpl_funSymTable, const c_string*)
 E_CONSTANT_RT(chpl_sizeSymTable, int32_t)
 
 /** CODE-GENERATED
-    Value of '$CHPL_UNWIND' when this program was compiled.
-*/
-E_CONSTANT_RT(CHPL_UNWIND, const char*)
-
-/** CODE-GENERATED
     If '--interleave-memory' was set when this program was compiled.
 */
 E_CONSTANT_RT(CHPL_INTERLEAVE_MEM, int)
@@ -281,25 +276,9 @@ E_CALLBACK_RT(chpl_localeModel_sublocToExecutionSubloc, c_sublocid_t,
               c_sublocid_t full_subloc)
 
 /** CODE-GENERATED
-    Value of '$CHPL_COMM' when this program was compiled.
-*/
-E_CONSTANT(CHPL_COMM, const char*)
-
-/** CODE-GENERATED
     If '--stack-checks' was set when this program was compiled.
 */
 E_CONSTANT_RT(CHPL_STACK_CHECKS, int)
-
-/** CODE-GENERATED
-    Value of '$CHPL_TARGET_PLATFORM' when this program was compiled.
-*/
-E_CONSTANT(CHPL_TARGET_PLATFORM, const char*)
-
-/** CODE-GENERATED
-    Value of '$CHPL_TARGET_MEM' when this program was compiled.
-    TODO: Could be dropped since it's only used by 'COMM=ugni'.
-*/
-E_CONSTANT_RT(CHPL_TARGET_MEM, const char*)
 
 /** CODE-GENERATED
     Call to heap allocate all global variables.
@@ -310,21 +289,6 @@ E_CALLBACK_RT(chpl__heapAllocateGlobals, void, void)
     Table containing function info.
 */
 E_CONSTANT_RT(chpl_finfo, const chpl_fn_info*)
-
-/** CODE-GENERATED
-    Value of '$CHPL_LOCALE_MODEL' when this program was compiled.
-*/
-E_CONSTANT_RT(CHPL_LOCALE_MODEL, const char*)
-
-/** CODE-GENERATED
-    Value of '$CHPL_TARGET_CPU' when this program was compiled.
-*/
-E_CONSTANT_RT(CHPL_TARGET_CPU, const char*)
-
-/** CODE-GENERATED
-    Value of '$CHPL_GASNET_SEGMENT' when this program was compiled.
-*/
-E_CONSTANT_RT(CHPL_GASNET_SEGMENT, const char*)
 
 /** MODULE-CODE: IO.chpl
     Create a plugin channel to attach to the qio channel.

@@ -681,12 +681,9 @@ void EnumType::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-namespace {
-  using FormalVec = std::vector<FunctionType::Formal>;
-}
 
 FunctionType::FunctionType(Kind kind, Width width, Linkage linkage,
-                           FormalVec formals,
+                           Formals formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws,
@@ -783,7 +780,7 @@ const char*
 FunctionType::buildUserTypeString(FunctionType::Kind kind,
                                   FunctionType::Width width,
                                   FunctionType::Linkage linkage,
-                                  const FormalVec& formals,
+                                  const FunctionType::Formals& formals,
                                   RetTag returnIntent,
                                   Type* returnType,
                                   bool throws) {
@@ -906,7 +903,7 @@ static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType);
 FunctionType* FunctionType::create(FunctionType::Kind kind,
                                    FunctionType::Width width,
                                    FunctionType::Linkage linkage,
-                                   FormalVec formals,
+                                   Formals formals,
                                    RetTag returnIntent,
                                    Type* returnType,
                                    bool throws) {
@@ -962,7 +959,7 @@ static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
 FunctionType* FunctionType::get(FunctionType::Kind kind,
                                 FunctionType::Width width,
                                 FunctionType::Linkage linkage,
-                                FormalVec formals,
+                                FunctionType::Formals formals,
                                 RetTag returnIntent,
                                 Type* returnType,
                                 bool throws) {
@@ -987,8 +984,8 @@ FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
   return FunctionType::DEFAULT;
 }
 
-static FormalVec collectFormals(FnSymbol* fn) {
-  FormalVec ret;
+static FunctionType::Formals collectFormals(FnSymbol* fn) {
+  FunctionType::Formals ret;
   for_formals(f, fn) {
     FunctionType::Formal info = { f->qual, f->type, f->intent, f->name, f->flags };
     ret.push_back(std::move(info));
@@ -1217,7 +1214,7 @@ functionTypeVerifyReturnIntent(RetTag returnIntent, Type* returnType) {
 //
 // TODO: How do wide-class types play into this determination?
 FunctionType* FunctionType::getWithStreamlinedComponents() const {
-  std::vector<Formal> newFormals;
+  FunctionType::Formals newFormals;
 
   for (int i = 0; i < numFormals(); i++) {
     auto newFormal = functionTypeStreamlineFormal(*formal(i));
@@ -1288,7 +1285,7 @@ static QualifiedType widenType(QualifiedType qt) {
 FunctionType* FunctionType::getWithWidenedComponents() const {
   FunctionType* ret = (FunctionType*) this;
 
-  std::vector<Formal> newFormals;
+  FunctionType::Formals newFormals;
   Type* newReturnType = returnType_;
   bool change = false;
 

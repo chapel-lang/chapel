@@ -56,6 +56,8 @@
 
 #include "global-ast-vecs.h"
 
+#include "llvm/ADT/SmallString.h"
+
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
 #include "llvm/Bitcode/BitcodeWriter.h"
@@ -83,6 +85,7 @@
 #include <inttypes.h>
 
 #include <algorithm>
+#include <charconv>
 #include <cctype>
 
 #include <cmath>
@@ -92,6 +95,28 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+
+template <unsigned InlineCapacity = 256>
+class TableRowFormatter {
+  llvm::SmallString<InlineCapacity> buffer;
+
+  void append(const char* text) { buffer.append(text, text + strlen(text)); }
+
+  void append(int value) {
+    char digits[32];
+    auto result = std::to_chars(digits, digits + sizeof(digits), value);
+    INT_ASSERT(result.ec == std::errc());
+    buffer.append(digits, result.ptr);
+  }
+
+public:
+  template <typename... Parts>
+  std::string format(Parts... parts) {
+    buffer.clear();
+    (append(parts), ...);
+    return std::string(buffer.begin(), buffer.end());
+  }
+};
 
 namespace {
   int getFilenameTableIndex(const std::string& str) {
@@ -105,7 +130,6 @@ static bool compareSymbol(const void* v1, const void* v2);
 // Global so that we don't have to pass around
 // to all of the codegen() routines
 GenInfo* gGenInfo   =  0;
-int      gMaxVMT    = -1;
 int      gStmtCount =  0;
 bool     gCodegenGPU = false;
 
@@ -499,7 +523,7 @@ static void assignClassIds() {
 // Computes a maximum ID of subclasses and stores that in n2.
 // Returns the maximum ID of a subclass.
 // This helps with Schubert numbering
-static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
+static int computeMaxSubclass(TypeSymbol* ts, llvm::SmallVector<int>& n2) {
   int retval = 0;
 
   if (ts != NULL) {
@@ -531,26 +555,25 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
 }
 
 
-static void codegenGlobalConstArray(const char*          name,
-                                    const char*          eltType,
-                                    std::vector<GenRet>* vals,
-                                    bool                 isHeader) {
+// codegen for global constant array headers
+static void codegenGlobalConstArray(const char* name, const char* eltType) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+    fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
+  }
+}
+// codegen for global constant arrays
+template <typename Container>
+static void codegenGlobalConstArray(const char* name, const char* eltType,
+                                    const Container& array) {
   GenInfo* info = gGenInfo;
 
-  if(isHeader) {
-    if( info->cfile ) {
-      FILE* hdrfile = info->cfile;
-      fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
-    }
-    return;
-  }
-
   // Now generate arrays
-  if( info->cfile ) {
+  if (info->cfile) {
     FILE* f = info->cfile;
     fprintf(f, "const %s %s[] = {\n", eltType, name);
     bool first = true;
-    std::vector<GenRet> & array = *vals;
     int n = array.size();
     for(int i = 0; i < n; i++ ) {
       if (!first)
@@ -568,7 +591,6 @@ static void codegenGlobalConstArray(const char*          name,
 
   std::vector<llvm::Constant *> table;
 
-  std::vector<GenRet> & array = *vals;
   int n = array.size();
   table.resize(n);
   for(int i = 0; i < n; i++ ) {
@@ -592,41 +614,6 @@ static void codegenGlobalConstArray(const char*          name,
   info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true, /* chplType=*/ nullptr);
 #endif
   }
-}
-
-// This uses Schubert Numbering but we could use Cohen's Display,
-// which can be computed more incrementally.
-// See
-// "Implementing statically typed object-oriented programming languages",
-// by Roland Ducournau
-static void
-genSubclassArray(bool isHeader) {
-  const char* eltType = "chpl__class_id";
-  const char* name = "chpl_subclass_max_id";
-
-  if(isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
-    return;
-  }
-
-  // Otherwise, compute n2 array and then code-generate it
-  std::vector<int> n2;
-
-  computeMaxSubclass(dtObject->symbol, n2);
-
-  // make sure n2 always contains at least 1 element
-  if (n2.empty())
-    n2.push_back(0);
-
-  // Construct the GenRet array of integers
-  std::vector<GenRet> tmp;
-  for(size_t i = 0; i < n2.size(); i++) {
-    tmp.push_back( new_IntSymbol(n2[i], INT_SIZE_32)->codegen() );
-  }
-
-  // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
 
@@ -707,8 +694,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* name = ftableName;
 
   if (isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalConstArray(name, eltType);
     codegenGlobalInt64(ftableSizeName, 0, true);
     return;
   }
@@ -744,7 +730,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   ftable.push_back(nullFn);
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &ftable, false);
+  codegenGlobalConstArray(name, eltType, ftable);
 
   // Now emit the size
   codegenGlobalInt64(ftableSizeName, ftable.size(), false);
@@ -758,8 +744,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* name = "chpl_finfo";
 
   if(isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalConstArray(name, eltType);
     return;
   }
 
@@ -778,21 +763,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   std::vector<GenRet> finfo;
   finfo.reserve(fSymbols.size());
 
-  // buf for creating C structures
-  char* buf = NULL;
-  int buf_len = 0;
-
-  if (info->cfile) {
-    // compute the maximum file name length
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      int len = strlen(fn->cname);
-      if (len > buf_len)
-        buf_len = len;
-    }
-    // and then add 100 for two integers and punctuation
-    buf_len += 100;
-    buf = (char*) malloc(buf_len);
-  }
+  TableRowFormatter formatter;
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->name;
@@ -802,10 +773,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     GenRet gen;
 
     if (info->cfile) {
-      int rc = snprintf(buf, buf_len,
-                        "{\"%s\", %d, %d}", fn_name, fileno, lineno);
-      INT_ASSERT( rc < buf_len ); // assert output not truncated
-      gen.c = buf;
+      gen.c = formatter.format("{\"", fn_name, "\", ", fileno, ", ", lineno, "}");
     } else {
 #ifdef HAVE_LLVM
       llvm::Constant* fields[3];
@@ -821,9 +789,6 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     finfo.push_back(gen);
   }
 
-  // Free the buffer for C conversions.
-  if (buf) free(buf);
-
   // make sure the table always contains at trailing NULL element
   {
     GenRet nullStruct;
@@ -836,21 +801,21 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   }
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &finfo, false);
+  codegenGlobalConstArray(name, eltType, finfo);
+}
+
+static const char* vmtName(TypeSymbol* ts) {
+  return astr("chpl_vmt_", ts->cname);
 }
 
 static void
-genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
+genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
-  const char* vmt = "chpl_vmtable";
   const char* eltType = "chpl_fn_p";
-  if(isHeader) {
-    codegenGlobalConstArray(vmt, eltType, NULL, true);
-    return;
-  }
 
-  // compute max # methods per type
-  int maxVMT = 0;
+  GenRet funcPtrType;
+  if (!isHeader)
+    funcPtrType = codegenTypeByName(eltType);
 
   // note: the virtual method table can contain keys
   // that point to deallocated memory (e.g. for classes that
@@ -858,78 +823,157 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   // live AST elements from the VMT rather than traversing it
   // directly.
   forv_Vec(TypeSymbol, ts, types) {
-    if (AggregateType* ct = toAggregateType(ts->type))
-      if (isObjectOrSubclass(ct))
-        if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct))
-          if (vfns->n > maxVMT)
-            maxVMT = vfns->n;
-  }
-  gMaxVMT = maxVMT;
+    AggregateType* ct = toAggregateType(ts->type);
+    if (ct == NULL || !isObjectOrSubclass(ct))
+      continue;
 
-  GenRet funcPtrType = codegenTypeByName(eltType);
+    Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct);
+    if (vfns == NULL || vfns->n == 0)
+      continue;
 
-  std::vector<GenRet> vmt_elts;
+    const char* name = vmtName(ts);
 
-  // Make sure VMT has at least one element
-  vmt_elts.resize(1);
+    if (isHeader) {
+      codegenGlobalConstArray(name, eltType);
+      continue;
+    }
 
-  // compute 1D virtual method table
-  // (this is not fundamental, but is currently used to simplify codegen)
-  //    indexExpr = maxVMT * classId + fnId
-  forv_Vec(TypeSymbol, ts, types) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (isObjectOrSubclass(ct)) {
-        if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
-          int i = 0;
-          forv_Vec(FnSymbol, vfn, *vfns) {
-            if (needsCodegenWrtGPU(vfn)) {
-              int classId = ct->classId;
-              int fnId = i;
-              int index = gMaxVMT * classId + fnId;
+    INT_ASSERT(ct->classId > 0);
 
-              INT_ASSERT(classId > 0);
+    llvm::SmallVector<GenRet> slots;
+    slots.reserve(vfns->n);
 
-              GenRet fnAddress;
+    forv_Vec(FnSymbol, vfn, *vfns) {
+      GenRet fnAddress;
 
-              if( info->cfile ) {
-                fnAddress.c = "(" + funcPtrType.c + ")";
-                fnAddress.c += vfn->cname;
-                if (fGenIDS) {
-                  fnAddress.c += " /* ";
-                  fnAddress.c += std::to_string(vfn->id);
-                  fnAddress.c += " */";
-                }
-              } else {
-#ifdef HAVE_LLVM
-                INT_ASSERT(funcPtrType.type);
-                llvm::Function *func = getFunctionLLVM(vfn->cname);
-                fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
-                trackLLVMValue(fnAddress.val);
-#endif
-              }
-
-              if (vmt_elts.size() <= (size_t) index)
-                vmt_elts.resize(index+1);
-
-              vmt_elts[index] = fnAddress;
-
-              i++;
-            }
+      if (needsCodegenWrtGPU(vfn)) {
+        if (info->cfile) {
+          fnAddress.c = "(" + funcPtrType.c + ")";
+          fnAddress.c += vfn->cname;
+          if (fGenIDS) {
+            fnAddress.c += " /* ";
+            fnAddress.c += std::to_string(vfn->id);
+            fnAddress.c += " */";
           }
+        } else {
+#ifdef HAVE_LLVM
+          INT_ASSERT(funcPtrType.type);
+          llvm::Function *func = getFunctionLLVM(vfn->cname);
+          fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+          trackLLVMValue(fnAddress.val);
+#endif
         }
+      } else {
+        fnAddress = codegenTypedNull(funcPtrType);
+      }
+
+      slots.push_back(fnAddress);
+    }
+
+    codegenGlobalConstArray(name, eltType, slots);
+  }
+}
+
+// emits chpl_classInfo[], indexed by class id
+// {vtable, Schubert number, vtable length, class name}
+// Must run after genVirtualMethodTables so the chpl_vmt_* symbols exist.
+// This uses Schubert Numbering but we could use Cohen's Display,
+// which can be computed more incrementally.
+// See
+// "Implementing statically typed object-oriented programming languages",
+// by Roland Ducournau
+static void
+genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
+  GenInfo* info = gGenInfo;
+  const char* eltType = "chpl_class_info";
+  const char* name = "chpl_classInfo";
+
+  if (isHeader) {
+    codegenGlobalConstArray(name, eltType);
+    return;
+  }
+
+  INT_ASSERT(gMaxClassId >= 0);
+
+  GenRet structType = codegenTypeByName(eltType);
+
+  // Schubert numbering: n2[cid] is the largest cid in cid's subtree.
+  llvm::SmallVector<int> n2;
+  computeMaxSubclass(dtObject->symbol, n2);
+  // make sure n2 always contains at least 1 element
+  if ((int) n2.size() < gMaxClassId + 1)
+    n2.resize(gMaxClassId + 1, 0);
+
+  std::vector<GenRet> rows(gMaxClassId + 1);
+
+  TableRowFormatter<> formatter;
+
+#ifdef HAVE_LLVM
+  llvm::StructType* st = nullptr;
+  llvm::Type* int32Ty = nullptr;
+  if (!info->cfile) {
+    INT_ASSERT(structType.type);
+    st = llvm::cast<llvm::StructType>(structType.type);
+    int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
+  }
+#endif
+
+  forv_Vec(TypeSymbol, ts, types) {
+    AggregateType* ct = toAggregateType(ts->type);
+    if (ct == NULL || !isObjectOrSubclass(ct))
+      continue;
+
+    int id = ct->classId;
+    INT_ASSERT(id > 0 && id <= gMaxClassId);
+
+    Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct);
+    int vmtLen = vfns ? vfns->n : 0;
+
+    GenRet row;
+
+    if (info->cfile) {
+      row.c = formatter.format("{", vmtLen > 0 ? vmtName(ts) : "NULL",
+                               ", ", n2[id], ", ", vmtLen, ", \"", ts->name,
+                               "\"}");
+    } else {
+#ifdef HAVE_LLVM
+      llvm::Type* vmtPtrTy = st->getElementType(0);
+      llvm::Constant* vmtPtr = nullptr;
+      if (vmtLen > 0) {
+        GenRet vmtGlobal = info->lvt->getValue(vmtName(ts));
+        INT_ASSERT(vmtGlobal.val);
+        llvm::Value* cast = info->irBuilder->CreatePointerCast(vmtGlobal.val,
+                                                               vmtPtrTy);
+        trackLLVMValue(cast);
+        vmtPtr = llvm::cast<llvm::Constant>(cast);
+      } else {
+        vmtPtr = llvm::Constant::getNullValue(vmtPtrTy);
+      }
+
+      llvm::Constant* fields[4];
+      fields[0] = vmtPtr;
+      fields[1] = llvm::ConstantInt::get(int32Ty, n2[id]);
+      fields[2] = llvm::ConstantInt::get(int32Ty, vmtLen);
+      fields[3] = codegenStringForTableLLVM(ts->name);
+      row.val = llvm::ConstantStruct::get(st, fields);
+#endif
+    }
+
+    rows[id] = row;
+  }
+
+  // cid 0 and generic classes (which have cids but no vtable) get null rows
+  for (size_t i = 0; i < rows.size(); i++) {
+    if (rows[i].isEmpty()) {
+      if (info->cfile) {
+        rows[i].c = "{NULL, 0, 0, \"\"}";
+      } else {
+        rows[i] = codegenTypedNull(structType);
       }
     }
   }
 
-  // Fill any elements not filled above with codegenNullPointer
-  for (size_t i = 0; i < vmt_elts.size(); i++) {
-    if (vmt_elts[i].isEmpty()) {
-      vmt_elts[i] = codegenTypedNull(funcPtrType);
-    }
-  }
-
-
-  codegenGlobalConstArray(vmt, eltType, &vmt_elts, false);
+  codegenGlobalConstArray(name, eltType, rows);
 }
 
 static void genFilenameTable() {
@@ -961,7 +1005,7 @@ static void genFilenameTable() {
   }
 
   // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &table, false);
+  codegenGlobalConstArray(name, eltType, table);
 
   // Now emit the size
   genGlobalInt32(sizeName, InsertLineNumbers::getFilenameTable().size());
@@ -1112,7 +1156,7 @@ static void genUnwindSymbolTable(){
     auto table = unwindTable.buildNameTable();
 
     // Now emit the global array declaration
-    codegenGlobalConstArray(name, eltType, &table, false);
+    codegenGlobalConstArray(name, eltType, table);
   }
 
   // Generate the filename index, linenum table
@@ -1126,48 +1170,11 @@ static void genUnwindSymbolTable(){
     auto table = unwindTable.buildFileLineTable();
 
     // Now emit the global array declaration
-    codegenGlobalConstArray(name, eltType, &table, false);
+    codegenGlobalConstArray(name, eltType, table);
   }
 
   // Now emit the size of the symbol table
   genGlobalInt32("chpl_sizeSymTable", unwindTable.size() * 2);
-}
-
-static void
-genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
-  const char* eltType = dtStringC->symbol->cname;
-  const char* name = "chpl_classNames";
-
-  if(isHeader) {
-    // Just pass NULL when generating header
-    codegenGlobalConstArray(name, eltType, NULL, true);
-    return;
-  }
-
-  std::vector<const char*> names;
-
-  forv_Vec(TypeSymbol, ts, typeSymbol) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (isObjectOrSubclass(ct)) {
-        int id = ct->classId;
-        INT_ASSERT(id > 0);
-        if (id >= (int)names.size())
-          names.resize(id+1, NULL);
-        names[id] = ts->name;
-      }
-    }
-  }
-
-  std::vector<GenRet> tmp;
-  for(size_t i = 0; i < names.size(); i++) {
-    const char* name = names[i];
-    if (name == NULL)
-      name = "";
-    tmp.push_back(codegenStringForTable(name));
-  }
-
-  // Now emit the global array declaration
-  codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
 
@@ -1788,15 +1795,14 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   FILE* hdrfile = info->cfile;
 
   genClassIDs(types, false);
-  genSubclassArray(false);
-  genClassNames(types, false);
+
+  genComment("Virtual Method Tables");
+  genVirtualMethodTables(types, false);
+  genClassInfoTable(types, false);
 
   genComment("Function Pointer Table");
   genFtable(ftableVec, false);
   genFinfo(ftableVec, false);
-
-  genComment("Virtual Method Table");
-  genVirtualMethodTable(types, false);
 
   if(fIncrementalCompilation) {
     genComment("Global Variables");
@@ -2187,8 +2193,8 @@ static void codegen_header(std::set<const char*> & cnames,
 
   assignClassIds();
   genClassIDs(types, true);
-  genSubclassArray(true);
-  genClassNames(types, true);
+  genVirtualMethodTables(types, true);
+  genClassInfoTable(types, true);
 
   // Generate root class first to satisfy assumptions made elsewhere
   dtObject->codegenPrototype();
@@ -2316,9 +2322,6 @@ static void codegen_header(std::set<const char*> & cnames,
 
   genFtable(ftableVec,true);
   genFinfo(ftableVec,true);
-
-  genComment("Virtual Method Table");
-  genVirtualMethodTable(types,true);
 
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
