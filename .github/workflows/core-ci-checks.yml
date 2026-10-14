@@ -576,11 +576,11 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
       - name: Check arch
         run: |
-          docker run --rm --platform linux/386 debian:13 bash -c '
+          docker run --rm --platform linux/386 debian:latest bash -c '
           test $(uname -m) == "i686"
           '
       - name: run test-linux32.bash
-        run: docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:13 ./util/cron/test-linux32.bash
+        run: docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest ./util/cron/test-linux32.bash
 
   docs-checks:
     runs-on: ubuntu-slim
