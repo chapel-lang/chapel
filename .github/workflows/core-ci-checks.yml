@@ -580,10 +580,8 @@ jobs:
           docker run --rm --platform linux/386 alpine sh -c '
           test $(uname -m) == "i686"
           '
-      # - name: run test-linux32.bash
-      #   shell: docker run --rm --platform linux/386 alpine {0}
-      #   run: |
-      #     ./util/cron/test-linux32.bash
+      - name: run test-linux32.bash
+        run: docker run -v $(PWD):/app -w /app --rm --platform linux/386 alpine ./util/cron/test-linux32.bash
 
   docs-checks:
     runs-on: ubuntu-slim
