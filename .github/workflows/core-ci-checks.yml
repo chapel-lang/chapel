@@ -589,6 +589,8 @@ jobs:
             python3 \
             time
 
+          git config --system --add safe.directory "*"
+
           ./util/cron/test-linux32.bash
           '
 
