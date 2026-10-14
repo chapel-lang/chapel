@@ -592,6 +592,7 @@ jobs:
             make \
             pkg-config \
             python3 \
+            python3-venv \
             time
 
           git config --system --add safe.directory "*"
