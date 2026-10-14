@@ -573,9 +573,10 @@ jobs:
     - name: Run an arm64 container
       shell: docker run --rm --platform linux/386 alpine {0}
       run: uname -m
-    # - name: run test-linux32.bash
-    #   run: |
-    #     ./util/cron/test-linux32.bash
+    - name: run test-linux32.bash
+      shell: docker run --rm --platform linux/386 alpine {0}
+      run: |
+        ./util/cron/test-linux32.bash
 
   docs-checks:
     runs-on: ubuntu-slim
