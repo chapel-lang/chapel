@@ -574,7 +574,8 @@ jobs:
         arch: arm
     - name: Print architecture from within container
       shell: run-in-container.sh {0}
-      run: echo "Arch in container: $(uname -m)"
+      run: |
+        echo "Arch in container: $(uname -m)"
     - name: run test-linux32.bash
       run: |
         ./util/cron/test-linux32.bash
