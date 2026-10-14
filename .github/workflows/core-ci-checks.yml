@@ -576,8 +576,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
       - name: Check arch
-        run: |
-          docker run --rm --platform linux/386 alpine sh -c 'test $(uname -m) == "i686"'
+        shell: docker run --rm --platform linux/386 alpine sh -c '{0}'
+        run: test $(uname -m) == "i686"
       # - name: run test-linux32.bash
       #   shell: docker run --rm --platform linux/386 alpine {0}
       #   run: |
