@@ -581,7 +581,7 @@ jobs:
           test $(uname -m) == "i686"
           '
       - name: run test-linux32.bash
-        run: docker run -v $(PWD):/app -w /app --rm --platform linux/386 debian:13 ./util/cron/test-linux32.bash
+        run: docker run -v "$(PWD)":/app -w /app --rm --platform linux/386 debian:13 ./util/cron/test-linux32.bash
 
   docs-checks:
     runs-on: ubuntu-slim
