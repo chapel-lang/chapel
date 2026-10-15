@@ -2,9 +2,8 @@
 
       sudo dnf upgrade
       sudo dnf install epel-release
-      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++
       sudo dnf install llvm-devel clang clang-devel
       source /opt/rh/gcc-toolset-10/enable
 
@@ -88,9 +87,8 @@
 
       sudo dnf upgrade
       sudo dnf install epel-release
-      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++
       sudo dnf install llvm-devel clang clang-devel
       source /opt/rh/gcc-toolset-10/enable
 
