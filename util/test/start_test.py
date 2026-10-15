@@ -634,9 +634,10 @@ def run_sub_tests(items, num_workers):
     if not items:
         return
 
+    plural_items = len(items) > 1
     parallel_log_str = (
         " using {0} parallel workers".format(num_workers)
-        if num_workers > 1
+        if num_workers > 1 and plural_items
         else ""
     )
     for_files = isinstance(items[0], str)
