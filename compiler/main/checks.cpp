@@ -648,12 +648,12 @@ static void check_afterResolveIntents()
           // Don't check function types - they can persist in the tree.
           isSymbolToCheck = false;
 
-        } else if (sym->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+        } else if (sym->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF) &&
                    isTypeSymbol(sym)) {
           // Don't check ref types.
           isSymbolToCheck = false;
 
-        } else if (parent->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+        } else if (parent->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF) &&
                    isVarSymbol(sym) &&
                    isTypeSymbol(parent)) {
           // Check types, but ignore the fields of 'ref'/'wide-ref' types.

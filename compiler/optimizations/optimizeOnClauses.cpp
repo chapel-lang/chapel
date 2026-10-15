@@ -541,7 +541,7 @@ removeUnnecessaryFences(FnSymbol* fn)
 
   // These fences are only present if one of these flags
   // is set. This is an optimization.
-  if (fn->hasEitherFlag(FLAG_WRAPPER_NEEDS_START_FENCE,
+  if (fn->hasAnyFlag(FLAG_WRAPPER_NEEDS_START_FENCE,
                         FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
 
     // If the function is marked local, remove
@@ -603,7 +603,7 @@ static void addRunningTaskModifiers(void) {
       // Adjust runningTaskCounter at the callsite: Before initiating on-stmts
       // that aren't fast or non-blocking, decrement the runningTaskCounter
       // before migrating to a new locale
-      if (fn->hasEitherFlag(FLAG_NON_BLOCKING, FLAG_FAST_ON) == false) {
+      if (fn->hasAnyFlag(FLAG_NON_BLOCKING, FLAG_FAST_ON) == false) {
         SET_LINENO(taskMigrationCall);
         taskMigrationCall->insertBefore(new CallExpr(gChplDecRunningTask));
         taskMigrationCall->insertAfter(new CallExpr(gChplIncRunningTask));

@@ -429,15 +429,16 @@ static bool removeVoidFunction(FnSymbol* fn) {
   // do not remove 'main', even if its empty
   if (fn == chplUserMain) return false;
   // various functions that should not be removed
-  if (fn->hasEitherFlag(FLAG_EXPORT, FLAG_EXTERN) ||
-      fn->hasFlag(FLAG_MODULE_INIT) ||  fn->hasFlag(FLAG_MODULE_DEINIT) ||
-      fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
-      fn->hasFlag(FLAG_VIRTUAL) ||
-      fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
+  if (fn->hasAnyFlag(FLAG_EXPORT, FLAG_EXTERN,
+                     FLAG_MODULE_INIT, FLAG_MODULE_DEINIT,
+                     FLAG_NO_FN_BODY,
+                     FLAG_DESTRUCTOR,
+                     FLAG_VIRTUAL,
+                     FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
     return false;
 
   // don't remove on functions
-  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK))
+  if (fn->hasAnyFlag(FLAG_ON, FLAG_ON_BLOCK))
     return false;
 
   // remove functions which return void and do nothing

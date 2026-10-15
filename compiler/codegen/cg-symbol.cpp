@@ -1079,8 +1079,7 @@ void VarSymbol::codegenDef() {
 
 bool argMustUseCPtr(Type* type) {
   // no additional c pointer indirection needed for ref/wide ref types
-  if (type->symbol->hasFlag(FLAG_REF) ||
-      type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+  if (type->symbol->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return false;
 
   bool recordNotRangeNotExtern = isRecord(type) &&
@@ -1483,7 +1482,7 @@ std::string ArgSymbol::getPythonArgTranslation() {
     return pythonArgToExternalArray(this);
   } else if (t->symbol->hasFlag(FLAG_REF) && valType == dtOpaqueArray) {
     return pythonArgToOpaqueArray(this);
-  } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
+  } else if (t->symbol->hasAnyFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
     return pythonArgToChapelArrayOrPtr(this);
   }
   return "";
@@ -1720,8 +1719,8 @@ void TypeSymbol::codegenMetadata() {
     INT_ASSERT(llvmTbaaAggTypeDescriptor);
     llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
-             isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
-             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ||
+             isClass(type) ||
+             hasAnyFlag(FLAG_REF,FLAG_WIDE_REF,FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ||
              isFunctionType(type)) {
     if (isImagType(type)) {
       // At present, imaginary often aliases with real,
