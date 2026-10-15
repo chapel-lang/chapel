@@ -60,7 +60,7 @@ def read_summary(path):
     return lines[1:result_index], counts
 
 
-def merge_summaries(paths):
+def merge_summaries(paths, ga_groups=False):
     """Return merged start_test summary text for paths."""
     details = []
     totals = [0] * 6
@@ -82,7 +82,22 @@ def merge_summaries(paths):
     details.sort(key=sort_key)
 
     lines = ["[Test Summary - {0}]".format(time.strftime("%y%m%d.%H%M%S"))]
-    lines.extend(details)
+    if ga_groups:
+        group_titles = {1: "Suppressions", 2: "Futures"}
+        current_group = None
+        for line in details:
+            group = sort_key(line)[0]
+            if group != current_group:
+                if current_group in group_titles:
+                    lines.append("::endgroup::")
+                if group in group_titles:
+                    lines.append("::group::{0}".format(group_titles[group]))
+                current_group = group
+            lines.append(line)
+        if current_group in group_titles:
+            lines.append("::endgroup::")
+    else:
+        lines.extend(details)
     lines.append(
         "[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
         "| #Warnings = {3} ]".format(*totals[:4])
@@ -107,10 +122,15 @@ def main():
         metavar="FILE",
         help="write the merged summary to FILE",
     )
+    parser.add_argument(
+        "--ga-groups",
+        action="store_true",
+        help="wrap suppressions and futures in GitHub Actions log groups",
+    )
     args = parser.parse_args()
 
     try:
-        merged_summary = merge_summaries(args.summary_files)
+        merged_summary = merge_summaries(args.summary_files, args.ga_groups)
         if args.output:
             with open(args.output, "w", encoding="utf-8") as output_file:
                 output_file.write(merged_summary)

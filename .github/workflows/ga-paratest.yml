@@ -534,6 +534,7 @@ jobs:
             done
             "$CHPL_HOME/util/test/merge_start_test_log_summary" \
               --output "$AGGREGATED_RESULTS_DIR/results.log.summary" \
+              --ga-groups \
               "${summary_files[@]}"
           fi
 
