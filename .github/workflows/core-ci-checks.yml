@@ -585,46 +585,19 @@ jobs:
           set -exuo pipefail
 
           apt update && apt install -y \
-            bash \
-            ccache \
-            clang-19 \
             cmake \
-            cscope \
-            curl \
             doxygen \
-            fluid \
-            g++ \
             gcc \
-            gdb \
+            g++ \
             git \
-            jq \
-            libclang-19-dev \
-            libclang-cpp19-dev \
-            libclang-rt-19-dev \
-            libcurl4-openssl-dev \
-            libedit-dev \
-            libfltk-dev \
-            libprotoc-dev \
-            libzmq3-dev \
-            llvm-19 \
-            llvm-19-dev \
-            llvm-19-tools \
-            lldb-19 \
-            locales \
             m4 \
             make \
-            mawk \
-            perl \
             pkg-config \
             python3 \
             python3-dev \
             python3-pip \
             python3-venv \
-            sudo \
-            time \
-            tzdata \
-            wget \
-            xxd
+            time
 
           git config --system --add safe.directory "*"
 
