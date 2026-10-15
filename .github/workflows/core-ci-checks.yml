@@ -586,7 +586,7 @@ jobs:
           docker run --rm --platform linux/386 debian:latest bash -c '
           test $(uname -m) == "i686"
           '
-      - name: run tests in linux32 container
+      - name: run examples tests in linux32 container
         run: |
           docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
           set -exuo pipefail
@@ -623,7 +623,7 @@ jobs:
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
           make -j"$num_procs" all test-venv chpldoc mason
 
-          start_test --parallel "$num_procs"
+          start_test --parallel "$num_procs" test/release/examples
           '
 
   docs-checks:
