@@ -564,10 +564,17 @@ jobs:
 
   test-linux32:
     runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR_NAME: ".ccache"
+      CCACHE_MAXSIZE: "1GiB"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ./${{ env.CCACHE_DIR_NAME }}
+          key: test-linux32-ccache
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
@@ -585,6 +592,7 @@ jobs:
           set -exuo pipefail
 
           apt update && apt install -y \
+            ccache \
             cmake \
             doxygen \
             gcc \
@@ -598,6 +606,13 @@ jobs:
             python3-pip \
             python3-venv \
             time
+
+          # Set up ccache
+          ln -s /usr/bin/ccache /usr/local/bin/gcc
+          ln -s /usr/bin/ccache /usr/local/bin/g++
+          export CCACHE_COMPILERCHECK=content
+          export CCACHE_DIR=$(pwd)/${{ env.CCACHE_DIR_NAME }}
+          export CCACHE_MAXSIZE=${{ env.CCACHE_MAXSIZE }}
 
           git config --system --add safe.directory "*"
 
