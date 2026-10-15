@@ -82,13 +82,21 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MAKE_PROGRAM_DATA_SCRIPT=$(CHPL_MAKE_HOME)/util/config/gen-set-program-data-module.cpp
 MAKE_PROGRAM_DATA_HEADER=$(CHPL_MAKE_HOME)/runtime/include/chpl-prginfo-data-macro.h
 COMPILELINE=$(CHPL_MAKE_HOME)/util/config/compileline
-PRINTCHPLENV=$(CHPL_MAKE_HOME)/util/printchplenv
+PRINTCHPLENV_WRAPPER= \
+  CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
+  CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
+  CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
+  CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
+  CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
+  CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
+  $(CHPL_MAKE_HOME)/util/printchplenv
+
 
 $(SET_PROGRAM_DATA_MODULE): $(MAKE_PROGRAM_DATA_SCRIPT) $(MAKE_PROGRAM_DATA_HEADER)
 	@echo "Building $(SET_PROGRAM_DATA_MODULE)..."
 	mkdir -p $(@D)
 	cd $(@D) && `$(COMPILELINE) --compile-c++` $<
-	cd $(@D) && $(PRINTCHPLENV) --all --simple --no-tidy | ./a.out $(@F)
+	cd $(@D) && $(PRINTCHPLENV_WRAPPER) --all --simple --no-tidy | ./a.out $(@F)
 	cd $(@D) && rm a.out
 
 MODULES_TO_DOCUMENT = \
