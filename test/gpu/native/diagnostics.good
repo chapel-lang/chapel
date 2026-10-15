@@ -1,0 +1,11 @@
+(kernel_launch = 1, host_to_device = 0, device_to_host = 0, device_to_device = 0) (kernel_launch = 1, host_to_device = 0, device_to_host = 0, device_to_device = 0)
+finished
+
+(kernel_launch = 0, host_to_device = 0, device_to_host = 0, device_to_device = 0) (kernel_launch = 0, host_to_device = 0, device_to_host = 0, device_to_device = 0)
+
+after context
+(kernel_launch = 1, host_to_device = 0, device_to_host = 0, device_to_device = 0) (kernel_launch = 1, host_to_device = 0, device_to_host = 0, device_to_device = 0)
+
+verbose
+0 (gpu 0): diagnostics.chpl:9: kernel launch (block size: 512x1x1)
+1 (gpu 0): diagnostics.chpl:9: kernel launch (block size: 512x1x1)
