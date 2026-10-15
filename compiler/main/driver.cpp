@@ -1972,43 +1972,6 @@ static bool readChplenvCache(const std::string& path, const std::string& key,
   return true;
 }
 
-// Returns true if a new cache file was written.
-static bool writeChplenvCache(const std::string& path, const std::string& key,
-                              const std::string& output) {
-  if (path.empty() || output.empty()) return false;
-  if (chpl::makeDir(llvm::sys::path::parent_path(path), /* makeParents */ true)) {
-    return false;
-  }
-
-  // write a unique file then rename, so concurrent runs never see partial output
-  int fd;
-  llvm::SmallString<128> tmpPath;
-  if (llvm::sys::fs::createUniqueFile(path + "-%%%%%%%%.tmp", fd, tmpPath)) {
-    return false;
-  }
-  {
-    llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
-    // writes the key's length, the key, and the output to the temporary file.
-    // technically, we don't need the key in the cache file at all
-    // we only check the hash of the key matches when reading from the cache
-    // but it helps with debugging and observability.
-    os << key.size() << "\n" << key << output;
-    os.close();
-    if (os.has_error()) {
-      os.clear_error();
-      llvm::sys::fs::remove(tmpPath);
-      return false;
-    }
-  }
-  if (llvm::sys::fs::rename(tmpPath, path)) {
-    llvm::sys::fs::remove(tmpPath);
-    return false;
-  }
-
-  evictChplenvCache(llvm::sys::path::parent_path(path).str());
-  return true;
-}
-
 // evicts cache entries based on lru
 static void evictChplenvCache(const std::string& dir) {
   const size_t maxEntries = 5;
@@ -2043,6 +2006,43 @@ static void evictChplenvCache(const std::string& dir) {
   for (size_t i = maxEntries; i < entries.size(); i++) {
     llvm::sys::fs::remove(entries[i].second);
   }
+}
+
+// Returns true if a new cache file was written
+static bool writeChplenvCache(const std::string& path, const std::string& key,
+                              const std::string& output) {
+  if (path.empty() || output.empty()) return false;
+  if (chpl::makeDir(llvm::sys::path::parent_path(path), /* makeParents */ true)) {
+    return false;
+  }
+
+  // write a unique file then rename, so concurrent runs never see partial output
+  int fd;
+  llvm::SmallString<128> tmpPath;
+  if (llvm::sys::fs::createUniqueFile(path + "-%%%%%%%%.tmp", fd, tmpPath)) {
+    return false;
+  }
+  {
+    llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
+    // writes the key's length, the key, and the output to the temporary file.
+    // technically, we don't need the key in the cache file at all
+    // we only check the hash of the key matches when reading from the cache
+    // but it helps with debugging and observability.
+    os << key.size() << "\n" << key << output;
+    os.close();
+    if (os.has_error()) {
+      os.clear_error();
+      llvm::sys::fs::remove(tmpPath);
+      return false;
+    }
+  }
+  if (llvm::sys::fs::rename(tmpPath, path)) {
+    llvm::sys::fs::remove(tmpPath);
+    return false;
+  }
+
+  evictChplenvCache(llvm::sys::path::parent_path(path).str());
+  return true;
 }
 
 static void populateEnvMap() {
