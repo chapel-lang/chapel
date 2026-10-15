@@ -122,11 +122,11 @@ prototype module AtomicObjects {
     #include <stdio.h>
     #include <stdlib.h>
 
-    __attribute__ ((aligned (16)))
+    // these pointers really refer to Chapel ABA/_ABAInternal records
     typedef struct uint128 {
       uint64_t lo;
       uint64_t hi;
-    } uint128_t;
+    } __attribute__ ((aligned (16), may_alias)) uint128_t;
 
     // src: Address of a 16-byte aligned address or else General Protection Fault (GPF)
     // cmp: Expected value
@@ -141,21 +141,22 @@ prototype module AtomicObjects {
         // without doing a performance analysis to ensure that it performs as
         // well (or better) than this branch (I fully expect that it would).
         char result;
-        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-          "setz %7; "
-          : "=a" (cmp->lo),
-          "=d" (cmp->hi)
-          : "0" (cmp->lo),
-          "1" (cmp->hi),
-          "b" (with->lo),
+        __asm__ __volatile__ ("lock; cmpxchg16b (%5);"
+          "setz %0; "
+          : "=q" (result),
+          "+a" (cmp->lo),
+          "+d" (cmp->hi)
+          : "b" (with->lo),
           "c" (with->hi),
-          "r" (src),
-          "m" (result)
+          "r" (src)
           : "cc", "memory");
         return result;
       #elif defined(__has_builtin)
         #if __has_builtin (__atomic_compare_exchange)
-          return __atomic_compare_exchange(src, cmp, with, 1, 1, 1);
+          _Static_assert(__atomic_always_lock_free(sizeof(uint128_t), 0),
+                         "AtomicObjects requires lock-free 128-bit atomics");
+          return __atomic_compare_exchange(src, cmp, with, /*weak=*/0,
+                                           __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
         #else
           #error "Unable to build the AtomicObjects package module " \
                  "so that it can perform 128-bit compare-and-swap operations."
@@ -164,6 +165,11 @@ prototype module AtomicObjects {
         #error "Unable to build the AtomicObjects package module " \
                "so that it can perform 128-bit compare-and-swap operations."
       #endif
+    }
+
+    static inline void load128bit_guess(volatile uint128_t *src, uint128_t *dst) {
+      dst->lo = __atomic_load_n(&src->lo, __ATOMIC_RELAXED);
+      dst->hi = __atomic_load_n(&src->hi, __ATOMIC_RELAXED);
     }
 
     // srcvp: Address of a 16-byte aligned address or else General Protection Fault (GPF)
@@ -183,7 +189,8 @@ prototype module AtomicObjects {
 
     static inline void write128bit(void *srcvp, void *valvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
-      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val;
+      load128bit_guess(srcvp, &cmp_val);
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
@@ -195,7 +202,8 @@ prototype module AtomicObjects {
     // increasing.
     static inline void write128bit_special(void *srcvp, void *valvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
-      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val;
+      load128bit_guess(srcvp, &cmp_val);
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
@@ -211,7 +219,8 @@ prototype module AtomicObjects {
     // retvalp: Stores the old value
     static inline void exchange128bit(void *srcvp, void *valvp, void *retvalvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
-      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val;
+      load128bit_guess(srcvp, &cmp_val);
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
@@ -224,7 +233,8 @@ prototype module AtomicObjects {
     // increasing.
     static inline void exchange128bit_special(void *srcvp, void *valvp, void *retvalvp) {
       uint128_t __attribute__ ((aligned (16))) with_val = * (uint128_t *) valvp;
-      uint128_t __attribute__ ((aligned (16))) cmp_val = * (uint128_t *) srcvp;
+      uint128_t __attribute__ ((aligned (16))) cmp_val;
+      load128bit_guess(srcvp, &cmp_val);
       uint128_t *src = srcvp;
       uint128_t *cmp = &cmp_val;
       uint128_t *with = &with_val;
@@ -237,7 +247,8 @@ prototype module AtomicObjects {
     }
 
     static inline void read128bit(void *srcvp, void *dstvp) {
-      uint128_t __attribute__ ((aligned (16))) src_val = * (uint128_t *) srcvp;
+      uint128_t __attribute__ ((aligned (16))) src_val;
+      load128bit_guess(srcvp, &src_val);
       uint128_t __attribute__ ((aligned (16))) cmp_val = src_val;
       uint128_t __attribute__ ((aligned (16))) with_val = src_val;
       uint128_t *src = srcvp;
@@ -570,6 +581,7 @@ prototype module AtomicObjects {
       doABACheck();
       var ret : ABA(objType?);
       on this {
+        pragma "align 16 bytes"
         var dest : ABA(objType?);
         read128bit(atomicVar:c_ptr(void), c_addrOf(dest));
         ret = dest;
@@ -589,17 +601,19 @@ prototype module AtomicObjects {
       doABACheck();
       var ret : bool;
       on this {
+        pragma "align 16 bytes"
         var cmp = expectedObj;
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
-        var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
+        pragma "align 16 bytes"
+        var val = new ABA(objType?, toPointer(newObj), expectedObj.getABACount() + 1);
         ret = cas128bit(atomicVar:c_ptr(void), c_addrOf(cmp), c_addrOf(val)) : bool;
       }
       return ret;
     }
 
     proc compareAndSwapABA(expectedObj : ABA(objType?), newObj : ABA(objType?)) : bool {
-      compareAndSwapABA(expectedObj, newObj.getObject());
+      return compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
     proc ref write(newObj:objType?) {
@@ -612,7 +626,11 @@ prototype module AtomicObjects {
 
     proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
-      write128bit(atomicVar:c_ptr(void), c_addrOf(newObj));
+      on this {
+        pragma "align 16 bytes"
+        var val = newObj;
+        write128bit(atomicVar:c_ptr(void), c_addrOf(val));
+      }
     }
 
     proc writeABA(newObj: objType?) {
@@ -624,7 +642,11 @@ prototype module AtomicObjects {
       // _ABA_cnt to be written back, which by itself opens the possibility for other
       // ABA race conditions that we're trying to solve. 'write128bit_special' solves this
       // by setting the 'with' upper 64-bits equal to one plus the actual 'cmp' upper 64-bits.
-      write128bit_special(new ABA(objType?, toPointer(newObj), 0));
+      on this {
+        pragma "align 16 bytes"
+        var val = new ABA(objType?, toPointer(newObj), 0);
+        write128bit_special(atomicVar:c_ptr(void), c_addrOf(val));
+      }
     }
 
     inline proc ref exchange(newObj:objType?) : objType? {
@@ -635,10 +657,11 @@ prototype module AtomicObjects {
       doABACheck();
       var ret : ABA(objType?);
       on this {
+        pragma "align 16 bytes"
         var retval : ABA(objType?);
-        var _newObj = newObj;
+        pragma "align 16 bytes"
         var val = new ABA(objType?, toPointer(newObj), 0);
-        exchange128bit_special(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));
+        exchange128bit_special(atomicVar:c_ptr(void), c_addrOf(val), c_addrOf(retval));
         ret = retval;
       }
 
@@ -649,7 +672,9 @@ prototype module AtomicObjects {
       doABACheck();
       var ret : ABA(objType?);
       on this {
+        pragma "align 16 bytes"
         var retval : ABA(objType?);
+        pragma "align 16 bytes"
         var _newObj = newObj;
         var val = newObj;
         exchange128bit(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));

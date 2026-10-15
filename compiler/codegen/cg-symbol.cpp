@@ -886,6 +886,9 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     str = (isStatic ? "static " : "") + typestr + " " + cname;
   }
 
+  if (hasFlag(FLAG_ALIGN_16_BYTES))
+    str += " __attribute__((aligned(16)))";
+
   if (ct) {
     if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {

@@ -366,7 +366,22 @@ void setValueAlignment(llvm::Value* value, Type* astType, Symbol* astSymbol) {
   // Future work: we have propagated 'astSymbol' all the way to here so that
   // we can check its desired alignment, in addition to astType's, if any.
   if (astType == nullptr) return;
-  setValueAlignment(value, astType->getLLVMAlignment());
+  int alignment = astType->getLLVMAlignment();
+  if (astSymbol != nullptr && astSymbol->hasFlag(FLAG_ALIGN_16_BYTES)) {
+    if (isDeferredAlignment(alignment)) {
+      llvm::Type* ty = nullptr;
+      if (auto val = llvm::dyn_cast<llvm::AllocaInst>(value))
+        ty = val->getAllocatedType();
+      else if (auto val = llvm::dyn_cast<llvm::GlobalVariable>(value))
+        ty = val->getValueType();
+      else
+        INT_FATAL(astSymbol, "unexpected llvm::Value");
+      const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
+      alignment = layout.getABITypeAlign(ty).value();
+    }
+    alignment = std::max(alignment, 16);
+  }
+  setValueAlignment(value, alignment);
 }
 
 static

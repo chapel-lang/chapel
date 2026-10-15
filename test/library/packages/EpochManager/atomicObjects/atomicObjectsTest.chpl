@@ -48,6 +48,27 @@ proc main() {
   writeln(deltaABACnt);
   assert(deltaABACnt == 1024 * 1024);
 
+  writeln();
+
+  // writeABA(obj) stores obj and bumps the ABA count
+  var d = atomicObj.readABA();
+  atomicObj.writeABA(w);
+  var e = atomicObj.readABA();
+  writeln(e.getObject() == w);
+  writeln(e.getABACount() == d.getABACount() + 1);
+
+  // writeABA(ABA) stores the ABA as-is
+  atomicObj.writeABA(d);
+  writeln(atomicObj.readABA() == d);
+
+  // compareAndSwapABA(ABA, ABA)
+  var f = atomicObj.readABA();
+  writeln(atomicObj.compareAndSwapABA(f, e));
+  writeln(atomicObj.read() == w);
+  writeln(atomicObj.readABA().getABACount() == f.getABACount() + 1);
+  writeln(atomicObj.compareAndSwapABA(f, e));
+  writeln(atomicObj.read() == w);
+
   delete x;
   delete w;
 }
