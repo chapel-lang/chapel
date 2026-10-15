@@ -1990,8 +1990,8 @@ static bool writeChplenvCache(const std::string& path, const std::string& key,
     llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
     // writes the key's length, the key, and the output to the temporary file.
     // technically, we don't need the key in the cache file at all
+    // we only check the hash of the key matches when reading from the cache
     // but it helps with debugging and observability.
-    // we never check that the key matches when reading from the cache.
     os << key.size() << "\n" << key << output;
     os.close();
     if (os.has_error()) {
@@ -2004,6 +2004,8 @@ static bool writeChplenvCache(const std::string& path, const std::string& key,
     llvm::sys::fs::remove(tmpPath);
     return false;
   }
+
+  evictChplenvCache(llvm::sys::path::parent_path(path).str());
   return true;
 }
 
@@ -2085,9 +2087,7 @@ static void populateEnvMap() {
   }
 
   if (!restoreFromDriver && fChplenvCache && !usedCache) {
-    if (writeChplenvCache(cachePath, cacheKey, printchplenvOutput)) {
-      evictChplenvCache(llvm::sys::path::parent_path(cachePath).str());
-    }
+    writeChplenvCache(cachePath, cacheKey, printchplenvOutput);
   }
 
   // If in initial driver invocation, save printchplenv command output to disk
