@@ -178,6 +178,7 @@ Compilation Trace Options:
                                       compiler pass
 
 Miscellaneous Options:
+      --[no-]chplenv-cache            [Don't] reuse cached printchplenv output
       --[no-]detailed-errors          Enable [disable] detailed error messages
       --[no-]devel                    Compile as a developer [user]
       --explain-call <function or operator name>[:<module>][:<line>]

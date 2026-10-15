@@ -50,14 +50,26 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
 #include "chpl/util/clang-integration.h"
+#include "chpl/util/filesystem.h"
+#include "chpl/util/version-info.h"
 
 #include "chpl/util/assertions.h"
 
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
+
+#include <algorithm>
 #include <string>
 #include <map>
 #include <regex>
 #include <csignal>
 #include <numeric>
+#include <type_traits>
+#include <sys/time.h>
+#include <unistd.h>
+
+extern char** environ;
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -70,8 +82,9 @@
 #endif
 
 
+// envMap MUST be a std::map so we get a deterministic iteration order
+// (ascending order of keys)
 std::map<std::string, const char*> envMap;
-
 // envMap used as input to getChplEnv
 static std::map<std::string, const char*> envMapChplEnvInput;
 
@@ -157,6 +170,8 @@ bool fDriverDoMonolithic = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 std::string driverTmpDir;
+static bool fChplenvCache = true;
+static std::string fChplenvCacheDir;
 bool fExitLeaks = false;
 bool fBuiltinRuntime = true;
 bool fLibraryCompile = false;
@@ -1519,6 +1534,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-passes-memory", ' ', NULL, "[Don't] print memory usage after each compiler pass", "N", &printPassesMemory, "CHPL_PRINT_PASSES_MEMORY", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
+ {"chplenv-cache", ' ', NULL, "[Don't] reuse cached printchplenv output", "N", &fChplenvCache, "CHPL_ENV_CACHE", NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, "CHPL_DETAILED_ERRORS", NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings},
  {"explain-call", ' ', "<function or operator name>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
@@ -1624,6 +1640,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-codegen-id", ' ', NULL, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", NULL},
  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
  {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL},
+ {"chplenv-cache-dir", ' ', "<directory>", "Directory for cached printchplenv output (defaults to $HOME/.chpl)", "P", &fChplenvCacheDir, "CHPL_ENV_CACHE_DIR", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
@@ -1870,6 +1887,166 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
   return false;
 }
 
+static void addChplenvCacheKeyField(std::string& key, const std::string& name,
+                                    const std::string& value) {
+  key += std::to_string(name.size()) + ":" + name + "=" +
+         std::to_string(value.size()) + ":" + value + "\n";
+}
+
+static std::string computeChplenvCacheKey() {
+  std::string key;
+  // reserve some space to avoid frequent reallocations
+  key.reserve(4096);
+  addChplenvCacheKeyField(key, "version", chpl::getVersion());
+
+  // need envMap and chplVars so we count things both as CHPL_COMM and `--comm`
+  static_assert(
+      std::is_same_v<decltype(envMap), std::map<std::string, const char*>>,
+      "envMap must be a std::map for a deterministic cache key");
+  for (const auto& pair : envMap) {
+    addChplenvCacheKeyField(key, "input:" + pair.first, pair.second ? pair.second : "");
+  }
+
+  llvm::SmallVector<std::string, 8> chplVars;
+  for (char** env = environ; *env != nullptr; env++) {
+    if (strncmp(*env, "CHPL", 4) == 0) chplVars.push_back(*env);
+  }
+  std::sort(chplVars.begin(), chplVars.end());
+  for (const auto& var : chplVars) {
+    addChplenvCacheKeyField(key, "env", var);
+  }
+
+  const char* path = getenv("PATH");
+  addChplenvCacheKeyField(key, "PATH", path ? path : "");
+
+  // chplconfig locations searched by util/chplenv/overrides.py
+  llvm::SmallVector<std::string, 8> configDirs;
+  if (const char* dir = getenv("CHPL_CONFIG")) configDirs.push_back(dir);
+  if (const char* dir = getenv("HOME")) configDirs.push_back(dir);
+  configDirs.push_back(CHPL_HOME);
+  for (const auto& dir : configDirs) {
+    for (const char* name : {"chplconfig", ".chplconfig"}) {
+      std::string file = dir + "/" + name;
+      std::string contents, err;
+      if (chpl::readFile(file.c_str(), contents, err)) {
+        addChplenvCacheKeyField(key, file, contents);
+      }
+    }
+  }
+
+  return key;
+}
+
+static std::string chplenvCachePath(const std::string& key) {
+  std::string dir = fChplenvCacheDir;
+  if (dir.empty()) {
+    const char* home = getenv("HOME");
+    if (home == nullptr || home[0] == '\0') return "";
+    dir = std::string(home) + "/.chpl";
+  }
+  return dir + "/printchplenv-" +
+         chpl::fileHashToHex(chpl::hashString(key));
+}
+
+// Cache files contain the key's length, the key, then printchplenv's output.
+static bool readChplenvCache(const std::string& path, const std::string& key,
+                             std::string& output) {
+  if (path.empty()) return false;
+
+  // only trust files we wrote, in case the cache dir is shared
+  llvm::sys::fs::file_status status;
+  if (llvm::sys::fs::status(path, status) || status.getUser() != geteuid()) {
+    return false;
+  }
+
+  std::string contents, err;
+  if (!chpl::readFile(path.c_str(), contents, err)) return false;
+
+  // if the file exists, we know the cache is valid because the file
+  // is named based on the hash of the key.
+
+  std::string header = std::to_string(key.size()) + "\n";
+  output = contents.substr(header.size() + key.size());
+  if (output.empty()) return false;
+
+  // bump use time for lru cache
+  utimes(path.c_str(), nullptr);
+  return true;
+}
+
+// evicts cache entries based on lru
+static void evictChplenvCache(const std::string& dir) {
+  const size_t maxEntries = 5;
+  const std::string prefix = "printchplenv-";
+  const std::string tmpSuffix = ".tmp";
+
+  llvm::SmallVector<std::pair<llvm::sys::TimePoint<>, std::string>, 8> entries;
+  std::error_code ec;
+  for (llvm::sys::fs::directory_iterator it(dir, ec), end;
+       it != end && !ec; it.increment(ec)) {
+    std::string name = llvm::sys::path::filename(it->path()).str();
+    // skip unrelated files and in-progress writes from concurrent runs
+    if (name.compare(0, prefix.size(), prefix) != 0) continue;
+    if (name.size() >= tmpSuffix.size() &&
+        name.compare(name.size() - tmpSuffix.size(), tmpSuffix.size(),
+                     tmpSuffix) == 0) {
+      continue;
+    }
+    // only evict files owned by the current user
+    llvm::sys::fs::file_status status;
+    if (llvm::sys::fs::status(it->path(), status) ||
+        status.getUser() != geteuid()) {
+      continue;
+    }
+    entries.emplace_back(status.getLastModificationTime(), it->path());
+  }
+
+  if (entries.size() <= maxEntries) return;
+
+  std::sort(entries.begin(), entries.end(),
+            [](const auto& a, const auto& b) { return a.first > b.first; });
+  for (size_t i = maxEntries; i < entries.size(); i++) {
+    llvm::sys::fs::remove(entries[i].second);
+  }
+}
+
+// Returns true if a new cache file was written
+static bool writeChplenvCache(const std::string& path, const std::string& key,
+                              const std::string& output) {
+  if (path.empty() || output.empty()) return false;
+  if (chpl::makeDir(llvm::sys::path::parent_path(path), /* makeParents */ true)) {
+    return false;
+  }
+
+  // write a unique file then rename, so concurrent runs never see partial output
+  int fd;
+  llvm::SmallString<128> tmpPath;
+  if (llvm::sys::fs::createUniqueFile(path + "-%%%%%%%%.tmp", fd, tmpPath)) {
+    return false;
+  }
+  {
+    llvm::raw_fd_ostream os(fd, /* shouldClose */ true);
+    // writes the key's length, the key, and the output to the temporary file.
+    // technically, we don't need the key in the cache file at all
+    // we only check the hash of the key matches when reading from the cache
+    // but it helps with debugging and observability.
+    os << key.size() << "\n" << key << output;
+    os.close();
+    if (os.has_error()) {
+      os.clear_error();
+      llvm::sys::fs::remove(tmpPath);
+      return false;
+    }
+  }
+  if (llvm::sys::fs::rename(tmpPath, path)) {
+    llvm::sys::fs::remove(tmpPath);
+    return false;
+  }
+
+  evictChplenvCache(llvm::sys::path::parent_path(path).str());
+  return true;
+}
+
 static void populateEnvMap() {
   // populates global envMap if the key has not been already set from
   // argument processing
@@ -1877,31 +2054,31 @@ static void populateEnvMap() {
   envMapChplEnvInput = envMap;
 
   // Set up in-memory copy of printchplenv command output, to support driver
-  // mode save/restore from disk.
+  // mode save/restore from disk and caching across compilations.
   static const char* printchplenvOutputFilename = "printchplenvOutput.tmp";
-  std::string* printchplenvOutputPtr;
   std::string printchplenvOutput;
-  if (!fDriverDoMonolithic) {
-    if (driverInSubInvocation) {
-      // This is a driver sub-invocation, so restore and use saved output.
-      restoreDriverTmpMultiline(
-          printchplenvOutputFilename,
-          [&printchplenvOutput](std::string_view restoredOutput) {
-            printchplenvOutput = restoredOutput;
-          });
-    }
-
-    // Set up this ptr as an input (for initial invocation) or output (for
-    // sub-invocation) parameter.
-    printchplenvOutputPtr = &printchplenvOutput;
-  } else {
-    // Monolithic mode, no need to capture output.
-    printchplenvOutputPtr = nullptr;
+  std::string cacheKey;
+  std::string cachePath;
+  bool usedCache = false;
+  bool restoreFromDriver = !fDriverDoMonolithic && driverInSubInvocation;
+  if (restoreFromDriver) {
+    // This is a driver sub-invocation, so restore and use saved output.
+    restoreDriverTmpMultiline(
+        printchplenvOutputFilename,
+        [&printchplenvOutput](std::string_view restoredOutput) {
+          printchplenvOutput = restoredOutput;
+        });
+  } else if (fChplenvCache) {
+    // Monolithic mode or initial driver invocation, so try the cache.
+    cacheKey = computeChplenvCacheKey();
+    cachePath = chplenvCachePath(cacheKey);
+    usedCache = readChplenvCache(cachePath, cacheKey, printchplenvOutput);
   }
 
-  // Get printchplenv output and collect into a map
+  // Get printchplenv output and collect into a map. This reuses
+  // printchplenvOutput if it is non-empty, otherwise sets it.
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME.c_str(),
-                                        printchplenvOutputPtr);
+                                        printchplenvOutput);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
       USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
@@ -1909,6 +2086,10 @@ static void populateEnvMap() {
     } else {
       USR_FATAL("failed to get environment settings");
     }
+  }
+
+  if (!restoreFromDriver && fChplenvCache && !usedCache) {
+    writeChplenvCache(cachePath, cacheKey, printchplenvOutput);
   }
 
   // If in initial driver invocation, save printchplenv command output to disk

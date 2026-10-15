@@ -1,0 +1,4 @@
+--stop-after-pass parseAndConvertUast --chplenv-cache-dir chplenvCache --no-chplenv-cache # chplenv-cache.none.good
+--stop-after-pass parseAndConvertUast --chplenv-cache-dir chplenvCache # chplenv-cache.base.good
+--stop-after-pass parseAndConvertUast --chplenv-cache-dir chplenvCacheGasnet --comm=gasnet --gasnet-segment=everything # chplenv-cache.gasnet.good
+--stop-after-pass parseAndConvertUast --chplenv-cache-dir chplenvCache --comm=gasnet --gasnet-segment=everything # chplenv-cache.base+gasnet.good

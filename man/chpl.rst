@@ -911,6 +911,14 @@ OPTIONS
 
 *Miscellaneous Options*
 
+.. _man-chplenv-cache:
+.. index:: --chplenv-cache, --no-chplenv-cache
+
+**\--[no-]chplenv-cache**
+
+    Reuses [doesn't reuse] cached output of printchplenv from a previous
+    compilation.
+
 .. _man-detailed-errors:
 .. index:: --detailed-errors, --no-detailed-errors
 

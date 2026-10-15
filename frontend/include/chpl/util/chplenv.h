@@ -44,7 +44,6 @@ using ChplEnvMap = std::unordered_map<std::string, std::string>;
     output from printchplenv invocation. Treated as an input parameter if
     non-empty, to be re-used instead of calling printchplenv. Treated as an
     output parameter if empty, and will be set from this call of printchplenv.
-    Ignored if null.
 
   returns
     an error code if something went wrong while running printchplenv,
@@ -53,10 +52,10 @@ using ChplEnvMap = std::unordered_map<std::string, std::string>;
  */
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome, std::string* printchplenvOutput = nullptr);
+           const char* chplHome, std::string& printchplenvOutput);
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome, std::string* printchplenvOutput = nullptr);
+           const char* chplHome, std::string& printchplenvOutput);
 
 /*
   Check if a given path might be CHPL_HOME based on it containing

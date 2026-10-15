@@ -7,9 +7,12 @@ From: rockylinux/rockylinux:8
 %post
     /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-epel.sh
-    /provision-scripts/dnf-deps.sh
+    /provision-scripts/dnf-deps-gcc-toolset-10.sh
     # installs LLVM 16
     /provision-scripts/dnf-llvm.sh
+
+%environment
+    source /opt/rh/gcc-toolset-10/enable #unsudo
 
 %runscript
     ../../provision-scripts/run.sh "$@"

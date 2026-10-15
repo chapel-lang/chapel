@@ -18,7 +18,6 @@ from utils import (
     warning,
     check_valid_var,
 )
-from collections import defaultdict
 
 
 # Get a tuple of supported major LLVM versions as strings.
@@ -151,8 +150,8 @@ def get_clang_cfg_file(clang_command):
         return None
 
     got_file = None
-    exists, ret, got_out, _ = try_run_command([clang_command, "--version"])
-    if exists and ret == 0 and got_out:
+    got_out = get_clang_version(clang_command)
+    if got_out:
         # fine the line that starts with "Configuration file:"
         for line in got_out.splitlines():
             if line.startswith("Configuration file:"):
@@ -195,6 +194,7 @@ def check_llvm_config(llvm_config):
 # install some necessary package.
 #
 # Returns a tuple like (isOk, errorMessage)
+@memoize
 def check_llvm_packages(llvm_config):
     llvm_header = ""
     llvm_include_ok = False
@@ -294,8 +294,14 @@ def find_system_llvm_config():
 
     homebrew_prefix = homebrew_utils.get_homebrew_prefix()
 
-    paths = []
+    unversioned_paths = ["llvm-config"]
+    if homebrew_prefix:
+        unversioned_paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
+
+    # Search newest version first and stop at the first usable llvm-config,
+    # rather than probing every candidate
     for vers in llvm_versions():
+        paths = []
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
@@ -311,31 +317,12 @@ def find_system_llvm_config():
                 homebrew_prefix + "/opt/llvm@" + vers + "/bin/llvm-config"
             )
 
-    # check also unversioned commands
-    paths.append("llvm-config")
-    if homebrew_prefix:
-        paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
-
-    by_version = defaultdict(list)
-    # TODO: this is unused and never printed. Should we report this in some way?
-    # not sure how to do that well without being super annoying with extraneous errors
-    errs = []
-
-    for command in paths:
-        version, config_err = check_llvm_config(command)
-        if not config_err:
-            ok, err = check_llvm_packages(command)
-            if ok:
-                by_version[version].append(command)
-            else:
-                errs.append((command, err))
-        else:
-            errs.append((command, config_err))
-
-    for version in llvm_versions():
-        commands = by_version[version]
-        if commands:
-            return commands[0]
+        for command in paths + unversioned_paths:
+            version, config_err = check_llvm_config(command)
+            if not config_err and version == vers:
+                ok, _ = check_llvm_packages(command)
+                if ok:
+                    return command
 
     return ""
 

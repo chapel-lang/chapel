@@ -219,7 +219,11 @@ def main():
 
             subdirs.append(subpath)
 
-    subdirs.sort(key=fixname)
+    subdirs.sort(
+        key=lambda s: [
+            int(p) if p.isdigit() else p for p in re.split(r"(\d+)", fixname(s))
+        ]
+    )
 
     tonotes = {}
     unused_notes = set(compatibility_notes.keys())
