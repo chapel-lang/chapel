@@ -208,12 +208,27 @@ jobs:
           awk -v home="$CHPL_HOME/" -v requested_dirs="$TEST_DIRS" '
             BEGIN {
               # these are well-known slow directories that should be split into multiple jobs
+              slow_directories["test/arrays"] = 1
+              slow_directories["test/chpldoc"] = 1
               slow_directories["test/classes"] = 1
+              slow_directories["test/constrained-generics"] = 1
+              slow_directories["test/distributions"] = 1
+              slow_directories["test/domains"] = 1
+              slow_directories["test/errhandling"] = 1
+              slow_directories["test/extern"] = 1
+              slow_directories["test/gpu"] = 1
+              slow_directories["test/io"] = 1
               slow_directories["test/library"] = 1
               slow_directories["test/library/standard"] = 1
+              slow_directories["test/modules"] = 1
+              slow_directories["test/optimizations"] = 1
+              slow_directories["test/parallel"] = 1
+              slow_directories["test/trivial"] = 1
               slow_directories["test/types"] = 1
               slow_directories["test/functions"] = 1
               slow_directories["test/studies"] = 1
+              slow_directories["test/visibility"] = 1
+              slow_directories["test/users"] = 1
               # explicitly requested directories are always their own jobs
               n = split(requested_dirs, req)
               for (i = 1; i <= n; i++) {
