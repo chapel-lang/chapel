@@ -18,6 +18,10 @@ defaults:
 jobs:
   core-checks:
     uses: $/.github/workflows/core-ci-checks.yml
+    permissions:
+      contents: read
+      packages: read
+      actions: write
     secrets:
       WEBSITE_KEY: ${{ secrets.WEBSITE_KEY }}
       WEBSITE_KNOWN_HOSTS: ${{ secrets.WEBSITE_KNOWN_HOSTS }}
