@@ -642,9 +642,9 @@ def run_sub_tests(items, num_workers):
     )
     for_files = isinstance(items[0], str)
     item_type = (
-        f"file{"s" if plural_items else ""}"
+        f"file{'s' if plural_items else ''}"
         if for_files
-        else f"director{"ies" if plural_items else "y"}"
+        else f"director{'ies' if plural_items else 'y'}"
     )
     log_str = "[Running sub_test on {0} {1}{2}]".format(
         len(items), item_type, parallel_log_str
