@@ -579,7 +579,7 @@ jobs:
           docker run --rm --platform linux/386 debian:latest bash -c '
           test $(uname -m) == "i686"
           '
-      - name: run test-linux32.bash
+      - name: run tests in linux32 container
         run: |
           docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
           set -exuo pipefail
