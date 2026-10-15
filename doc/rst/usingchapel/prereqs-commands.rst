@@ -1,4 +1,14 @@
-  * Alma Linux 8, 9, 10::
+  * Alma Linux 8::
+
+      sudo dnf upgrade
+      sudo dnf install epel-release
+      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install which diffutils
+      sudo dnf install llvm-devel clang clang-devel
+      source /opt/rh/gcc-toolset-10/enable
+
+
+  * Alma Linux 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
@@ -73,7 +83,17 @@
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 9, 10::
+  * Rocky Linux 8::
+
+      sudo dnf upgrade
+      sudo dnf install epel-release
+      sudo dnf install gcc-toolset-10 gcc-toolset-10-gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
+      sudo dnf install which diffutils
+      sudo dnf install llvm-devel clang clang-devel
+      source /opt/rh/gcc-toolset-10/enable
+
+
+  * Rocky Linux 9, 10::
 
       sudo dnf upgrade
       sudo dnf install epel-release
