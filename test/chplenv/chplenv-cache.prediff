@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+log=$2
+
+read -ra opts <<< "$4"
+cachedir=""
+for ((i = 0; i < ${#opts[@]}; i++)); do
+  case "${opts[i]}" in
+    --chplenv-cache-dir) cachedir="${opts[i+1]}" ;;
+  esac
+done
+
+# cache files are "<key length>\n<key><printchplenv output>"; drop the key
+# list all cache files by creation time
+while IFS= read -r f; do
+  [[ -f $f && $f != *.tmp ]] || continue
+  len=$(head -n 1 "$f")
+  tail -c +$(( ${#len} + 1 + len + 1 )) "$f"
+done < <(ls -1tr "$cachedir"/printchplenv-* 2>/dev/null) >> "$log"

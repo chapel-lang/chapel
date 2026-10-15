@@ -41,6 +41,8 @@ _chpl ()
 --cc-warnings \
 --ccflags \
 --checks \
+--chplenv-cache \
+--chplenv-cache-dir \
 --client-server-library \
 --client-server-library-debug \
 --codegen \
@@ -193,6 +195,7 @@ _chpl ()
 --no-cast-checks \
 --no-cc-warnings \
 --no-checks \
+--no-chplenv-cache \
 --no-client-server-library \
 --no-client-server-library-debug \
 --no-codegen \
@@ -466,6 +469,7 @@ _chpl ()
 --cast-checks \
 --ccflags \
 --checks \
+--chplenv-cache \
 --codegen \
 --comm \
 --comm-substrate \
@@ -533,6 +537,7 @@ _chpl ()
 --no-cache-remote \
 --no-cast-checks \
 --no-checks \
+--no-chplenv-cache \
 --no-codegen \
 --no-const-arg-checks \
 --no-copy-propagation \

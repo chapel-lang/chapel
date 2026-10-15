@@ -28,34 +28,25 @@
 
 namespace chpl {
 
-static void parseChplEnv(std::string& output, ChplEnvMap& into) {
-  // Lines
-  std::string line= "";
-  std::string lineDelimiter = "\n";
-  size_t linePos = 0;        // Line break position
+static void parseChplEnv(const std::string& output, ChplEnvMap& into) {
+  const char lineDelimiter = '\n';
+  const char tokenDelimiter = '=';
 
-  // Tokens
-  std::string tokenDelimiter = "=";
-  size_t delimiterPos = 0;    // Position of delimiter
-  size_t valuePos = 0;        // Position of value
+  std::string::size_type lineStart = 0;
+  std::string::size_type lineEnd = 0;
 
-  std::string key = "";
-  std::string value = "";
-
-  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-  {
-    line = output.substr(0, linePos);
+  while ((lineEnd = output.find(lineDelimiter, lineStart)) != std::string::npos) {
+    auto line = std::string_view(output).substr(lineStart, lineEnd - lineStart);
 
     // Key is substring up until "=" on a given line
-    delimiterPos = line.find(tokenDelimiter);
-    key = line.substr(0, delimiterPos);
+    auto delimiterPos = line.find(tokenDelimiter);
+    auto key = line.substr(0, delimiterPos);
 
     // Value is substring after "=" on a given line
-    valuePos = delimiterPos + tokenDelimiter.length();
-    value = line.substr(valuePos);
+    auto value = line.substr(delimiterPos + sizeof(tokenDelimiter));
 
-    into[key] = value;
-    output.erase(0, linePos + lineDelimiter.length());
+    into[std::string(key)] = std::string(value);
+    lineStart = lineEnd + sizeof(lineDelimiter);
   }
 }
 
@@ -63,12 +54,12 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
 template <typename InputMap>
 llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
                                          const char* chplHome,
-                                         std::string* printchplenvOutput) {
+                                         std::string& printchplenvOutput) {
   ChplEnvMap result;
 
-  if (printchplenvOutput && !printchplenvOutput->empty()) {
+  if (!printchplenvOutput.empty()) {
     // Just re-use passed-in command output
-    parseChplEnv(*printchplenvOutput, result);
+    parseChplEnv(printchplenvOutput, result);
   } else {
     // Construct and run printchplenv command
     std::string command;
@@ -88,14 +79,10 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
       return commandOutput.getError();
     }
 
-    // Save copy of command output if out-parameter was supplied
-    if (printchplenvOutput) {
-      assert(printchplenvOutput->empty());
-      // This is intentionally copied since parseChplEnv destroys the input
-      *printchplenvOutput = commandOutput.get();
-    }
+    // save a copy of the command output into the out-parameter
+    printchplenvOutput = std::move(commandOutput.get());
 
-    parseChplEnv(commandOutput.get(), result);
+    parseChplEnv(printchplenvOutput, result);
   }
 
   return result;
@@ -103,13 +90,13 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome, std::string& printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome, std::string& printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
