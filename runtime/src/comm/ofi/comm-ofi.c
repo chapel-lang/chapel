@@ -6229,7 +6229,7 @@ nb_handle_t ofi_put_nb(nb_handle_t handle, const void* addr, c_nodeid_t node,
       handle->mrAddr = myAddr;
       handle->addr = src;
     } else {
-      amRequestRmaPut(node, (void *) src, (void *) dest, size);
+      amRequestRmaPut(node, (void *) src, (void *) dest, chunkSize);
       atomic_store_bool(&handle->complete, true);
     }
     offset += chunkSize;
@@ -6628,9 +6628,9 @@ nb_handle_t ofi_get_nb(nb_handle_t handle, void* addr, c_nodeid_t node,
 
       handle->mrAddr = myAddr;
       handle->addr = dest;
-      handle->size = size;
+      handle->size = chunkSize;
     } else {
-      amRequestRmaGet(node, (void *) dest, (void *) src, size);
+      amRequestRmaGet(node, (void *) dest, (void *) src, chunkSize);
       atomic_store_bool(&handle->complete, true);
     }
     offset += chunkSize;
