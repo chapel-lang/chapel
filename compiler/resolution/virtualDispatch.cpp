@@ -1332,7 +1332,7 @@ void insertDynamicDispatchCalls() {
           // transmitted correctly for a remote class.
           // See test/classes/sungeun/remoteDynamicDispatch.chpl
           // (on certain machines and configurations).
-          Type*      cidType = dtInt[INT_SIZE_32];
+          Type*      cidType = CLASS_ID_TYPE;
           VarSymbol* cid     = newTemp("_virtual_method_tmp_", cidType);
 
           Expr*      _this   = call->get(2);
