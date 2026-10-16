@@ -72,9 +72,9 @@ def merge_summaries(paths, ga_groups=False):
     def sort_key(line):
         if line.startswith("[Error"):
             return (0, line)
-        elif line.startswith("[Suppress"):
+        elif line.startswith("Suppress ("):
             return (1, line)
-        elif line.startswith("[Future"):
+        elif line.startswith("Future ("):
             return (2, line)
         else:
             return (3, line)
