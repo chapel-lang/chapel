@@ -17,3 +17,7 @@ while IFS= read -r f; do
   len=$(head -n 1 "$f")
   tail -c +$(( ${#len} + 1 + len + 1 )) "$f"
 done < <(ls -1tr "$cachedir"/printchplenv-* 2>/dev/null) >> "$log"
+
+# prediff away warning from setting gasnet but not target-cpu
+sed -e "/warning: --specialize was set, but/d" "$log" > "$log.tmp"
+mv "$log.tmp" "$log"
