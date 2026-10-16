@@ -76,14 +76,16 @@ def merge_summaries(paths, ga_groups=False):
             return (1, line)
         elif line.startswith("Future ("):
             return (2, line)
-        else:
+        elif line.startswith("[Warning"):
             return (3, line)
+        else:
+            return (4, line)
 
     details.sort(key=sort_key)
 
     lines = ["[Test Summary - {0}]".format(time.strftime("%y%m%d.%H%M%S"))]
     if ga_groups:
-        group_titles = {1: "Suppressions", 2: "Futures"}
+        group_titles = {1: "Suppressions", 2: "Futures", 3: "Warnings"}
         current_group = None
         for line in details:
             group = sort_key(line)[0]
