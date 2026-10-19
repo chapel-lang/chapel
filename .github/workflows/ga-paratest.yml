@@ -162,7 +162,7 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: upload Chapel build
-        uses: ./.github/actions/upload-chapel-build
+        uses: $/.github/actions/upload-chapel-build
         with:
           name: ${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}
           retention-days: ${{ inputs.retention-days }}
@@ -391,7 +391,7 @@ jobs:
         with:
           persist-credentials: false
       - name: download Chapel build
-        uses: ./.github/actions/download-chapel-build
+        uses: $/.github/actions/download-chapel-build
         with:
           name: ${{ env.CHAPEL_BUILD_FILES_SLUG }}-${{ inputs.configuration }}
       - name: Test runner setup
