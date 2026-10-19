@@ -463,7 +463,7 @@ jobs:
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL_NIGHTLY" "$IMAGE_FULL_NAME"
 
-  test-distributions:
+  build-distributions:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -471,8 +471,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
-    env:
-      DIR_UNDER_TEST: test/distributions/robust/arithmetic
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -486,11 +484,39 @@ jobs:
         num_procs=$(./util/buildRelease/chpl-make-cpu_count)
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
-    - name: Test Chapel with block
+    - name: Upload Chapel build
+      uses: ./.github/actions/upload-chapel-build
+      with:
+        name: chapel-build-files-distributions
+        retention-days: 1
+
+  test-distributions:
+    needs: build-distributions
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dist_type: [block, cyclic, replicated]
+    env:
+      DIR_UNDER_TEST: test/distributions/robust/arithmetic
+      DIST_TYPE: ${{ matrix.dist_type }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Download Chapel build
+      uses: ./.github/actions/download-chapel-build
+      with:
+        name: chapel-build-files-distributions
+    - name: Test Chapel with ${{ matrix.dist_type }}
       shell: bash
-      env:
-        DIST_TYPE: block
-      run: &test-dist-type |
+      run: |
         . ./util/setchplenv.bash
         . util/cron/common-gasnet.bash
         printchplenv --all --internal
@@ -498,16 +524,6 @@ jobs:
         start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
                    --parallel "$num_procs" \
                    "$DIR_UNDER_TEST"
-    - name: Test Chapel with cyclic
-      shell: bash
-      env:
-        DIST_TYPE: cyclic
-      run: *test-dist-type
-    - name: Test Chapel with replicated
-      shell: bash
-      env:
-        DIST_TYPE: replicated
-      run: *test-dist-type
 
   paratest-linux64:
     name: Chapel paratest on linux64

@@ -1,0 +1,34 @@
+name: Upload Chapel build
+description: Package the generated (git-ignored) files of a Chapel build and upload them as an artifact
+
+inputs:
+  name:
+    description: Artifact name (without the .tar.gz extension)
+    required: true
+  retention-days:
+    description: Number of days to retain the artifact
+    required: false
+    default: "7"
+
+runs:
+  using: composite
+  steps:
+    - name: package Chapel build
+      shell: bash -euo pipefail {0}
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}
+      run: |
+        git ls-files --others --ignored --exclude-standard -z > "$RUNNER_TEMP/$ARTIFACT_NAME.files"
+        if [[ ! -s "$RUNNER_TEMP/$ARTIFACT_NAME.files" ]]; then
+          echo "No generated build files were found"
+          exit 1
+        fi
+        tar --null --files-from="$RUNNER_TEMP/$ARTIFACT_NAME.files" \
+          -czf "$RUNNER_TEMP/$ARTIFACT_NAME.tar.gz"
+    - name: upload Chapel build
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.name }}.tar.gz
+        path: ${{ runner.temp }}/${{ inputs.name }}.tar.gz
+        archive: false
+        retention-days: ${{ inputs.retention-days }}
