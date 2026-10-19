@@ -69,7 +69,7 @@ class UseStmt final : public VisibilityStmt {
   ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
   PtrSet<const char*> typeWasNamed(Type* t) const override;
-  void typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const;
+  void typeWasNamed(Type* t, PtrSet<const char*>& namedTypes) const;
 
   bool            skipSymbolSearch(const char* name)            const override;
 

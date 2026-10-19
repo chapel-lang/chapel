@@ -35,7 +35,7 @@ public:
 
   void             haltNotWellFormed()                                   const;
 
-  const char*      toString();
+  const char*      toString()                                            const;
 
   CallExpr*        call;        // call expression
   BlockStmt*       scope;       // module scope as in M.call

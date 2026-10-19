@@ -105,7 +105,7 @@ class Vec {
   void push_back(C a) { add(a);}
   int add_exclusive(C a);
   C& add();
-  C head() { return n>0 ? *v : 0; }
+  C head() const { return n>0 ? *v : 0; }
   C only() { return n == 1 ? *v : 0; }
   C tail() { return n>0 ? v[n-1] : 0; }
   C pop();
