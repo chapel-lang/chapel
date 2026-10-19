@@ -372,12 +372,12 @@ def test_directory(test, test_type, num_workers):
                         are_tests = True
                         break
 
-            # don't run local 'sub_test's on --performance or --gen-graphs runs
             run_local_sub_test = False
-            if test_type == "run":
-                run_local_sub_test = os.access(
-                    os.path.join(dir, "sub_test"), os.X_OK
-                )
+            if os.access(os.path.join(dir, "sub_test"), os.X_OK):
+                # Don't descend further after finding a custom sub_test
+                del dirs[:]
+                # don't run local 'sub_test's on --performance or --gen-graphs runs
+                run_local_sub_test = test_type == "run"
 
             has_unsafe_par_pretest = (
                 "PRETEST" in files and "PRETEST_PARALLEL_SAFE" not in files
