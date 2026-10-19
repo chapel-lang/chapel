@@ -64,6 +64,8 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-19 100 \
     && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-19 100
 
+RUN pip install numpy cython
+
 RUN groupadd --gid 1001 chpl-tester && \
     useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
     echo "chpl-tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/chpl-tester && \
