@@ -54,7 +54,7 @@ jobs:
   build-ci-container:
     needs: should-build-ci-container
     if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-build) }}
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
