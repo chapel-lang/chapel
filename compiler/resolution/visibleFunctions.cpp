@@ -136,50 +136,50 @@ bool scopeDefinesVisibleFunctions(BlockStmt* scope) {
 ************************************** | *************************************/
 
 static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
-                             std::vector<FnSymbol*>* vec);
+                             std::vector<FnSymbol*>& vec);
 static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
                                 BlockStmt* block, CallExpr* call);
 
 static void getVisibleFunctionsVI(const char*         name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns);
+                                  CallExpr*           call,
+                                  VisibilityInfo&     visInfo,
+                                  PtrSet<BlockStmt*>& visited,
+                                  Vec<FnSymbol*>&     visibleFns);
 
 static void getVisibleMethods(const char* name, CallExpr* call,
                               Vec<FnSymbol*>& visibleFns);
 
-static void getVisibleMethodsVI(const char*           name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns);
+static void getVisibleMethodsVI(const char*         name,
+                                CallExpr*           call,
+                                VisibilityInfo&     visInfo,
+                                PtrSet<BlockStmt*>& visited,
+                                Vec<FnSymbol*>&     visibleFns);
 
 static void  buildVisibleFunctionMap();
 
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 
-void getMoreVisibleFunctionsOrMethods(const char*     name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns) {
-  if (visInfo->useMethodVisibility)
+void getMoreVisibleFunctionsOrMethods(const char*         name,
+                                      CallExpr*           call,
+                                      VisibilityInfo&     visInfo,
+                                      PtrSet<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>&     visibleFns) {
+  if (visInfo.useMethodVisibility)
     getVisibleMethodsVI(name, call, visInfo, visited, visibleFns);
   else
     getVisibleFunctionsVI(name, call, visInfo, visited, visibleFns);
 }
 
-void findVisibleFunctionsAllPOIs(CallInfo&       info,
+void findVisibleFunctionsAllPOIs(const CallInfo& info,
                                  Vec<FnSymbol*>& visibleFns) {
   findVisibleFunctions(info, NULL, NULL, NULL, visibleFns);
 }
 
-void findVisibleFunctions(CallInfo&             info,
-                          VisibilityInfo*       visInfo,
+void findVisibleFunctions(const CallInfo&     info,
+                          VisibilityInfo*     visInfo,
                           PtrSet<BlockStmt*>* visited,
-                          int*                  numVisitedP,
-                          Vec<FnSymbol*>&       visibleFns) {
+                          int*                numVisitedP,
+                          Vec<FnSymbol*>&     visibleFns) {
   CallExpr* call = info.call;
 
   //
@@ -203,9 +203,9 @@ void findVisibleFunctions(CallInfo&             info,
     if (visInfo != NULL) {
       // cf. getMoreVisibleFunctionsOrMethods()
       if (visInfo->useMethodVisibility)
-        getVisibleMethodsVI(info.name, call, visInfo, visited, visibleFns);
+        getVisibleMethodsVI(info.name, call, *visInfo, *visited, visibleFns);
       else
-        getVisibleFunctionsVI(info.name, call, visInfo, visited, visibleFns);
+        getVisibleFunctionsVI(info.name, call, *visInfo, *visited, visibleFns);
 
     } else {
       if (useMethodVisibilityRules(call, info.name))
@@ -291,10 +291,10 @@ void initTypeHelperNames() {
 *                                                                             *
 ************************************** | *************************************/
 static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
-                             CallExpr* call, std::vector<FnSymbol*>* vec);
+                             CallExpr* call, std::vector<FnSymbol*>& vec);
 
 static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
-                             std::vector<FnSymbol*>* vec) {
+                             std::vector<FnSymbol*>& vec) {
   if (scope->useList != NULL) {
     for_actuals(expr, scope->useList) {
       if (ImportStmt* import = toImportStmt(expr)) {
@@ -309,7 +309,7 @@ static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
 }
 
 static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
-                             CallExpr* call, std::vector<FnSymbol*>* vec) {
+                             CallExpr* call, std::vector<FnSymbol*>& vec) {
   if (!visStmt->isPrivate) {
     // Only public visStmt statements re-export, no need to search
     // otherwise
@@ -350,25 +350,25 @@ static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
                   if (fn->isVisible(call) == true) {
                     // We've determined that this function, even though it
                     // is private, can be used
-                    vec->push_back(fn);
+                    vec.push_back(fn);
                     privateOkay = true;
                   }
                 } else if (privateOkay) {
                   // We've already checked that private symbols are
                   // accessible in this pass and they are, so it's okay to
                   // add this function to the visible functions list
-                  vec->push_back(fn);
+                  vec.push_back(fn);
                 }
               } else {
                 // This was a public function, so always include it.
-                vec->push_back(fn);
+                vec.push_back(fn);
               }
             }
           }
 
           updateReexportEntry(vfb, nameToUse, mod->block, call);
           for_vector(FnSymbol, fn, vfb->reexports[nameToUse].second) {
-            vec->push_back(fn);
+            vec.push_back(fn);
           }
         } else {
           // No visible function map, so don't worry about it and just
@@ -388,7 +388,7 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
   if (reexportEntry.first == false) {
     // We haven't checked before, so recurse, save, and include what we found
     reexportEntry.first = true;
-    buildReexportVec(block, name, call, &reexportEntry.second);
+    buildReexportVec(block, name, call, reexportEntry.second);
 
     // Remove functions from re-exports that are already directly defined
     // in this module to avoid duplicates in circular public use scenarios.
@@ -420,38 +420,37 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       PtrSet<BlockStmt*>& visited,
                                       Vec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
-                                      PtrSet<const char*> typeNames);
+                                      const PtrSet<const char*>& typeNames);
 
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,
-                                  BlockStmt*            block,
-                                  VisibilityInfo*       visInfo,
+                                  BlockStmt*          block,
+                                  VisibilityInfo*     visInfo,
                                   PtrSet<BlockStmt*>& visited,
-                                  Vec<FnSymbol*>&       visibleFns,
+                                  Vec<FnSymbol*>&     visibleFns,
                                   bool inUseChain);
 
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
-                            VisibilityInfo*       visInfo,
+                            VisibilityInfo*     visInfo,
                             PtrSet<BlockStmt*>& visited,
-                            Vec<FnSymbol*>&       visibleFns);
+                            Vec<FnSymbol*>&     visibleFns);
 
 static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
                                    BlockStmt* instantiationPt);
 
 static void getVisibleMethodsVI(const char* name, CallExpr* call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns)
-{
-  INT_ASSERT(visited->empty() == !visInfo->inPOI()); //fyi
+                                VisibilityInfo&     visInfo,
+                                PtrSet<BlockStmt*>& visited,
+                                Vec<FnSymbol*>&     visibleFns) {
+  INT_ASSERT(visited.empty() == !visInfo.inPOI()); //fyi
 
-  if (visited->empty()) {
+  if (visited.empty()) {
     // it is the first time we are here for this 'call'
     BlockStmt* block = getVisibilityScope(call);
-    lookAtTypeFirst(name, call, block, visInfo, *visited, visibleFns);
+    lookAtTypeFirst(name, call, block, &visInfo, visited, visibleFns);
   }
 
-  getVisibleMethodsImpl(name, call, visInfo->currStart, visInfo,
-                        *visited, visibleFns, false);
+  getVisibleMethodsImpl(name, call, visInfo.currStart, &visInfo,
+                        visited, visibleFns, false);
 }
 
 static void getVisibleMethods(const char* name, CallExpr* call,
@@ -488,9 +487,9 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
 }
 
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
-                            VisibilityInfo*       visInfo,
+                            VisibilityInfo*     visInfo,
                             PtrSet<BlockStmt*>& visited,
-                            Vec<FnSymbol*>&       visibleFns)
+                            Vec<FnSymbol*>&     visibleFns)
 {
   INT_ASSERT(call->numActuals() >= 1);
   Expr* typeActual = NULL;
@@ -608,7 +607,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
                                                 VisibilityInfo* visInfo,
                                                 PtrSet<BlockStmt*>& visited,
                                                 Vec<FnSymbol*>& visibleFns,
-                                                PtrSet<const char*> typeNames)
+                                                const PtrSet<const char*>& typeNames)
 {
   // Why does the following statement apply to all blocks,
   // and not just module or function blocks?
@@ -667,10 +666,10 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  Vec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
-                                                 PtrSet<const char*> filter);
-static void mergeFilters(PtrSet<const char*> outer,
-                         PtrSet<const char*> inner,
-                         PtrSet<const char*>* merged);
+                                                 const PtrSet<const char*>& filter);
+static void mergeFilters(const PtrSet<const char*>& outer,
+                         const PtrSet<const char*>& inner,
+                         PtrSet<const char*>& merged);
 
 static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
                                          BlockStmt* block,
@@ -692,7 +691,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  Vec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
-                                                 PtrSet<const char*> filter) {
+                                                 const PtrSet<const char*>& filter) {
   // the block uses other modules
   for_actuals(expr, block->useList) {
     SymExpr* se = NULL;
@@ -722,16 +721,16 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           namedTypes = use->typeWasNamed(arg1Type);
           Type* canonArg1Type = canonicalClassType(arg1Type);
           if (canonArg1Type != arg1Type) {
-            use->typeWasNamed(canonArg1Type, &namedTypes);
+            use->typeWasNamed(canonArg1Type, namedTypes);
           }
 
           if (call->numActuals() == 2) {
             Expr* arg2 = call->get(2);
             Type* arg2Type = arg2->getValType();
-            use->typeWasNamed(arg2Type, &namedTypes);
+            use->typeWasNamed(arg2Type, namedTypes);
             Type* canonArg2Type = canonicalClassType(arg2Type);
             if (canonArg2Type != arg2Type) {
-              use->typeWasNamed(canonArg2Type, &namedTypes);
+              use->typeWasNamed(canonArg2Type, namedTypes);
             }
           }
           if (use->hasExceptList() && namedTypes.size() == 0) {
@@ -773,16 +772,16 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           namedTypes = import->typeWasNamed(arg1Type);
           Type* canonArg1Type = canonicalClassType(arg1Type);
           if (canonArg1Type != arg1Type) {
-            import->typeWasNamed(canonArg1Type, &namedTypes);
+            import->typeWasNamed(canonArg1Type, namedTypes);
           }
 
           if (call->numActuals() == 2) {
             Expr* arg2 = call->get(2);
             Type* arg2Type = arg2->getValType();
-            import->typeWasNamed(arg2Type, &namedTypes);
+            import->typeWasNamed(arg2Type, namedTypes);
             Type* canonArg2Type = canonicalClassType(arg2Type);
             if (canonArg2Type != arg2Type) {
-              import->typeWasNamed(canonArg2Type, &namedTypes);
+              import->typeWasNamed(canonArg2Type, namedTypes);
             }
           }
         }
@@ -801,7 +800,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
       if (mod->isVisible(call)) {
         if (filter.size() > 0 && namedTypes.size() > 0) {
           PtrSet<const char*> intersection;
-          mergeFilters(filter, namedTypes, &intersection);
+          mergeFilters(filter, namedTypes, intersection);
           // should we call namedTypes.clear() for space concerns?
 
           if (intersection.size() > 0) {
@@ -831,22 +830,22 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
 // This function returns a set containing the intersection of outer and inner.
 // Any symbol that is solely in one list and not the other is not valid and
 // should not be returned.
-static void mergeFilters(PtrSet<const char*> outer,
-                         PtrSet<const char*> inner,
-                         PtrSet<const char*>* merged) {
+static void mergeFilters(const PtrSet<const char*>& outer,
+                         const PtrSet<const char*>& inner,
+                         PtrSet<const char*>& merged) {
   INT_ASSERT(outer.size() > 0 && inner.size() > 0);
 
   if (outer.size() < inner.size()) {
     for (auto elt : outer) {
       if (inner.find(elt) != inner.end()) {
-        merged->insert(elt);
+        merged.insert(elt);
       }
     }
 
   } else {
     for (auto elt : inner) {
       if (outer.find(elt) != outer.end()) {
-        merged->insert(elt);
+        merged.insert(elt);
       }
     }
   }
@@ -857,7 +856,7 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       PtrSet<BlockStmt*>& visited,
                                       Vec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
-                                      PtrSet<const char*> typeNames) {
+                                      const PtrSet<const char*>& typeNames) {
   if (block == rootBlock) return; // nothing there
   //
   // avoid infinite recursion due to modules with mutual uses
@@ -1025,20 +1024,18 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain);
 
-static void getVisibleFunctionsVI(const char*            name,
-                                CallExpr*                call,
-                                VisibilityInfo*          visInfo,
-                                PtrSet<BlockStmt*>*    visited,
-                                Vec<FnSymbol*>&          visibleFns)
-{
-  getVisibleFunctionsImpl(name, call, visInfo->currStart, visInfo,
-                          *visited, visibleFns, false);
+static void getVisibleFunctionsVI(const char*         name,
+                                  CallExpr*           call,
+                                  VisibilityInfo&     visInfo,
+                                  PtrSet<BlockStmt*>& visited,
+                                  Vec<FnSymbol*>&     visibleFns) {
+  getVisibleFunctionsImpl(name, call, visInfo.currStart, &visInfo,
+                          visited, visibleFns, false);
 }
 
-void getVisibleFunctions(const char*      name,
-                         CallExpr*        call,
+void getVisibleFunctions(const char* name, CallExpr* call,
                          Vec<FnSymbol*>&  visibleFns) {
-  BlockStmt*           block    = getVisibilityScope(call);
+  BlockStmt* block = getVisibilityScope(call);
   PtrSet<BlockStmt*> visited;
 
   getVisibleFunctionsImpl(name, call, block, NULL,
@@ -1092,13 +1089,12 @@ static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
            instantiationPt->id, debugLoc(instantiationPt));
 }
 
-static void getVisibleFnsFirstVisit(const char*       name,
-                                CallExpr*             call,
-                                BlockStmt*            block,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns)
-{
+static void getVisibleFnsFirstVisit(const char*         name,
+                                    CallExpr*           call,
+                                    BlockStmt*          block,
+                                    VisibilityInfo*     visInfo,
+                                    PtrSet<BlockStmt*>& visited,
+                                    Vec<FnSymbol*>&     visibleFns) {
   // Why does the following statement apply to all blocks,
   // and not just module or function blocks?
   //

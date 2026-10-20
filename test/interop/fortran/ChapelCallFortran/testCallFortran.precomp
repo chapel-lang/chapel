@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gfortran -c fortranProcs.f90 -o fortranProcs.o
