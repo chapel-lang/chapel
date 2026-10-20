@@ -42,7 +42,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libclang-rt-${LLVM_VERSION}-dev \
     libcurl4-openssl-dev \
     libedit-dev \
-    libfltk-dev \
+    libfltk1.4-dev \
     libopenmpi-dev \
     libprotoc-dev \
     libzmq3-dev \
