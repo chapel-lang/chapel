@@ -45,12 +45,15 @@ module OuterModule {
   foo();   // Less explicit call on ChildModule.foo()
 
   sync {
+      var canPrint: atomic bool = false;
       begin { // Start of new task's body
         var a = 0;
         for i in 1..1000 do a += 1;
+        while !canPrint.read() do currentTask.yieldExecution();
         writeln( "Done: ", a);
       } // End of new tasks body
       writeln( "spun off a task!");
+      canPrint.write(true);
     }
     writeln( "Back together" );
 }
