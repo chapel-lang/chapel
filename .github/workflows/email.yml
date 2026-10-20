@@ -73,7 +73,7 @@ jobs:
           command: |
             set -exuo pipefail
             status=0
-            for commit_sha in $(git rev-list $SHA_BEFORE..$SHA_AFTER); do
+            for commit_sha in $(git rev-list --reverse $SHA_BEFORE..$SHA_AFTER); do
               pr_number=$(gh pr list --search "$commit_sha" --state merged --json "number" | jq -r '.[0].number')
               if [ -n "$pr_number" ]; then
                 echo "$pr_number" >> $PRS_LIST_TXT
