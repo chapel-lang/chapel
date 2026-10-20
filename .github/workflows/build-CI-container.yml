@@ -133,6 +133,7 @@ jobs:
         run: |
           docker run --rm -i -v "$PWD:/chapel" -w /chapel "$CHAPEL_CI_IMAGE-$ARCH" bash -exuo pipefail <<'EOF'
           source util/setchplenv.bash
+          printchplenv --all --internal
 
           chpl_llvm=$(util/chplenv/chpl_llvm.py)
           if [ "$chpl_llvm" != "system" ]; then
