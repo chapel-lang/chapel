@@ -153,6 +153,9 @@ jobs:
         run: |
           ./util/cron/test-make-install-check.bash
 
+  test-llvm-bundled:
+    uses: $/.github/workflows/test-llvm-bundled.yml
+
   build-linux-packages:
     uses: $/.github/workflows/package-builds.yml
 
