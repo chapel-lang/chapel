@@ -18,6 +18,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  merge_group:
   workflow_dispatch:
   schedule:
     - cron: '0 20 * * 2'
@@ -168,3 +169,17 @@ jobs:
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create -t "$CHAPEL_CI_IMAGE" "$CHAPEL_CI_IMAGE-amd64" "$CHAPEL_CI_IMAGE-arm64"
+
+  ci-container-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-slim
+    needs:
+      - should-build-ci-container
+      - build-ci-container
+      - validate-ci-container
+      - push-multiarch-ci-container
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1
