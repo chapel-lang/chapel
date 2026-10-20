@@ -97,8 +97,63 @@ jobs:
           cache-from: type=gha,scope=${{ env.ARCH }}
           cache-to: type=gha,scope=${{ env.ARCH }},mode=max
 
+  validate-ci-container:
+    needs: build-ci-container
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-26.04-arm]
+    runs-on: ${{ matrix.runner }}
+    env:
+      ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'amd64' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker
+        uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5.5.0
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - name: Load ${{ env.ARCH }} Docker Image from build cache
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          platforms: linux/${{ env.ARCH }}
+          tags: ${{ env.CHAPEL_CI_IMAGE }}-${{ env.ARCH }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=${{ env.ARCH }}
+      - name: Run image checks
+        run: |
+          docker run --rm -i -v "$PWD:/chapel" -w /chapel "$CHAPEL_CI_IMAGE-$ARCH" bash -exuo pipefail <<'EOF'
+          source util/setchplenv.bash
+          printchplenv --all --internal
+
+          chpl_llvm=$(util/chplenv/chpl_llvm.py)
+          if [ "$chpl_llvm" != "system" ]; then
+            echo "ERROR: expected CHPL_LLVM=system, got $chpl_llvm"
+            exit 1
+          fi
+
+          latest_llvm=$(util/chplenv/chpl_llvm.py --supported-versions | cut -d, -f1)
+          actual_llvm=$(util/chplenv/chpl_llvm.py --llvm-version)
+          if [ "$latest_llvm" != "$actual_llvm" ]; then
+            echo "ERROR: image LLVM version $actual_llvm does not match latest supported $latest_llvm"
+            exit 1
+          fi
+
+          make -j"$(util/buildRelease/chpl-make-cpu_count)"
+          make check
+          EOF
+
   push-multiarch-ci-container:
-    needs: [should-build-ci-container, build-ci-container]
+    needs: [should-build-ci-container, build-ci-container, validate-ci-container]
     if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
     runs-on: ubuntu-26.04
     permissions:
@@ -113,3 +168,17 @@ jobs:
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create -t "$CHAPEL_CI_IMAGE" "$CHAPEL_CI_IMAGE-amd64" "$CHAPEL_CI_IMAGE-arm64"
+
+  ci-container-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-slim
+    needs:
+      - should-build-ci-container
+      - build-ci-container
+      - validate-ci-container
+      - push-multiarch-ci-container
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1

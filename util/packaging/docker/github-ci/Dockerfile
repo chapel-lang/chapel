@@ -16,10 +16,17 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
     && apt update \
     && apt install gh -y
 
+ARG LLVM_VERSION=22
+
+RUN wget -nv -O /etc/apt/keyrings/apt.llvm.org.asc https://apt.llvm.org/llvm-snapshot.gpg.key \
+    && chmod go+r /etc/apt/keyrings/apt.llvm.org.asc \
+    && codename=$(. /etc/os-release && echo "$VERSION_CODENAME") \
+    && echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/$codename/ llvm-toolchain-$codename-$LLVM_VERSION main" > /etc/apt/sources.list.d/llvm.list
+
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
     ccache \
-    clang-19 \
+    clang-${LLVM_VERSION} \
     cmake \
     cscope \
     curl \
@@ -30,19 +37,19 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     gdb \
     git \
     jq \
-    libclang-19-dev \
-    libclang-cpp19-dev \
-    libclang-rt-19-dev \
+    libclang-${LLVM_VERSION}-dev \
+    libclang-cpp${LLVM_VERSION}-dev \
+    libclang-rt-${LLVM_VERSION}-dev \
     libcurl4-openssl-dev \
     libedit-dev \
     libfltk-dev \
     libopenmpi-dev \
     libprotoc-dev \
     libzmq3-dev \
-    llvm-19 \
-    llvm-19-dev \
-    llvm-19-tools \
-    lldb-19 \
+    llvm-${LLVM_VERSION} \
+    llvm-${LLVM_VERSION}-dev \
+    llvm-${LLVM_VERSION}-tools \
+    lldb-${LLVM_VERSION} \
     locales \
     m4 \
     make \
@@ -60,9 +67,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     wget \
     xxd \
     && rm -rf /var/lib/apt/lists/* \
-    && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-19 100 \
-    && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-19 100 \
-    && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-19 100
+    && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-${LLVM_VERSION} 100 \
+    && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-${LLVM_VERSION} 100 \
+    && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-${LLVM_VERSION} 100
 
 RUN groupadd --gid 1001 chpl-tester && \
     useradd --uid 1001 --gid chpl-tester --create-home --shell /bin/bash chpl-tester && \
