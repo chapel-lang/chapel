@@ -7,6 +7,19 @@ on:
   # corresponding PR to gather info from.
   push:
     branches: [ main ]
+  # Allow manually issuing emails from this workflow, to fill in any that have
+  # been missed for any reason, or to test the workflow.
+  workflow_dispatch:
+    inputs:
+      sha_before:
+        type: string
+        required: true
+      sha_after:
+        type: string
+        required: true
+      email_to:
+        type: string
+        required: true
 
 # Serialize runs of this workflow to ensure emails are sent in the same order
 # as merges are done.
@@ -21,6 +34,11 @@ defaults:
   run:
     shell: bash -exuo pipefail {0}
 
+env:
+  SHA_BEFORE: ${{ inputs.sha_before || github.event.before }}
+  SHA_AFTER: ${{ inputs.sha_after || github.event.after }}
+  EMAIL_TO: ${{ inputs.email_to || 'chapel+commits@discoursemail.com' }}
+
 jobs:
   get_prs:
     runs-on: ubuntu-slim
@@ -30,8 +48,6 @@ jobs:
       EMAIL_BODY_FILENAME: email.md
       GH_TOKEN: ${{ github.token }}
       PRS_LIST_TXT: prs.txt
-      SHA_BEFORE: ${{ github.event.before }}
-      SHA_AFTER: ${{ github.event.after }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -81,7 +97,7 @@ jobs:
            username: ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel Merge] Error"
-           to: chapel+commits@discoursemail.com
+           to: ${{ env.EMAIL_TO }}
            from: "Chapel User <chapel_commits@cray.com>"
            body: file://${{ env.EMAIL_BODY_FILENAME }}
 
@@ -177,6 +193,6 @@ jobs:
            username: ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel Merge] ${{ env.TITLE }}"
-           to: chapel+commits@discoursemail.com
+           to: ${{ env.EMAIL_TO }}
            from: "${{ env.AUTHOR }} <chapel_commits@cray.com>"
            body: file://${{ env.EMAIL_BODY_FILENAME }}
