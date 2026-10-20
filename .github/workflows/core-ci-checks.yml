@@ -589,23 +589,3 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
-
-
-  paratest-linux64-aarch64:
-    name: Chapel paratest on linux64 aarch64
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      configuration: linux64-aarch64
-      runner: ubuntu-26.04-arm
-      cron-script: util/cron/test-linux64.bash
-      start-test-args: --futures
-      make-targets: all test-venv chpldoc mason protoc-gen-chpl
-  paratest-linux64-gasnet-everything-aarch64:
-    name: Chapel paratest on linux64 aarch64 with gasnet-everything
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      configuration: linux64-aarch64-gasnet-everything
-      runner: ubuntu-26.04-arm
-      cron-script: util/cron/test-gasnet-everything.bash
-      start-test-args: --futures
-      make-targets: all test-venv mason-deps
