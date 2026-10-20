@@ -86,7 +86,7 @@ jobs:
             done
 
             pr_numbers=$(uniq "$PRS_LIST_TXT" | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
-            echo "pr_numbers=$pr_numbers" | tee "$GITHUB_OUTPUT"
+            echo "pr_numbers=[$pr_numbers]" | tee "$GITHUB_OUTPUT"
 
             exit $status
       - name: Send mail for failed PR enumeration
