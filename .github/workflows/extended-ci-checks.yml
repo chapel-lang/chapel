@@ -489,7 +489,7 @@ jobs:
         make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
           all test-venv
     - name: Upload Chapel build
-      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks
+      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
       with:
         name: chapel-build-files-distributions
         retention-days: 1
@@ -515,7 +515,7 @@ jobs:
       with:
         persist-credentials: false
     - name: Download Chapel build
-      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks
+      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
       with:
         name: chapel-build-files-distributions
     - name: Test Chapel with ${{ matrix.dist_type }}
