@@ -3806,6 +3806,8 @@ void chpl_cache_fence(int acquire, int release, int32_t ln, int32_t fn)
   if( release ) {
     cache_clean_dirty(cache, task_local);
     wait_all(cache);
+    // the caller may publish these PUTs via means the comm layer can't see
+    chpl_comm_put_visibility_fence();
   }
 #ifdef DUMP
   DEBUG_PRINT(("%d: task %d after fence\n", chpl_nodeID, (int) chpl_task_getId()));
