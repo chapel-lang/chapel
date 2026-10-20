@@ -588,7 +588,7 @@ jobs:
           '
       - name: run examples tests in linux32 container
         run: |
-          cat << EOF > test_script.bash
+          cat << 'EOF' > test_script.bash
           set -exuo pipefail
 
           apt-get update && apt-get install -y \
