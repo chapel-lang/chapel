@@ -26,6 +26,7 @@
 #include "codegen.h"
 #include "driver.h"
 #include "llvmTracker.h"
+#include "llvmUtil.h"
 #include "llvmVer.h"
 #include "ForLoop.h"
 #include "LayeredValueTable.h"
@@ -350,11 +351,7 @@ GenRet CForLoop::codegen()
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
     trackLLVMValue(blockStmtInit);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtInit);
-#else
-    func->getBasicBlockList().push_back(blockStmtInit);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtInit);
 
     // Insert an explicit branch from the current block to the init block
     llvm::BranchInst* toInit = info->irBuilder->CreateBr(blockStmtInit);
@@ -383,11 +380,7 @@ GenRet CForLoop::codegen()
     trackLLVMValue(condBr);
 
     // Now add the body.
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtBody);
-#else
-    func->getBasicBlockList().push_back(blockStmtBody);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtBody);
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -430,11 +423,7 @@ GenRet CForLoop::codegen()
     if(loopMetadata)
       addLoopMetadata(endLoopBranch, loopMetadata, accessGroup);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtEnd);
-#else
-    func->getBasicBlockList().push_back(blockStmtEnd);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtEnd);
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

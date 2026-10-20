@@ -845,4 +845,12 @@ llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS) {
 #endif
 }
 
+void insertBasicBlockAtEnd(llvm::Function* func, llvm::BasicBlock* bb) {
+#if HAVE_LLVM_VER >= 160
+  func->insert(func->end(), bb);
+#else
+  func->getBasicBlockList().push_back(bb);
+#endif
+}
+
 #endif

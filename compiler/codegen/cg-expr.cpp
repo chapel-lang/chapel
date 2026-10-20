@@ -282,11 +282,7 @@ GenRet DefExpr::codegen() {
       llvm::BranchInst* brInst = info->irBuilder->CreateBr(blockLabel);
       trackLLVMValue(brInst);
 
-#if HAVE_LLVM_VER >= 160
-      func->insert(func->end(), blockLabel);
-#else
-      func->getBasicBlockList().push_back(blockLabel);
-#endif
+      insertBasicBlockAtEnd(func, blockLabel);
       info->irBuilder->SetInsertPoint(blockLabel);
     }
 #endif
@@ -1525,21 +1521,13 @@ void codegenErrorIf(GenRet cond, const char* msg, Expr* ctx) {
         condVal.val, haltBlock, contBlock);
     trackLLVMValue(condBr);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), haltBlock);
-#else
-    func->getBasicBlockList().push_back(haltBlock);
-#endif
+    insertBasicBlockAtEnd(func, haltBlock);
     info->irBuilder->SetInsertPoint(haltBlock);
     codegenCallExpr("chpl_error", new_CStringSymbol(msg), ln, fn);
     llvm::BranchInst* toCont = info->irBuilder->CreateBr(contBlock);
     trackLLVMValue(toCont);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), contBlock);
-#else
-    func->getBasicBlockList().push_back(contBlock);
-#endif
+    insertBasicBlockAtEnd(func, contBlock);
     info->irBuilder->SetInsertPoint(contBlock);
 #endif
   }
@@ -2731,33 +2719,21 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
     trackLLVMValue(condBr);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockIfTrue);
-#else
-    func->getBasicBlockList().push_back(blockIfTrue);
-#endif
+    insertBasicBlockAtEnd(func, blockIfTrue);
     info->irBuilder->SetInsertPoint(blockIfTrue);
     llvm::StoreInst* store1 = info->irBuilder->CreateStore(values.a, tmp);
     trackLLVMValue(store1);
     llvm::BranchInst* toEnd1 = info->irBuilder->CreateBr(blockEnd);
     trackLLVMValue(toEnd1);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockIfFalse);
-#else
-    func->getBasicBlockList().push_back(blockIfFalse);
-#endif
+    insertBasicBlockAtEnd(func, blockIfFalse);
     info->irBuilder->SetInsertPoint(blockIfFalse);
     llvm::StoreInst* store2 = info->irBuilder->CreateStore(values.b, tmp);
     trackLLVMValue(store2);
     llvm::BranchInst* toEnd2 = info->irBuilder->CreateBr(blockEnd);
     trackLLVMValue(toEnd2);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockEnd);
-#else
-    func->getBasicBlockList().push_back(blockEnd);
-#endif
+    insertBasicBlockAtEnd(func, blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
     ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMType(), tmp);
     trackLLVMValue(ret.val);
