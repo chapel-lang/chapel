@@ -85,7 +85,7 @@ jobs:
               fi
             done
 
-            pr_numbers=$(uniq "$PRS_LIST_TXT" | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+            pr_numbers=$(awk '!seen[$0]++' "$PRS_LIST_TXT" | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
             echo "pr_numbers=[$pr_numbers]" | tee "$GITHUB_OUTPUT"
 
             exit $status
