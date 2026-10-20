@@ -413,12 +413,12 @@ jobs:
         with:
           persist-credentials: false
       - name: Check most .py files
-        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
       - name: Check our .py files under third-party/
-        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
@@ -434,7 +434,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
       - name: Check extensionless Python files
-        uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }}"
           src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"
