@@ -20,8 +20,6 @@ on:
       email_to:
         type: string
         required: true
-  # TODO: remove before merging PR
-  pull_request:
 
 # Serialize runs of this workflow to ensure emails are sent in the same order
 # as merges are done.
@@ -37,9 +35,9 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 env:
-  SHA_BEFORE: 07c3910502d6863fe6a231ddf47a706ad90f43ea
-  SHA_AFTER: 7d74bb7b91ba71bcd08cf1fedf08977ac150c6d1
-  EMAIL_TO: anna@example.com
+  SHA_BEFORE: ${{ inputs.sha_before || github.event.before }}
+  SHA_AFTER: ${{ inputs.sha_after || github.event.after }}
+  EMAIL_TO: ${{ inputs.email_to || 'chapel+commits@discoursemail.com' }}
 
 jobs:
   get_prs:
