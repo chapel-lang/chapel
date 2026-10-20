@@ -632,7 +632,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples
           EOF
 
-          docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash < test_script.bash
+          docker run -v "$(pwd)":/app -w /app --rm -i --platform linux/386 debian:latest bash < test_script.bash
 
   docs-checks:
     runs-on: ubuntu-slim
