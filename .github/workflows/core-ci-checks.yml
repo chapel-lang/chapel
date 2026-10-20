@@ -588,7 +588,7 @@ jobs:
           '
       - name: run examples tests in linux32 container
         run: |
-          docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash -c '
+          cat << EOF > test_script.bash
           set -exuo pipefail
 
           apt-get update && apt-get install -y \
@@ -630,7 +630,9 @@ jobs:
           make -j"$num_procs" all test-venv chpldoc mason
 
           start_test --parallel "$num_procs" test/release/examples
-          '
+          EOF
+
+          docker run -v "$(pwd)":/app -w /app --rm --platform linux/386 debian:latest bash < test_script.bash
 
   docs-checks:
     runs-on: ubuntu-slim
