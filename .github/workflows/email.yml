@@ -86,7 +86,7 @@ jobs:
       - name: set pr numbers list output
         id: get_prs
         run: |
-          pr_numbers=$(cat "$PRS_LIST_TXT" | tac | awk '!seen[$0]++' | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          pr_numbers=$(cat "$PRS_LIST_TXT" | awk '!seen[$0]++' | tac | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
           echo "pr_numbers=[$pr_numbers]" | tee "$GITHUB_OUTPUT"
       - name: Send mail for failed PR enumeration
         if: failure()
