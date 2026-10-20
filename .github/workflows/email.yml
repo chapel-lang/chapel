@@ -113,6 +113,7 @@ jobs:
       # serially to avoid rate limits. This also means we'll dispatch PR emails
       # in the order they were merged.
       max-parallel: 1
+      fail-fast: false
       matrix:
         pr_number: ${{ fromJSON(needs.get_prs.outputs.pr_numbers) }}
     env:
