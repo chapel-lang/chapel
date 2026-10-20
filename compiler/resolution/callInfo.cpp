@@ -131,7 +131,7 @@ void CallInfo::haltNotWellFormed() const {
   }
 }
 
-const char* CallInfo::toString() {
+const char* CallInfo::toString() const {
   bool        method = false;
   bool        _this  = false;
   int         start  = 0;

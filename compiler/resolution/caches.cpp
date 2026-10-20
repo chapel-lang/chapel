@@ -493,7 +493,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
     visInfo.poiDepth++;
 
     getMoreVisibleFunctionsOrMethods(dummyName, visInfoOrig.call,
-                        &visInfo, &visited, visibleFns);
+                        visInfo, visited, visibleFns);
 
     if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
       return;
