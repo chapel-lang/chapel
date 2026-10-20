@@ -60,7 +60,7 @@ jobs:
           popd
 
   portability-tests-apptainer:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     needs: define-portability-test-configs
     strategy:
       fail-fast: false
@@ -138,7 +138,7 @@ jobs:
           fi
 
   test-make-install-check:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -195,9 +195,6 @@ jobs:
       timeout-minutes: 360
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        export CHPL_PAR_MAKE=$num_procs
-        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
@@ -214,10 +211,6 @@ jobs:
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
       timeout-minutes: 360
-      pre-build-steps: |
-        num_procs=$(util/buildRelease/chpl-make-cpu_count)
-        export CHPL_PAR_MAKE=$num_procs
-        export CHPL_WARN_INCREMENTAL_OPTIMIZED=false
       make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment

@@ -12,12 +12,12 @@ class Chapel < Formula
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    rebuild 1
-    sha256 arm64_golden_gate: "85d80bb657433b9634269b770d47d0a2fabe8c8ef41d3457b1f4f1088f81eb51"
-    sha256 arm64_tahoe:       "fe9be0261b76fb8451abc18b0a4a81f530f4c854dcbcdb1b0bc142fae422e406"
-    sha256 arm64_sequoia:     "b817c2f32658fd53714437ef5f60455beda4671bf54e08326f9ab1d4633f0028"
-    sha256 arm64_linux:       "1330f972661af23ac6d2b05d827d9617407d90ec38a2bc72cab890eeb85a96ea"
-    sha256 x86_64_linux:      "4cd686a949ac272d6f98210598b065ba6503f6a221ab3673075ce7f002cd6704"
+    rebuild 2
+    sha256 arm64_golden_gate: "59549032631c26d35f8a64f205567cf464920d10d2d05ca2135dcc9deb12e58f"
+    sha256 arm64_tahoe:       "6d7150b2167d782d5acb76bb5199635350b89214e1b3a18bee94d16a0c7c164b"
+    sha256 arm64_sequoia:     "0ef4c68e02e3448cdb945a0232b564f1b69fd3cf9006283222d43e364c4570b3"
+    sha256 arm64_linux:       "18a8f30af1598804a05666993f2195429236b7bacfcf09eda1554639f86f7ef4"
+    sha256 x86_64_linux:      "7406db8c862876d935da0d05cc690187f2dfc467a231af2ca2de8663218c34f7"
   end
 
   depends_on "cmake"
@@ -26,7 +26,7 @@ class Chapel < Formula
   depends_on "jemalloc"
   depends_on "llvm@22"
   depends_on "pkgconf"
-  depends_on "python@3.14"
+  depends_on "python@3.15"
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }

@@ -70,7 +70,7 @@ on:
         description: The runner to use for the workflow
         required: false
         type: string
-        default: ubuntu-26.04
+        default: ubuntu-latest
       use-container:
         description: Run build and test jobs in the Chapel CI container
         required: false
@@ -533,6 +533,7 @@ jobs:
             done
             "$CHPL_HOME/util/test/merge_start_test_log_summary" \
               --output "$AGGREGATED_RESULTS_DIR/results.log.summary" \
+              --ga-groups \
               "${summary_files[@]}"
           fi
 

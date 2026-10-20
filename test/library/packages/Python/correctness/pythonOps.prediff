@@ -3,3 +3,7 @@
 # fixup for python <=3.9
 sed -e 's/\*\*=: Exception: unsupported operand type(s) for \*\* or pow()/**=: Exception: unsupported operand type(s) for **=/' $2 > $2.tmp
 mv $2.tmp $2
+
+# fixup for python 3.15+
+sed -e 's/ *(required.*$//' $2 > $2.tmp
+mv $2.tmp $2

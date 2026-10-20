@@ -51,6 +51,8 @@ PRAGMA(ALIASING_ARRAY, ypr, "aliasing array", ncm)
 // alias analysis can assume that the marked field (or return from a function)
 // can alias the same scopes as 'this'
 PRAGMA(ALIAS_SCOPE_FROM_THIS, ypr, "alias scope from this", ncm)
+PRAGMA(ALIGN_16_BYTES, ypr, "align 16 bytes",
+       "variable must be allocated with at least 16 byte alignment")
 
 // Added to the condExpr of a static ArrayView Elision conditional. Should
 // disappear after resolution
