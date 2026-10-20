@@ -4,7 +4,8 @@ on:
   workflow_call:
   pull_request:
     paths:
-      - 'third-party/llvm/llvm-src/**'
+      - 'third-party/llvm/**'
+      - '.github/workflows/test-llvm-bundled.yml'
 
 permissions:
   contents: read
