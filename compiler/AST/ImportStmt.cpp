@@ -408,12 +408,12 @@ void ImportStmt::validateUnqualified() {
 ImportStmt::PtrSet<const char*> ImportStmt::typeWasNamed(Type* t) const {
   PtrSet<const char*> namedTypes;
 
-  typeWasNamed(t, &namedTypes);
+  typeWasNamed(t, namedTypes);
   return namedTypes;
 }
 
 void ImportStmt::typeWasNamed(Type* t,
-                              PtrSet<const char*>* namedTypes) const {
+                              PtrSet<const char*>& namedTypes) const {
   // We don't define any symbols for unqualified access, so the type was not
   // listed
   if (!providesUnqualifiedAccess()) {
@@ -435,14 +435,14 @@ void ImportStmt::typeWasNamed(Type* t,
     // this one was listed
     for_vector(const char, toCheck, unqualified) {
       if (toCheck == name)
-        namedTypes->insert(toCheck);
+        namedTypes.insert(toCheck);
     }
 
     // Including if it was renamed
     for (auto it = renamed.begin(); it != renamed.end(); ++it) {
       if (name == it->first) {
         // Save the original name because we'll be looking in its scope
-        namedTypes->insert(it->second);
+        namedTypes.insert(it->second);
       }
     }
 

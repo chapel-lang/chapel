@@ -1,1 +1,18 @@
-fortranProcs.o -L$LIBGFORTRAN_PATH -lgfortran
+#!/usr/bin/env bash
+
+# find libgfortran.a
+libPaths=`echo '' | gfortran -v -c -x f95 - -o /dev/null 2>&1 | grep 'LIBRARY_PATH=' | sed -e 's/LIBRARY_PATH=//'`
+IFS=':'
+LIBGFORTRAN_PATH=''
+for path in $libPaths ; do
+  if [[ -f $path/libgfortran.a ]] ; then
+    LIBGFORTRAN_PATH=$path
+    break
+  fi
+done
+if [[ -z $LIBGFORTRAN_PATH ]] ; then
+  echo "[Error - libgfortran.a not found]" >&2
+  exit 1
+fi
+
+echo "fortranProcs.o -L$LIBGFORTRAN_PATH -lgfortran"

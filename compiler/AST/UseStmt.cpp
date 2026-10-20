@@ -420,11 +420,11 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 PtrSet<const char*> UseStmt::typeWasNamed(Type* t) const {
   PtrSet<const char*> namedTypes;
 
-  typeWasNamed(t, &namedTypes);
+  typeWasNamed(t, namedTypes);
   return namedTypes;
 }
 
-void UseStmt::typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const {
+void UseStmt::typeWasNamed(Type* t, PtrSet<const char*>& namedTypes) const {
   if (isPlainUse() == true) {
     // We don't limit the use in any way, so we don't need special handling to
     // find methods
@@ -447,13 +447,13 @@ void UseStmt::typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const {
       // For use statements with except clauses, we want to store related type
       // names that *weren't* in the except clause
       if (matchedNameOrRename(name) == false) {
-        namedTypes->insert(name);
+        namedTypes.insert(name);
       }
     } else {
       // For use statements with only lists, we want to store related type names
       // that *were* in the only list
       if (matchedNameOrRename(name) == true) {
-        namedTypes->insert(name);
+        namedTypes.insert(name);
       }
     }
 
