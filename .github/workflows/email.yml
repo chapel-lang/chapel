@@ -141,7 +141,9 @@ jobs:
           retry_wait_seconds: 30
           command: |
             set -exuo pipefail
+            echo "::group::$PR_JSON"
             gh api "/repos/${{ github.repository }}/pulls/$PR_NUMBER" | jq '.' | tee "$PR_JSON"
+            echo "::endgroup::"
       - name: extract PR title and author
         run: |
           TITLE=$(jq -r '.title' "$PR_JSON")
@@ -172,13 +174,6 @@ jobs:
           $diff_lines
           $(jq -r '.diff_url' "$PR_JSON")
           EOF
-      - name: archive JSON files from run
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: json_files
-          path: ./*.json
-          retention-days: 5
       - name: print email body
         if: always()
         run: |
