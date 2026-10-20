@@ -43,8 +43,12 @@ jobs:
 
             echo "Cleaning up paratest artifacts from '"$run_name"' run at $run_url"
 
+            echo "::group::artifacts_raw.json"
             gh api --paginate "/repos/${{ github.repository }}/actions/runs/$run_id/artifacts" | jq '.' | tee artifacts_raw.json
+            echo "::endgroup::"
+            echo "::group::artifacts_array.json"
             jq '.artifacts[]' artifacts_raw.json | jq --slurp '.' | tee artifacts_array.json
+            echo "::endgroup::"
 
             readarray -t config_dir_results_artifacts < <(jq '.[] | select(.name | test("paratest-.*-dir-results-.*")) | .id' artifacts_array.json)
             echo "Will attempt to delete ${#config_dir_results_artifacts[@]} artifacts"

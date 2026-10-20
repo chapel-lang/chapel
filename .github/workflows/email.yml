@@ -58,7 +58,9 @@ jobs:
               exit 1
             fi
 
+            echo "::group::$PR_JSON"
             gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee "$PR_JSON"
+            echo "::endgroup::"
       - name: extract PR title and author
         run: |
           TITLE=$(jq -r '.title' "$PR_JSON")

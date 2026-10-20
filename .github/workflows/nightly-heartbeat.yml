@@ -59,7 +59,9 @@ jobs:
             for id in "${last_run_ids[@]}"; do
               echo "- $id"
               sleep 1
+              echo "::group::run_$id.json"
               gh api "/repos/${{ github.repository }}/actions/runs/$id" | jq '.' | tee "run_$id.json"
+              echo "::endgroup::"
               run_timestamp=$(jq '.run_started_at | fromdate' "run_$id.json")
               if (( run_timestamp < current_timestamp - acceptable_secs )); then
                 echo "Too old"
@@ -71,7 +73,9 @@ jobs:
                 ok=true
                 break
               fi
-              gh run view "$id" --json jobs > "jobs_$id.json"
+              echo "::group::jobs_$id.json"
+              gh run view "$id" --json jobs | tee "jobs_$id.json"
+              echo "::endgroup::"
               email_job_conclusion=$(jq -r '.jobs[] | select(.name == "'"$FAILURE_MAIL_JOB_NAME"'") | .conclusion' "jobs_$id.json")
               if [[ "$email_job_conclusion" == "success" ]]; then
                 echo "Recent email sent"
