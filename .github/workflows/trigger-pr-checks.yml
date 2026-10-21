@@ -55,6 +55,7 @@ jobs:
   extended-checks:
     needs: should-run-extended-checks
     if: needs.should-run-extended-checks.outputs.run-all == 'true'
+    # actionlint:ignore-next-line cache-operation -- ignore warning that callee's cache save won't work with caller's cache-mode: read, which is intended
     uses: $/.github/workflows/extended-ci-checks.yml
 
   # This job exists to have a single check for which failure means merging
