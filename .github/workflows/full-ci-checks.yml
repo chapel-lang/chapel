@@ -185,7 +185,7 @@ jobs:
       use-container: false
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
-        brew install llvm@22
+        brew install llvm
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml

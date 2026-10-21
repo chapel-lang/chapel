@@ -512,7 +512,7 @@ jobs:
       - name: install deps
         run: |
           if [[ "$OS" == "macos"* ]] ; then
-            brew install llvm@22
+            brew install llvm
           else
             sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
             sudo apt-get update

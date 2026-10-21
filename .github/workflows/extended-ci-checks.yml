@@ -212,7 +212,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
+        llvm_version: [15, 16, 17, 18, 19, 20, 21, 22, 23]
     runs-on: ${{ matrix.llvm_version <= 16 && 'ubuntu-22.04' || matrix.llvm_version <= 20 && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
