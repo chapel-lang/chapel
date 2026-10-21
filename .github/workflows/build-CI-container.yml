@@ -155,7 +155,7 @@ jobs:
   push-multiarch-ci-container:
     needs: [should-build-ci-container, build-ci-container, validate-ci-container]
     if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
