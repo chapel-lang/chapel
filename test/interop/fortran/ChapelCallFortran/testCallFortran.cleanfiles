@@ -1,1 +1,2 @@
-testCallFortran fortranProcs.o testprocs.mod
+fortranProcs.o
+testprocs.mod
