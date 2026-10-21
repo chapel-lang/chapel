@@ -795,7 +795,9 @@ const Immediate& getDefaultImmediate(Type* t);
 llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
 
 
-#define CLASS_ID_TYPE dtInt[INT_SIZE_32]
+#define CLASS_ID_TYPE dtUInt[INT_SIZE_32]
+// must match CHPL_CID_IDX_BITS in runtime/include/chpltypes.h
+#define CLASS_ID_INDEX_BITS 22
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
