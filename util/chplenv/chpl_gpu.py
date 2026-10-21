@@ -752,4 +752,12 @@ def validate(chplLocaleModel):
 
     gpu.validate_llvm()
 
+    if gpu_val in ("nvidia", "amd"):
+        llvm_version = int(chpl_llvm.get_llvm_version())
+        if llvm_version >= 23:
+            warning(
+                "LLVM 23 and newer has not been tested with CHPL_GPU={} "
+                "(detected LLVM {}).".format(gpu_val, llvm_version)
+            )
+
     return True
