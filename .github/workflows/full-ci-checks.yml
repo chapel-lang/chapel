@@ -70,21 +70,55 @@ jobs:
       APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
       apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
+      - name: get OS version
+        id: os
+        run: |
+          echo "version=$(. /etc/os-release && echo "$ID-$VERSION_ID")" >> "$GITHUB_OUTPUT"
+      - name: restore cached Apptainer packages
+        id: restore-apptainer-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ~/apptainer-debs
+          key: apptainer-debs-${{ steps.os.outputs.version }}
+          restore-keys: apptainer-debs-${{ steps.os.outputs.version }}-
       - name: install Apptainer
+        id: install-apptainer
+        env:
+          CACHE_KEY_PREFIX: apptainer-debs-${{ steps.os.outputs.version }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
           # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
           max_attempts=5
           for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes ppa:apptainer/ppa && break
-            if [[ "$attempt" -eq "$max_attempts" ]]; then
-              exit 1
+            sudo timeout 90 add-apt-repository --yes --no-update ppa:apptainer/ppa && break
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              sleep 30
             fi
-            sleep 30
           done
           sudo apt-get update
-          sudo apt-get install -y apptainer
+          sudo apt-get clean
+
+          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
+          debs="$HOME/apptainer-debs"
+          if sudo apt-get install -y --download-only --reinstall apptainer; then
+            rm -rf "$debs"
+            mkdir -p "$debs"
+            cp /var/cache/apt/archives/*.deb "$debs"/
+            hash=$(find "$debs" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
+            echo "cache-key=$CACHE_KEY_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$debs/*.deb" > /dev/null; then
+            echo "::warning::Could not download Apptainer packages, using cached packages"
+          else
+            exit 1
+          fi
+          sudo apt-get install -y "$debs"/*.deb
+      - name: save Apptainer packages to cache
+        if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ~/apptainer-debs
+          key: ${{ steps.install-apptainer.outputs.cache-key }}
       - name: allow Apptainer to create user namespaces
         # allow apptainer to create user namespaces
         # this may not be available by default

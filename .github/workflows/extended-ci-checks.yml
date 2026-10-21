@@ -82,11 +82,22 @@ jobs:
     runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: save matrix properties to env
+        id: props
         run: |
           echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+          echo "os=$(. /etc/os-release && echo "$ID-$VERSION_ID")" >> "$GITHUB_OUTPUT"
+      - name: restore cached GCC ${{ matrix.gcc_version }} packages
+        id: restore-gcc-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ~/gcc-debs
+          key: gcc-debs-${{ matrix.gcc_version }}-${{ steps.props.outputs.os }}
+          restore-keys: gcc-debs-${{ matrix.gcc_version }}-${{ steps.props.outputs.os }}-
       - name: Install GCC ${{ matrix.gcc_version }}
+        id: install-gcc
         env:
           VERSION: ${{ matrix.gcc_version }}
+          CACHE_KEY_PREFIX: gcc-debs-${{ matrix.gcc_version }}-${{ steps.props.outputs.os }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -96,23 +107,44 @@ jobs:
 
           max_attempts=5
           for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test && break
-            if [[ "$attempt" -eq "$max_attempts" ]]; then
-              exit 1
+            sudo timeout 90 add-apt-repository --yes --no-update ppa:ubuntu-toolchain-r/test && break
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              sleep 30
             fi
-            sleep 30
           done
           sudo apt-get update
-          sudo apt-get install -y \
-            "cpp-$VERSION" \
-            "g++-$VERSION" \
-            "gcc-$VERSION" \
-            "gcc-$VERSION-base" \
-            "libgcc-$VERSION-dev" \
-            "libstdc++-$VERSION-dev"
+          sudo apt-get clean
+
+          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
+          debs="$HOME/gcc-debs"
+          if sudo apt-get install -y --download-only --reinstall \
+              "cpp-$VERSION" \
+              "g++-$VERSION" \
+              "gcc-$VERSION" \
+              "gcc-$VERSION-base" \
+              "libgcc-$VERSION-dev" \
+              "libstdc++-$VERSION-dev"; then
+            rm -rf "$debs"
+            mkdir -p "$debs"
+            cp /var/cache/apt/archives/*.deb "$debs"/
+            hash=$(find "$debs" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
+            echo "cache-key=$CACHE_KEY_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$debs/*.deb" > /dev/null; then
+            echo "::warning::Could not download GCC $VERSION packages, using cached packages"
+          else
+            echo "::error::Could not download GCC $VERSION packages and no cached packages available"
+            exit 1
+          fi
+          sudo apt-get install -y "$debs"/*.deb
 
           sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+      - name: save GCC ${{ matrix.gcc_version }} packages to cache
+        if: steps.install-gcc.outputs.cache-key != '' && steps.install-gcc.outputs.cache-key != steps.restore-gcc-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ~/gcc-debs
+          key: ${{ steps.install-gcc.outputs.cache-key }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
