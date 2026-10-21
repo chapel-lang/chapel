@@ -273,7 +273,7 @@ GenRet DefExpr::codegen() {
         info->lvt->addBlock(sym->cname, blockLabel);
       }
 
-      llvm::BranchInst* brInst = info->irBuilder->CreateBr(blockLabel);
+      auto brInst = info->irBuilder->CreateBr(blockLabel);
       trackLLVMValue(brInst);
 
 #if HAVE_LLVM_VER >= 160
@@ -2244,9 +2244,9 @@ GenRet codegenMod(GenRet a, GenRet b)
 }
 
 #ifdef HAVE_LLVM
-static llvm::CallInst* CreateIntrinsic(llvm::Intrinsic::ID id,
-                                        llvm::ArrayRef<llvm::Type*> tys,
-                                        llvm::ArrayRef<llvm::Value*> args) {
+static auto CreateIntrinsic(llvm::Intrinsic::ID id,
+                            llvm::ArrayRef<llvm::Type*> tys,
+                            llvm::ArrayRef<llvm::Value*> args) {
   auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args);
   trackLLVMValue(call);
   return call;
@@ -2569,7 +2569,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     llvm::Value* tmp = createVarLLVM(values.a->getType(), ret.chplType,
                                      (Symbol*)nullptr, name);
 
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
+    auto condBr = info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
     trackLLVMValue(condBr);
 
@@ -2581,7 +2581,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     info->irBuilder->SetInsertPoint(blockIfTrue);
     llvm::StoreInst* store1 = info->irBuilder->CreateStore(values.a, tmp);
     trackLLVMValue(store1);
-    llvm::BranchInst* toEnd1 = info->irBuilder->CreateBr(blockEnd);
+    auto toEnd1 = info->irBuilder->CreateBr(blockEnd);
     trackLLVMValue(toEnd1);
 
 #if HAVE_LLVM_VER >= 160
@@ -2592,7 +2592,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     info->irBuilder->SetInsertPoint(blockIfFalse);
     llvm::StoreInst* store2 = info->irBuilder->CreateStore(values.b, tmp);
     trackLLVMValue(store2);
-    llvm::BranchInst* toEnd2 = info->irBuilder->CreateBr(blockEnd);
+    auto toEnd2 = info->irBuilder->CreateBr(blockEnd);
     trackLLVMValue(toEnd2);
 
 #if HAVE_LLVM_VER >= 160
@@ -4840,7 +4840,8 @@ DEFINE_PRIM(RETURN) {
       // Since putting anything after the return statement will make the LLVM
       // IR invalid, we set the insert point before the return instruction so that
       // other compilation processes work fine and as expected.
-      gGenInfo->irBuilder->SetInsertPoint(returnInst);
+      gGenInfo->irBuilder->SetInsertPoint(returnInst->getParent(),
+                                          returnInst->getIterator());
     }
 #endif
   }

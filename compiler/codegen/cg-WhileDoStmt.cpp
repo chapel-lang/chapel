@@ -95,7 +95,7 @@ GenRet WhileDoStmt::codegen()
 #endif
 
     // Insert an explicit branch from the current block to the loop start.
-    llvm::BranchInst* toStart = info->irBuilder->CreateBr(blockStmtCond);
+    auto toStart = info->irBuilder->CreateBr(blockStmtCond);
     trackLLVMValue(toStart);
 
     // Now switch to the condition for code generation
@@ -113,7 +113,7 @@ GenRet WhileDoStmt::codegen()
     }
 
     // Now we might go either to the Body or to the End.
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    auto condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
     // Now add the body.
@@ -131,10 +131,10 @@ GenRet WhileDoStmt::codegen()
     info->lvt->removeLayer();
 
     if (blockStmtCond) {
-      llvm::BranchInst* toCond = info->irBuilder->CreateBr(blockStmtCond);
+      auto toCond = info->irBuilder->CreateBr(blockStmtCond);
       trackLLVMValue(toCond);
     } else {
-      llvm::BranchInst* toEnd = info->irBuilder->CreateBr(blockStmtEnd);
+      auto toEnd = info->irBuilder->CreateBr(blockStmtEnd);
       trackLLVMValue(toEnd);
     }
 

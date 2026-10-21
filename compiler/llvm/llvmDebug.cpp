@@ -1198,7 +1198,7 @@ llvm::DISubroutineType* DebugData::getFunctionType(FnSymbol *function) {
   }
   // return type goes first
   ret_arg_types.insert(ret_arg_types.begin(), retType);
-  llvm::DITypeRefArray ret_arg_arr = DIB->getOrCreateTypeArray(ret_arg_types);
+  auto ret_arg_arr = DIB->getOrCreateTypeArray(ret_arg_types);
   return DIB->createSubroutineType(ret_arg_arr);
 }
 

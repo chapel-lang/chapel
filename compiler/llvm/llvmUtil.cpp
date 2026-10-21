@@ -109,18 +109,21 @@ llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
   // to avoid having an alloca in a loop which is a good way to achieve
   // stack overflow.
   llvm::Function *func = irBuilder->GetInsertBlock()->getParent();
-  if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
-    irBuilder->SetInsertPoint(i);
+  llvm::BasicBlock* entryBlock = &func->getEntryBlock();
+
+  llvm::DebugLoc currentDebugLocation;
+  if (debugInfo)
+    currentDebugLocation = irBuilder->getCurrentDebugLocation();
+
+  if (llvm::Instruction *i = entryBlock->getTerminator()) {
+    irBuilder->SetInsertPoint(entryBlock, i->getIterator());
   } else {
-    irBuilder->SetInsertPoint(&func->getEntryBlock());
+    irBuilder->SetInsertPoint(entryBlock);
   }
 
   // reset the current debug location to avoid accidentally attaching it to the alloca
-  llvm::DebugLoc currentDebugLocation;
-  if (debugInfo) {
-    currentDebugLocation = irBuilder->getCurrentDebugLocation();
+  if (debugInfo)
     irBuilder->SetCurrentDebugLocation(llvm::DebugLoc());
-  }
 
   llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, nullptr, name);
   trackLLVMValue(tempVar);

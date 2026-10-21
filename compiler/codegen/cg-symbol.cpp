@@ -3288,14 +3288,14 @@ void FnSymbol::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
-    if( developer || fVerify ) {
+    if (developer || fVerify) {
       bool problems = false;
       // Debug info generation creates metadata nodes that won't be
       // finished until the whole codegen is complete and finalize
       // is called.
-      if( ! debugInfo )
+      if (!debugInfo)
         problems = llvm::verifyFunction(*func, &llvm::errs());
-      if( problems ) {
+      if (problems) {
         INT_FATAL(this, "LLVM function verification failed");
       }
     }

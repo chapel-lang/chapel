@@ -1333,11 +1333,8 @@ void readMacrosClang(void) {
   //         See ClangExpressionParser.cpp in lldb which parses
   //          a C expression from a command line... we need to
   //          do something similar.
-  for(Preprocessor::macro_iterator i = preproc.macro_begin();
-      i != preproc.macro_end();
-      i++) {
-
-    handleMacro(i->first, i->second.getLatest()->getMacroInfo());
+  for (auto& [id, macroState]: preproc.macros()) {
+    handleMacro(id, macroState.getLatest()->getMacroInfo());
   }
 };
 
@@ -1998,19 +1995,20 @@ static llvm::TargetOptions getTargetOptions(
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Allow unsafe fast floating point optimization
+    // LLVM is removing the global indivdual fast-math flags in favor of
+    // per-instruction level flags. We already handle that with 'setFastMathFlags'
+    // so this is safe to remove in newer versions
+    // Only remove the global flags here as they get removed in future LLVM versions
 #if LLVM_VERSION_MAJOR < 22
-    // NOTE (Jade 3-18-26): its not clear why LLVM removed "UnsafeFPMath", and
-    // what the proper replacement is, if any.
-    // They may have removed it due to it being redundant and so
-    // everything may just work fine
     Options.UnsafeFPMath = 1; // e.g. FSIN instruction
 #endif
+#if LLVM_VERSION_MAJOR < 23
     Options.NoInfsFPMath = 1;
     Options.NoNaNsFPMath = 1;
-    Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
+#endif
+    Options.NoTrappingFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
@@ -2081,7 +2079,11 @@ static llvm::TargetOptions getTargetOptions(
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
+#if LLVM_VERSION_MAJOR >= 23
+  Options.StackUsageFile = CodeGenOpts.StackUsageFile;
+#else
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
+#endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
   Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
   Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
@@ -2503,24 +2505,32 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 
 static void registerDumpIrExtensions(PassBuilder& PB);
 
+#if LLVM_VERSION_MAJOR < 19
 // expose a command line option from LLVM
 // we set it via a chpl command line option
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
+#endif
 static PassBuilder constructPassBuilder(
   llvm::TargetMachine* targetMachine,
   PassInstrumentationCallbacks* PIC,
   bool forFunction) {
+  chpl::optional<PGOOptions> PGOOpt;
+#if LLVM_VERSION_MAJOR < 19
   // this is required to be set, or LLVM will not properly populate the pass
   // names. technically this flag enables extra printing to the dbg() output,
   // but we only keep the flag long enough to populate the pass names.
   // this must always be set so that `--print-before` (and similar commands) will
   // still work with their nice pass name
+  // LLVM 19+ always registers a class-to-pass-name callback on PIC,
+  // so this hack isn't needed
   llvm::PrintPipelinePasses = true;
-  chpl::optional<PGOOptions> PGOOpt;
+#endif
   PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+#if LLVM_VERSION_MAJOR < 19
   llvm::PrintPipelinePasses = false;
+#endif
   return PB;
 }
 

@@ -357,7 +357,7 @@ GenRet CForLoop::codegen()
 #endif
 
     // Insert an explicit branch from the current block to the init block
-    llvm::BranchInst* toInit = info->irBuilder->CreateBr(blockStmtInit);
+    auto toInit = info->irBuilder->CreateBr(blockStmtInit);
     trackLLVMValue(toInit);
 
     // Now switch to the init block for code generation
@@ -379,7 +379,7 @@ GenRet CForLoop::codegen()
     }
 
     // Create the conditional branch
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+    auto condBr = info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
     // Now add the body.
