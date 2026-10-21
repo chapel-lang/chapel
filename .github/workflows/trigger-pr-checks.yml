@@ -19,6 +19,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.merge_group.head_ref || github.sha }}
   cancel-in-progress: true
 
+# Avoid using up cache space with entries that are scoped to a PR branch or
+# ephemeral merge queue ref.
+cache-mode: read
 
 permissions:
   contents: read
