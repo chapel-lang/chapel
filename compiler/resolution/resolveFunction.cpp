@@ -1617,7 +1617,7 @@ void MarkTempsVisitor::handleStmtGroup() {
         endOfBlock = true;
       }
 
-      if (v->hasEitherFlag(FLAG_DEAD_END_OF_BLOCK, FLAG_DEAD_LAST_MENTION)) {
+      if (v->hasAnyFlag(FLAG_DEAD_END_OF_BLOCK, FLAG_DEAD_LAST_MENTION)) {
         // just keep whatever flag we had
       } else if (endOfBlock) {
         v->addFlag(FLAG_DEAD_END_OF_BLOCK);
@@ -3308,8 +3308,7 @@ void maybeSuggestToByteCall(Symbol* from,
   auto toValType = toType->getValType();
   if (isIntegralByteType(toValType) &&
       (fromValType == dtString || fromValType == dtBytes) &&
-      (from->hasEitherFlag(FLAG_CHAPEL_STRING_LITERAL,
-                           FLAG_CHAPEL_BYTES_LITERAL))) {
+      (from->hasAnyFlag(FLAG_CHAPEL_STRING_LITERAL, FLAG_CHAPEL_BYTES_LITERAL))) {
     if (auto var = toVarSymbol(from)) {
       if (var->immediate) {
         const char* str = var->immediate->string_value();

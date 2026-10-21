@@ -190,6 +190,9 @@ const char* legalizeName(const char* name) {
       case ':': ret += "_COLON_";       break;
       case '.': ret += "_DOT_";         break;
       case ' ': ret +=  "_SPACE_";      break;
+      case '(': ret += "";              break;
+      case ')': ret += "";              break;
+      case ',': ret += "_";             break;
       default:
       {
         char c = *ch;
@@ -517,6 +520,11 @@ static void assignClassIds() {
   preorderVisitClassesComputeIds(dtObject->symbol, &next);
 
   gMaxClassId = next - 1;
+
+  if (gMaxClassId >= (1 << CLASS_ID_INDEX_BITS)) {
+    USR_FATAL("program has too many classes (%d) to encode class ids",
+              gMaxClassId);
+  }
 }
 
 
@@ -556,23 +564,28 @@ static int computeMaxSubclass(TypeSymbol* ts, llvm::SmallVector<int>& n2) {
 
 
 // codegen for global constant array headers
-static void codegenGlobalConstArray(const char* name, const char* eltType) {
+// 'hidden' keeps the symbol private to the binary being built.
+static void codegenGlobalConstArray(const char* name, const char* eltType,
+                                    bool hidden = false) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
-    fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
+    fprintf(hdrfile, "extern const %s %s[]%s;\n", eltType, name,
+            hidden ? " chpl_hidden" : "");
   }
 }
 // codegen for global constant arrays
 template <typename Container>
 static void codegenGlobalConstArray(const char* name, const char* eltType,
-                                    const Container& array) {
+                                    const Container& array,
+                                    bool hidden = false) {
   GenInfo* info = gGenInfo;
 
   // Now generate arrays
   if (info->cfile) {
     FILE* f = info->cfile;
-    fprintf(f, "const %s %s[] = {\n", eltType, name);
+    fprintf(f, "const %s %s[]%s = {\n", eltType, name,
+            hidden ? " chpl_hidden" : "");
     bool first = true;
     int n = array.size();
     for(int i = 0; i < n; i++ ) {
@@ -610,6 +623,8 @@ static void codegenGlobalConstArray(const char* name, const char* eltType,
       info->module->getOrInsertGlobal(name, tableType));
   globalTable->setInitializer(llvm::ConstantArray::get(tableType, table));
   globalTable->setConstant(true);
+  if (hidden)
+    globalTable->setLinkage(llvm::GlobalValue::InternalLinkage);
 
   info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true, /* chplType=*/ nullptr);
 #endif
@@ -834,7 +849,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
     const char* name = vmtName(ts);
 
     if (isHeader) {
-      codegenGlobalConstArray(name, eltType);
+      codegenGlobalConstArray(name, eltType, /* hidden */ true);
       continue;
     }
 
@@ -870,7 +885,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
       slots.push_back(fnAddress);
     }
 
-    codegenGlobalConstArray(name, eltType, slots);
+    codegenGlobalConstArray(name, eltType, slots, /* hidden */ true);
   }
 }
 
@@ -889,7 +904,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   const char* name = "chpl_classInfo";
 
   if (isHeader) {
-    codegenGlobalConstArray(name, eltType);
+    codegenGlobalConstArray(name, eltType, /* hidden */ true);
     return;
   }
 
@@ -973,7 +988,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     }
   }
 
-  codegenGlobalConstArray(name, eltType, rows);
+  codegenGlobalConstArray(name, eltType, rows, /* hidden */ true);
 }
 
 static void genFilenameTable() {
@@ -1877,6 +1892,52 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
+// Name functions Outer_Inner_TypeName_fnName (TypeName only for methods),
+// clashes are handled later
+static void qualifyFunctionCname(FnSymbol* fn) {
+  // leave compiler-chosen cnames alone
+  if (fIdBasedMunging || fn->cname != fn->name || !fn->isRenameable())
+    return;
+
+  //
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
+  //
+  if (strncmp(fn->cname, "chpl_", 5) == 0) {
+    return;
+  }
+
+  // leave task/on functions alone
+  if (fn->hasAnyFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_COBEGIN_OR_COFORALL_BLOCK,
+                     FLAG_ON, FLAG_ON_BLOCK, FLAG_LOCAL_ON,
+                     FLAG_BEGIN, FLAG_BEGIN_BLOCK, FLAG_NON_BLOCKING))
+    return;
+
+  std::string name = fn->name;
+
+  if (fn->_this) {
+    Type* t = fn->_this->getValType();
+    if (t->symbol->hasFlag(FLAG_WIDE_CLASS))
+      t = t->getField("addr")->type;
+    if (AggregateType* at = toAggregateType(t))
+      name = std::string(at->getRootInstantiation()->symbol->name) + "_" + name;
+  } else if (fn->hasFlag(FLAG_NEW_WRAPPER)) {
+    // if _new, append typename
+    auto retType = fn->getReturnSymbol()->getValType();
+    if (AggregateType* at = toAggregateType(retType))
+      name = name + "_" + std::string(at->getRootInstantiation()->symbol->name);
+  }
+
+  for (ModuleSymbol* mod = fn->getModule();
+       mod != nullptr && mod != theProgram && mod != rootModule;
+       mod = mod->defPoint->parentSymbol->getModule()) {
+    name = std::string(mod->name) + "_" + name;
+  }
+
+  fn->cname = astr(name);
+}
+
 static void uniquify_names(std::set<const char*> & cnames,
                            std::vector<TypeSymbol*> & types,
                            std::vector<FnSymbol*> & functions,
@@ -1911,6 +1972,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    qualifyFunctionCname(fn);
     legalizeSymbolName(fn);
     functions.push_back(fn);
   }
