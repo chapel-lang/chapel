@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+OUTFILE=$2
+
+# report any of the given passes missing from the named pipeline
+checkPasses() {
+  local name=$1; shift
+  local pipeline
+  pipeline=$(grep "^$name Pipeline: " $OUTFILE)
+  for pass in "$@"; do
+    if ! echo "$pipeline" | grep -qE "[',(]$pass[,)<']"; then
+      echo "$name Pipeline is missing '$pass'"
+    fi
+  done
+}
+
+# the full pass list varies by LLVM version, so only check for some stable passes
+if grep -q "^Function Simplification Pipeline: " $OUTFILE; then
+  missing=$(
+    checkPasses "Function Simplification" \
+      sroa early-cse simplifycfg instcombine licm gvn sccp dse adce \
+      jump-threading correlated-propagation memcpyopt loop-rotate indvars
+    checkPasses "Module" \
+      always-inline inline mem2reg sroa simplifycfg instcombine licm gvn \
+      globalopt globaldce ipsccp loop-vectorize slp-vectorizer
+  )
+else
+  missing=$(checkPasses "Module" always-inline)
+fi
+
+sed -E "s/^(.*Pipeline): '.+'$/\1: '...'/" $OUTFILE > $OUTFILE.tmp
+mv $OUTFILE.tmp $OUTFILE
+if [ -n "$missing" ]; then
+  echo "$missing" >> $OUTFILE
+fi
