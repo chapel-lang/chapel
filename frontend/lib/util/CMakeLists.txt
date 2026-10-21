@@ -19,8 +19,6 @@ target_sources(ChplFrontend-obj
                PRIVATE
 
                # C sources
-               my_aligned_alloc.h
-               my_aligned_alloc.c
                my_strerror_r.h
                my_strerror_r.c
 

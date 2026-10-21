@@ -42,8 +42,6 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include "../util/my_aligned_alloc.h" // assumes size_t defined
-
 namespace chpl {
   namespace detail {
     GlobalStrings globalStrings;
@@ -364,7 +362,7 @@ static char* allocateEvenAligned(size_t amt) {
     // try again with an aligned allocation
     size_t alignment = sizeof(void *);
     size_t align_up_len = ALIGN_UP(amt, sizeof(void*));
-    buf = (char*) my_aligned_alloc(alignment, align_up_len);
+    buf = (char*) std::aligned_alloc(alignment, align_up_len);
   }
   CHPL_ASSERT(buf);
   CHPL_ASSERT((((uintptr_t)buf) & 1) == 0);
