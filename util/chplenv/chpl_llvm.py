@@ -27,7 +27,7 @@ def llvm_versions():
     # llvm (since LLVM 4.0).
     # These will be tried in order.
     min_version = 15
-    max_version = 22
+    max_version = 23
     versions = tuple(str(i) for i in range(max_version, min_version - 1, -1))
     return versions
 

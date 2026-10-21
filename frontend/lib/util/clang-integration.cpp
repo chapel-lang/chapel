@@ -44,6 +44,9 @@
 #include "clang/Frontend/TextDiagnosticBuffer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Serialization/ASTReader.h"
+#if LLVM_VERSION_MAJOR >= 23
+#include "clang/Basic/Module.h"
+#endif
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/TargetSelect.h"
@@ -544,6 +547,18 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
 #endif
 
 #ifdef HAVE_LLVM
+static auto readAst(clang::ASTReader* astReader, const TemporaryFileResult* pch) {
+#if LLVM_VERSION_MAJOR >= 23
+  auto moduleFileName = clang::ModuleFileName::makeExplicit(pch->path());
+#else
+  auto moduleFileName = pch->path();
+#endif
+  auto readResult =
+      astReader->ReadAST(moduleFileName, clang::serialization::MK_PCH,
+                         clang::SourceLocation(), clang::ASTReader::ARR_None);
+  return readResult;
+}
+
 static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
                            UniqueString name,
                            const std::function<void(const clang::Decl*)>& f) {
@@ -554,9 +569,7 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
   clang::ASTReader* astReader = Clang->getASTReader().get();
   CHPL_ASSERT(astReader);
 
-  auto readResult =
-      astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
-                         clang::SourceLocation(), clang::ASTReader::ARR_None);
+  auto readResult = readAst(astReader, pch);
   if ((readResult != clang::ASTReader::Success) || !Clang->hasASTContext())
     return;
   clang::IdentifierInfo* iid = astReader->get(name.c_str());
@@ -594,9 +607,7 @@ const bool& precompiledHeaderContainsName(
     clang::ASTReader* astReader = Clang->getASTReader().get();
     CHPL_ASSERT(astReader);
 
-    auto readResult =
-        astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
-                           clang::SourceLocation(), clang::ASTReader::ARR_None);
+    auto readResult = readAst(astReader, pch);
     if (readResult == clang::ASTReader::Success) {
       clang::IdentifierInfo* iid = astReader->get(name.c_str());
       result = (iid != nullptr);
