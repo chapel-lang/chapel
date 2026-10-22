@@ -65,6 +65,10 @@ void chpl_comm_impl_task_create(void);
         chpl_comm_impl_task_end()
 void chpl_comm_impl_task_end(void);
 
+#define CHPL_COMM_IMPL_PUT_VISIBILITY_FENCE() \
+        chpl_comm_impl_put_visibility_fence()
+void chpl_comm_impl_put_visibility_fence(void);
+
 #ifdef __cplusplus
 }
 #endif

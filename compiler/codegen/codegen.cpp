@@ -517,6 +517,11 @@ static void assignClassIds() {
   preorderVisitClassesComputeIds(dtObject->symbol, &next);
 
   gMaxClassId = next - 1;
+
+  if (gMaxClassId >= (1 << CLASS_ID_INDEX_BITS)) {
+    USR_FATAL("program has too many classes (%d) to encode class ids",
+              gMaxClassId);
+  }
 }
 
 
@@ -556,23 +561,28 @@ static int computeMaxSubclass(TypeSymbol* ts, llvm::SmallVector<int>& n2) {
 
 
 // codegen for global constant array headers
-static void codegenGlobalConstArray(const char* name, const char* eltType) {
+// 'hidden' keeps the symbol private to the binary being built.
+static void codegenGlobalConstArray(const char* name, const char* eltType,
+                                    bool hidden = false) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
-    fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
+    fprintf(hdrfile, "extern const %s %s[]%s;\n", eltType, name,
+            hidden ? " chpl_hidden" : "");
   }
 }
 // codegen for global constant arrays
 template <typename Container>
 static void codegenGlobalConstArray(const char* name, const char* eltType,
-                                    const Container& array) {
+                                    const Container& array,
+                                    bool hidden = false) {
   GenInfo* info = gGenInfo;
 
   // Now generate arrays
   if (info->cfile) {
     FILE* f = info->cfile;
-    fprintf(f, "const %s %s[] = {\n", eltType, name);
+    fprintf(f, "const %s %s[]%s = {\n", eltType, name,
+            hidden ? " chpl_hidden" : "");
     bool first = true;
     int n = array.size();
     for(int i = 0; i < n; i++ ) {
@@ -610,6 +620,8 @@ static void codegenGlobalConstArray(const char* name, const char* eltType,
       info->module->getOrInsertGlobal(name, tableType));
   globalTable->setInitializer(llvm::ConstantArray::get(tableType, table));
   globalTable->setConstant(true);
+  if (hidden)
+    globalTable->setLinkage(llvm::GlobalValue::InternalLinkage);
 
   info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true, /* chplType=*/ nullptr);
 #endif
@@ -834,7 +846,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
     const char* name = vmtName(ts);
 
     if (isHeader) {
-      codegenGlobalConstArray(name, eltType);
+      codegenGlobalConstArray(name, eltType, /* hidden */ true);
       continue;
     }
 
@@ -870,7 +882,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
       slots.push_back(fnAddress);
     }
 
-    codegenGlobalConstArray(name, eltType, slots);
+    codegenGlobalConstArray(name, eltType, slots, /* hidden */ true);
   }
 }
 
@@ -889,7 +901,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   const char* name = "chpl_classInfo";
 
   if (isHeader) {
-    codegenGlobalConstArray(name, eltType);
+    codegenGlobalConstArray(name, eltType, /* hidden */ true);
     return;
   }
 
@@ -973,7 +985,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     }
   }
 
-  codegenGlobalConstArray(name, eltType, rows);
+  codegenGlobalConstArray(name, eltType, rows, /* hidden */ true);
 }
 
 static void genFilenameTable() {

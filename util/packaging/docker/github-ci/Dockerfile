@@ -77,7 +77,8 @@ RUN groupadd --gid 1001 chpl-tester && \
     chmod 0440 /etc/sudoers.d/chpl-tester
 
 RUN echo "settings set target.disable-aslr false" > /root/.lldbinit && \
-    echo "settings set target.disable-aslr false" > /home/chpl-tester/.lldbinit && \
+    echo "settings clear plugin.symbol-locator.debuginfod.server-urls" >> /root/.lldbinit && \
+    cp /root/.lldbinit /home/chpl-tester/.lldbinit && \
     chown chpl-tester:chpl-tester /home/chpl-tester/.lldbinit
 
 # Configure locale (taken from primary Chapel Dockerfile)

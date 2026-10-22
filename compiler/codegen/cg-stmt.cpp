@@ -30,6 +30,7 @@
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
 #include "llvmTracker.h"
+#include "llvmUtil.h"
 #include "llvmVer.h"
 #include "misc.h"
 #include "passes.h"
@@ -157,11 +158,7 @@ GenRet BlockStmt::codegen() {
     trackLLVMValue(toBody);
 
     // Now add the body.
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtBody);
-#else
-    func->getBasicBlockList().push_back(blockStmtBody);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtBody);
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
 
@@ -300,11 +297,7 @@ CondStmt::codegen() {
     llvm::BranchInst* toCond = info->irBuilder->CreateBr(condStmtIf);
     trackLLVMValue(toCond);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), condStmtIf);
-#else
-    func->getBasicBlockList().push_back(condStmtIf);
-#endif
+    insertBasicBlockAtEnd(func, condStmtIf);
     info->irBuilder->SetInsertPoint(condStmtIf);
 
     GenRet condValueRet = codegenValue(condExpr);
@@ -326,11 +319,7 @@ CondStmt::codegen() {
         (elseStmt) ? condStmtElse : condStmtEnd);
     trackLLVMValue(condBr);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), condStmtThen);
-#else
-    func->getBasicBlockList().push_back(condStmtThen);
-#endif
+    insertBasicBlockAtEnd(func, condStmtThen);
     info->irBuilder->SetInsertPoint(condStmtThen);
 
     info->lvt->addLayer();
@@ -341,11 +330,7 @@ CondStmt::codegen() {
     info->lvt->removeLayer();
 
     if(elseStmt) {
-#if HAVE_LLVM_VER >= 160
-      func->insert(func->end(), condStmtElse);
-#else
-      func->getBasicBlockList().push_back(condStmtElse);
-#endif
+      insertBasicBlockAtEnd(func, condStmtElse);
       info->irBuilder->SetInsertPoint(condStmtElse);
 
       info->lvt->addLayer();
@@ -355,11 +340,7 @@ CondStmt::codegen() {
       info->lvt->removeLayer();
     }
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), condStmtEnd);
-#else
-    func->getBasicBlockList().push_back(condStmtEnd);
-#endif
+    insertBasicBlockAtEnd(func, condStmtEnd);
     info->irBuilder->SetInsertPoint(condStmtEnd);
 
     info->lvt->removeLayer();
@@ -408,11 +389,7 @@ GenRet GotoStmt::codegen() {
     llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
         info->module->getContext(), FNAME("afterGoto"));
     trackLLVMValue(afterGoto);
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), afterGoto);
-#else
-    func->getBasicBlockList().push_back(afterGoto);
-#endif
+    insertBasicBlockAtEnd(func, afterGoto);
     info->irBuilder->SetInsertPoint(afterGoto);
 
 #endif

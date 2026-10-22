@@ -26,6 +26,7 @@
 #include "codegen.h"
 #include "LayeredValueTable.h"
 #include "llvmTracker.h"
+#include "llvmUtil.h"
 #include "llvmVer.h"
 
 #ifdef HAVE_LLVM
@@ -88,11 +89,7 @@ GenRet WhileDoStmt::codegen()
     trackLLVMValue(blockStmtEnd);
     trackLLVMValue(blockStmtCond);
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtCond);
-#else
-    func->getBasicBlockList().push_back(blockStmtCond);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtCond);
 
     // Insert an explicit branch from the current block to the loop start.
     llvm::BranchInst* toStart = info->irBuilder->CreateBr(blockStmtCond);
@@ -117,11 +114,7 @@ GenRet WhileDoStmt::codegen()
     trackLLVMValue(condBr);
 
     // Now add the body.
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtBody);
-#else
-    func->getBasicBlockList().push_back(blockStmtBody);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtBody);
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -138,11 +131,7 @@ GenRet WhileDoStmt::codegen()
       trackLLVMValue(toEnd);
     }
 
-#if HAVE_LLVM_VER >= 160
-    func->insert(func->end(), blockStmtEnd);
-#else
-    func->getBasicBlockList().push_back(blockStmtEnd);
-#endif
+    insertBasicBlockAtEnd(func, blockStmtEnd);
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

@@ -55,11 +55,11 @@ jobs:
           cd "$PACKAGING_DIR"
 
           pushd apt
-          apt_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          apt_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           popd
 
           pushd rpm
-          rpm_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          rpm_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           popd
 
           echo "distro_configs=[$apt_distro_configs,$rpm_distro_configs]" >> "$GITHUB_OUTPUT"

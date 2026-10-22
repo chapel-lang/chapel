@@ -7,6 +7,19 @@ on:
   # corresponding PR to gather info from.
   push:
     branches: [ main ]
+  # Allow manually issuing emails from this workflow, to fill in any that have
+  # been missed for any reason, or to test the workflow.
+  workflow_dispatch:
+    inputs:
+      sha_before:
+        type: string
+        required: true
+      sha_after:
+        type: string
+        required: true
+      email_to:
+        type: string
+        required: true
 
 # Serialize runs of this workflow to ensure emails are sent in the same order
 # as merges are done.
@@ -21,15 +34,20 @@ defaults:
   run:
     shell: bash -exuo pipefail {0}
 
+env:
+  SHA_BEFORE: ${{ inputs.sha_before || github.event.before }}
+  SHA_AFTER: ${{ inputs.sha_after || github.event.after }}
+  EMAIL_TO: ${{ inputs.email_to || 'chapel+commits@discoursemail.com' }}
+
 jobs:
-  send_email:
-    if: github.repository == 'chapel-lang/chapel'
+  get_prs:
     runs-on: ubuntu-slim
+    outputs:
+      pr_numbers: ${{ steps.get_prs.outputs.pr_numbers }}
     env:
       EMAIL_BODY_FILENAME: email.md
       GH_TOKEN: ${{ github.token }}
-      PR_JSON: pr.json
-      DIFF_MAX_LINES: 1000
+      PRS_LIST_TXT: prs.txt
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,11 +57,12 @@ jobs:
       - name: generate fallback email body
         run: |
           cat << EOF > "$EMAIL_BODY_FILENAME"
-          Failure encountered generating PR merge email for commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
+          Failure encountered enumerating PR merges included in push from [$SHA_BEFORE](https://github.com/${{ github.repository }}/commit/$SHA_BEFORE) to [$SHA_AFTER](https://github.com/${{ github.repository }}/commit/$SHA_AFTER).
 
           Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
           EOF
-      - name: find PR associated with this push and grab info
+      - name: find PRs associated with this push
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
@@ -51,16 +70,78 @@ jobs:
           retry_wait_seconds: 30
           command: |
             set -exuo pipefail
+            status=0
+            for commit_sha in $(git rev-list $SHA_BEFORE..$SHA_AFTER); do
+              pr_number=$(gh pr list --search "$commit_sha" --state merged --json "number" | jq -r '.[0].number')
+              if [ -n "$pr_number" ]; then
+                echo "$pr_number" >> $PRS_LIST_TXT
+              else
+                echo "Couldn't find PR corresponding to commit $commit_sha" | tee -a "$EMAIL_BODY_FILENAME"
+                status=1
+              fi
+            done
+            exit $status
+      - name: set pr numbers list output
+        id: get_prs
+        run: |
+          pr_numbers=$(cat "$PRS_LIST_TXT" | awk '!seen[$0]++' | tac | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
+          echo "pr_numbers=[$pr_numbers]" | tee "$GITHUB_OUTPUT"
+      - name: Send mail for failed PR enumeration
+        if: failure()
+        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
+        with:
+           server_address: ${{ secrets.SMTP_PROVIDER }}
+           server_port: 465
+           secure: true
+           username: ${{ secrets.MAIL_USERNAME }}
+           password: ${{ secrets.MAIL_PASSWORD }}
+           subject: "[Chapel Merge] Error"
+           to: ${{ env.EMAIL_TO }}
+           from: "Chapel User <chapel_commits@cray.com>"
+           body: file://${{ env.EMAIL_BODY_FILENAME }}
 
-            pr_number=$(gh pr list --search "$GITHUB_SHA" --state merged --json "number" | jq -r '.[0].number')
-            if [ -z "$pr_number" ]; then
-              echo "Couldn't find PR corresponding to commit $GITHUB_SHA" | tee -a "$EMAIL_BODY_FILENAME"
-              exit 1
-            fi
+  send_emails:
+    needs: [get_prs]
+    # Send emails for any PRs we were able to find, even if we encountered an
+    # error in enumerating them.
+    if: ${{ !cancelled() && github.repository == 'chapel-lang/chapel' }}
+    runs-on: ubuntu-slim
+    strategy:
+      # This job is quick, so we might as well send emails and make API calls
+      # serially to avoid rate limits. This also means we'll dispatch PR emails
+      # in the order they were merged.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        pr_number: ${{ fromJSON(needs.get_prs.outputs.pr_numbers) }}
+    env:
+      EMAIL_BODY_FILENAME: email.md
+      GH_TOKEN: ${{ github.token }}
+      DIFF_MAX_LINES: 1000
+      PR_NUMBER: ${{ matrix.pr_number }}
+      PR_JSON: pr_${{ matrix.pr_number }}.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          sparse-checkout: .
+      - name: generate fallback email body
+        run: |
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          Failure encountered generating PR merge email for PR [$PR_NUMBER](https://github.com/${{ github.repository }}/pull/$PR_NUMBER).
 
-            echo "::group::$PR_JSON"
-            gh api "/repos/${{ github.repository }}/pulls/$pr_number" | jq '.' | tee "$PR_JSON"
-            echo "::endgroup::"
+          Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+      - name: get info for PR ${{ env.PR_NUMBER }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 60
+          retry_wait_seconds: 30
+          command: |
+            set -exuo pipefail
+            gh api "/repos/${{ github.repository }}/pulls/$PR_NUMBER" | jq '.' | tee "$PR_JSON"
       - name: extract PR title and author
         run: |
           TITLE=$(jq -r '.title' "$PR_JSON")
@@ -105,6 +186,6 @@ jobs:
            username: ${{ secrets.MAIL_USERNAME }}
            password: ${{ secrets.MAIL_PASSWORD }}
            subject: "[Chapel Merge] ${{ env.TITLE }}"
-           to: chapel+commits@discoursemail.com
+           to: ${{ env.EMAIL_TO }}
            from: "${{ env.AUTHOR }} <chapel_commits@cray.com>"
            body: file://${{ env.EMAIL_BODY_FILENAME }}
