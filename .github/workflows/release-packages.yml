@@ -38,7 +38,9 @@ jobs:
         run: |
           fixed_url=$tarball_url_or_id
           if [[ -z ${tarball_url_or_id//[0-9]} ]]; then
+            echo "::group::response.txt"
             gh api -X HEAD --verbose "/repos/${{ github.repository }}/actions/artifacts/$tarball_url_or_id/zip" | tee response.txt
+            echo "::endgroup::"
             fixed_url=$(grep 'Location:' response.txt | rev | cut -d' ' -f1 | rev)
             echo "Using download URL for GitHub artifact $tarball_url_or_id: $fixed_url"
           fi

@@ -58,20 +58,20 @@ public:
 bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
 bool       scopeDefinesVisibleFunctions(BlockStmt* scope);
 
-void       findVisibleFunctionsAllPOIs(CallInfo&       info,
+void       findVisibleFunctionsAllPOIs(const CallInfo& info,
                                        Vec<FnSymbol*>& visibleFns);
 
-void       findVisibleFunctions(CallInfo&             info,
-                                VisibilityInfo*       visInfo,
+void       findVisibleFunctions(const CallInfo&     info,
+                                VisibilityInfo*     visInfo,
                                 PtrSet<BlockStmt*>* visited,
-                                int*                  numVisitedP,
-                                Vec<FnSymbol*>&       visibleFns);
+                                int*                numVisitedP,
+                                Vec<FnSymbol*>&     visibleFns);
 
-void       getMoreVisibleFunctionsOrMethods(const char*  name,
-                                CallExpr*                call,
-                                VisibilityInfo*          visInfo,
-                                PtrSet<BlockStmt*>*    visited,
-                                Vec<FnSymbol*>&          visibleFns);
+void       getMoreVisibleFunctionsOrMethods(const char*         name,
+                                            CallExpr*           call,
+                                            VisibilityInfo&     visInfo,
+                                            PtrSet<BlockStmt*>& visited,
+                                            Vec<FnSymbol*>&     visibleFns);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,

@@ -20,7 +20,7 @@ defaults:
 
 jobs:
   release-tarball:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:

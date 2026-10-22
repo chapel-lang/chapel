@@ -35,7 +35,7 @@ writeln(myClass);
 //
 // Scalar TBAA type descriptors:  reference to parent type only
 // CHECK-DAG: ![[UNIONS:[0-9]+]] = !{!"all unions", ![[CHPLTYPES]], i64 0}
-// CHECK-DAG: ![[INT32:[0-9]+]] = !{!"int32_t", ![[UNIONS]], i64 0}
+// CHECK-DAG: ![[INT32:[0-9]+]] = !{!"uint32_t", ![[UNIONS]], i64 0}
 // CHECK-DAG: ![[INT:[0-9]+]] = !{!"int64_t", ![[UNIONS]], i64 0}
 // CHECK-DAG: ![[REAL:[0-9]+]] = !{!"_real64", ![[UNIONS]], i64 0}
 //

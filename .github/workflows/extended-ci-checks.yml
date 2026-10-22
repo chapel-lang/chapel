@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-26.04, macos-latest]
+        runner: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.runner }}
     container:
       image: ${{ startsWith(matrix.runner, 'ubuntu') && inputs.CHAPEL_CI_IMAGE || '' }}
@@ -49,42 +49,54 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: set up ccache
-      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-      with:
-        create-symlink: true
-    - name: build chapel
-      run: |
-        ./util/buildRelease/smokeTest chpl mason
-    - name: build test-venv
-      run: |
-        make test-venv
-    - name: clone blog
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-        repository: chapel-lang/chapel-blog
-        path: chapel-blog
-    - name: check blog
-      run: |
-        . ./util/setchplenv.sh
-        PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
-        start_test --parallel "$PARALLEL" --parallel-sub_test "$PARALLEL" --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
+      - name: build chapel
+        run: |
+          ./util/buildRelease/smokeTest chpl mason
+      - name: build test-venv
+        run: |
+          make test-venv
+      - name: clone blog
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          repository: chapel-lang/chapel-blog
+          path: chapel-blog
+      - name: check blog
+        run: |
+          . ./util/setchplenv.sh
+          PARALLEL=$(util/buildRelease/chpl-make-cpu_count)
+          start_test --parallel "$PARALLEL" --parallel-sub_test "$PARALLEL" --allow-unsafe-parallel chapel-blog/content/ chapel-blog/chpl-src
 
   gcc-version-tests:
     strategy:
       fail-fast: false
       matrix:
         gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
-    runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ${{ matrix.gcc_version <= 10 && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: save matrix properties to env
         run: |
-          echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+          {
+            echo "GCC_VERSION=${{ matrix.gcc_version }}"
+            echo "DEBS_DIR=$HOME/gcc-debs"
+            echo "DEBS_CACHE_PREFIX=gcc-debs-${{ matrix.gcc_version }}-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
+          } >> "$GITHUB_ENV"
+      - name: restore cached GCC ${{ matrix.gcc_version }} packages
+        id: restore-gcc-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ env.DEBS_CACHE_PREFIX }}
+          restore-keys: ${{ env.DEBS_CACHE_PREFIX }}-
       - name: Install GCC ${{ matrix.gcc_version }}
+        id: install-gcc
         env:
           VERSION: ${{ matrix.gcc_version }}
         run: |
@@ -96,23 +108,43 @@ jobs:
 
           max_attempts=5
           for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test && break
-            if [[ "$attempt" -eq "$max_attempts" ]]; then
-              exit 1
+            sudo timeout 90 add-apt-repository --yes --no-update ppa:ubuntu-toolchain-r/test && break
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              sleep 30
             fi
-            sleep 30
           done
           sudo apt-get update
-          sudo apt-get install -y \
-            "cpp-$VERSION" \
-            "g++-$VERSION" \
-            "gcc-$VERSION" \
-            "gcc-$VERSION-base" \
-            "libgcc-$VERSION-dev" \
-            "libstdc++-$VERSION-dev"
+          sudo apt-get clean
+
+          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
+          if sudo apt-get install -y --download-only --reinstall \
+              "cpp-$VERSION" \
+              "g++-$VERSION" \
+              "gcc-$VERSION" \
+              "gcc-$VERSION-base" \
+              "libgcc-$VERSION-dev" \
+              "libstdc++-$VERSION-dev"; then
+            rm -rf "$DEBS_DIR"
+            mkdir -p "$DEBS_DIR"
+            cp /var/cache/apt/archives/*.deb "$DEBS_DIR"/
+            hash=$(find "$DEBS_DIR" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
+            echo "cache-key=$DEBS_CACHE_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$DEBS_DIR/*.deb" > /dev/null; then
+            echo "::warning::Could not download GCC $VERSION packages, using cached packages"
+          else
+            echo "::error::Could not download GCC $VERSION packages and no cached packages available"
+            exit 1
+          fi
+          sudo apt-get install -y "$DEBS_DIR"/*.deb
 
           sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+      - name: save GCC ${{ matrix.gcc_version }} packages to cache
+        if: steps.install-gcc.outputs.cache-key != '' && steps.install-gcc.outputs.cache-key != steps.restore-gcc-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ steps.install-gcc.outputs.cache-key }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -162,7 +194,7 @@ jobs:
       fail-fast: false
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: Install Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
@@ -213,7 +245,7 @@ jobs:
       fail-fast: false
       matrix:
         llvm_version: [15, 16, 17, 18, 19, 20, 21, 22]
-    runs-on: ${{ matrix.llvm_version <= 16 && 'ubuntu-22.04' || matrix.llvm_version <= 20 && 'ubuntu-24.04' || 'ubuntu-26.04' }}
+    runs-on: ${{ matrix.llvm_version <= 16 && 'ubuntu-22.04' || matrix.llvm_version <= 20 && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: Install LLVM ${{ matrix.llvm_version }} from official convenience script
         run: |
@@ -263,42 +295,42 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
 
   release-tarball-smoke-test:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: set up ccache
-      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-      with:
-        create-symlink: true
-    - name: set vars to make tarball from correct branch
-      run: |
-        {
-          echo "CHPL_HOME_REPOSITORY=$PWD"
-          echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
-        } >> "$GITHUB_ENV"
-    - name: create release tarball
-      run: |
-        export CHPL_TEST_RELEASE_NORECURSE=1
-        ./util/cron/test-release.bash
-    - name: upload release tarball as artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        path: ./tar/chapel-test.tar.gz
-        archive: false
-        if-no-files-found: error
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
+      - name: set vars to make tarball from correct branch
+        run: |
+          {
+            echo "CHPL_HOME_REPOSITORY=$PWD"
+            echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
+          } >> "$GITHUB_ENV"
+      - name: create release tarball
+        run: |
+          export CHPL_TEST_RELEASE_NORECURSE=1
+          ./util/cron/test-release.bash
+      - name: upload release tarball as artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ./tar/chapel-test.tar.gz
+          archive: false
+          if-no-files-found: error
 
   test-homebrew:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-26.04, macos-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: save matrix properties to env
@@ -320,7 +352,7 @@ jobs:
           fi
 
   test-c2chapel:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
@@ -329,55 +361,55 @@ jobs:
     env:
       C2CHAPEL_PYCPARSER_TARBALL_PATH: ${{ github.workspace }}/.cache/pycparser-tarball
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: set up ccache
-      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-      with:
-        create-symlink: true
-    - name: find pycparser tarball
-      id: find-pycparser-tarball
-      run: |
-        mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
-        # shellcheck disable=SC2016 # This is a Make expression, not a shell expression.
-        tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
-        if [[ -z "$tarball" ]]; then
-          echo "Could not determine the pycparser tarball URL" >&2
-          exit 1
-        fi
-        echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
-        shasum=$(shasum -a 256 <<<"$tarball" | awk '{print $1}')
-        echo "sha256=$shasum" >> "$GITHUB_OUTPUT"
-    - name: cache pycparser tarball
-      id: cache-pycparser-deps
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
-      with:
-        path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
-        key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
-    - name: download pycparser tarball (retrying)
-      if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
-      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-      with:
-        max_attempts: 3
-        timeout_seconds: 900
-        retry_wait_seconds: 30
-        command: |
-          set -exuo pipefail
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
+      - name: find pycparser tarball
+        id: find-pycparser-tarball
+        run: |
+          mkdir -p "$C2CHAPEL_PYCPARSER_TARBALL_PATH"
+          # shellcheck disable=SC2016 # This is a Make expression, not a shell expression.
+          tarball=$(make -s --no-print-directory -C tools/c2chapel --eval='print-tarball:;@printf "%s\n" "$(C2CHAPEL_PYCPARSER_TARBALL)"' print-tarball)
+          if [[ -z "$tarball" ]]; then
+            echo "Could not determine the pycparser tarball URL" >&2
+            exit 1
+          fi
+          echo "C2CHAPEL_PYCPARSER_TARBALL_URL=$tarball" >> "$GITHUB_ENV"
+          shasum=$(shasum -a 256 <<<"$tarball" | awk '{print $1}')
+          echo "sha256=$shasum" >> "$GITHUB_OUTPUT"
+      - name: cache pycparser tarball
+        id: cache-pycparser-deps
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
+          key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
+      - name: download pycparser tarball (retrying)
+        if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_seconds: 900
+          retry_wait_seconds: 30
+          command: |
+            set -exuo pipefail
 
-          tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
-          wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
-    - name: configure pycparser tarball for c2chapel
-      run: |
-        path_to_tarball=$(find "$C2CHAPEL_PYCPARSER_TARBALL_PATH" -type f -name '*.tar.gz' -print -quit)
-        if [[ -z "$path_to_tarball" ]]; then
-          echo "No pycparser tarball found in $C2CHAPEL_PYCPARSER_TARBALL_PATH" >&2
-          exit 1
-        fi
-        echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
-    - name: run test-c2chapel.bash
-      run: |
-        ./util/cron/test-c2chapel.bash
+            tarball="$C2CHAPEL_PYCPARSER_TARBALL_PATH/$(basename "$C2CHAPEL_PYCPARSER_TARBALL_URL")"
+            wget --output-document="$tarball" "$C2CHAPEL_PYCPARSER_TARBALL_URL"
+      - name: configure pycparser tarball for c2chapel
+        run: |
+          path_to_tarball=$(find "$C2CHAPEL_PYCPARSER_TARBALL_PATH" -type f -name '*.tar.gz' -print -quit)
+          if [[ -z "$path_to_tarball" ]]; then
+            echo "No pycparser tarball found in $C2CHAPEL_PYCPARSER_TARBALL_PATH" >&2
+            exit 1
+          fi
+          echo "C2CHAPEL_PYCPARSER_TARBALL=$path_to_tarball" >> "$GITHUB_ENV"
+      - name: run test-c2chapel.bash
+        run: |
+          ./util/cron/test-c2chapel.bash
 
   base-docker-image:
     uses: $/.github/workflows/docker-image-builds.yml
@@ -396,7 +428,7 @@ jobs:
 
   push-multiarch-docker-images:
     needs: [base-docker-image, gasnet-docker-images]
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -463,6 +495,89 @@ jobs:
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL_NIGHTLY" "$IMAGE_FULL_NAME"
 
+  build-distributions:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+    - name: Build Chapel
+      shell: bash
+      run: |
+        # put ccache executables at front of PATH
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        . ./util/setchplenv.bash
+        . util/cron/common-gasnet.bash
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv
+    - name: Upload Chapel build
+      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+      with:
+        name: chapel-build-files-distributions
+        retention-days: 1
+
+  test-distributions:
+    needs: build-distributions
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dist_type: [block, cyclic, replicated]
+    env:
+      DIR_UNDER_TEST: test/distributions/robust/arithmetic
+      DIST_TYPE: ${{ matrix.dist_type }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Download Chapel build
+      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+      with:
+        name: chapel-build-files-distributions
+    - name: Test Chapel with ${{ matrix.dist_type }}
+      shell: bash
+      run: |
+        . ./util/setchplenv.bash
+        . util/cron/common-gasnet.bash
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
+                   --parallel "$num_procs" \
+                   "$DIR_UNDER_TEST"
+
+  paratest-linux64:
+    name: Chapel paratest on linux64
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64
+      cron-script: util/cron/test-linux64.bash
+      start-test-args: --futures
+      make-targets: all test-venv chpldoc mason protoc-gen-chpl
+  paratest-linux64-gasnet-everything:
+    name: Chapel paratest on linux64 with gasnet-everything
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-gasnet-everything
+      cron-script: util/cron/test-gasnet-everything.bash
+      start-test-args: --futures
+      make-targets: all test-venv mason-deps
+
   paratest-linux64-ofi-mpi:
     name: Chapel paratest on linux64 with ofi
     uses: $/.github/workflows/ga-paratest.yml
@@ -481,20 +596,3 @@ jobs:
       # each test runs several locales at once, so use half the CPUs for
       # concurrent tests to avoid heavy oversubscription
       test-parallelism: $(( ($(util/buildRelease/chpl-make-cpu_count) + 1) / 2 ))
-
-  paratest-linux64:
-    name: Chapel paratest on linux64
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      configuration: linux64
-      cron-script: util/cron/test-linux64.bash
-      start-test-args: --futures
-      make-targets: all test-venv chpldoc mason protoc-gen-chpl
-  paratest-linux64-gasnet-everything:
-    name: Chapel paratest on linux64 with gasnet-everything
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      configuration: linux64-gasnet-everything
-      cron-script: util/cron/test-gasnet-everything.bash
-      start-test-args: --futures
-      make-targets: all test-venv mason-deps

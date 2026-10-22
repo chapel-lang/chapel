@@ -46,18 +46,18 @@ jobs:
           cd "$PACKAGING_DIR"
 
           pushd apt
-          apt_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          apt_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           popd
 
           pushd rpm
-          rpm_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          rpm_distro_configs=$(find . -type d -not \( -name test -o -name common \) -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           popd
 
           echo "distro_configs=[$apt_distro_configs,$rpm_distro_configs]" >> "$GITHUB_OUTPUT"
 
   build-packaging-tarball:
     if: ${{ inputs.tarball_url == '' }}
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
       credentials:
@@ -110,7 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: ${{ fromJSON(needs.define-linux-package-configs.outputs.distro_configs) }}
-        runner: [ubuntu-26.04, ubuntu-26.04-arm]
+        runner: [ubuntu-latest, ubuntu-26.04-arm]
     env:
       DISTRO: ${{ matrix.distro }}
       ARCH: ${{ endsWith(matrix.runner, '-arm') && 'arm64' || 'x86' }}
