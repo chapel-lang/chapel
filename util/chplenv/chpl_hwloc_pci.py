@@ -13,7 +13,7 @@ import sys
 import chpl_hwloc, chpl_comm, chpl_locale_model, chpl_gpu
 import overrides
 
-from utils import error, memoize, check_valid_var
+from utils import error, memoize, check_valid_var, per_script_main
 
 
 @memoize
@@ -38,6 +38,7 @@ def get():
     return pci_val
 
 
+@per_script_main
 def _main():
     pci_val = get()
     sys.stdout.write("{0}\n".format(pci_val))

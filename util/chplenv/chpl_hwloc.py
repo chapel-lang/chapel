@@ -12,6 +12,7 @@ from utils import (
     try_run_command,
     run_command,
     check_valid_var,
+    per_script_main,
 )
 
 
@@ -116,6 +117,7 @@ def get_prefix():
     return ""
 
 
+@per_script_main
 def _main():
     hwloc_val = get()
 

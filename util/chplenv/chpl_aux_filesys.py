@@ -4,7 +4,7 @@ import os
 from glob import glob
 
 import overrides
-from utils import memoize, check_valid_var
+from utils import memoize, check_valid_var, per_script_main
 
 
 @memoize
@@ -14,6 +14,7 @@ def get():
     return aux_fs
 
 
+@per_script_main
 def _main():
     aux_fs_val = get()
     sys.stdout.write("{0}\n".format(aux_fs_val))

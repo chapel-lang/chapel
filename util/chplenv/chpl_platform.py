@@ -6,7 +6,7 @@ import re
 import sys
 
 import overrides, utils
-from utils import error, memoize, try_run_command, warning
+from utils import error, memoize, try_run_command, warning, per_script_main
 
 
 @memoize
@@ -150,6 +150,7 @@ def is_arch_linux():
     return os.path.exists(arch_file)
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
     parser.add_option(

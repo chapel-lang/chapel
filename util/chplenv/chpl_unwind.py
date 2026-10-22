@@ -3,7 +3,7 @@ import sys
 import optparse
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize, warning, check_valid_var
+from utils import error, memoize, warning, check_valid_var, per_script_main
 
 
 @memoize
@@ -101,6 +101,7 @@ def get_link_args():
     return args
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser()
     parser.add_option(

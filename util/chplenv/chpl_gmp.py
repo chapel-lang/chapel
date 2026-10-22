@@ -5,7 +5,7 @@ import optparse
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning, error, check_valid_var
+from utils import memoize, warning, error, check_valid_var, per_script_main
 
 
 # returns True if CHPL_GMP was set by the user
@@ -92,6 +92,7 @@ def get_link_args():
     return ([], [])
 
 
+@per_script_main
 def _main():
     gmp_val = get()
 

@@ -2,7 +2,7 @@
 import sys
 
 import overrides
-from utils import memoize, error, check_valid_var
+from utils import memoize, error, check_valid_var, per_script_main
 
 
 @memoize
@@ -12,6 +12,7 @@ def get():
     return locale_model_val
 
 
+@per_script_main
 def _main():
     locale_model_val = get()
     sys.stdout.write("{0}\n".format(locale_model_val))

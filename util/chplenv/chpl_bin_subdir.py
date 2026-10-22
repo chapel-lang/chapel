@@ -6,7 +6,7 @@ import sys
 import chpl_home_utils
 import chpl_platform, chpl_arch, chpl_cpu
 
-from utils import memoize
+from utils import memoize, per_script_main
 
 
 @memoize
@@ -35,6 +35,7 @@ def get(flag="host"):
     return result
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
     parser.add_option(

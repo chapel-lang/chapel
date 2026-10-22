@@ -203,7 +203,7 @@ def missing_llvm(chplenv):
     if chplenv.get("CHPL_LLVM") == "bundled" or (
         chplenv.get("CHPL_LLVM") == "none"
         and chplenv.get("CHPL_LLVM_SUPPORT") == "bundled"
-    ):
+    ) or chplenv.get("CHPL_LLVM") == "unset":
         llvm_config = chplenv.get("CHPL_LLVM_CONFIG")
         if not llvm_config or not os.path.exists(llvm_config):
             return True

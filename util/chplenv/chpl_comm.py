@@ -4,7 +4,7 @@ import os
 import re
 
 import overrides
-from utils import memoize, check_valid_var, which, warning
+from utils import memoize, check_valid_var, which, warning, per_script_main
 
 
 @memoize
@@ -115,6 +115,7 @@ def get_network():
     return network
 
 
+@per_script_main
 def _main():
     comm_val = get()
     sys.stdout.write("{0}\n".format(comm_val))

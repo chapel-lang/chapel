@@ -2,7 +2,7 @@
 import optparse
 import sys
 
-from utils import memoize
+from utils import memoize, per_script_main
 
 
 @memoize
@@ -14,6 +14,7 @@ def get(major_only=False):
         return "{0}".format(ver[0])
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--major-only]")
     parser.add_option("--major-only", default=False, action="store_true")

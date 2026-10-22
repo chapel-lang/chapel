@@ -6,7 +6,14 @@ import os
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, chpl_comm_ofi_oob
 import overrides, third_party_utils
 
-from utils import error, memoize, try_run_command, warning, check_valid_var
+from utils import (
+    error,
+    memoize,
+    try_run_command,
+    warning,
+    check_valid_var,
+    per_script_main,
+)
 
 
 @memoize
@@ -118,6 +125,7 @@ def get_link_args():
     return args
 
 
+@per_script_main
 def _main():
     import optparse
 

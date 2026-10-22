@@ -7,7 +7,7 @@ Checks environment variables first, then chplconfig file for definitions
 import os
 import sys
 
-from utils import memoize, warning
+from utils import memoize, warning, per_script_main
 
 # List of Chapel Environment Variables
 # Note: this array lists them in an order that matches
@@ -280,6 +280,7 @@ def items():
         yield (var, get(var))
 
 
+@per_script_main
 def _main():
     """Print overrides that are currently set via environment/chplconfig"""
     for key, val in items():

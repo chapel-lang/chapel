@@ -6,7 +6,7 @@ import sys
 
 import chpl_platform, chpl_locale_model, overrides
 import homebrew_utils
-from utils import which, error, memoize, warning
+from utils import which, error, memoize, warning, per_script_main
 
 
 #
@@ -601,6 +601,7 @@ def validate_compiler_settings():
     validate_inference_matches("target", "c++")
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
     parser.add_option(

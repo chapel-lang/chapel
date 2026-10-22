@@ -103,6 +103,7 @@ def comp_only_pkg(pkg):
     return os.path.isfile(componly)
 
 
+@utils.per_script_main
 def _main():
     parser = optparse.OptionParser()
     parser.add_option(

@@ -2,7 +2,7 @@
 
 import sys
 
-from utils import error, memoize, try_run_command
+from utils import error, memoize, try_run_command, per_script_main
 
 
 @memoize
@@ -39,6 +39,7 @@ def homebrew_pkg_exists(pkg):
     return exists and retcode == 0
 
 
+@per_script_main
 def _main():
     sys.stdout.write("{0}\n".format(get_homebrew_prefix()))
 

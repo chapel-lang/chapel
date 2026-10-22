@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_cpu, overrides
-from utils import error, memoize, warning
+from utils import error, memoize, warning, per_script_main
 
 
 @memoize
@@ -27,6 +27,7 @@ def validate(flag="host"):
     pass
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
     parser.add_option(

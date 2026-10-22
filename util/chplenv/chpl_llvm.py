@@ -17,6 +17,7 @@ from utils import (
     try_run_command,
     warning,
     check_valid_var,
+    per_script_main,
 )
 
 
@@ -1705,6 +1706,7 @@ def get_clang_args_sdkroot():
     return ""
 
 
+@per_script_main
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()

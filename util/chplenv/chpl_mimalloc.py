@@ -4,7 +4,7 @@ import sys
 import optparse
 
 import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler, chpl_platform
-from utils import error, memoize, warning, check_valid_var
+from utils import error, memoize, warning, check_valid_var, per_script_main
 
 
 def var_name(flag):
@@ -120,6 +120,7 @@ def get_link_args(flag):
     return [], []
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
     parser.add_option(

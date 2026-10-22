@@ -2,7 +2,7 @@
 import sys
 
 import overrides
-from utils import memoize
+from utils import memoize, per_script_main
 import chpl_hwloc
 
 
@@ -17,6 +17,7 @@ def get():
     return debug_val
 
 
+@per_script_main
 def _main():
     debug_val = get()
     sys.stdout.write("{0}\n".format(debug_val))

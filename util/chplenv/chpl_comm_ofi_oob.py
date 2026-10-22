@@ -8,7 +8,7 @@ import overrides
 import third_party_utils
 import glob
 
-from utils import error, memoize, check_valid_var
+from utils import error, memoize, check_valid_var, per_script_main
 
 
 @memoize
@@ -176,6 +176,7 @@ def get_link_args():
     return args
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [options]")
     parser.add_option(

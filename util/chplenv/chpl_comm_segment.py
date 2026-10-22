@@ -2,7 +2,7 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import memoize, check_valid_var, error
+from utils import memoize, check_valid_var, error, per_script_main
 
 
 @memoize
@@ -37,6 +37,7 @@ def get():
     return segment_val
 
 
+@per_script_main
 def _main():
     segment_val = get()
     sys.stdout.write("{0}\n".format(segment_val))

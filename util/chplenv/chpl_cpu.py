@@ -8,7 +8,7 @@ import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, target_compiler_is_prgenv
-from utils import memoize, run_command, warning
+from utils import memoize, run_command, warning, per_script_main
 
 # This map has a key as a synonym and the value as the LLVM arch/cpu
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
@@ -266,6 +266,7 @@ def get_default_machine(flag):
     return get_native_machine()
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(
         usage="usage: %prog [--host|target] "

@@ -3,7 +3,14 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import which, error, memoize, warning, check_valid_var
+from utils import (
+    which,
+    error,
+    memoize,
+    warning,
+    check_valid_var,
+    per_script_main,
+)
 
 
 def slurm_prefix(base_launcher):
@@ -98,6 +105,7 @@ def get():
     return launcher_val
 
 
+@per_script_main
 def _main():
     launcher_val = get()
     sys.stdout.write("{0}\n".format(launcher_val))

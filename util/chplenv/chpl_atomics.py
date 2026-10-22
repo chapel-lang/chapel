@@ -4,7 +4,7 @@ import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
-from utils import error, memoize, warning, check_valid_var
+from utils import error, memoize, warning, check_valid_var, per_script_main
 
 
 @memoize
@@ -113,6 +113,7 @@ def get(flag="target"):
     return atomics_val
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--network|target])")
     parser.add_option(

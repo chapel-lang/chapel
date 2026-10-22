@@ -4,7 +4,7 @@ import os
 import sys
 
 import overrides
-from utils import memoize, error
+from utils import memoize, error, per_script_main
 import chpl_tasks, chpl_mem, chpl_compiler
 
 
@@ -42,6 +42,7 @@ def get(flag=""):
     return sanitizers_val
 
 
+@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--exe])")
     parser.add_option(

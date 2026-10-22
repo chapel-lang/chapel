@@ -3,7 +3,7 @@ import sys
 import shutil
 
 import chpl_comm, overrides
-from utils import memoize, check_valid_var, error
+from utils import memoize, check_valid_var, error, per_script_main
 
 
 @memoize
@@ -55,6 +55,7 @@ def get():
     return substrate_val
 
 
+@per_script_main
 def _main():
     substrate_val = get()
     sys.stdout.write("{0}\n".format(substrate_val))

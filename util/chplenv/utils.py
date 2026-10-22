@@ -1,5 +1,6 @@
 """Utility functions for chplenv modules"""
 
+import functools
 import os
 import subprocess
 import sys
@@ -43,6 +44,19 @@ def flush_warnings():
         sys.stderr.write(warning)
         sys.stderr.write("\n")
     _warning_buffer.clear()
+
+
+def per_script_main(func):
+    """Decorator for a script's main function to perform common setup and cleanup"""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            flush_warnings()
+
+    return wrapper
 
 
 def set_buffer_warnings(buffer_warnings):
