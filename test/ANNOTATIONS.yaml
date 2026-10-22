@@ -668,6 +668,10 @@ all:
     - Move CHPL_CACHE_REMOTE into CHPL_RT_PRGINFO (#28869)
   06/10/26:
     - Restore CHPL_CACHE_REMOTE global const (#28949)
+  10/12/26:
+    - Use per-class vmtables (#29445)
+  10/13/26:
+    - Rewrite a number of constants as dynamically loaded (#29348)
 
 # End all
 
@@ -1786,7 +1790,7 @@ nbody:
     - Some cleanup and add future for line numbers (#27600)
   05/14/26:
     - Investigate nbody regressions due to LLVM-22 (#28837)
- 
+
 no-op:
   02/24/17:
     - upgrade hwloc to 1.11.6 (#5411)
