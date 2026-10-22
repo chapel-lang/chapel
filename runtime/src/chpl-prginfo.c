@@ -54,7 +54,7 @@ static chpl_rt_prginfo* chpl_prg_root;
 static void program_registration_common_setup(chpl_rt_prginfo* prg) {
   // The id is stored in the upper bits of every class id.
   if (prg->id >= CHPL_CID_MAX_PROGRAMS) {
-    chpl_error("too many Chapel programs loaded to encode class ids", 0, 0);
+    chpl_rt_error("too many Chapel programs loaded to encode class ids", 0, 0);
   }
 }
 
