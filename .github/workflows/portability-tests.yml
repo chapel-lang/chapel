@@ -88,6 +88,12 @@ jobs:
               sleep 30
             fi
           done
+          # Do not use the apptainer from Ubuntu, use the one from the PPA
+          sudo tee /etc/apt/preferences.d/apptainer <<'EOF'
+          Package: apptainer apptainer-suid
+          Pin: release o=Ubuntu
+          Pin-Priority: -1
+          EOF
           sudo apt-get update
           sudo apt-get clean
 
