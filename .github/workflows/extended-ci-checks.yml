@@ -227,18 +227,48 @@ jobs:
             libedit-dev \
             llvm \
             llvm-dev
-      - name: Compile Chapel and run example tests
+      - name: Compile Chapel and run tests
         run: |
           source util/setchplenv.bash
 
           export CHPL_LAUNCHER=none
+          export CHPL_LIB_PIC=pic
+          source util/cron/common-python-interop.bash
 
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
+      - name: Compile Chapel with GASNet and run tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LAUNCHER=none
+          export CHPL_LIB_PIC=pic
+          source util/cron/common-gasnet.bash
+          source util/cron/common-python-interop.bash
+          source util/cron/common-zmq.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel with GASNet"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv mason-deps
+          echo "::endgroup::"
+
+          echo "::group::Run tests with GASNet"
+          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
 
   llvm-version-tests:
     strategy:
