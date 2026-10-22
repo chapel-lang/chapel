@@ -4080,6 +4080,13 @@ void chpl_comm_impl_task_end(void) {
 }
 
 
+void chpl_comm_impl_put_visibility_fence(void) {
+  DBG_PRINTF(DBG_IFACE_MCM, "%s()", __func__);
+
+  forceMemFxVisAllNodes_noTcip(true /*checkPuts*/, false /*checkAmos*/);
+}
+
+
 ////////////////////////////////////////
 //
 // Interface: Active Messages
