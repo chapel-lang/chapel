@@ -1,0 +1,9 @@
+TestStacktraceLib.chpl:3: error: halt reached - This is a test of the stack trace.
+Stacktrace
+
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn in program at $CHPL_HOME/test/dynamic-loading/lib/libTestStacktraceLib.dylib
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn in program at $CHPL_HOME/test/dynamic-loading/lib/libTestStacktraceLib.dylib
+shouldHalt() at TestStacktraceLib.chpl:2 in program at $CHPL_HOME/test/dynamic-loading/lib/libTestStacktraceLib.dylib
+anotherLayer() at TestStacktraceLib.chpl:6 in program at $CHPL_HOME/test/dynamic-loading/lib/libTestStacktraceLib.dylib
+callMe() at TestStacktraceLib.chpl:10 in program at $CHPL_HOME/test/dynamic-loading/lib/libTestStacktraceLib.dylib
+main() at TestStacktrace.chpl:12 in program at $CHPL_HOME/test/dynamic-loading/TestStacktrace
