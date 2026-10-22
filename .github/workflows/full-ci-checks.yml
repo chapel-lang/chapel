@@ -47,6 +47,56 @@ jobs:
         run: |
           ./util/cron/test-make-install-check.bash
 
+  test-mpicc:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with mpicc
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          export CHPL_NIGHTLY_DO_NOTHING=1
+          source util/cron/test-mpicc.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+      - name: Build and Test Chapel with mpicc (GASNet)
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          export CHPL_NIGHTLY_DO_NOTHING=1
+          source util/cron/test-mpicc.gasnet.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
 
   test-incremental:
     runs-on: ubuntu-latest
