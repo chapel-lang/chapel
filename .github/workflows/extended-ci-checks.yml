@@ -83,8 +83,20 @@ jobs:
     steps:
       - name: save matrix properties to env
         run: |
-          echo "GCC_VERSION=${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+          {
+            echo "GCC_VERSION=${{ matrix.gcc_version }}"
+            echo "DEBS_DIR=$HOME/gcc-debs"
+            echo "DEBS_CACHE_PREFIX=gcc-debs-${{ matrix.gcc_version }}-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
+          } >> "$GITHUB_ENV"
+      - name: restore cached GCC ${{ matrix.gcc_version }} packages
+        id: restore-gcc-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ env.DEBS_CACHE_PREFIX }}
+          restore-keys: ${{ env.DEBS_CACHE_PREFIX }}-
       - name: Install GCC ${{ matrix.gcc_version }}
+        id: install-gcc
         env:
           VERSION: ${{ matrix.gcc_version }}
         run: |
@@ -96,23 +108,43 @@ jobs:
 
           max_attempts=5
           for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test && break
-            if [[ "$attempt" -eq "$max_attempts" ]]; then
-              exit 1
+            sudo timeout 90 add-apt-repository --yes --no-update ppa:ubuntu-toolchain-r/test && break
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              sleep 30
             fi
-            sleep 30
           done
           sudo apt-get update
-          sudo apt-get install -y \
-            "cpp-$VERSION" \
-            "g++-$VERSION" \
-            "gcc-$VERSION" \
-            "gcc-$VERSION-base" \
-            "libgcc-$VERSION-dev" \
-            "libstdc++-$VERSION-dev"
+          sudo apt-get clean
+
+          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
+          if sudo apt-get install -y --download-only --reinstall \
+              "cpp-$VERSION" \
+              "g++-$VERSION" \
+              "gcc-$VERSION" \
+              "gcc-$VERSION-base" \
+              "libgcc-$VERSION-dev" \
+              "libstdc++-$VERSION-dev"; then
+            rm -rf "$DEBS_DIR"
+            mkdir -p "$DEBS_DIR"
+            cp /var/cache/apt/archives/*.deb "$DEBS_DIR"/
+            hash=$(find "$DEBS_DIR" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
+            echo "cache-key=$DEBS_CACHE_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$DEBS_DIR/*.deb" > /dev/null; then
+            echo "::warning::Could not download GCC $VERSION packages, using cached packages"
+          else
+            echo "::error::Could not download GCC $VERSION packages and no cached packages available"
+            exit 1
+          fi
+          sudo apt-get install -y "$DEBS_DIR"/*.deb
 
           sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-$VERSION" 100
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
+      - name: save GCC ${{ matrix.gcc_version }} packages to cache
+        if: steps.install-gcc.outputs.cache-key != '' && steps.install-gcc.outputs.cache-key != steps.restore-gcc-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ steps.install-gcc.outputs.cache-key }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -462,6 +494,72 @@ jobs:
           IMAGE_FULL_NAME_EXTERNAL_NIGHTLY="$EXTERNAL_REGISTRY/$(cut -d'/' -f2- <<< "$IMAGE_FULL_NAME_NIGHTLY")"
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL" "$IMAGE_FULL_NAME"
           docker buildx imagetools create -t "$IMAGE_FULL_NAME_EXTERNAL_NIGHTLY" "$IMAGE_FULL_NAME"
+
+  build-distributions:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: set up ccache
+      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+    - name: Build Chapel
+      shell: bash
+      run: |
+        # put ccache executables at front of PATH
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        . ./util/setchplenv.bash
+        . util/cron/common-gasnet.bash
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+          all test-venv
+    - name: Upload Chapel build
+      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+      with:
+        name: chapel-build-files-distributions
+        retention-days: 1
+
+  test-distributions:
+    needs: build-distributions
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dist_type: [block, cyclic, replicated]
+    env:
+      DIR_UNDER_TEST: test/distributions/robust/arithmetic
+      DIST_TYPE: ${{ matrix.dist_type }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Download Chapel build
+      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+      with:
+        name: chapel-build-files-distributions
+    - name: Test Chapel with ${{ matrix.dist_type }}
+      shell: bash
+      run: |
+        . ./util/setchplenv.bash
+        . util/cron/common-gasnet.bash
+        printchplenv --all --internal
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
+                   --parallel "$num_procs" \
+                   "$DIR_UNDER_TEST"
 
   paratest-linux64:
     name: Chapel paratest on linux64

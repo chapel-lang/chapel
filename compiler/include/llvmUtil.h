@@ -130,5 +130,7 @@ llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS=0);
 // although this takes a type, it returns an opaque `ptr` on newer LLVMs
 llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS=0);
 
+void insertBasicBlockAtEnd(llvm::Function* func, llvm::BasicBlock* bb);
+
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H
