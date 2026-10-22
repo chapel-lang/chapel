@@ -55,6 +55,11 @@ static void intPrimTypeHelper(int width, const char* primName, std::vector<const
     return typePtr->isIntType() && typePtr->toIntType()->bitwidth() == width;
   }, prelude, expectedKind);
 }
+static void uintPrimTypeHelper(int width, const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(primName, args, [width](const Type* typePtr, const Param* param) {
+    return typePtr->isUintType() && typePtr->toUintType()->bitwidth() == width;
+  }, prelude, expectedKind);
+}
 
 static void realPrimTypeHelper(int width, const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
   predicatePrimTypeHelper(primName, args, [width](const Type* typePtr, const Param* param) {
@@ -158,9 +163,9 @@ static void test9() {
   realPrimTypeHelper(64, "steal", {"v"}, "var v: real(64);");
 }
 
-// test for primitive "getcid", which should return an int32
+// test for primitive "getcid", which should return a uint32
 static void test10() {
-  intPrimTypeHelper(32, "getcid", {});
+  uintPrimTypeHelper(32, "getcid", {});
 }
 
 // test for primitive "get_union_id", which should return a default int

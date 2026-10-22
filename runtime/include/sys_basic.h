@@ -85,6 +85,15 @@
   #define chpl_noinline
 #endif
 
+#if defined __has_attribute
+  #if __has_attribute (visibility)
+    #define chpl_hidden __attribute__ ((visibility ("hidden")))
+  #endif
+#endif
+#ifndef chpl_hidden
+  #define chpl_hidden
+#endif
+
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #ifndef __STDC_CONSTANT_MACROS
