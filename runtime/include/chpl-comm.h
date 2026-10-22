@@ -622,6 +622,19 @@ void chpl_comm_task_end(void) {
 }
 
 
+// Hook that makes the memory effects of this thread's completed PUTs
+// visible to all locales.  Comm layers where PUT completion already
+// implies visibility don't need to implement it.
+#ifndef CHPL_COMM_IMPL_PUT_VISIBILITY_FENCE
+#define CHPL_COMM_IMPL_PUT_VISIBILITY_FENCE() \
+        return
+#endif
+static inline
+void chpl_comm_put_visibility_fence(void) {
+  CHPL_COMM_IMPL_PUT_VISIBILITY_FENCE();
+}
+
+
 void* chpl_get_global_serialize_table(int64_t idx);
 
 // Used to park and wake up the main process
