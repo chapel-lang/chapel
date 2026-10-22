@@ -203,3 +203,19 @@ jobs:
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
       make-targets: all test-venv mason-deps
+  paratest-locks-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=locks
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: locks-atomics
+      cron-script: util/cron/test-linux64-locks-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+  paratest-intrinsics-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=intrinsics
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: intrinsics-atomics
+      cron-script: util/cron/test-linux64-intrinsics-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
