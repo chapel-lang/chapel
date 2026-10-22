@@ -3806,6 +3806,14 @@ void chpl_cache_fence(int acquire, int release, int32_t ln, int32_t fn)
   if( release ) {
     cache_clean_dirty(cache, task_local);
     wait_all(cache);
+    // not all puts may be visible to other nodes, this forces their visibility
+    // this fixes an issue with ofi where complete nb_puts aren't fully visible
+    // and cause the program to read out-of-date data
+    // this is a bandaid. currently, a task completes and then deals with the cache
+    // task completion should force visibility, so maybe a more 'correct' solution
+    // is to resolve the cache before doing task completion
+    // https://github.com/chapel-lang/chapel/pull/29558#pullrequestreview-5616595990
+    chpl_comm_put_visibility_fence();
   }
 #ifdef DUMP
   DEBUG_PRINT(("%d: task %d after fence\n", chpl_nodeID, (int) chpl_task_getId()));
