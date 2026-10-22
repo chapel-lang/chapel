@@ -63,10 +63,53 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
+static void*
+chpl_rt_unwind_get_cursor_addr(unw_cursor_t* cursor, unw_word_t ip_offset) {
+  unw_proc_info_t info;
+  unw_get_proc_info(cursor, &info);
+  return (void *)(info.start_ip + ip_offset);
+}
+
+// Returns the Chapel program that contains the code at the cursor, or NULL
+// if the code does not belong to a Chapel program.
+static chpl_rt_prginfo*
+chpl_rt_unwind_get_prginfo(unw_cursor_t* cursor, unw_word_t ip_offset) {
+  void* addr = chpl_rt_unwind_get_cursor_addr(cursor, ip_offset);
+  chpl_rt_prginfo* (*prepare_prginfo)(void) = NULL;
+  void* dl_handle = NULL;
+  Dl_info info;
+
+  // On success, 'dladdr' returns non-zero.
+  if (dladdr(addr, &info) == 0 || info.dli_fname == NULL) return NULL;
+
+  // The root program is usually an executable, which may not have a symbol
+  // table to search below, so compare load paths first.
+  const char* load_path = chpl_rt_prginfo_load_path(CHPL_RT_PRGINFO_ROOT);
+  if (load_path && !strcmp(info.dli_fname, load_path)) {
+    return CHPL_RT_PRGINFO_ROOT;
+  }
+
+  dl_handle = dlopen(info.dli_fname, RTLD_NOLOAD | RTLD_LAZY);
+  if (dl_handle == NULL) return NULL;
+
+  // Only dynamically loaded Chapel programs define this symbol.
+  *(void**)(&prepare_prginfo) = dlsym(dl_handle, "chpl_prepareProgramInfoHere");
+
+  // The program must remain loaded, so this only drops our reference.
+  dlclose(dl_handle);
+
+  if (prepare_prginfo == NULL) return NULL;
+
+  chpl_rt_prginfo* ret = prepare_prginfo();
+  if (ret != NULL && ret->id != CHPL_RT_PRGINFO_NULL_ID) return ret;
+
+  return NULL;
+}
+
 #ifdef __linux__
 // We create a pipe with addr2line and try to get a line number
-static int chpl_unwind_refineGetLineNum(void *addr) {
-
+static int chpl_rt_unwind_refine_get_line_num(chpl_rt_prginfo* prg,
+                                              void *addr) {
   int rc;
   Dl_info info;
   intptr_t relativeAddr;
@@ -121,8 +164,7 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   // then space
   // then the address
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          CHPL_LLVM_BIN_DIR);
+  CHPL_RT_PRGINFO_DECLARE(prg, CHPL_LLVM_BIN_DIR);
 
   int scriptLen = strlen(script);
   int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
@@ -189,7 +231,8 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
 }
 #elif defined __APPLE__
 // invoke atos to get line number information
-static int chpl_unwind_refineGetLineNum(void *addr) {
+static int chpl_rt_unwind_refine_get_line_num(chpl_rt_prginfo* prg,
+                                              void *addr) {
   char buf[2048];
   int rc;
 
@@ -232,29 +275,26 @@ static int chpl_unwind_refineGetLineNum(void *addr) {
   return line;
 }
 #else
-static int chpl_unwind_refineGetLineNum(void *addr) {
+static int chpl_rt_unwind_refine_get_line_num(chpl_rt_prginfo* prg,
+                                              void *addr) {
   // Not implemented on this platform
   return 0;
 }
 #endif
 
-
-static unsigned int chpl_unwind_getLineNum(unw_cursor_t* cursor,
-                                           unw_word_t wordValue,
-                                           int tableIdx) {
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_filenumSymTable);
+static unsigned int chpl_rt_unwind_get_line_num(chpl_rt_prginfo* prg,
+                                                unw_cursor_t* cursor,
+                                                unw_word_t ip_offset,
+                                                int table_idx) {
+  CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenumSymTable);
 
   // use the procedure line number
-  unsigned int line = chpl_filenumSymTable[tableIdx + 1];
+  unsigned int line = chpl_filenumSymTable[table_idx + 1];
 
-  // try and use dladdr to get a more precise line number
-  unw_proc_info_t info;
   // Maybe we can get a more precise line number
-  unw_get_proc_info(cursor, &info);
-  unsigned int lineTmp = chpl_unwind_refineGetLineNum((void *)(info.start_ip + wordValue));
-  if (lineTmp != 0)
-    line = lineTmp;
+  void* addr = chpl_rt_unwind_get_cursor_addr(cursor, ip_offset);
+  unsigned int line_tmp = chpl_rt_unwind_refine_get_line_num(prg, addr);
+  if (line_tmp != 0) line = line_tmp;
 
   return line;
 }
@@ -298,11 +338,17 @@ enum chpl_stack_unwind_mode {
 // out is FILE* or char**, depending on the mode
 static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep, void* out) {
 
-  // This is just a prototype using libunwind
+  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
+                          chpl_areAnyChapelProgramsLoaded);
+  bool any_programs_loaded = chpl_areAnyChapelProgramsLoaded();
+
   unw_cursor_t cursor;
   unw_context_t uc;
-  unw_word_t wordValue;
+  unw_word_t ip_offset;
   char buffer[256];
+
+  // Whether the stacktrace header has been printed yet.
+  bool has_printed_header = false;
 
   if (unw_getcontext(&uc) != 0) {
     DEBUG_PRINT(("unw_getcontext failed\n"));
@@ -319,31 +365,35 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
   char** strPtr = (char**)out;
   char sepstr[2] = {sep, '\0'};
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_sizeSymTable);
-
-  if (chpl_sizeSymTable > 0) {
-    switch (mode) {
-      case CHPL_STACK_UNWIND_MODE_FILE:
-        fprintf((FILE*)out,"Stacktrace%c%c", sep, sep);
-      break;
-      case CHPL_STACK_UNWIND_MODE_STRING: {
-        append_to_string(&bufsz, &strsz, strPtr, "Stacktrace");
-        append_to_string(&bufsz, &strsz, strPtr, sepstr);
-        append_to_string(&bufsz, &strsz, strPtr, sepstr);
-      }
-      break;
-    }
-  }
-
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_funSymTable);
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
-                          chpl_filenumSymTable);
-
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
-    unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
+    unw_get_proc_name(&cursor, buffer, sizeof(buffer), &ip_offset);
+
+    // Foreign (non-Chapel) frames are not printed.
+    chpl_rt_prginfo* prg = chpl_rt_unwind_get_prginfo(&cursor, ip_offset);
+    if (prg == NULL) continue;
+
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_sizeSymTable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_funSymTable);
+    CHPL_RT_PRGINFO_DECLARE(prg, chpl_filenumSymTable);
+
+    if (chpl_sizeSymTable <= 0) continue;
+
+    if (!has_printed_header) {
+      has_printed_header = true;
+      switch (mode) {
+        case CHPL_STACK_UNWIND_MODE_FILE:
+          fprintf((FILE*)out,"Stacktrace%c%c", sep, sep);
+        break;
+        case CHPL_STACK_UNWIND_MODE_STRING: {
+          append_to_string(&bufsz, &strsz, strPtr, "Stacktrace");
+          append_to_string(&bufsz, &strsz, strPtr, sepstr);
+          append_to_string(&bufsz, &strsz, strPtr, sepstr);
+        }
+        break;
+      }
+    }
+
     // Since this stack trace is printed out a program exit, we do not believe
     // it is performance sensitive. Additionally, this initial implementation
     // favors simplicity over performance.
@@ -354,14 +404,21 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
     // 2) Emit chpl_funSymTable in sorted order and use binary search on it
     for (int t = 0; t < chpl_sizeSymTable; t+=2 ) {
       if (!strcmp(chpl_funSymTable[t], buffer)) {
-        unsigned int line = chpl_unwind_getLineNum(&cursor, wordValue, t);
+        const char* path = chpl_rt_prginfo_load_path(prg);
+        if (path == NULL) path = "<unknown>";
+        unsigned int line = chpl_rt_unwind_get_line_num(prg, &cursor,
+                                                        ip_offset, t);
+        const char* filename =
+          chpl_rt_lookup_filename_prg(prg, chpl_filenumSymTable[t]);
         switch (mode) {
           case CHPL_STACK_UNWIND_MODE_FILE:
-            fprintf((FILE*)out, "%s() at %s:%d%c",
-                     chpl_funSymTable[t+1],
-                     chpl_rt_lookup_filename(chpl_filenumSymTable[t]),
-                     line,
-                     sep);
+            if (any_programs_loaded) {
+              fprintf((FILE*)out, "%s() at %s:%d in program at %s%c",
+                      chpl_funSymTable[t+1], filename, line, path, sep);
+            } else {
+              fprintf((FILE*)out, "%s() at %s:%d%c",
+                      chpl_funSymTable[t+1], filename, line, sep);
+            }
           break;
           case CHPL_STACK_UNWIND_MODE_STRING: {
             int buffersz = snprintf(buffer, sizeof(buffer), "%d", line);
@@ -370,10 +427,13 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
 
             append_to_string(&bufsz, &strsz, strPtr, chpl_funSymTable[t+1]);
             append_to_string(&bufsz, &strsz, strPtr, "() at ");
-            append_to_string(&bufsz, &strsz, strPtr,
-                            chpl_rt_lookup_filename(chpl_filenumSymTable[t]));
+            append_to_string(&bufsz, &strsz, strPtr, filename);
             append_to_string(&bufsz, &strsz, strPtr, ":");
             append_to_string(&bufsz, &strsz, strPtr, buffer); // line number
+            if (any_programs_loaded) {
+              append_to_string(&bufsz, &strsz, strPtr, " in program at ");
+              append_to_string(&bufsz, &strsz, strPtr, path);
+            }
             append_to_string(&bufsz, &strsz, strPtr, sepstr);
           }
           break;

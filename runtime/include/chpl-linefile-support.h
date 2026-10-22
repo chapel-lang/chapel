@@ -25,6 +25,8 @@
 
 #include "fileinfo/chpl-linefile-defs.h"
 
+#include "chpl-prginfo.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +38,7 @@ extern "C" {
 // in a user-supplied file for config vars.
 void chpl_saveFilename(const char *filename);
 
+c_string chpl_rt_lookup_filename_prg(chpl_rt_prginfo* prg, const int32_t idx);
 c_string chpl_rt_lookup_filename(const int32_t idx);
 
 #ifdef __cplusplus
