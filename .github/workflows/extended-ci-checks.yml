@@ -186,12 +186,18 @@ jobs:
 
           export CHPL_LAUNCHER=none
 
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
 
   python-version-tests:
     strategy:
@@ -322,15 +328,20 @@ jobs:
           source util/setchplenv.bash
 
           export CHPL_LLVM=system
-
           export CHPL_LAUNCHER=none
 
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
