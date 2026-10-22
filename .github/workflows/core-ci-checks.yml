@@ -627,7 +627,7 @@ jobs:
           export CHPL_LLVM_SUPPORT=bundled
 
           # Set longer default test timeout, as emulation is slow.
-          export CHPL_TEST_TIMEOUT=600
+          export CHPL_TEST_TIMEOUT=1200
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
           make -j"$num_procs" all test-venv chpldoc mason
