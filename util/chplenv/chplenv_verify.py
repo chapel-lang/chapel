@@ -200,10 +200,14 @@ def missing_llvm(chplenv):
     if CHPL_LLVM is bundled, return True if its has not been built
     if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, return True if has not been built
     """
-    if chplenv.get("CHPL_LLVM") == "bundled" or (
-        chplenv.get("CHPL_LLVM") == "none"
-        and chplenv.get("CHPL_LLVM_SUPPORT") == "bundled"
-    ) or chplenv.get("CHPL_LLVM") == "unset":
+    if (
+        chplenv.get("CHPL_LLVM") == "bundled"
+        or (
+            chplenv.get("CHPL_LLVM") == "none"
+            and chplenv.get("CHPL_LLVM_SUPPORT") == "bundled"
+        )
+        or chplenv.get("CHPL_LLVM") == "unset"
+    ):
         llvm_config = chplenv.get("CHPL_LLVM_CONFIG")
         if not llvm_config or not os.path.exists(llvm_config):
             return True

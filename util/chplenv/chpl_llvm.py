@@ -348,9 +348,12 @@ def find_system_llvm_config():
         if version and version not in supported and version not in found:
             found.append(version)
 
-
     if found:
-        warning("Chapel only supports LLVM versions {0} - the following unsupported versions were found: {1}".format(llvm_versions_string(), ", ".join(found)))
+        warning(
+            "Chapel only supports LLVM versions {0} - the following unsupported versions were found: {1}".format(
+                llvm_versions_string(), ", ".join(found)
+            )
+        )
 
     return ""
 
