@@ -42,12 +42,12 @@ jobs:
           cd ${{ env.PORTABILITY_TEST_DIR }}
 
           pushd apptainer/current
-          apptainer_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          apptainer_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           echo "apptainer_configs=[$apptainer_configs]" >> "$GITHUB_OUTPUT"
           popd
 
           pushd vagrant/current
-          vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"", sep=", "}')
+          vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           echo "vagrant_configs=[$vagrant_configs]" >> "$GITHUB_OUTPUT"
           popd
 
@@ -62,21 +62,54 @@ jobs:
       APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
       apptainer_dir: ./util/devel/test/portability/apptainer
     steps:
+      - name: set package cache vars
+        run: |
+          {
+            echo "DEBS_DIR=$HOME/apptainer-debs"
+            echo "DEBS_CACHE_PREFIX=apptainer-debs-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
+          } >> "$GITHUB_ENV"
+      - name: restore cached Apptainer packages
+        id: restore-apptainer-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ env.DEBS_CACHE_PREFIX }}
+          restore-keys: ${{ env.DEBS_CACHE_PREFIX }}-
       - name: install Apptainer
+        id: install-apptainer
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
           # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
           max_attempts=5
           for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes ppa:apptainer/ppa && break
-            if [[ "$attempt" -eq "$max_attempts" ]]; then
-              exit 1
+            sudo timeout 90 add-apt-repository --yes --no-update ppa:apptainer/ppa && break
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              sleep 30
             fi
-            sleep 30
           done
           sudo apt-get update
-          sudo apt-get install -y apptainer
+          sudo apt-get clean
+
+          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
+          if sudo apt-get install -y --download-only --reinstall apptainer; then
+            rm -rf "$DEBS_DIR"
+            mkdir -p "$DEBS_DIR"
+            cp /var/cache/apt/archives/*.deb "$DEBS_DIR"/
+            hash=$(find "$DEBS_DIR" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
+            echo "cache-key=$DEBS_CACHE_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$DEBS_DIR/*.deb" > /dev/null; then
+            echo "::warning::Could not download Apptainer packages, using cached packages"
+          else
+            exit 1
+          fi
+          sudo apt-get install -y "$DEBS_DIR"/*.deb
+      - name: save Apptainer packages to cache
+        if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ steps.install-apptainer.outputs.cache-key }}
       - name: allow Apptainer to create user namespaces
         # allow apptainer to create user namespaces
         # this may not be available by default
