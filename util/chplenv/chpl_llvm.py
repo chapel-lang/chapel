@@ -298,9 +298,7 @@ def find_system_llvm_config():
     if homebrew_prefix:
         unversioned_paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
-    # Search newest version first and stop at the first usable llvm-config,
-    # rather than probing every candidate
-    for vers in llvm_versions():
+    def versioned_paths(vers):
         paths = []
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
@@ -316,13 +314,42 @@ def find_system_llvm_config():
             paths.append(
                 homebrew_prefix + "/opt/llvm@" + vers + "/bin/llvm-config"
             )
+        return paths
 
-        for command in paths + unversioned_paths:
+    # Search newest version first and stop at the first usable llvm-config,
+    # rather than probing every candidate
+    supported = llvm_versions()
+    for vers in supported:
+        for command in versioned_paths(vers) + unversioned_paths:
             version, config_err = check_llvm_config(command)
             if not config_err and version == vers:
                 ok, _ = check_llvm_packages(command)
                 if ok:
                     return command
+
+    # if we didn't find anything, search both newer and older versions
+    # if they are available, warn the user they have an incorrect version of LLVM installed
+    max_supported = int(supported[0])
+    min_supported = int(supported[-1])
+    unsupported = [str(v) for v in range(max_supported + 5, max_supported, -1)]
+    unsupported += [
+        str(v) for v in range(min_supported - 1, min_supported - 6, -1)
+    ]
+
+    found = []
+    for vers in unsupported:
+        for command in versioned_paths(vers):
+            version, _ = check_llvm_config(command)
+            if version == vers and version not in found:
+                found.append(version)
+    for command in unversioned_paths:
+        version, _ = check_llvm_config(command)
+        if version and version not in supported and version not in found:
+            found.append(version)
+
+
+    if found:
+        warning("Chapel only supports LLVM versions {0} - the following unsupported versions were found: {1}".format(llvm_versions_string(), ", ".join(found)))
 
     return ""
 
