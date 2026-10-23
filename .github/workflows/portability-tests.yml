@@ -98,7 +98,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y "$DEBS_DIR"/*.deb
       - name: save Apptainer packages to cache
-        if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key
+        if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key && github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
