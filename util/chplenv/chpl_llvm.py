@@ -368,15 +368,21 @@ def find_system_llvm_config():
 @memoize
 def get_llvm_support():
     llvm_val = get()
+    llvm_support_val = overrides.get("CHPL_LLVM_SUPPORT", None)
+    if llvm_support_val:
+        check_valid_var("CHPL_LLVM_SUPPORT", llvm_support_val, ("system", "bundled"))
 
     # If using CHPL_LLVM=bundled or CHPL_LLVM=system
     # then CHPL_LLVM_SUPPORT needs to match
-    if llvm_val == "bundled":
-        return "bundled"
-    if llvm_val == "system":
-        return "system"
+    if llvm_val in ("bundled", "system"):
+        if llvm_support_val and llvm_support_val != llvm_val:
+            warning(
+                "CHPL_LLVM_SUPPORT={} is ignored for CHPL_LLVM={}".format(
+                    llvm_support_val, llvm_val
+                )
+            )
+        return llvm_val
 
-    llvm_support_val = overrides.get("CHPL_LLVM_SUPPORT")
     if not llvm_support_val:
         if has_compatible_installed_llvm():
             llvm_support_val = "system"
@@ -611,7 +617,13 @@ def get_overridden_llvm_clang(lang):
     # will occur.
     # Instead we will check the target compiler solely based on the
     # values of `CHPL_TARGET_COMPILER` and `CHPL_LLVM`
-    llvm_val = overrides.get("CHPL_LLVM", "unset")
+    llvm_val = overrides.get("CHPL_LLVM", None)
+    # users cannot set CHPL_LLVM to unset
+    if llvm_val is None:
+        llvm_val = "unset"
+    else:
+        check_valid_var("CHPL_LLVM", llvm_val, ("system", "bundled", "none"))
+
     tgt_llvm = (
         overrides.get("CHPL_TARGET_COMPILER", "llvm") == "llvm"
         and llvm_val != "unset"
