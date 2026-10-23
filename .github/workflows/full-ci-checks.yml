@@ -48,6 +48,80 @@ jobs:
   test-llvm-bundled:
     uses: $/.github/workflows/test-llvm-bundled.yml
 
+  test-linux32:
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR_NAME: ".ccache"
+      CCACHE_MAXSIZE: "250MiB"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ./${{ env.CCACHE_DIR_NAME }}
+          key: ccache-${{ github.job }}
+          append-timestamp: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: 386
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
+      - name: Check arch inside container
+        run: |
+          docker run --rm --platform linux/386 debian:latest bash -c '
+          test $(uname -m) == "i686"
+          '
+      - name: run examples tests in linux32 container
+        run: |
+          docker run -v "$(pwd)":/app -w /app --rm -i --platform linux/386 debian:latest bash << 'EOF'
+          set -exuo pipefail
+
+          apt-get update && apt-get install -y \
+            ccache \
+            cmake \
+            doxygen \
+            gcc \
+            g++ \
+            git \
+            locales \
+            m4 \
+            make \
+            pkg-config \
+            python3 \
+            python3-venv \
+            time
+
+          sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+          echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
+          dpkg-reconfigure --frontend=noninteractive locales && \
+          update-locale LANG=en_US.UTF-8
+
+          # Set up ccache
+          ln -s /usr/bin/ccache /usr/local/bin/gcc
+          ln -s /usr/bin/ccache /usr/local/bin/g++
+          export CCACHE_COMPILERCHECK=content
+          export CCACHE_DIR=$(pwd)/${{ env.CCACHE_DIR_NAME }}
+          export CCACHE_MAXSIZE=${{ env.CCACHE_MAXSIZE }}
+
+          git config --system --add safe.directory "*"
+
+          source util/setchplenv.bash
+
+          # Build bundled LLVM support lib, to make sure we can on 32-bit
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+
+          # Set longer default test timeout, as emulation is slow.
+          export CHPL_TEST_TIMEOUT=1200
+
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv chpldoc mason
+
+          start_test --parallel "$num_procs" test/release/examples
+          EOF
+
   build-linux-packages:
     uses: $/.github/workflows/package-builds.yml
 
