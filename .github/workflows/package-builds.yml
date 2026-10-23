@@ -29,6 +29,11 @@ permissions:
   contents: read
   packages: read
 
+# Allow only one instance to run on a PR at once, cancelling older runs to save resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   PACKAGE_VERSION: ${{ inputs.package_version || 1 }}
 
@@ -80,6 +85,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: build tarball
         run: |
             export CHPL_VERSION='release'

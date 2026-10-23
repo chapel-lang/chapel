@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# Allow only one instance to run on a PR at once, cancelling older runs to save resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   NIGHTLY_TEST_SETTINGS: true
   APT_NETWORK_CONF: |
@@ -52,7 +57,7 @@ jobs:
           popd
 
   portability-tests-apptainer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: define-portability-test-configs
     strategy:
       fail-fast: false
@@ -66,47 +71,40 @@ jobs:
         run: |
           {
             echo "DEBS_DIR=$HOME/apptainer-debs"
-            echo "DEBS_CACHE_PREFIX=apptainer-debs-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
+            echo "DEBS_CACHE_PREFIX=apptainer-release-deb-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
           } >> "$GITHUB_ENV"
       - name: restore cached Apptainer packages
         id: restore-apptainer-debs
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ env.DEBS_CACHE_PREFIX }}
           restore-keys: ${{ env.DEBS_CACHE_PREFIX }}-
       - name: install Apptainer
         id: install-apptainer
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
-          # add-apt-repository queries Launchpad directly, so apt's retry config doesn't cover it
-          max_attempts=5
-          for attempt in $(seq "$max_attempts"); do
-            sudo timeout 90 add-apt-repository --yes --no-update ppa:apptainer/ppa && break
-            if [[ "$attempt" -lt "$max_attempts" ]]; then
-              sleep 30
-            fi
-          done
-          sudo apt-get update
-          sudo apt-get clean
-
-          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
-          if sudo apt-get install -y --download-only --reinstall apptainer; then
+          # use the latest release and fall back to the cache if the download fails
+          download_dir=$(mktemp -d -p "$RUNNER_TEMP")
+          # NOTE: the trixie+ build is pretty specific to ubuntu 26
+          if gh release download --repo apptainer/apptainer --dir "$download_dir" --pattern 'apptainer_*-trixie+_amd64.deb'; then
             rm -rf "$DEBS_DIR"
-            mkdir -p "$DEBS_DIR"
-            cp /var/cache/apt/archives/*.deb "$DEBS_DIR"/
-            hash=$(find "$DEBS_DIR" -name '*.deb' -printf '%f\n' | sort | sha256sum | cut -c1-16)
-            echo "cache-key=$DEBS_CACHE_PREFIX-$hash" >> "$GITHUB_OUTPUT"
+            mv "$download_dir" "$DEBS_DIR"
+            echo "cache-key=$DEBS_CACHE_PREFIX-$(basename "$DEBS_DIR"/*.deb .deb)" >> "$GITHUB_OUTPUT"
           elif compgen -G "$DEBS_DIR/*.deb" > /dev/null; then
-            echo "::warning::Could not download Apptainer packages, using cached packages"
+            echo "::warning::Could not download Apptainer, using cached package"
           else
+            echo "::error::Could not download Apptainer and no cached package available"
             exit 1
           fi
+          sudo apt-get update
           sudo apt-get install -y "$DEBS_DIR"/*.deb
       - name: save Apptainer packages to cache
         if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ steps.install-apptainer.outputs.cache-key }}

@@ -34,7 +34,7 @@ def set_CHPL_DEVELOPER(value):
 
 # should not need this outside of this class
 _warning_buffer = []
-_buffer_warnings = True
+_buffer_warnings = False
 
 
 def flush_warnings():

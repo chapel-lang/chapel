@@ -39,6 +39,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: run test-make-install-check.bash
         env:
           TMPDIR: ${{ runner.temp }}
@@ -63,6 +65,7 @@ jobs:
     with:
       configuration: linux64-c-backend-gasnet
       start-test-args: -multilocale-only
+      max-jobs: 25
       make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
   paratest-linux64-clang:
@@ -97,7 +100,8 @@ jobs:
       configuration: linux64-aarch64-gasnet-everything
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-gasnet-everything.bash
-      start-test-args: --futures
+      start-test-args: --multilocale-only
+      max-jobs: 25
       make-targets: all test-venv mason-deps
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
@@ -123,6 +127,7 @@ jobs:
       configuration: gasnet-asan
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
+      max-jobs: 25
       timeout-minutes: 360
       make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
@@ -133,6 +138,7 @@ jobs:
       cron-script: util/cron/test-gasnet-fast.bash
       container-options: --shm-size=8g # required for SEGMENT=fast
       start-test-args: -multilocale-only
+      max-jobs: 25
       make-targets: all test-venv mason-deps
   # runners only have 2 real cores, and smp can't oversubscribe
   # so this won't work yet
