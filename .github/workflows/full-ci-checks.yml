@@ -48,7 +48,7 @@ jobs:
   test-llvm-bundled:
     uses: $/.github/workflows/test-llvm-bundled.yml
 
-  test-linux32:
+  test-examples-linux32:
     runs-on: ubuntu-latest
     env:
       CCACHE_DIR_NAME: ".ccache"
