@@ -668,9 +668,9 @@ all:
     - Move CHPL_CACHE_REMOTE into CHPL_RT_PRGINFO (#28869)
   06/10/26:
     - Restore CHPL_CACHE_REMOTE global const (#28949)
-  10/12/26:
-    - Use per-class vmtables (#29445)
   10/13/26:
+    - Use per-class vmtables (#29445)
+  10/14/26:
     - Rewrite a number of constants as dynamically loaded (#29348)
 
 # End all
