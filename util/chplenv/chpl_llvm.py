@@ -617,13 +617,7 @@ def get_overridden_llvm_clang(lang):
     # will occur.
     # Instead we will check the target compiler solely based on the
     # values of `CHPL_TARGET_COMPILER` and `CHPL_LLVM`
-    llvm_val = overrides.get("CHPL_LLVM", None)
-    # users cannot set CHPL_LLVM to unset
-    if llvm_val is None:
-        llvm_val = "unset"
-    else:
-        check_valid_var("CHPL_LLVM", llvm_val, ("system", "bundled", "none"))
-
+    llvm_val = overrides.get("CHPL_LLVM", "unset")
     tgt_llvm = (
         overrides.get("CHPL_TARGET_COMPILER", "llvm") == "llvm"
         and llvm_val != "unset"
