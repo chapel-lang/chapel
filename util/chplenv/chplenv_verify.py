@@ -320,9 +320,11 @@ class TestHostCanFindLLVM(TestCompile):
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Config/llvm-config.h"
 #include <iostream>
-#if LLVM_VERSION_MAJOR != {llvm_version}
-#error Mismatched LLVM version
-#endif
+#define CHPL_STR_(x) #x
+#define CHPL_STR(x) CHPL_STR_(x)
+static_assert(LLVM_VERSION_MAJOR == {llvm_version},
+              "Mismatched LLVM version: expected {llvm_version}, "
+              "got " CHPL_STR(LLVM_VERSION_MAJOR));
 int main() {{
     std::cout << clang::getLLVMRevision() << std::endl;
     llvm::LLVMContext Context;
@@ -335,9 +337,11 @@ int main() {{
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Config/llvm-config.h"
 #include <iostream>
-#if LLVM_VERSION_MAJOR != {llvm_version}
-#error Mismatched LLVM version
-#endif
+#define CHPL_STR_(x) #x
+#define CHPL_STR(x) CHPL_STR_(x)
+static_assert(LLVM_VERSION_MAJOR == {llvm_version},
+              "Mismatched LLVM version: expected {llvm_version}, "
+              "got " CHPL_STR(LLVM_VERSION_MAJOR));
 int main() {{
     std::cout << "Hello, World!" << std::endl;
     llvm::outs() << "Hello, LLVM!\\n";
