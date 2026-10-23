@@ -224,7 +224,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install numpy cython
-      - name: Install LLVM dependency
+      - name: Install system dependencies
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -235,7 +235,8 @@ jobs:
             libclang-cpp-dev \
             libedit-dev \
             llvm \
-            llvm-dev
+            llvm-dev \
+            libzmq3-dev
       - name: Compile Chapel and run tests
         run: |
           source util/setchplenv.bash
