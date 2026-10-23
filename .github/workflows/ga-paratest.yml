@@ -51,7 +51,7 @@ on:
         description: Maximum number of test jobs (at most 256). Test directories are packed into jobs using their durations from previous runs.
         required: false
         type: number
-        default: 50
+        default: 35
       max-parallel:
         description: Maximum number of test jobs to run concurrently; 0 is unrestricted. If unset, defaults to 20 for non-merge-queue runs, and unrestricted for merge queue runs.
         required: false
