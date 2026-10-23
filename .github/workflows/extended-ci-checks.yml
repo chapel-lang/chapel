@@ -56,6 +56,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.runner }}
+          append-timestamp: false
       - name: build chapel
         run: |
           ./util/buildRelease/smokeTest chpl mason
@@ -152,6 +154,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.gcc_version }}
+          append-timestamp: false
       - name: Check desired GCC version is default
         run: |
           which gcc
@@ -208,6 +212,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.python_version }}
+          append-timestamp: false
       - name: Check desired Python version is default
         run: |
           which python || true
@@ -267,6 +273,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.llvm_version }}
+          append-timestamp: false
       - name: Check desired LLVM version is default
         run: |
           which llvm-config-${{ matrix.llvm_version }}
@@ -309,6 +317,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: set vars to make tarball from correct branch
         run: |
           {
@@ -343,6 +353,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.os }}
+          append-timestamp: false
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -368,6 +380,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
         run: |
@@ -509,6 +523,8 @@ jobs:
         persist-credentials: false
     - name: set up ccache
       uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+      with:
+        key: ccache-${{ github.job }}
     - name: Build Chapel
       shell: bash
       run: |

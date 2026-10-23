@@ -1,0 +1,161 @@
+name: Portability tests
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'util/devel/test/portability/**'
+      - '.github/workflows/portability-tests.yml'
+
+permissions:
+  contents: read
+
+# Allow only one instance to run on a PR at once, cancelling older runs to save resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  NIGHTLY_TEST_SETTINGS: true
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  define-portability-test-configs:
+    runs-on: ubuntu-slim
+    outputs:
+      apptainer_configs: ${{ steps.configs.outputs.apptainer_configs }}
+      vagrant_configs: ${{ steps.configs.outputs.vagrant_configs }}
+    env:
+      PORTABILITY_TEST_DIR: "util/devel/test/portability"
+    steps:
+      - name: sparse check out ${{ env.PORTABILITY_TEST_DIR }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ${{ env.PORTABILITY_TEST_DIR }}
+      - name: get list of current Apptainer and Vagrant configs
+        id: configs
+        run: |
+          cd ${{ env.PORTABILITY_TEST_DIR }}
+
+          pushd apptainer/current
+          apptainer_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
+          echo "apptainer_configs=[$apptainer_configs]" >> "$GITHUB_OUTPUT"
+          popd
+
+          pushd vagrant/current
+          vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
+          echo "vagrant_configs=[$vagrant_configs]" >> "$GITHUB_OUTPUT"
+          popd
+
+  portability-tests-apptainer:
+    runs-on: ubuntu-26.04
+    needs: define-portability-test-configs
+    strategy:
+      fail-fast: false
+      matrix:
+        apptainer_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.apptainer_configs) }}
+    env:
+      APPTAINER_IMAGE: ${{ matrix.apptainer_config }}
+      apptainer_dir: ./util/devel/test/portability/apptainer
+    steps:
+      - name: set package cache vars
+        run: |
+          {
+            echo "DEBS_DIR=$HOME/apptainer-debs"
+            echo "DEBS_CACHE_PREFIX=apptainer-release-deb-$(. /etc/os-release && echo "$ID-$VERSION_ID")"
+          } >> "$GITHUB_ENV"
+      - name: restore cached Apptainer packages
+        id: restore-apptainer-debs
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ env.DEBS_CACHE_PREFIX }}
+          restore-keys: ${{ env.DEBS_CACHE_PREFIX }}-
+      - name: install Apptainer
+        id: install-apptainer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          # use the latest release and fall back to the cache if the download fails
+          download_dir=$(mktemp -d -p "$RUNNER_TEMP")
+          # NOTE: the trixie+ build is pretty specific to ubuntu 26
+          if gh release download --repo apptainer/apptainer --dir "$download_dir" --pattern 'apptainer_*-trixie+_amd64.deb'; then
+            rm -rf "$DEBS_DIR"
+            mv "$download_dir" "$DEBS_DIR"
+            echo "cache-key=$DEBS_CACHE_PREFIX-$(basename "$DEBS_DIR"/*.deb .deb)" >> "$GITHUB_OUTPUT"
+          elif compgen -G "$DEBS_DIR/*.deb" > /dev/null; then
+            echo "::warning::Could not download Apptainer, using cached package"
+          else
+            echo "::error::Could not download Apptainer and no cached package available"
+            exit 1
+          fi
+          sudo apt-get update
+          sudo apt-get install -y "$DEBS_DIR"/*.deb
+      - name: save Apptainer packages to cache
+        if: steps.install-apptainer.outputs.cache-key != '' && steps.install-apptainer.outputs.cache-key != steps.restore-apptainer-debs.outputs.cache-matched-key
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        with:
+          path: ${{ env.DEBS_DIR }}
+          key: ${{ steps.install-apptainer.outputs.cache-key }}
+      - name: allow Apptainer to create user namespaces
+        # allow apptainer to create user namespaces
+        # this may not be available by default
+        run: |
+          sudo tee /etc/apparmor.d/apptainer <<'EOF'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile apptainer /usr/{lib/*,libexec}/apptainer/bin/starter{,-suid} flags=(unconfined) {
+            userns,
+            include if exists <local/apptainer>
+          }
+          EOF
+          sudo apparmor_parser -r /etc/apparmor.d/apptainer
+      - name: print Apptainer version
+        run: |
+          apptainer --version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set vars to work from correct branch
+        run: |
+          {
+            echo "GIT_REPO_URL=$PWD"
+            echo "GIT_COMMIT=${{ github.sha }}"
+            echo "APPTAINER_TMPDIR=$RUNNER_TEMP"
+          } >> "$GITHUB_ENV"
+      - name: build Apptainer image for config ${{ env.APPTAINER_IMAGE }} (retrying)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 3
+          timeout_minutes: 30
+          retry_wait_seconds: 60
+          command: |
+            set -exuo pipefail
+
+            export APPTAINER_IMAGE
+            cd "$apptainer_dir"
+            ./image-rebuild.sh
+      - name: test Apptainer config ${{ env.APPTAINER_IMAGE }}
+        run: |
+          MAKEJ="-j$(./util/buildRelease/chpl-make-cpu_count)"
+          export MAKEJ
+
+          export APPTAINER_IMAGE
+          cd "$apptainer_dir"
+          ./chapel-quickstart.sh
+          # Default config requires LLVM
+          if [[ "$APPTAINER_IMAGE" != *"nollvm" ]]; then
+              ./chapel-clean.sh
+              ./chapel-default.sh
+          fi
