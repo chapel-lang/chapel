@@ -330,11 +330,12 @@ def find_system_llvm_config():
 
     # if we didn't find anything, search both newer and older versions
     # if they are available, warn the user they have an incorrect version of LLVM installed
-    max_supported = int(supported[0])
-    min_supported = int(supported[-1])
-    unsupported = [str(v) for v in range(max_supported + 5, max_supported, -1)]
-    unsupported += [
-        str(v) for v in range(min_supported - 1, min_supported - 6, -1)
+    radius = 5
+    supported_i = list([int(v) for v in supported])
+    up_bound = supported_i[0] + radius + 1
+    low_bound = supported_i[-1] - radius
+    unsupported = [
+        str(v) for v in reversed(range(low_bound, up_bound)) if v not in supported_i
     ]
 
     found = []
@@ -350,7 +351,7 @@ def find_system_llvm_config():
 
     if found:
         warning(
-            "Chapel only supports LLVM versions {0} - the following unsupported versions were found: {1}".format(
+            "Could not find a working install of a supported LLVM version ({0}). The following unsupported versions were found: {1}".format(
                 llvm_versions_string(), ", ".join(found)
             )
         )
