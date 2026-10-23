@@ -77,6 +77,7 @@ jobs:
           start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
           echo "::endgroup::"
       - name: Build and Test Chapel with mpicc (GASNet)
+        if: always()
         shell: bash
         run: |
           source util/setchplenv.bash
@@ -128,6 +129,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples
           echo "::endgroup::"
       - name: Build and Test Chapel with --incremental and --no-local
+        if: always()
         shell: bash
         run: |
           source util/setchplenv.bash
