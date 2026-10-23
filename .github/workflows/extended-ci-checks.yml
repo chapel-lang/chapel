@@ -92,7 +92,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: restore cached GCC ${{ matrix.gcc_version }} packages
         id: restore-gcc-debs
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ env.DEBS_CACHE_PREFIX }}
@@ -143,7 +143,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
       - name: save GCC ${{ matrix.gcc_version }} packages to cache
         if: steps.install-gcc.outputs.cache-key != '' && steps.install-gcc.outputs.cache-key != steps.restore-gcc-debs.outputs.cache-matched-key
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ steps.install-gcc.outputs.cache-key }}
