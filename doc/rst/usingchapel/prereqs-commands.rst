@@ -45,7 +45,10 @@
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm-22-devel clang-22 clang-22-devel
+      sudo package_ver="22.1.8-1"
+      sudo el_os_ver="$(. /etc/os-release; echo "$PLATFORM_ID" | cut -d: -f2)"
+      sudo ver_string="-$package_ver.$el_os_ver"
+      sudo dnf install "llvm-devel$ver_string" "clang$ver_string" "clang-devel$ver_string"
 
 
   * Debian 12 "Bookworm"::
