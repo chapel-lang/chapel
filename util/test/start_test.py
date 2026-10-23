@@ -381,7 +381,6 @@ def test_directory(test, test_type, num_workers):
                     print(
                         f"[Error running sub_test in {dir}: unexpected sub_test files in child director{'ies' if len(child_sub_tests) > 1 else 'y'}: {', '.join(child_sub_tests)}]"
                     )
-                    continue
                 # don't run local 'sub_test's on --performance or --gen-graphs runs
                 run_local_sub_test = test_type == "run"
 
