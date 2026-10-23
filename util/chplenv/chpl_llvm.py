@@ -370,7 +370,9 @@ def get_llvm_support():
     llvm_val = get()
     llvm_support_val = overrides.get("CHPL_LLVM_SUPPORT", None)
     if llvm_support_val:
-        check_valid_var("CHPL_LLVM_SUPPORT", llvm_support_val, ("system", "bundled"))
+        check_valid_var(
+            "CHPL_LLVM_SUPPORT", llvm_support_val, ("system", "bundled")
+        )
 
     # If using CHPL_LLVM=bundled or CHPL_LLVM=system
     # then CHPL_LLVM_SUPPORT needs to match
