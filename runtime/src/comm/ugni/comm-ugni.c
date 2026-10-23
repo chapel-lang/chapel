@@ -1947,7 +1947,7 @@ void chpl_comm_post_mem_init(void)
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 {
-  chpl_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ugni and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1956,7 +1956,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
-  chpl_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ugni and lldb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -3113,7 +3113,7 @@ void make_registered_heap(void)
   } while (start == NULL && size > decrement);
 
   if (start == NULL)
-    chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
+    chpl_rt_error("cannot initialize heap: cannot get hugepage space", 0, 0);
 
   DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
            start, size);
@@ -3303,7 +3303,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
 
         //
         // Only try to provide a source file if we can give at least some
-        // of it, and without using snprintf() in chpl_lookupFilename()).
+        // of it, and without using snprintf() in chpl_rt_lookup_filename()).
         //
         CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                                 chpl_filenameTableSize);
@@ -3319,7 +3319,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
           // Stop copying fname either when we're done or need to leave
           // room for "..." in place of chars that won't fit.
           //
-          const char* fn = chpl_lookupFilename(mr_mregs_supplement[mr_i].fn);
+          const char* fn = chpl_rt_lookup_filename(mr_mregs_supplement[mr_i].fn);
           int fnLen = strlen(fn);
           int fni;
           for (fni = fnLen; fni > 0 && (fni <= 3 || bufi > 3); ) {

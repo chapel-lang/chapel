@@ -1036,7 +1036,7 @@ void chpl_comm_post_mem_init(void) {}
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1068,7 +1068,7 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
   if (lldb_server != NULL && access(lldb_server, X_OK) != 0) {
     char buf[1024];
     snprintf(buf, sizeof(buf), "Could not find '%s'", lldb_server);
-    chpl_error(buf, 0, 0);
+    chpl_rt_error(buf, 0, 0);
     return 1;
   }
   if (lldb_server == NULL) {

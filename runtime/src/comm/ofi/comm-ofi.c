@@ -1186,7 +1186,7 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ofi and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1194,7 +1194,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 // No support for lldb for now
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=ofi and lldb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -2176,7 +2176,7 @@ void init_ofiFabricDomain(void) {
     snprintf(msg, sizeof(msg),
              "Selected incorrect provider: %s != %s",
              ofi_info->fabric_attr->prov_name, envExpectedProvider);
-    chpl_error(msg, 0, 0);
+    chpl_rt_error(msg, 0, 0);
   }
 
   if (DBG_TEST_MASK(DBG_PROV_ALL)) {
@@ -3704,7 +3704,7 @@ void init_fixedHeap(void) {
       } while (start == NULL && size > decrement);
 
       if (start == NULL)
-        chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+        chpl_rt_error("cannot create fixed heap: cannot get memory", 0, 0);
     } else {
       //
       // We'll make a fixed heap on whole hugepages.
@@ -3719,7 +3719,7 @@ void init_fixedHeap(void) {
 #endif
       start = chpl_comm_ofi_hp_get_huge_pages(size);
       if (start == NULL) {
-        chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
+        chpl_rt_error("cannot create fixed heap: cannot get huge pages", 0, 0);
       }
     }
 
@@ -3775,10 +3775,10 @@ void init_hugepageSize(void) {
 
   if (use_hugepages && (hugepageSize == 0)) {
     if (chpl_comm_ofi_hp_supported()) {
-      chpl_error("Unable to get hugepage size. "
+      chpl_rt_error("Unable to get hugepage size. "
                  "Ensure that a hugepage module is loaded.", 0, 0);
     } else {
-      chpl_error("Chapel was not built with hugepage support.", 0, 0);
+      chpl_rt_error("Chapel was not built with hugepage support.", 0, 0);
     }
  }
 
@@ -5686,7 +5686,7 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
         char msg[128];
         snprintf(msg, sizeof(msg),
                  "Thread did not create non-blocking handle %p", handle);
-        chpl_error(msg, 0, 0);
+        chpl_rt_error(msg, 0, 0);
       }
       pending = true;
       // determine if this handle is now complete by checking the completion
@@ -7646,7 +7646,7 @@ static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
     DBG_PRINTF(DBG_IFACE_AMO_WRITE,                                     \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                desired, (int) node, object,                             \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     chpl_comm_diags_verbose_amo("amo write", node, ln, fn);             \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, NULL,                            \
@@ -7675,7 +7675,7 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO_READ,                                      \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                result, (int) node, object,                              \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     chpl_comm_diags_verbose_amo("amo read", node, ln, fn);              \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, NULL, NULL, result,                             \
@@ -7701,7 +7701,7 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %d, %p, %p, %d, %s)", __func__,                  \
                desired, (int) node, object, result,                     \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     chpl_comm_diags_verbose_amo("amo xchg", node, ln, fn);              \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, desired, NULL, result,                          \
@@ -7727,7 +7727,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %p, %d, %p, %p, %d, %s)", __func__,              \
                expected, desired, (int) node, object, result,           \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     chpl_comm_diags_verbose_amo("amo cmpxchg", node, ln, fn);           \
     chpl_comm_diags_incr(amo);                                          \
     Type old_value;                                                     \
@@ -7757,7 +7757,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
-               object, ln, chpl_lookupFilename(fn));                    \
+               object, ln, chpl_rt_lookup_filename(fn));                    \
     chpl_comm_diags_verbose_amo("amo " #fnOp, node, ln, fn);            \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, opnd, NULL, NULL,                               \
@@ -7770,7 +7770,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
-               object, ln, chpl_lookupFilename(fn));                    \
+               object, ln, chpl_rt_lookup_filename(fn));                    \
     chpl_comm_diags_verbose_amo("amo unord_" #fnOp, node, ln, fn);      \
     chpl_comm_diags_incr(amo);                                          \
     do_remote_amo_nf_buff(opnd, node, object, sizeof(Type),             \
@@ -7783,7 +7783,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node,                      \
-               object, result, ln, chpl_lookupFilename(fn));            \
+               object, result, ln, chpl_rt_lookup_filename(fn));            \
     chpl_comm_diags_verbose_amo("amo fetch_" #fnOp, node, ln, fn);      \
     chpl_comm_diags_incr(amo);                                          \
     doAMO(node, object, opnd, NULL, result,                             \
@@ -7857,7 +7857,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo sub", node, ln, fn);               \
     chpl_comm_diags_incr(amo);                                          \
@@ -7871,7 +7871,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
-               ln, chpl_lookupFilename(fn));                            \
+               ln, chpl_rt_lookup_filename(fn));                            \
     Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo unord_sub", node, ln, fn);         \
     chpl_comm_diags_incr(amo);                                          \
@@ -7885,7 +7885,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
-               result, ln, chpl_lookupFilename(fn));                    \
+               result, ln, chpl_rt_lookup_filename(fn));                    \
     Type myOpnd = negate(*(Type*) opnd);                                \
     chpl_comm_diags_verbose_amo("amo fetch_sub", node, ln, fn);         \
     chpl_comm_diags_incr(amo);                                          \

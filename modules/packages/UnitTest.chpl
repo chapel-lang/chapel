@@ -1735,8 +1735,7 @@ module UnitTest {
       // Message function overridden here
       override proc message() {
         use CTypes, IO.FormattedIO;
-        const thrownFileC = __primitive("chpl_lookupFilename",
-                                             this.thrownFileId);
+        const thrownFileC = chpl_lookupFilename(this.thrownFileId);
         var thrownFileS: string;
         try! thrownFileS =
           string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));

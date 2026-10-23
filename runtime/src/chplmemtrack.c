@@ -210,7 +210,7 @@ static void increaseMemStat(size_t chunk, int32_t lineno, int32_t filename) {
   totalMem += chunk;
   totalAllocated += chunk;
   if (memMax && (totalMem > memMax)) {
-    chpl_error("Exceeded memory limit", lineno, filename);
+    chpl_rt_error("Exceeded memory limit", lineno, filename);
   }
   if (totalMem > maxMem)
     maxMem = totalMem;
@@ -263,7 +263,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
 
   memEntry = (memTableEntry*) sys_calloc(1, sizeof(memTableEntry));
   if (!memEntry) {
-    chpl_error("memtrack fault: out of memory allocating memtrack table",
+    chpl_rt_error("memtrack fault: out of memory allocating memtrack table",
                lineno, filename);
   }
 
@@ -515,8 +515,8 @@ static int descCmp(const void* p1, const void* p2) {
 
   int val = strcmp(chpl_mem_descString(m1->description), chpl_mem_descString(m2->description));
   if (val == 0 && m1->filename && m2->filename) {
-    m1Filename = chpl_lookupFilename(m1->filename);
-    m2Filename = chpl_lookupFilename(m2->filename);
+    m1Filename = chpl_rt_lookup_filename(m1->filename);
+    m2Filename = chpl_rt_lookup_filename(m2->filename);
     val = strcmp(m1Filename, m2Filename);
   }
   if (val == 0)
@@ -569,7 +569,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
         continue;
       n += 1;
       if (memEntry->filename) {
-        memEntryFilename = chpl_lookupFilename(memEntry->filename);
+        memEntryFilename = chpl_rt_lookup_filename(memEntry->filename);
         filenameLength = strlen(memEntryFilename);
         if (filenameLength > filenameWidth)
           filenameWidth = filenameLength;
@@ -579,7 +579,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   // allocate the table
   table = (memTableEntry*)sys_malloc(n*sizeof(memTableEntry));
   if (!table)
-    chpl_error("out of memory printing memory table", lineno, filename);
+    chpl_rt_error("out of memory printing memory table", lineno, filename);
   // save the relevant memTable entries to 'table' to get a snapshot
   j = 0;
   for (i = 0; i < hashSize; i++) {
@@ -625,7 +625,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   for (i = 0; i < n; i++) {
     memEntry = &table[i];
     if (memEntry->filename) {
-      memEntryFilename = chpl_lookupFilename(memEntry->filename);
+      memEntryFilename = chpl_rt_lookup_filename(memEntry->filename);
       snprintf(loc, locSize, "%s:%" PRId32, memEntryFilename,
                memEntry->lineno);
     } else {
@@ -706,7 +706,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
       chpl_track_gen_subloc_info(subloc_info, subloc);
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                           ": allocate %zuB of %s at %p\n",
-              chpl_nodeID, subloc_info, (filename ? chpl_lookupFilename(filename) : "--"),
+              chpl_nodeID, subloc_info, (filename ? chpl_rt_lookup_filename(filename) : "--"),
               lineno, number * size, chpl_mem_descString(description),
               memAlloc);
     }
@@ -738,7 +738,7 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
           fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32
                               ": free %zuB of %s at %p\n",
                   chpl_nodeID, subloc_info,
-                  (filename ? chpl_lookupFilename(filename) : "--"),
+                  (filename ? chpl_rt_lookup_filename(filename) : "--"),
                   lineno, memEntry->number * memEntry->size,
                   chpl_mem_descString(memEntry->description), memAlloc);
         }
@@ -750,7 +750,7 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
       chpl_track_gen_subloc_info(subloc_info, subloc);
       fprintf(memLogFile, "%" PRI_c_nodeid_t "%s: %s:%" PRId32 ": free at %p\n",
               chpl_nodeID, subloc_info,
-              (filename ? chpl_lookupFilename(filename) : "--"),
+              (filename ? chpl_rt_lookup_filename(filename) : "--"),
               lineno, memAlloc);
     }
   }
@@ -790,7 +790,7 @@ void chpl_track_realloc_post(void* newMemAlloc,
       fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
                           ": reallocate %zuB of %s at 0x%016" PRIxPTR
                           " -> %p\n",
-              chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
+              chpl_nodeID, (filename ? chpl_rt_lookup_filename(filename) : "--"),
               lineno, size, chpl_mem_descString(description),
               oldMemAlloc, newMemAlloc);
     }

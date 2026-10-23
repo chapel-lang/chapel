@@ -71,7 +71,7 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
     main_arg_ptr->argc++;
   } else {
     char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], "\"");
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   }
 
   return 0;
