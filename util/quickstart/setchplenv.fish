@@ -68,6 +68,11 @@ set -x USE_LLVM (eval "$CHPL_PYTHON" "$CHPL_HOME/util/chplenv/chpl_llvm.py" "--q
 echo "Setting CHPL_LLVM to $USE_LLVM"
 set -x CHPL_LLVM $USE_LLVM
 
+if test "$USE_LLVM" = "none"
+    echo "Setting CHPL_LLVM_SUPPORT to bundled"
+    set -x CHPL_LLVM_SUPPORT bundled
+end
+
 set -x USE_UNWIND (eval "$CHPL_PYTHON" "$CHPL_HOME/util/chplenv/chpl_unwind.py" "--quickstart")
 echo "Setting CHPL_UNWIND to $USE_UNWIND"
 set -x CHPL_UNWIND $USE_UNWIND
