@@ -518,29 +518,29 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: set up ccache
-      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-      with:
-        key: ccache-${{ github.job }}
-    - name: Build Chapel
-      shell: bash
-      run: |
-        # put ccache executables at front of PATH
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        . ./util/setchplenv.bash
-        . util/cron/common-gasnet.bash
-        printchplenv --all --internal
-        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
-    - name: Upload Chapel build
-      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
-      with:
-        name: chapel-build-files-distributions
-        retention-days: 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          key: ccache-${{ github.job }}
+      - name: Build Chapel
+        shell: bash
+        run: |
+          # put ccache executables at front of PATH
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          . ./util/setchplenv.bash
+          . util/cron/common-gasnet.bash
+          printchplenv --all --internal
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+            all test-venv
+      - name: Upload Chapel build
+        uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          name: chapel-build-files-distributions
+          retention-days: 1
 
   test-distributions:
     needs: build-distributions
@@ -559,23 +559,23 @@ jobs:
       DIR_UNDER_TEST: test/distributions/robust/arithmetic
       DIST_TYPE: ${{ matrix.dist_type }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: Download Chapel build
-      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
-      with:
-        name: chapel-build-files-distributions
-    - name: Test Chapel with ${{ matrix.dist_type }}
-      shell: bash
-      run: |
-        . ./util/setchplenv.bash
-        . util/cron/common-gasnet.bash
-        printchplenv --all --internal
-        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-        start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
-                   --parallel "$num_procs" \
-                   "$DIR_UNDER_TEST"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download Chapel build
+        uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          name: chapel-build-files-distributions
+      - name: Test Chapel with ${{ matrix.dist_type }}
+        shell: bash
+        run: |
+          . ./util/setchplenv.bash
+          . util/cron/common-gasnet.bash
+          printchplenv --all --internal
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
+                     --parallel "$num_procs" \
+                     "$DIR_UNDER_TEST"
 
   paratest-linux64:
     name: Chapel paratest on linux64
