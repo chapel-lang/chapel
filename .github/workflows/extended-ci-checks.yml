@@ -184,8 +184,6 @@ jobs:
           CXX=$(which g++)
           export CXX
 
-          export CHPL_LAUNCHER=none
-
           echo "::group::printchplenv"
           printchplenv --all --internal
           echo "::endgroup::"
@@ -247,7 +245,6 @@ jobs:
         run: |
           source util/setchplenv.bash
 
-          export CHPL_LAUNCHER=none
           export CHPL_LIB_PIC=pic
           source util/cron/common-python-interop.bash
 
@@ -267,7 +264,6 @@ jobs:
         run: |
           source util/setchplenv.bash
 
-          export CHPL_LAUNCHER=none
           export CHPL_LIB_PIC=pic
           source util/cron/common-gasnet.bash
           source util/cron/common-python-interop.bash
@@ -332,7 +328,6 @@ jobs:
           source util/setchplenv.bash
 
           export CHPL_LLVM=system
-          export CHPL_LAUNCHER=none
 
           echo "::group::printchplenv"
           printchplenv --all --internal
