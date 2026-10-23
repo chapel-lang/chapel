@@ -160,6 +160,7 @@ jobs:
           Branch: $(jq -r '.head.ref' "$PR_JSON")
           Revision: $(jq -r '.merge_commit_sha' "$PR_JSON")
           Author: $AUTHOR
+          Merged at: $(jq -r '.merged_at' "$PR_JSON")
           Link: $(jq -r '.html_url' "$PR_JSON")
           Log Message:
           $TITLE
