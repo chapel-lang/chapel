@@ -56,6 +56,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.runner }}
+          append-timestamp: false
       - name: build chapel
         run: |
           ./util/buildRelease/smokeTest chpl mason
@@ -90,7 +92,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: restore cached GCC ${{ matrix.gcc_version }} packages
         id: restore-gcc-debs
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ env.DEBS_CACHE_PREFIX }}
@@ -141,7 +143,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-$VERSION" 100
       - name: save GCC ${{ matrix.gcc_version }} packages to cache
         if: steps.install-gcc.outputs.cache-key != '' && steps.install-gcc.outputs.cache-key != steps.restore-gcc-debs.outputs.cache-matched-key
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.DEBS_DIR }}
           key: ${{ steps.install-gcc.outputs.cache-key }}
@@ -152,6 +154,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.gcc_version }}
+          append-timestamp: false
       - name: Check desired GCC version is default
         run: |
           which gcc
@@ -208,6 +212,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.python_version }}
+          append-timestamp: false
       - name: Check desired Python version is default
         run: |
           which python || true
@@ -267,6 +273,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.llvm_version }}
+          append-timestamp: false
       - name: Check desired LLVM version is default
         run: |
           which llvm-config-${{ matrix.llvm_version }}
@@ -309,6 +317,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: set vars to make tarball from correct branch
         run: |
           {
@@ -343,6 +353,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}-${{ matrix.os }}
+          append-timestamp: false
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -368,6 +380,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
         run: |
@@ -383,7 +397,7 @@ jobs:
           echo "sha256=$shasum" >> "$GITHUB_OUTPUT"
       - name: cache pycparser tarball
         id: cache-pycparser-deps
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
           key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
@@ -504,27 +518,29 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: set up ccache
-      uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-    - name: Build Chapel
-      shell: bash
-      run: |
-        # put ccache executables at front of PATH
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        . ./util/setchplenv.bash
-        . util/cron/common-gasnet.bash
-        printchplenv --all --internal
-        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-        make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
-          all test-venv
-    - name: Upload Chapel build
-      uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
-      with:
-        name: chapel-build-files-distributions
-        retention-days: 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          key: ccache-${{ github.job }}
+      - name: Build Chapel
+        shell: bash
+        run: |
+          # put ccache executables at front of PATH
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          . ./util/setchplenv.bash
+          . util/cron/common-gasnet.bash
+          printchplenv --all --internal
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" DEBUG=0 WARNINGS=1 OPTIMIZE=1 \
+            all test-venv
+      - name: Upload Chapel build
+        uses: ./.github/actions/upload-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          name: chapel-build-files-distributions
+          retention-days: 1
 
   test-distributions:
     needs: build-distributions
@@ -543,23 +559,23 @@ jobs:
       DIR_UNDER_TEST: test/distributions/robust/arithmetic
       DIST_TYPE: ${{ matrix.dist_type }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: Download Chapel build
-      uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
-      with:
-        name: chapel-build-files-distributions
-    - name: Test Chapel with ${{ matrix.dist_type }}
-      shell: bash
-      run: |
-        . ./util/setchplenv.bash
-        . util/cron/common-gasnet.bash
-        printchplenv --all --internal
-        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-        start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
-                   --parallel "$num_procs" \
-                   "$DIR_UNDER_TEST"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download Chapel build
+        uses: ./.github/actions/download-chapel-build # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          name: chapel-build-files-distributions
+      - name: Test Chapel with ${{ matrix.dist_type }}
+        shell: bash
+        run: |
+          . ./util/setchplenv.bash
+          . util/cron/common-gasnet.bash
+          printchplenv --all --internal
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          start_test -compopts "-sdistType=DistType.$DIST_TYPE" \
+                     --parallel "$num_procs" \
+                     "$DIR_UNDER_TEST"
 
   paratest-linux64:
     name: Chapel paratest on linux64
