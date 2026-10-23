@@ -609,3 +609,38 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+
+  paratest-quickstart_darwin:
+    name: Chapel paratest on darwin quickstart configuration, examples only
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: quickstart.darwin
+      runner: macos-latest
+      use-container: false
+      test-dirs: test/release/examples
+      cron-script: util/cron/test-quickstart.darwin.bash
+      make-targets: all test-venv mason-deps
+  paratest-gasnet_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment everything)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.darwin.bash
+      start-test-args: -multilocale-only
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
+  paratest-gasnet_fast_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.fast.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.fast.darwin.bash
+      start-test-args: -multilocale-only
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
