@@ -221,6 +221,9 @@ jobs:
 
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install numpy cython
       - name: Install LLVM dependency
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
