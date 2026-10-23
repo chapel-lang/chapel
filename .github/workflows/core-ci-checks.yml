@@ -574,7 +574,8 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
         with:
           path: ./${{ env.CCACHE_DIR_NAME }}
-          key: test-linux32-ccache
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
