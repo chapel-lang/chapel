@@ -1,0 +1,3 @@
+uncaught TaskErrors: 2 errors: Error: die! ... Error: die!
+  forall-error-per-task.chpl:38: thrown here
+  forall-error-per-task.chpl:38: uncaught here
