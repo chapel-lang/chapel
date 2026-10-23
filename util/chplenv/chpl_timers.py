@@ -2,7 +2,7 @@
 import sys
 
 import overrides
-from utils import memoize, check_valid_var, per_script_main
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -12,7 +12,6 @@ def get():
     return timers_val
 
 
-@per_script_main
 def _main():
     timers_val = get()
     sys.stdout.write("{0}\n".format(timers_val))

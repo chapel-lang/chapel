@@ -4,7 +4,7 @@ import sys
 import chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import using_chapel_module
 from compiler_utils import CompVersion
-from utils import memoize, check_valid_var, per_script_main
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -29,7 +29,6 @@ def get():
     return tasks_val
 
 
-@per_script_main
 def _main():
     tasks_val = get()
     sys.stdout.write("{0}\n".format(tasks_val))

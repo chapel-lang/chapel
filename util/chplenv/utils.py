@@ -1,6 +1,5 @@
 """Utility functions for chplenv modules"""
 
-import functools
 import os
 import subprocess
 import sys
@@ -35,7 +34,7 @@ def set_CHPL_DEVELOPER(value):
 
 # should not need this outside of this class
 _warning_buffer = []
-_buffer_warnings = True
+_buffer_warnings = False
 
 
 def flush_warnings():
@@ -44,19 +43,6 @@ def flush_warnings():
         sys.stderr.write(warning)
         sys.stderr.write("\n")
     _warning_buffer.clear()
-
-
-def per_script_main(func):
-    """Decorator for a script's main function to perform common setup and cleanup"""
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        finally:
-            flush_warnings()
-
-    return wrapper
 
 
 def set_buffer_warnings(buffer_warnings):

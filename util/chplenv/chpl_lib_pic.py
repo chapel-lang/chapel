@@ -3,7 +3,7 @@ import sys
 
 import overrides
 import chpl_platform
-from utils import memoize, check_valid_var, per_script_main
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -13,7 +13,6 @@ def get():
     return lib_pic_val
 
 
-@per_script_main
 def _main():
     lib_pic_val = get()
     sys.stdout.write("{0}\n".format(lib_pic_val))

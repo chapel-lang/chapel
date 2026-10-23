@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_platform, overrides
-from utils import error, memoize, warning, check_valid_var, per_script_main
+from utils import error, memoize, warning, check_valid_var
 
 
 @memoize
@@ -48,7 +48,6 @@ def get(flag="host"):
     return mem_val
 
 
-@per_script_main
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
     parser.add_option(

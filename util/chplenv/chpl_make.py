@@ -3,7 +3,7 @@
 import sys
 
 import chpl_platform, overrides
-from utils import which, memoize, per_script_main
+from utils import which, memoize
 
 
 @memoize
@@ -23,7 +23,6 @@ def get():
     return make_val
 
 
-@per_script_main
 def _main():
     make_val = get()
     sys.stdout.write("{0}\n".format(make_val))

@@ -268,7 +268,6 @@ class Sort(Enum):
     MOST = 4
 
 
-@utils.per_script_main
 def main(argv):
     global configs
     global used

@@ -7,7 +7,7 @@ import re
 import sys
 
 import chpl_bin_subdir, chpl_python_version, overrides
-from utils import memoize, per_script_main
+from utils import memoize
 
 
 @memoize
@@ -231,7 +231,6 @@ def using_chapel_module():
     return False
 
 
-@per_script_main
 def _main():
     parser = optparse.OptionParser()
     parser.add_option(
