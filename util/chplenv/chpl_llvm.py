@@ -335,7 +335,9 @@ def find_system_llvm_config():
     up_bound = supported_i[0] + radius + 1
     low_bound = supported_i[-1] - radius
     unsupported = [
-        str(v) for v in reversed(range(low_bound, up_bound)) if v not in supported_i
+        str(v)
+        for v in reversed(range(low_bound, up_bound))
+        if v not in supported_i
     ]
 
     found = []
@@ -351,7 +353,7 @@ def find_system_llvm_config():
 
     if found:
         warning(
-            "Could not find a working install of a supported LLVM version ({0}). The following unsupported versions were found: {1}".format(
+            "Could not find a working install of a supported LLVM version ({0}) - found the following unsupported versions: {1}".format(
                 llvm_versions_string(), ", ".join(found)
             )
         )
