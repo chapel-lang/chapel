@@ -95,7 +95,7 @@ jobs:
           tags: ${{ env.CHAPEL_CI_IMAGE }}-${{ env.ARCH }}
           push: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
           cache-from: type=gha,scope=${{ env.ARCH }}
-          cache-to: type=gha,scope=${{ env.ARCH }},mode=max
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=gha,scope={0},mode=max', env.ARCH) || '' }}
 
   validate-ci-container:
     needs: build-ci-container

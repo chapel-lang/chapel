@@ -107,7 +107,7 @@ jobs:
           tags: ${{ env.IMAGE_FULL_NAME }}
           load: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max' || '' }}
       - name: test image
         run: |
           cp test/release/examples/hello.chpl .

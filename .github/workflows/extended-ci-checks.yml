@@ -400,7 +400,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.C2CHAPEL_PYCPARSER_TARBALL_PATH }}
-          key: ${{ steps.find-pycparser-tarball.outputs.sha256 }}
+          key: pycparser-${{ steps.find-pycparser-tarball.outputs.sha256 }}
       - name: download pycparser tarball (retrying)
         if: steps.cache-pycparser-deps.outputs.cache-hit != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
