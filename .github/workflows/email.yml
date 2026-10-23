@@ -90,15 +90,15 @@ jobs:
         if: failure()
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
         with:
-           server_address: ${{ secrets.SMTP_PROVIDER }}
-           server_port: 465
-           secure: true
-           username: ${{ secrets.MAIL_USERNAME }}
-           password: ${{ secrets.MAIL_PASSWORD }}
-           subject: "[Chapel Merge] Error"
-           to: ${{ env.EMAIL_TO }}
-           from: "Chapel User <chapel_commits@cray.com>"
-           body: file://${{ env.EMAIL_BODY_FILENAME }}
+          server_address: ${{ secrets.SMTP_PROVIDER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[Chapel Merge] Error"
+          to: ${{ env.EMAIL_TO }}
+          from: "Chapel User <chapel_commits@cray.com>"
+          body: file://${{ env.EMAIL_BODY_FILENAME }}
 
   send_emails:
     needs: [get_prs]
@@ -160,6 +160,7 @@ jobs:
           Branch: $(jq -r '.head.ref' "$PR_JSON")
           Revision: $(jq -r '.merge_commit_sha' "$PR_JSON")
           Author: $AUTHOR
+          Merged at: $(jq -r '.merged_at' "$PR_JSON")
           Link: $(jq -r '.html_url' "$PR_JSON")
           Log Message:
           $TITLE
@@ -180,12 +181,12 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
         with:
-           server_address: ${{ secrets.SMTP_PROVIDER }}
-           server_port: 465
-           secure: true
-           username: ${{ secrets.MAIL_USERNAME }}
-           password: ${{ secrets.MAIL_PASSWORD }}
-           subject: "[Chapel Merge] ${{ env.TITLE }}"
-           to: ${{ env.EMAIL_TO }}
-           from: "${{ env.AUTHOR }} <chapel_commits@cray.com>"
-           body: file://${{ env.EMAIL_BODY_FILENAME }}
+          server_address: ${{ secrets.SMTP_PROVIDER }}
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[Chapel Merge] ${{ env.TITLE }}"
+          to: ${{ env.EMAIL_TO }}
+          from: "${{ env.AUTHOR }} <chapel_commits@cray.com>"
+          body: file://${{ env.EMAIL_BODY_FILENAME }}
