@@ -338,10 +338,6 @@ enum chpl_stack_unwind_mode {
 // out is FILE* or char**, depending on the mode
 static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep, void* out) {
 
-  CHPL_RT_PRGINFO_DECLARE(CHPL_RT_PRGINFO_ROOT,
-                          chpl_areAnyChapelProgramsLoaded);
-  bool any_programs_loaded = chpl_areAnyChapelProgramsLoaded();
-
   unw_cursor_t cursor;
   unw_context_t uc;
   unw_word_t ip_offset;
@@ -379,6 +375,8 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
 
     if (chpl_sizeSymTable <= 0) continue;
 
+    bool print_program = chpl_rt_prginfo_id(prg) != CHPL_RT_PRGINFO_ROOT_ID;
+
     if (!has_printed_header) {
       has_printed_header = true;
       switch (mode) {
@@ -405,15 +403,21 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
     for (int t = 0; t < chpl_sizeSymTable; t+=2 ) {
       if (!strcmp(chpl_funSymTable[t], buffer)) {
         const char* path = chpl_rt_prginfo_load_path(prg);
-        if (path == NULL) path = "<unknown>";
+        if (path == NULL) {
+          path = "<unknown>";
+        } else {
+          // Use the basename so output matches across platforms.
+          const char* slash = strrchr(path, '/');
+          if (slash != NULL) path = slash + 1;
+        }
         unsigned int line = chpl_rt_unwind_get_line_num(prg, &cursor,
                                                         ip_offset, t);
         const char* filename =
           chpl_rt_lookup_filename_prg(prg, chpl_filenumSymTable[t]);
         switch (mode) {
           case CHPL_STACK_UNWIND_MODE_FILE:
-            if (any_programs_loaded) {
-              fprintf((FILE*)out, "%s() at %s:%d in program at %s%c",
+            if (print_program) {
+              fprintf((FILE*)out, "%s() at %s:%d in %s%c",
                       chpl_funSymTable[t+1], filename, line, path, sep);
             } else {
               fprintf((FILE*)out, "%s() at %s:%d%c",
@@ -430,7 +434,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
             append_to_string(&bufsz, &strsz, strPtr, filename);
             append_to_string(&bufsz, &strsz, strPtr, ":");
             append_to_string(&bufsz, &strsz, strPtr, buffer); // line number
-            if (any_programs_loaded) {
+            if (print_program) {
               append_to_string(&bufsz, &strsz, strPtr, " in program at ");
               append_to_string(&bufsz, &strsz, strPtr, path);
             }
