@@ -250,12 +250,13 @@ proc test_structure() {
 
   var ptype : MPI_Datatype,
       offsets : [0..1]MPI_Aint,
+      lb: MPI_Aint,
       extent: MPI_Aint,
       block : [0..1]c_int = [4:c_int, 2:c_int],
       oldtype : [0..1]MPI_Datatype = [MPI_DOUBLE, MPI_LONG];
 
   offsets[0] = 0;
-  MPI_Type_get_extent(MPI_DOUBLE, extent);
+  MPI_Type_get_extent(MPI_DOUBLE, lb, extent);
   offsets[1] = 4*extent;
   MPI_Type_create_struct(2, block, offsets, oldtype, ptype);
   MPI_Type_commit(ptype);
