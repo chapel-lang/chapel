@@ -690,10 +690,10 @@ module MPI {
       array_of_displacements: []c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_struct (count: c_int, ref array_of_blocklengths: []c_int,
+  extern proc MPI_Type_create_struct (count: c_int, ref array_of_blocklengths: []c_int,
       ref array_of_displacements: []MPI_Aint, ref array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Address (ref location, ref address: MPI_Aint): c_int;
-  extern proc MPI_Type_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;
+  extern proc MPI_Type_get_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;
   extern proc MPI_Type_size (datatype: MPI_Datatype, ref size: c_int): c_int;
   extern proc MPI_Type_lb (datatype: MPI_Datatype, ref displacement: MPI_Aint): c_int;
   extern proc MPI_Type_ub (datatype: MPI_Datatype, ref displacement: MPI_Aint): c_int;
