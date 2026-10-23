@@ -1821,6 +1821,33 @@ addDummyErrorFormalToFn(FnSymbol* fn)
   return errorArg;
 }
 
+// Replace uses of error variables defined outside 'fn' with locals, since
+// an outer variable could be shared by reference among concurrent tasks.
+static void
+localizeOuterErrorVars(BlockStmt* body, FnSymbol* fn) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(body, symExprs);
+
+  SymbolMap localErrors;
+  for_vector(SymExpr, se, symExprs) {
+    Symbol* sym = se->symbol();
+    if (!sym->hasFlag(FLAG_ERROR_VARIABLE) ||
+        sym->defPoint->parentSymbol == fn)
+      continue;
+
+    Symbol* local = localErrors.get(sym);
+    if (local == NULL) {
+      SET_LINENO(body);
+      local = newTemp("error", sym->getValType());
+      local->addFlag(FLAG_ERROR_VARIABLE);
+      body->insertAtHead(new CallExpr(PRIM_MOVE, local, gNil));
+      body->insertAtHead(new DefExpr(local));
+      localErrors.put(sym, local);
+    }
+    se->setSymbol(local);
+  }
+}
+
 // Adjust an error handling exit in two cases:
 // 1. the GotoStmt points outside of this function
 // 2. the error variable updated is outside of this function.
@@ -1830,6 +1857,8 @@ void
 fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   INT_ASSERT(fn);
+
+  localizeOuterErrorVars(body, fn);
 
   std::vector<GotoStmt*> gotos;
   collectGotoStmts(body, gotos);
