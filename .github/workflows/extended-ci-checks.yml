@@ -663,6 +663,7 @@ jobs:
           source util/setchplenv.bash
           export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-mpicc.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
 
           echo "::group::printchplenv"
           printchplenv --all --internal
@@ -683,6 +684,7 @@ jobs:
           source util/setchplenv.bash
           export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-mpicc.gasnet.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
 
           echo "::group::printchplenv"
           printchplenv --all --internal
