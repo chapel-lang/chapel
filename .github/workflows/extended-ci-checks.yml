@@ -19,6 +19,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 20
   APT_NETWORK_CONF: |
@@ -259,7 +260,7 @@ jobs:
           source util/setchplenv.bash
 
           export CHPL_LIB_PIC=pic
-          source util/cron/common-gasnet.bash
+          source util/cron/test-gasnet-everything.bash
           source util/cron/common-python-interop.bash
           source util/cron/common-zmq.bash
 
@@ -657,7 +658,6 @@ jobs:
         shell: bash
         run: |
           source util/setchplenv.bash
-          export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-mpicc.bash
           export CHPL_RT_OVERSUBSCRIBED=1
 
@@ -678,7 +678,6 @@ jobs:
         shell: bash
         run: |
           source util/setchplenv.bash
-          export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-mpicc.gasnet.bash
           export CHPL_RT_OVERSUBSCRIBED=1
           # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
@@ -713,7 +712,6 @@ jobs:
         shell: bash
         run: |
           source util/setchplenv.bash
-          export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-linux64.incr.bash
 
           echo "::group::printchplenv"
@@ -733,7 +731,6 @@ jobs:
         shell: bash
         run: |
           source util/setchplenv.bash
-          export CHPL_NIGHTLY_DO_NOTHING=1
           source util/cron/test-no-local.incr.bash
 
           echo "::group::printchplenv"
