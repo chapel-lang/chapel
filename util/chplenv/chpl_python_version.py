@@ -17,7 +17,7 @@ def get(major_only=False):
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--major-only]")
     parser.add_option("--major-only", default=False, action="store_true")
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     python_version_val = get(options.major_only)
     sys.stdout.write("{0}\n".format(python_version_val))

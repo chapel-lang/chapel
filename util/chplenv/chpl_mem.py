@@ -58,7 +58,7 @@ def _main():
         default="target",
     )
     parser.add_option("--host", dest="flag", action="store_const", const="host")
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     mem_val = get(options.flag)
     sys.stdout.write("{0}\n".format(mem_val))

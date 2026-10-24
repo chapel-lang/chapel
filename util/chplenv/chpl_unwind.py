@@ -3,7 +3,7 @@ import sys
 import optparse
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize, warning, check_valid_var
+from utils import error, memoize, check_valid_var
 
 
 @memoize
@@ -110,7 +110,7 @@ def _main():
         const="quickstart",
         default="",
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     if options.action == "quickstart":
         if system_library_available():

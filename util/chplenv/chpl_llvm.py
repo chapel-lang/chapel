@@ -104,7 +104,7 @@ def get_llvm_config_version(llvm_config):
     got_version = None
 
     if llvm_config != "none" and llvm_config != None:
-        exists, returncode, got_out, got_err = try_run_command(
+        exists, returncode, got_out, _ = try_run_command(
             [llvm_config, "--version"]
         )
         if exists and returncode == 0:
@@ -468,7 +468,7 @@ def validate_llvm_config():
     if llvm_val == "system" or (
         llvm_val == "bundled" and os.path.exists(llvm_config)
     ):
-        version, config_error = check_llvm_config(llvm_config)
+        _, config_error = check_llvm_config(llvm_config)
         if config_error:
             error(
                 "Problem with llvm-config at {0} -- {1}".format(
@@ -805,7 +805,7 @@ def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
 
     if llvm_config:
-        ok, errMsg = check_llvm_packages(llvm_config)
+        ok, _ = check_llvm_packages(llvm_config)
 
         if ok:
             clang_c_command = get_system_llvm_clang("c")
@@ -1276,11 +1276,10 @@ def gather_pe_chpl_pkgconfig_libs():
     if chpl_compiler.get_prgenv_compiler() == "none":
         return ""
 
-    import chpl_comm, chpl_comm_substrate, chpl_aux_filesys, chpl_libfabric
+    import chpl_comm, chpl_aux_filesys, chpl_libfabric
 
     platform = chpl_platform.get("target")
     comm = chpl_comm.get()
-    substrate = chpl_comm_substrate.get()
     auxfs = chpl_aux_filesys.get()
 
     ret = os.environ.get("PE_CHAPEL_PKGCONFIG_LIBS", "")
@@ -1475,7 +1474,7 @@ def filter_llvm_link_flags(flags):
             import third_party_utils
 
             if third_party_utils.has_pkgconfig():
-                link_bundled_args, link_system_args = (
+                _, link_system_args = (
                     third_party_utils.pkgconfig_get_system_link_args("libzstd")
                 )
                 if link_system_args:
@@ -1690,14 +1689,14 @@ def compute_host_link_settings():
 # or it is unknown, by returning "dynamic" or "static" or None.
 @memoize
 def get_static_dynamic():
-    bundled, system, static_dynamic = compute_host_link_settings()
+    _, _, static_dynamic = compute_host_link_settings()
     return static_dynamic
 
 
 # returns (bundled, system) args for 'make' to link 'chpl' with LLVM
 @memoize
 def get_host_link_args():
-    bundled, system, static_dynamic = compute_host_link_settings()
+    bundled, system, _ = compute_host_link_settings()
     return (bundled, system)
 
 
@@ -1722,7 +1721,7 @@ def get_clang_args_sdkroot():
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()
-    llvm_versions = llvm_versions_string()
+    llvm_versions_str = llvm_versions_string()
 
     parser = optparse.OptionParser(usage="usage: %prog [--needs-llvm-runtime]")
     parser.add_option(
@@ -1789,7 +1788,7 @@ def _main():
         default="",
     )
 
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     # if --needs-llvm-runtime is set, print out llvm if runtime is needed,
     # and print out nothing if it is not.
@@ -1809,7 +1808,7 @@ def _main():
         llvm_version = get_llvm_version()
         sys.stdout.write("{0}\n".format(llvm_version))
     elif options.action == "llvmversions":
-        sys.stdout.write("{0}\n".format(llvm_versions))
+        sys.stdout.write("{0}\n".format(llvm_versions_str))
     elif options.action == "sdkroot":
         sys.stdout.write("{0}\n".format(get_clang_args_sdkroot()))
     elif options.action == "quickstart":

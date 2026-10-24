@@ -1,4 +1,4 @@
-import chpl_compiler, chpl_hwloc, chpl_llvm, chpl_locale_model, chpl_mem
+import chpl_hwloc, chpl_locale_model, chpl_mem
 import third_party_utils
 from utils import memoize
 
