@@ -28,7 +28,7 @@ def _validate_rocm_version():
     return _validate_rocm_version_impl()
 
 
-class gpu_type:
+class GpuType:
     def __init__(
         self,
         sdk_path_env,
@@ -60,11 +60,11 @@ class gpu_type:
         return self.llvm_validator(self)
 
 
-def _validate_cuda_llvm_version(gpu: gpu_type):
+def _validate_cuda_llvm_version(gpu: GpuType):
     return _validate_cuda_llvm_version_impl(gpu)
 
 
-def _validate_rocm_llvm_version(gpu: gpu_type):
+def _validate_rocm_llvm_version(gpu: GpuType):
     return _validate_rocm_llvm_version_impl(gpu)
 
 
@@ -185,7 +185,7 @@ def _find_rocm_version(compiler: str):
 
 
 GPU_TYPES = {
-    "nvidia": gpu_type(
+    "nvidia": GpuType(
         sdk_path_env="CHPL_CUDA_PATH",
         compiler="nvcc",
         default_arch=_cuda_default_arch,
@@ -197,7 +197,7 @@ GPU_TYPES = {
         llvm_validator=_validate_cuda_llvm_version,
         real_gpu=True,
     ),
-    "amd": gpu_type(
+    "amd": GpuType(
         sdk_path_env="CHPL_ROCM_PATH",
         compiler="hipcc",
         default_arch=lambda: "",
@@ -209,7 +209,7 @@ GPU_TYPES = {
         llvm_validator=_validate_rocm_llvm_version,
         real_gpu=True,
     ),
-    "cpu": gpu_type(
+    "cpu": GpuType(
         sdk_path_env="",
         compiler="",
         default_arch=lambda: "",
@@ -221,7 +221,7 @@ GPU_TYPES = {
         llvm_validator=lambda: None,
         real_gpu=False,
     ),
-    "none": gpu_type(
+    "none": GpuType(
         sdk_path_env="",
         compiler="",
         default_arch=lambda: "",
@@ -550,7 +550,7 @@ def validateLlvmBuiltForTgt(expectedTgt):
     return expectedTgt in targets
 
 
-def _validate_cuda_llvm_version_impl(gpu: gpu_type):
+def _validate_cuda_llvm_version_impl(gpu: GpuType):
     if not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'."
@@ -559,7 +559,7 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
         )
 
 
-def _validate_rocm_llvm_version_impl(gpu: gpu_type):
+def _validate_rocm_llvm_version_impl(gpu: GpuType):
     major_version, minor_version = get_sdk_version().split(".")[:2]
 
     if major_version in ("5",) and chpl_llvm.get() == "bundled":

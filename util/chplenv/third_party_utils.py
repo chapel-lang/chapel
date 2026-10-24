@@ -2,9 +2,8 @@ import os
 import re
 
 import chpl_cpu, chpl_arch, chpl_compiler
-import chpl_lib_pic, chpl_locale_model, chpl_platform
+import chpl_lib_pic, chpl_platform
 from chpl_home_utils import (
-    get_chpl_home,
     get_chpl_third_party,
     using_chapel_module,
 )
@@ -346,10 +345,10 @@ def has_pkgconfig():
 #
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
-def libtool_get_bundled_link_args(pkg, ucp="", libs=[], add_L_opt=True):
+def libtool_get_bundled_link_args(pkg, ucp="", libs=None, add_L_opt=True):
     if ucp == "":
         ucp = default_uniq_cfg_path()
-    if libs == []:
+    if not libs:
         libs = ["lib" + pkg + ".la"]
     all_args = []
     lib_dir = os.path.join(get_bundled_install_path(pkg, ucp), "lib")

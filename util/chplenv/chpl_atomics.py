@@ -125,7 +125,7 @@ def _main():
     parser.add_option(
         "--network", dest="flag", action="store_const", const="network"
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     atomics_val = get(options.flag)
     sys.stdout.write("{0}\n".format(atomics_val))

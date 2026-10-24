@@ -1,3 +1,4 @@
+# pylint: disable=unused-import
 import chpl_cpu
 import chpl_atomics
 import chpl_aux_filesys

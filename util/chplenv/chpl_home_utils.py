@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-import chpl_bin_subdir, chpl_python_version, overrides
+import overrides
 from utils import memoize
 
 
@@ -275,7 +275,7 @@ def _main():
         dest="func",
         const=get_chpl_runtime_incl,
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     if options.func:
         sys.stdout.write("{0}\n".format(options.func()))

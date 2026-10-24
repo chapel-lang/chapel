@@ -4,7 +4,7 @@ import optparse
 import os
 import sys
 
-import chpl_platform, chpl_locale_model, overrides
+import chpl_platform, overrides
 import homebrew_utils
 from utils import which, error, memoize, warning
 
@@ -471,7 +471,7 @@ def get_compiler_command(flag, lang):
 # flag should be host or target.
 # returns a Python list of -I flags
 @memoize
-def get_bundled_compile_args(flag):
+def get_bundled_compile_args(flag): # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering
@@ -497,7 +497,7 @@ def get_system_compile_args(flag):
     if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
 
-        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
+        comp_args, _ = chpl_llvm.get_clang_prgenv_args()
         paths.extend(comp_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
@@ -520,7 +520,7 @@ def get_system_compile_args(flag):
 # flag should be host or target.
 # returns a Python list of -L flags
 @memoize
-def get_bundled_link_args(flag):
+def get_bundled_link_args(flag): # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering
@@ -546,7 +546,7 @@ def get_system_link_args(flag):
     if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
 
-        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
+        _, link_args = chpl_llvm.get_clang_prgenv_args()
         paths.extend(link_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
@@ -642,7 +642,7 @@ def _main():
         const="additional",
         help="get additional compiler args",
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     if options.which is None:
         compiler_val = get(options.flag)

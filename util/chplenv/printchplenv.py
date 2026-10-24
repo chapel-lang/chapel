@@ -56,14 +56,14 @@ import optparse
 import os
 import re
 import unittest
-from sys import stdout, path
+from sys import stdout
 import textwrap
 
 import utils
 
 utils.set_buffer_warnings(True)
 
-from chplenv import *
+from chplenv import * # pylint: disable=unused-wildcard-import
 import chplenv_verify
 
 ChapelEnv = namedtuple("ChapelEnv", ["name", "content", "shortname"])
@@ -190,8 +190,6 @@ ENV_VALS = {}
 
 
 def compute_all_values():
-    global ENV_VALS
-
     ENV_VALS["CHPL_HOME"] = chpl_home_utils.get_chpl_home()
     ENV_VALS["CHPL_HOST_PLATFORM"] = chpl_platform.get("host")
 
@@ -279,8 +277,6 @@ def compute_all_values():
 
     # error checking that would be hard to do in the .get functions
     # due to circular dependencies
-    chpl_arch.validate("host")
-    chpl_arch.validate("target")
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
     chpl_gpu.validate(ENV_VALS["CHPL_LOCALE_MODEL"])
@@ -290,8 +286,6 @@ def compute_all_values():
 
 
 def compute_internal_values():
-    global ENV_VALS
-
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
     backend_info = chpl_cpu.get("target", map_to_compiler=True)
@@ -454,7 +448,6 @@ def filter_overrides(chpl_env):
 
 def filter_tidy(chpl_env):
     comm = ENV_VALS["CHPL_COMM"]
-    llvm = ENV_VALS["CHPL_LLVM"]
     locale = ENV_VALS["CHPL_LOCALE_MODEL"]
     gpu = ENV_VALS["  CHPL_GPU"]
     host_mem = ENV_VALS["CHPL_HOST_MEM"]
@@ -586,8 +579,6 @@ def _print_var(key, value, print_format=None, shortname=None, raw=False):
 def printchplenv(
     contents, print_filters=None, print_format="pretty", only=None, raw=False
 ):
-    global CHPL_ENVS
-
     if print_filters is None:
         print_filters = set(["tidy"])
 
@@ -835,7 +826,7 @@ def parse_args():
 
 
 def main():
-    options, args = parse_args()
+    options, _ = parse_args()
 
     utils.init_CHPL_DEVELOPER()
     # let the command line override the environment variable
@@ -912,8 +903,6 @@ def main():
 
     # at this point, we should run the verification tests
     if options.verify or options.verify_verbose:
-        global ENV_VALS
-
         success, reason = chplenv_verify.verify(
             ENV_VALS, verbose=options.verify_verbose
         )

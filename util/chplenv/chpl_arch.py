@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_cpu, overrides
-from utils import error, memoize, warning
+from utils import error, memoize
 
 
 @memoize
@@ -23,10 +23,6 @@ def get(flag="host"):
     return chpl_cpu.get_default_machine(flag)
 
 
-def validate(flag="host"):
-    pass
-
-
 def _main():
     parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
     parser.add_option(
@@ -37,7 +33,7 @@ def _main():
         default="target",
     )
     parser.add_option("--host", dest="flag", action="store_const", const="host")
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     arch = get(options.flag)
 

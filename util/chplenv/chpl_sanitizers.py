@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import optparse
-import os
 import sys
 
 import overrides
 from utils import memoize, error
-import chpl_tasks, chpl_mem, chpl_compiler
+import chpl_mem, chpl_compiler
 
 
 @memoize
@@ -47,7 +46,7 @@ def _main():
     parser.add_option(
         "--exe", dest="flag", action="store_const", const="exe", default=""
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     sanitizers_val = get(options.flag)
     sys.stdout.write("{0}\n".format(sanitizers_val))

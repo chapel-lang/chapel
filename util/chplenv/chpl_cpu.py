@@ -3,12 +3,11 @@ import collections
 import optparse
 import os
 import platform
-from string import punctuation
 import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from compiler_utils import CompVersion, target_compiler_is_prgenv
-from utils import memoize, run_command, warning
+from compiler_utils import target_compiler_is_prgenv
+from utils import memoize, warning
 
 # This map has a key as a synonym and the value as the LLVM arch/cpu
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
@@ -162,7 +161,6 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
 @memoize
 def default_cpu(flag):
     comm_val = chpl_comm.get()
-    compiler_val = chpl_compiler.get(flag)
     platform_val = chpl_platform.get(flag)
 
     cpu = "unknown"
@@ -262,7 +260,7 @@ def get_llvm_target_cpu():
 # Because of all this, the flag argument is unused and we return the same
 # answer for host or target.
 @memoize
-def get_default_machine(flag):
+def get_default_machine(flag): # pylint: disable=unused-argument
     return get_native_machine()
 
 
@@ -289,7 +287,7 @@ def _main():
     parser.add_option(
         "--lcdflag", dest="get_lcd", action="store_true", default=False
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     flag, cpu = get(options.flag, options.map_to_compiler, options.get_lcd)
 
