@@ -10,4 +10,6 @@ export CHPL_TASKS=fifo
 export CHPL_TARGET_COMPILER=mpi-gnu
 
 # setup mpich 3.3.1
-source /hpcdc/project/chapel/setup_mpich331.bash
+if [ -f /hpcdc/project/chapel/setup_mpich331.bash ]; then
+  source /hpcdc/project/chapel/setup_mpich331.bash
+fi

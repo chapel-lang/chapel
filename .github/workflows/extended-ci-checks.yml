@@ -19,6 +19,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 20
   APT_NETWORK_CONF: |
@@ -184,14 +185,18 @@ jobs:
           CXX=$(which g++)
           export CXX
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
 
   python-version-tests:
     strategy:
@@ -221,7 +226,10 @@ jobs:
 
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
-      - name: Install LLVM dependency
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install numpy cython
+      - name: Install system dependencies
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -232,19 +240,48 @@ jobs:
             libclang-cpp-dev \
             libedit-dev \
             llvm \
-            llvm-dev
-      - name: Compile Chapel and run example tests
+            llvm-dev \
+            libzmq3-dev
+      - name: Compile Chapel and run tests
         run: |
           source util/setchplenv.bash
 
-          export CHPL_LAUNCHER=none
+          export CHPL_LIB_PIC=pic
+          source util/cron/common-python-interop.bash
 
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
+      - name: Compile Chapel with GASNet and run tests
+        run: |
+          source util/setchplenv.bash
+
+          export CHPL_LIB_PIC=pic
+          source util/cron/test-gasnet-everything.bash
+          source util/cron/common-python-interop.bash
+          source util/cron/common-zmq.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel with GASNet"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv mason-deps
+          echo "::endgroup::"
+
+          echo "::group::Run tests with GASNet"
+          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
 
   llvm-version-tests:
     strategy:
@@ -293,14 +330,18 @@ jobs:
 
           export CHPL_LLVM=system
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
@@ -593,3 +634,130 @@ jobs:
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --futures
       make-targets: all test-venv mason-deps
+
+
+
+
+
+
+  paratest-locks-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=locks
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: locks-atomics
+      cron-script: util/cron/test-linux64-locks-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+  paratest-intrinsics-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=intrinsics
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: intrinsics-atomics
+      cron-script: util/cron/test-linux64-intrinsics-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+
+
+  test-mpicc:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with mpicc
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+      - name: Build and Test Chapel with mpicc (GASNet)
+        if: always()
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.gasnet.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+          # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
+          export MPIRUN_CMD='mpirun --oversubscribe --bind-to none -mca mpi_yield_when_idle 1 -np %M %P %A MPIRUN_CMD_OK'
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+
+  test-incremental:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with --incremental
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-linux64.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+      - name: Build and Test Chapel with --incremental and --no-local
+        if: always()
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-no-local.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
