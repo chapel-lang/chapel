@@ -3,8 +3,9 @@ import os
 import sys
 import optparse
 
-import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler, chpl_platform
-from utils import error, memoize, warning, check_valid_var
+import chpl_mem, chpl_bin_subdir, chpl_compiler, chpl_platform
+import overrides, third_party_utils
+from utils import error, memoize, check_valid_var
 
 
 def var_name(flag):
@@ -130,7 +131,7 @@ def _main():
         default="target",
     )
     parser.add_option("--host", dest="flag", action="store_const", const="host")
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     mimalloc_val = get(options.flag)
     sys.stdout.write("{0}\n".format(mimalloc_val))

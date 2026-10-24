@@ -184,7 +184,7 @@ def get_sys_c_types(docs=False):
         ex = expr
         for pattern, repl in replace_patterns:
             ex = pattern.sub(repl, ex)
-        value = eval(ex)
+        value = eval(ex) # pylint: disable=eval-used
         logging.debug("{0} -> {1}".format(expr, value))
         max_values.append(value)
     logging.debug(
@@ -198,7 +198,6 @@ def get_sys_c_types(docs=False):
     # where <chpl_value> is found by looking up the max value
     # (from evaluated expression above) in the _max_value_to_chpl_type map.
     sys_c_types = []
-    handled_c_ptr = False
     for i, max_value in enumerate(max_values):
         max_macro, chpl_type, c_type, is_unstable = _types[i]
         chpl_value = _max_value_to_chpl_type.get(str(max_value))
@@ -210,23 +209,19 @@ def get_sys_c_types(docs=False):
             sys.exit(1)
 
         sys_c_types.append(
-            "/* The Chapel type corresponding to the C '{c_type}' type"
-            " */".format(**locals())
+            "/* The Chapel type corresponding to the C '{}' type */".format(c_type)
         )
         if is_unstable:
             sys_c_types.append(
-                "@unstable(\"'{c_type}' is unstable\")".format(**locals())
+                "@unstable(\"'{}' is unstable\")".format(c_type)
             )
-        stmt = "extern type {chpl_type}= ".format(**locals())
+        stmt = "extern type {}= ".format(chpl_type)
         if docs:
             stmt += "integral"
         else:
             stmt += chpl_value
         stmt += ";"
         sys_c_types.append(stmt)
-
-        if chpl_type == "c_ptr":
-            handled_c_ptr = True
 
     # Finally, print out set of asserts for module. They assert that the
     # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.

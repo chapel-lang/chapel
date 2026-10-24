@@ -2,7 +2,7 @@
 import sys
 
 import overrides
-from utils import memoize, error, check_valid_var
+from utils import memoize, check_valid_var
 
 
 @memoize

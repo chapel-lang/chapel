@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 
-
 import chpl_comm, chpl_comm_debug, chpl_platform, chpl_comm_ofi_oob
 import overrides, third_party_utils
 
@@ -50,8 +49,6 @@ def get_compile_args():
             "libfabric", ucp=ucp_val
         )
     elif libfabric_val == "system":
-        flags = []
-
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
         libfab_dir_val = overrides.get("LIBFABRIC_DIR")
@@ -131,7 +128,7 @@ def _main():
     parser.add_option(
         "--link", dest="which", action="store_const", const="link"
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
     if options.which == "compile":
         val = get_compile_args()
     elif options.which == "link":

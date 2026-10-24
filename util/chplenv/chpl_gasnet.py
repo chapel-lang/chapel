@@ -1,6 +1,6 @@
 import chpl_compiler, chpl_comm_debug, chpl_comm_segment, chpl_comm_substrate
-import overrides, chpl_home_utils, compiler_utils, third_party_utils
-from utils import error, warning, memoize, is_true
+import overrides, compiler_utils, third_party_utils
+from utils import warning, memoize, is_true
 import os
 
 

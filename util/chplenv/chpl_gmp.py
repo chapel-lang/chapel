@@ -3,9 +3,9 @@ import os
 import sys
 import optparse
 
-import chpl_compiler, chpl_platform, overrides, third_party_utils
+import chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning, error, check_valid_var
+from utils import memoize, check_valid_var
 
 
 # returns True if CHPL_GMP was set by the user
@@ -109,7 +109,7 @@ def _main():
         "--link", dest="action", action="store_const", const="link", default=""
     )
 
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     if options.action == "compile":
         bundled, system = get_compile_args()

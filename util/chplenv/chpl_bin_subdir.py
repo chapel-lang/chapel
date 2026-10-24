@@ -47,7 +47,7 @@ def _main():
         const="host",
         default="host",
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     bin_subdir = get(options.flag)
 

@@ -2,11 +2,10 @@
 import optparse
 import os
 import platform
-import re
 import sys
 
-import overrides, utils
-from utils import error, memoize, try_run_command, warning
+import overrides
+from utils import error, memoize, warning
 
 
 @memoize
@@ -117,20 +116,20 @@ def is_wsl():
 
 @memoize
 def is_hpe_cray(flag="host"):
-    platform = get(flag)
-    return platform in ("hpe-cray-ex", "hpe-cray-xd")
+    plat = get(flag)
+    return plat in ("hpe-cray-ex", "hpe-cray-xd")
 
 
 @memoize
 def is_cray(flag="host"):
-    platform = get(flag)
-    return platform.startswith("cray") or is_hpe_cray(flag)
+    plat = get(flag)
+    return plat.startswith("cray") or is_hpe_cray(flag)
 
 
 @memoize
 def is_hpe_apollo(flag="host"):
-    platform = get(flag)
-    return platform == "hpe-apollo"
+    plat = get(flag)
+    return plat == "hpe-apollo"
 
 
 @memoize
@@ -140,7 +139,7 @@ def is_cluster(flag="host"):
 
 @memoize
 def get_mac_os_version():
-    release, version, machine = platform.mac_ver()
+    release, _, _ = platform.mac_ver()
     return release
 
 
@@ -162,7 +161,7 @@ def _main():
     parser.add_option(
         "--target", dest="flag", action="store_const", const="target"
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     platform_val = get(options.flag)
     sys.stdout.write("{0}\n".format(platform_val))

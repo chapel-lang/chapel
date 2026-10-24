@@ -8,7 +8,7 @@ import overrides
 import third_party_utils
 import glob
 
-from utils import error, memoize, check_valid_var
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -188,7 +188,7 @@ def _main():
     parser.add_option(
         "--link", dest="which", action="store_const", const="link"
     )
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
     if options.which == "compile":
         oob_val = get_compile_args()
     elif options.which == "link":
