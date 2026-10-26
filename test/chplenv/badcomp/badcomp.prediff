@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+chpl_llvm=$($CHPL_HOME/util/chplenv/chpl_llvm.py)
+chpl_llvm_support=$($CHPL_HOME/util/chplenv/chpl_llvm.py --support)
+if [[ "$chpl_llvm" == "bundled" || "$chpl_llvm_support" == "bundled" ]]; then
+  grep -v 'Could not find a working install of a supported LLVM version' $2 > $2.tmp
+  mv $2.tmp $2
+fi
