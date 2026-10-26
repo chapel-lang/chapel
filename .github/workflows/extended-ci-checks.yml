@@ -247,8 +247,7 @@ jobs:
           echo "::group::set environment"
           source util/setchplenv.bash
           export CHPL_LIB_PIC=pic
-          export CHPL_GMP=bundled
-          export CHPL_HWLOC=bundled
+          export CHPL_TARGET_CPU=native
           source util/cron/common-python-interop.bash
           echo "::endgroup::"
 
@@ -269,8 +268,7 @@ jobs:
           echo "::group::set environment"
           source util/setchplenv.bash
           export CHPL_LIB_PIC=pic
-          export CHPL_GMP=bundled
-          export CHPL_HWLOC=bundled
+          export CHPL_TARGET_CPU=native
           source util/cron/test-gasnet-everything.bash
           source util/cron/common-python-interop.bash
           source util/cron/common-zmq.bash
