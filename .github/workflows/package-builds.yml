@@ -93,7 +93,7 @@ jobs:
             export CHPL_GEN_RELEASE_SKIP_DOCS=true
             ./util/cron/create_tarball.bash
       - name: upload tarball as artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ./tar/*.tar.gz
           name: packaging-tarball
@@ -110,7 +110,7 @@ jobs:
         run: |
           wget -O "$tarball_filename" "$tarball_url"
       - name: upload tarball as artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ./${{ env.tarball_filename }}
           name: packaging-tarball
@@ -182,7 +182,7 @@ jobs:
           mkdir "$out_dir"
           find util/packaging/ \( -name "*.deb" -o -name "*.rpm" \) -print -exec cp "{}" "$out_dir" \;
       - name: archive package as artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ env.out_dir }}/*
           archive: false
