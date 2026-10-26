@@ -426,6 +426,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          sparse-checkout: .
       - name: Check most .py files
         if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
