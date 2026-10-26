@@ -413,7 +413,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Check most .py files
-        if: always()
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
@@ -421,7 +421,7 @@ jobs:
           summary: true
           output-file: "${{ runner.temp }}/black-most.txt"
       - name: Check our .py files under third-party/
-        if: always()
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
@@ -429,7 +429,7 @@ jobs:
           summary: true
           output-file: "${{ runner.temp }}/black-third-party.txt"
       - name: Find extensionless Python files in util/ and Python sub_tests in test/
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           EXTENSIONLESS_PYTHON_FILES+="$(find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)
           "
@@ -441,7 +441,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
       - name: Check extensionless Python files
-        if: always()
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }}"
@@ -451,7 +451,7 @@ jobs:
       - name: Annotate unformatted files
         # ideally, black does this for us
         # sadly, they don't: https://github.com/psf/black/issues/1764
-        if: failure()
+        if: ${{ failure() && !cancelled() }}
         run: |
           python3 - <<'EOF'
           import glob, os, re
