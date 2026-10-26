@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import optparse
+import argparse
 import os
 import platform
 import sys
@@ -150,18 +150,18 @@ def is_arch_linux():
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target])")
+    parser.add_argument(
         "--host",
         dest="flag",
         action="store_const",
         const="host",
         default="host",
     )
-    parser.add_option(
+    parser.add_argument(
         "--target", dest="flag", action="store_const", const="target"
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     platform_val = get(options.flag)
     sys.stdout.write("{0}\n".format(platform_val))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-import optparse
+import argparse
 
 import chpl_mem, chpl_bin_subdir, chpl_compiler, chpl_platform
 import overrides, third_party_utils
@@ -122,16 +122,16 @@ def get_link_args(flag):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target])")
+    parser.add_argument(
         "--target",
         dest="flag",
         action="store_const",
         const="target",
         default="target",
     )
-    parser.add_option("--host", dest="flag", action="store_const", const="host")
-    options, _ = parser.parse_args()
+    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    options = parser.parse_args()
 
     mimalloc_val = get(options.flag)
     sys.stdout.write("{0}\n".format(mimalloc_val))

@@ -52,7 +52,7 @@ Options:
 
 from collections import namedtuple
 from functools import partial
-import optparse
+import argparse
 import os
 import re
 import unittest
@@ -730,8 +730,8 @@ def diagnose_missing_library(lib_type):
 
 
 def parse_args():
-    parser = optparse.OptionParser(
-        usage="usage: %prog [options]",
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [options]",
         description="Print the current Chapel configuration. "
         "[content] arguments determine what gets printed. "
         "[filter] arguments determine what gets omitted. "
@@ -740,93 +740,91 @@ def parse_args():
     )
 
     # [shortcut]
-    parser.add_option("--all", action="store_true", dest="all")
+    parser.add_argument("--all", action="store_true", dest="all")
 
     # [content]
     parser.set_defaults(content=[])
-    parser.add_option(
+    parser.add_argument(
         "--compiler", action="append_const", dest="content", const="compiler"
     )
-    parser.add_option(
+    parser.add_argument(
         "--runtime", action="append_const", dest="content", const="runtime"
     )
-    parser.add_option(
+    parser.add_argument(
         "--launcher", action="append_const", dest="content", const="launcher"
     )
-    parser.add_option(
+    parser.add_argument(
         "--internal", action="append_const", dest="content", const="internal"
     )
 
     # [filter]
     parser.set_defaults(tidy=True)
     parser.set_defaults(filter=[])
-    parser.add_option("--tidy", action="store_true", dest="tidy")
-    parser.add_option("--no-tidy", action="store_false", dest="tidy")
-    parser.add_option(
+    parser.add_argument("--tidy", action="store_true", dest="tidy")
+    parser.add_argument("--no-tidy", action="store_false", dest="tidy")
+    parser.add_argument(
         "--anonymize", action="append_const", dest="filter", const="anonymize"
     )
-    parser.add_option(
+    parser.add_argument(
         "--overrides", action="append_const", dest="filter", const="overrides"
     )
-    parser.add_option(
+    parser.add_argument(
         "--only-path", action="append_const", dest="filter", const="only-path"
     )
-    parser.add_option("--only", type=str, nargs=1, default=None, dest="only")
+    parser.add_argument("--only", type=str, default=None, dest="only")
 
     # [format]
     parser.set_defaults(format="pretty")
-    parser.add_option(
+    parser.add_argument(
         "--pretty", action="store_const", dest="format", const="pretty"
     )
-    parser.add_option(
+    parser.add_argument(
         "--simple", action="store_const", dest="format", const="simple"
     )
-    parser.add_option(
+    parser.add_argument(
         "--make", action="store_const", dest="format", const="make"
     )
-    parser.add_option(
+    parser.add_argument(
         "--cmake", action="store_const", dest="format", const="cmake"
     )
-    parser.add_option(
+    parser.add_argument(
         "--path", action="store_const", dest="format", const="path"
     )
-    parser.add_option(
+    parser.add_argument(
         "--bash", action="store_const", dest="format", const="bash"
     )
-    parser.add_option("--csh", action="store_const", dest="format", const="csh")
-    parser.add_option(
+    parser.add_argument("--csh", action="store_const", dest="format", const="csh")
+    parser.add_argument(
         "--value", action="store_const", dest="format", const="value"
     )
 
     # [misc]
-    parser.add_option(
+    parser.add_argument(
         "--ignore-errors", action="store_true", dest="ignore_errors"
     )
-    parser.add_option("--verify", action="store_true", dest="verify")
-    parser.add_option(
+    parser.add_argument("--verify", action="store_true", dest="verify")
+    parser.add_argument(
         "--diagnose-lib",
-        nargs=1,
         type=str,
         dest="diagnose_lib",
         default=None,
     )
 
     # [hidden]
-    parser.add_option("--devel", action="store_true", dest="devel")
-    parser.add_option("--no-devel", action="store_true", dest="nodevel")
-    parser.add_option(
+    parser.add_argument("--devel", action="store_true", dest="devel")
+    parser.add_argument("--no-devel", action="store_true", dest="nodevel")
+    parser.add_argument(
         "--verify-verbose", action="store_true", dest="verify_verbose"
     )
-    parser.add_option("--unit-tests", action="store_true", dest="do_unit_tests")
+    parser.add_argument("--unit-tests", action="store_true", dest="do_unit_tests")
     # Hijack the help message to use the module docstring
-    # optparse is not robust enough to support help msg sections for args.
-    parser.print_help = lambda: stdout.write(__doc__)
+    parser.print_help = lambda *args: stdout.write(__doc__)
 
     return parser.parse_args()
 
 
 def main():
-    options, _ = parse_args()
+    options = parse_args()
 
     utils.init_CHPL_DEVELOPER()
     # let the command line override the environment variable

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import collections
-import optparse
+import argparse
 import os
 import platform
 import sys
@@ -265,29 +265,29 @@ def get_default_machine(flag):  # pylint: disable=unused-argument
 
 
 def _main():
-    parser = optparse.OptionParser(
-        usage="usage: %prog [--host|target] "
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--host|target] "
         "[--compflag] [--lcdflag] "
         "[--specialize]"
     )
-    parser.add_option(
+    parser.add_argument(
         "--target",
         dest="flag",
         action="store_const",
         const="target",
         default="target",
     )
-    parser.add_option("--host", dest="flag", action="store_const", const="host")
-    parser.add_option(
+    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    parser.add_argument(
         "--comparch", dest="map_to_compiler", action="store_true", default=False
     )
-    parser.add_option(
+    parser.add_argument(
         "--compflag", dest="compflag", action="store_true", default=False
     )
-    parser.add_option(
+    parser.add_argument(
         "--lcdflag", dest="get_lcd", action="store_true", default=False
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     flag, cpu = get(options.flag, options.map_to_compiler, options.get_lcd)
 

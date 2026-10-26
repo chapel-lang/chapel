@@ -115,20 +115,20 @@ def get_link_args():
 
 
 def _main():
-    import optparse
+    import argparse
 
-    parser = optparse.OptionParser(usage="usage: %prog [options]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [options]")
+    parser.add_argument(
         "--compile",
         dest="which",
         action="store_const",
         const="compile",
         default=None,
     )
-    parser.add_option(
+    parser.add_argument(
         "--link", dest="which", action="store_const", const="link"
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
     if options.which == "compile":
         val = get_compile_args()
     elif options.which == "link":

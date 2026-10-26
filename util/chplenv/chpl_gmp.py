@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-import optparse
+import argparse
 
 import chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
@@ -95,21 +95,21 @@ def get_link_args():
 def _main():
     gmp_val = get()
 
-    parser = optparse.OptionParser(
-        usage="usage: %prog [--prefix] [--compile] [--link]"
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--prefix] [--compile] [--link]"
     )
-    parser.add_option(
+    parser.add_argument(
         "--compile",
         dest="action",
         action="store_const",
         const="compile",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--link", dest="action", action="store_const", const="link", default=""
     )
 
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     if options.action == "compile":
         bundled, system = get_compile_args()

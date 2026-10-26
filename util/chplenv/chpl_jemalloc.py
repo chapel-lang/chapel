@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-import optparse
+import argparse
 
 import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform
 import overrides, third_party_utils
@@ -177,22 +177,22 @@ def get_link_args(flag):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target])")
+    parser.add_argument(
         "--target",
         dest="flag",
         action="store_const",
         const="target",
         default="target",
     )
-    parser.add_option("--host", dest="flag", action="store_const", const="host")
-    parser.add_option(
+    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    parser.add_argument(
         "--cfg-path",
         dest="cfg_path",
         action="store_true",
         default=False,
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     if not options.cfg_path:
         jemalloc_val = get(options.flag)

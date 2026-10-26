@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import optparse
+import argparse
 import sys
 
 import overrides
@@ -42,11 +42,11 @@ def get(flag=""):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--exe])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--exe])")
+    parser.add_argument(
         "--exe", dest="flag", action="store_const", const="exe", default=""
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     sanitizers_val = get(options.flag)
     sys.stdout.write("{0}\n".format(sanitizers_val))

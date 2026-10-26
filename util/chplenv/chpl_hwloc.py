@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-import optparse
+import argparse
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
 import chpl_hwloc_pci
 from utils import error, memoize, try_run_command, run_command, check_valid_var
@@ -111,28 +111,28 @@ def get_prefix():
 def _main():
     hwloc_val = get()
 
-    parser = optparse.OptionParser(
-        usage="usage: %prog [--prefix] [--compile] [--link]"
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--prefix] [--compile] [--link]"
     )
-    parser.add_option(
+    parser.add_argument(
         "--prefix",
         dest="action",
         action="store_const",
         const="prefix",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compile",
         dest="action",
         action="store_const",
         const="compile",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--link", dest="action", action="store_const", const="link", default=""
     )
 
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     if options.action == "prefix":
         sys.stdout.write("{0}\n".format(get_prefix()))

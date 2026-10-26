@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import os
 import sys
 
@@ -602,18 +602,18 @@ def validate_compiler_settings():
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target])")
+    parser.add_argument(
         "--host",
         dest="flag",
         action="store_const",
         const="host",
         default="host",
     )
-    parser.add_option(
+    parser.add_argument(
         "--target", dest="flag", action="store_const", const="target"
     )
-    parser.add_option(
+    parser.add_argument(
         "--cc",
         dest="which",
         action="store_const",
@@ -621,28 +621,28 @@ def _main():
         default=None,
         help="get CHPL_{flag}_CC",
     )
-    parser.add_option(
+    parser.add_argument(
         "--cxx",
         dest="which",
         action="store_const",
         const="c++",
         help="get CHPL_{flag}_CXX",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compiler-only",
         dest="parts",
         action="store_const",
         const="compiler",
         default="all",
     )
-    parser.add_option(
+    parser.add_argument(
         "--additional",
         dest="parts",
         action="store_const",
         const="additional",
         help="get additional compiler args",
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     if options.which is None:
         compiler_val = get(options.flag)

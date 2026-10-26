@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import os
 import sys
 import re
@@ -1723,64 +1723,64 @@ def _main():
     llvm_config = get_llvm_config()
     llvm_versions_str = llvm_versions_string()
 
-    parser = optparse.OptionParser(usage="usage: %prog [--needs-llvm-runtime]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--needs-llvm-runtime]")
+    parser.add_argument(
         "--needs-llvm-runtime",
         dest="action",
         action="store_const",
         const="needsllvm",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--llvm-config",
         dest="action",
         action="store_const",
         const="llvmconfig",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--host-cxxflags",
         dest="action",
         action="store_const",
         const="host-cxxflags",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--host-ldflags",
         dest="action",
         action="store_const",
         const="host-ldflags",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--llvm-version",
         dest="action",
         action="store_const",
         const="llvmversion",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--supported-versions",
         dest="action",
         action="store_const",
         const="llvmversions",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--sdkroot",
         dest="action",
         action="store_const",
         const="sdkroot",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--quickstart",
         dest="action",
         action="store_const",
         const="quickstart",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--support",
         dest="action",
         action="store_const",
@@ -1788,7 +1788,7 @@ def _main():
         default="",
     )
 
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     # if --needs-llvm-runtime is set, print out llvm if runtime is needed,
     # and print out nothing if it is not.
