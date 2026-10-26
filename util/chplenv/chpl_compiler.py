@@ -471,7 +471,7 @@ def get_compiler_command(flag, lang):
 # flag should be host or target.
 # returns a Python list of -I flags
 @memoize
-def get_bundled_compile_args(flag): # pylint: disable=unused-argument
+def get_bundled_compile_args(flag):  # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering
@@ -520,7 +520,7 @@ def get_system_compile_args(flag):
 # flag should be host or target.
 # returns a Python list of -L flags
 @memoize
-def get_bundled_link_args(flag): # pylint: disable=unused-argument
+def get_bundled_link_args(flag):  # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering

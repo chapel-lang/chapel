@@ -260,7 +260,7 @@ def get_llvm_target_cpu():
 # Because of all this, the flag argument is unused and we return the same
 # answer for host or target.
 @memoize
-def get_default_machine(flag): # pylint: disable=unused-argument
+def get_default_machine(flag):  # pylint: disable=unused-argument
     return get_native_machine()
 
 

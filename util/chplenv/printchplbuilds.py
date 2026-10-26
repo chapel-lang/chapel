@@ -166,7 +166,7 @@ def Parse(path, used):
 # relevant to the current configuration.
 
 
-def GetConfig(all=False): # pylint: disable=redefined-builtin
+def GetConfig(all=False):  # pylint: disable=redefined-builtin
     config = OrderedDict()
     excludes = ["CHPL_HOME"]
     filters = ["no-tidy"] if all else ["tidy"]

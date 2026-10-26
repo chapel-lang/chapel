@@ -63,7 +63,7 @@ import utils
 
 utils.set_buffer_warnings(True)
 
-from chplenv import * # pylint: disable=unused-wildcard-import
+from chplenv import *  # pylint: disable=unused-wildcard-import
 import chplenv_verify
 
 ChapelEnv = namedtuple("ChapelEnv", ["name", "content", "shortname"])
