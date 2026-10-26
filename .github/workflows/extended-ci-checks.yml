@@ -244,10 +244,13 @@ jobs:
             libzmq3-dev
       - name: Compile Chapel and run tests
         run: |
+          echo "::group::set environment"
           source util/setchplenv.bash
-
           export CHPL_LIB_PIC=pic
+          export CHPL_GMP=bundled
+          export CHPL_HWLOC=bundled
           source util/cron/common-python-interop.bash
+          echo "::endgroup::"
 
           echo "::group::printchplenv"
           printchplenv --all --internal
@@ -263,12 +266,15 @@ jobs:
           echo "::endgroup::"
       - name: Compile Chapel with GASNet and run tests
         run: |
+          echo "::group::set environment"
           source util/setchplenv.bash
-
           export CHPL_LIB_PIC=pic
+          export CHPL_GMP=bundled
+          export CHPL_HWLOC=bundled
           source util/cron/test-gasnet-everything.bash
           source util/cron/common-python-interop.bash
           source util/cron/common-zmq.bash
+          echo "::endgroup::"
 
           echo "::group::printchplenv"
           printchplenv --all --internal
