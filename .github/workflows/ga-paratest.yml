@@ -609,7 +609,7 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: restore test directory durations
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PARATEST_TIMINGS_DIR }}
@@ -617,7 +617,7 @@ jobs:
           restore-keys: paratest-timings-${{ inputs.configuration }}-
       - name: update test directory durations
         id: update-timings
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         run: |
           timings_file="$PARATEST_TIMINGS_DIR/timings.tsv"
           mkdir -p "$PARATEST_TIMINGS_DIR" "$PARATEST_RESULTS_DIR"
@@ -639,7 +639,7 @@ jobs:
           mv "$timings_file.new" "$timings_file"
           echo "count=$(($(wc -l < "$new_timings")))" >> "$GITHUB_OUTPUT"
       - name: save test directory durations
-        if: ${{ !cancelled() && steps.update-timings.outputs.count != '0' }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.update-timings.outputs.count != '0' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PARATEST_TIMINGS_DIR }}
