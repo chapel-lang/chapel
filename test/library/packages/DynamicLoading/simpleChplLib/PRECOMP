@@ -1,2 +1,2 @@
 #!/bin/bash
-$3 --library --dynamic addEm.chpl
+$3 --library --dynamic --no-builtin-runtime addEm.chpl
