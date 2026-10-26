@@ -2,7 +2,7 @@
 
 $CHPL_HOME/test/mason/filterCurrentVersion "$@"
 
-chpl_sanitize=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py)
+chpl_sanitize=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py --exe)
 chpl_host_compiler=$($CHPL_HOME/util/chplenv/chpl_compiler.py --host)
 
 if [[ $chpl_sanitize == "undefined" ]]; then
