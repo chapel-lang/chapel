@@ -426,23 +426,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - parallel:
-          - name: Check most .py files
-            if: ${{ !cancelled() }}
-            uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
-            with:
-              options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
-              src: "."
-              summary: true
-              output-file: "${{ runner.temp }}/black-most.txt"
-          - name: Check our .py files under third-party/
-            if: ${{ !cancelled() }}
-            uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
-            with:
-              options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
-              src: "third-party/chpl-venv"
-              summary: true
-              output-file: "${{ runner.temp }}/black-third-party.txt"
+      - name: Check most .py files
+        if: ${{ !cancelled() }}
+        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
+        with:
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
+          src: "."
+          summary: true
+          output-file: "${{ runner.temp }}/black-most.txt"
+      - name: Check our .py files under third-party/
+        if: ${{ !cancelled() }}
+        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
+        with:
+          options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
+          src: "third-party/chpl-venv"
+          summary: true
+          output-file: "${{ runner.temp }}/black-third-party.txt"
       - name: Find extensionless Python files in util/ and Python sub_tests in test/
         if: ${{ !cancelled() }}
         run: |
