@@ -445,7 +445,6 @@ jobs:
           summary: true
           output-file: "${{ runner.temp }}/black-third-party.txt"
       - name: Find extensionless Python files in util/ and Python sub_tests in test/
-        id: find_extensionless
         if: ${{ !cancelled() }}
         background: true
         run: |
@@ -458,10 +457,11 @@ jobs:
             echo "$EXTENSIONLESS_PYTHON_FILES"
             echo "EOF"
           } >> "$GITHUB_ENV"
+      - name: wait for previous steps to complete
+        wait-all:
       - name: Check extensionless Python files
         if: ${{ !cancelled() }}
         background: true
-        wait: find_extensionless
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }}"
@@ -472,7 +472,6 @@ jobs:
         # ideally, black does this for us
         # sadly, they don't: https://github.com/psf/black/issues/1764
         if: ${{ failure() && !cancelled() }}
-        wait-all: true
         run: |
           python3 - <<'EOF'
           import glob, os, re
