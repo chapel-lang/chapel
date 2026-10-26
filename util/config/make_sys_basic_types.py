@@ -8,14 +8,14 @@ types.
 
 Specify the output file as a positional argument, e.g.:
 
-    %prog path/to/ChapelSysCTypes.chpl
+    %(prog)s path/to/ChapelSysCTypes.chpl
 """
 
 from __future__ import print_function
 
+import argparse
 import contextlib
 import logging
-import optparse
 import os
 import os.path
 import re
@@ -259,28 +259,24 @@ def _ensure_deleted(filename):
 def _parse_args():
     """Parse and return command line args."""
 
-    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
-        """Help formatter that does not wrap the description text."""
-
-        def _format_text(self, text):
-            return text
-
-    parser = optparse.OptionParser(
-        usage="usage: %prog [--doc] [--verbose] <ChapelSysCTypes_filename>",
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--doc] [--verbose] <ChapelSysCTypes_filename>",
         description=__doc__,
-        formatter=NoWrapHelpFormatter(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_option(
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output."
     )
-    parser.add_option(
+    parser.add_argument(
         "--doc",
         action="store_true",
         help="Build ChapelSysCTypes module for chpldoc.",
     )
+    parser.add_argument("args", nargs="*", metavar="<ChapelSysCTypes_filename>")
 
-    opts, args = parser.parse_args()
+    opts = parser.parse_args()
+    args = opts.args
 
     if len(args) != 1:
         parser.print_help()
