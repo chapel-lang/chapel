@@ -1,0 +1,2 @@
+# IPFamily hardcodes Linux AF_* values, but AF_INET6 differs on other platforms
+CHPL_TARGET_PLATFORM != linux64
