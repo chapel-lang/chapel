@@ -1773,6 +1773,13 @@ def _main():
         const="quickstart",
         default="",
     )
+    parser.add_option(
+        "--support",
+        dest="action",
+        action="store_const",
+        const="support",
+        default="",
+    )
 
     options, args = parser.parse_args()
 
@@ -1802,6 +1809,8 @@ def _main():
             sys.stdout.write("system\n")
         else:
             sys.stdout.write("none\n")
+    elif options.action == "support":
+        sys.stdout.write("{0}\n".format(get_llvm_support()))
     else:
         sys.stdout.write("{0}\n".format(llvm_val))
 

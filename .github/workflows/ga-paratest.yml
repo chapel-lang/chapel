@@ -51,7 +51,7 @@ on:
         description: Maximum number of test jobs (at most 256). Test directories are packed into jobs using their durations from previous runs.
         required: false
         type: number
-        default: 50
+        default: 35
       max-parallel:
         description: Maximum number of test jobs to run concurrently; 0 is unrestricted. If unset, defaults to 20 for non-merge-queue runs, and unrestricted for merge queue runs.
         required: false
@@ -155,7 +155,7 @@ jobs:
           } 2>&1 | tee "$RUNNER_TEMP/chapel-build.log"
       - name: upload Chapel build diagnostics
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: chapel-build-diagnostics-${{ inputs.configuration }}
           path: |
@@ -460,7 +460,7 @@ jobs:
           done
       - name: upload test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: paratest-${{ inputs.configuration }}-dir-results-${{ matrix.id }}
           path: ${{ env.PARATEST_RESULTS_DIR }}
@@ -485,7 +485,7 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: download test results
         id: download-results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: paratest-${{ inputs.configuration }}-dir-results-[0-9]*
           merge-multiple: false
@@ -602,14 +602,14 @@ jobs:
       - name: upload aggregated results
         id: upload_aggregated
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.PARATEST_RESULTS_DIR }}-${{ inputs.configuration }}
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: restore test directory durations
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PARATEST_TIMINGS_DIR }}
@@ -617,7 +617,7 @@ jobs:
           restore-keys: paratest-timings-${{ inputs.configuration }}-
       - name: update test directory durations
         id: update-timings
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         run: |
           timings_file="$PARATEST_TIMINGS_DIR/timings.tsv"
           mkdir -p "$PARATEST_TIMINGS_DIR" "$PARATEST_RESULTS_DIR"
@@ -639,7 +639,7 @@ jobs:
           mv "$timings_file.new" "$timings_file"
           echo "count=$(($(wc -l < "$new_timings")))" >> "$GITHUB_OUTPUT"
       - name: save test directory durations
-        if: ${{ !cancelled() && steps.update-timings.outputs.count != '0' }}
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.update-timings.outputs.count != '0' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.PARATEST_TIMINGS_DIR }}
