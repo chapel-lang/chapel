@@ -91,7 +91,9 @@ def generate_env_header_str(env, template_str):
 def main():
     expected = 2
     if len(sys.argv) - 1 != expected:
-        print("Expected exactly {} arguments!".format(expected), file=sys.stderr)
+        print(
+            "Expected exactly {} arguments!".format(expected), file=sys.stderr
+        )
         return
     path_template = sys.argv[1]
     path_out_env_header = sys.argv[2]

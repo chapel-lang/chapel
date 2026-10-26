@@ -184,7 +184,7 @@ def get_sys_c_types(docs=False):
         ex = expr
         for pattern, repl in replace_patterns:
             ex = pattern.sub(repl, ex)
-        value = eval(ex) # pylint: disable=eval-used
+        value = eval(ex)  # pylint: disable=eval-used
         logging.debug("{0} -> {1}".format(expr, value))
         max_values.append(value)
     logging.debug(
@@ -209,12 +209,12 @@ def get_sys_c_types(docs=False):
             sys.exit(1)
 
         sys_c_types.append(
-            "/* The Chapel type corresponding to the C '{}' type */".format(c_type)
+            "/* The Chapel type corresponding to the C '{}' type */".format(
+                c_type
+            )
         )
         if is_unstable:
-            sys_c_types.append(
-                "@unstable(\"'{}' is unstable\")".format(c_type)
-            )
+            sys_c_types.append("@unstable(\"'{}' is unstable\")".format(c_type))
         stmt = "extern type {}= ".format(chpl_type)
         if docs:
             stmt += "integral"
