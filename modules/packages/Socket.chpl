@@ -76,14 +76,44 @@ use IO;
 /*
   Available values for different Internet
   Protocol Families to be used when creating Sockets.
+
+  Casting an :type:`IPFamily` to an integral type gives the platform's
+  ``AF_*`` value, and casting an ``AF_*`` value to :type:`IPFamily` gives
+  the matching family.
 */
 enum IPFamily {
   /* IPv4 */
-  IPv4 = 2,
+  IPv4,
   /* IPv6 */
-  IPv6 = 10,
+  IPv6,
   /* IP Unspecified */
-  IPUnspec = 0
+  IPUnspec
+}
+
+/* Returns the platform's ``AF_*`` value for `x`. */
+@chpldoc.nodoc
+operator :(x: IPFamily, type t: integral): t {
+  select x {
+    when IPFamily.IPv4 do return AF_INET:t;
+    when IPFamily.IPv6 do return AF_INET6:t;
+    when IPFamily.IPUnspec do return AF_UNSPEC:t;
+    otherwise do halt("unsupported IPFamily");
+  }
+}
+
+/*
+  Returns the :type:`IPFamily` for the ``AF_*`` value `x`.
+
+  :throws IllegalArgumentError: If `x` is not a supported family.
+*/
+@chpldoc.nodoc
+operator :(x: integral, type t: IPFamily): IPFamily throws {
+  const v = x:int;
+  if v == AF_INET:int then return IPFamily.IPv4;
+  if v == AF_INET6:int then return IPFamily.IPv6;
+  if v == AF_UNSPEC:int then return IPFamily.IPUnspec;
+  throw new IllegalArgumentError("bad cast from int '" + v:string +
+                                 "' to enum 'IPFamily'");
 }
 
 /* Type of Standard IPv4 Address */
@@ -433,6 +463,7 @@ private extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptrCo
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
+extern const AF_UNSPEC: c_int;
 
 // types for 'sys_sockaddr_t' implementation
 @chpldoc.nodoc
