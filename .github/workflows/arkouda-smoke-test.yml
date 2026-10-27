@@ -57,6 +57,10 @@ jobs:
               # https://github.com/Bears-R-Us/arkouda/pull/5524.
               echo "numpy <= 2.4" > requirements-hack.txt
               echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
+            elif [[ "$arkouda_version" == "v2026.10.14" ]]; then
+              # Work around pandas incompatibility in release v2026.10.14.
+              echo "pandas == 3.0.6" > requirements-hack.txt
+              echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
             fi
           else
             arkouda_version="$ARKOUDA_VERSION_INPUT"
