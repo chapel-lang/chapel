@@ -119,7 +119,7 @@ jobs:
           export CHPL_TEST_TIMEOUT=1200
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv chpldoc mason
+          make -j"$num_procs" all test-venv chpldoc
 
           start_test --parallel "$num_procs" test/release/examples
           EOF
