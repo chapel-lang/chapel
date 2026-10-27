@@ -203,6 +203,7 @@ jobs:
       fail-fast: false
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        comm: ["none", "gasnet"]
     runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: Install Python
@@ -243,6 +244,7 @@ jobs:
             llvm-dev \
             libzmq3-dev
       - name: Compile Chapel and run tests
+        if: matrix.comm == 'none'
         run: |
           echo "::group::set environment"
           source util/setchplenv.bash
@@ -264,6 +266,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
           echo "::endgroup::"
       - name: Compile Chapel with GASNet and run tests
+        if: matrix.comm == 'gasnet'
         run: |
           echo "::group::set environment"
           source util/setchplenv.bash
