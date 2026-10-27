@@ -19,6 +19,11 @@ permissions:
   contents: read
   packages: read
 
+# Allow only one instance to run on a PR at once, cancelling older runs to save resources.
+concurrency:
+  group: ${{ github.workflow }}-arkouda-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   NIGHTLY_TEST_SETTINGS: true
   DEFAULT_ARKOUDA_VERSION: release
