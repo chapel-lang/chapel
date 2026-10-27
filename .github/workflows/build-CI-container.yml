@@ -8,8 +8,9 @@ env:
 # Serialize runs of this workflow on 'main', to prevent a build from an older
 # ref pushing and overriding the results of a concurrently-building newer ref.
 concurrency:
-  group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
-  queue: max
+  group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.event.merge_group.head_ref || github.sha) }}
+  queue: ${{ case(github.ref == 'refs/heads/main', 'max', 'single') }}
+  cancel-in-progress: ${{ github.event_name == 'merge_group' }}
 
 permissions:
   contents: read
@@ -19,6 +20,7 @@ on:
     branches: [ main ]
   pull_request:
   merge_group:
+    types: [checks_requested, destroyed]
   workflow_dispatch:
   schedule:
     - cron: '0 20 * * 2'
@@ -29,6 +31,7 @@ defaults:
 
 jobs:
   should-build-ci-container:
+    if: ${{ github.event.action != 'destroyed' }}
     runs-on: ubuntu-slim
     outputs:
       should-build: ${{ steps.should-build.outputs.should-build }}
