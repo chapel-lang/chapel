@@ -70,7 +70,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.5, 14.3, 14.5, 15.1::
+  * FreeBSD 14.5, 15.1::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake libunwind
       sudo pkg install llvm

@@ -14,8 +14,7 @@ import re
 import sys
 from contextlib import contextmanager
 
-# TODO: can we drop the vagrant? its just for freebsd which now is separate
-directories = ["current", "../vagrant/current", "../bsd-vm/current"]
+directories = ["current", "../bsd-vm/current"]
 compatibility_notes = {}
 
 
