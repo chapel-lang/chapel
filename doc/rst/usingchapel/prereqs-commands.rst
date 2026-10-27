@@ -70,7 +70,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.5, 14.3 (but see note `Outdated FreeBSD testing`_)::
+  * FreeBSD 13.5, 14.3, 14.5, 15.1::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake libunwind
       sudo pkg install llvm
@@ -116,17 +116,3 @@
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-Compatibility Notes
--------------------
-
-Outdated FreeBSD testing
-++++++++++++++++++++++++
-
-Our portability testing for FreeBSD relies on public Vagrant boxes. At time of
-writing (May 2026), we have been unable to find a box for FreeBSD releases
-newer than 14.3. Due to limited resources, and lacking information on how
-widely used Chapel is on FreeBSD, we have not taken on the work of making our
-own box or otherwise continuing to update this test coverage. It is still our
-intention to support FreeBSD as a best effort, so feel free to open bug reports
-for Chapel on FreeBSD versions newer than we test, and/or let us know if this
-lack of testing coverage causes you concern.

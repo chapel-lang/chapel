@@ -93,6 +93,9 @@ FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported re
         -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
            has instructions for installing virtualbox guest additions, in
            case that is needed
+        -- releases without Vagrant boxes are tested in GitHub Actions via
+           bsd-vm/current/freebsd-<release> and
+           https://github.com/vmactions/freebsd-vm
 x 10.2 EOL Dec 2016
 x 10.3 EOL Apr 2018
 x 10.4 EOL Oct 2018
@@ -112,15 +115,13 @@ x 13.3 EOL Dec 2024
 x 14.0 EOL Sep 2024
 x 14.1 EOL Mar 2025
 x 13.4 EOL Jun 2025
-x 13.5 EOL Apr 2026 (still testing as newer don't have boxes)
+x 13.5 EOL Apr 2026 (still tested)
 x 14.2 EOL Sep 2025
-x 14.3 EOL Jun 2026 (still testing as newer don't have boxes)
-  14.4 EOL Dec 2026 (awaiting vagrant box)
-  15.0 EOL Dec 2029 (awaiting vagrant box)
-  15.1 EOL Mar 2027 (awaiting vagrant box)
-** As of Sep 2026, we couldn't find Vagrant boxes for any production releases
-   of FreeBSD, and plan to just keep testing 13.5 and 14.3 unless newer boxes
-   appear.
+x 14.3 EOL Jun 2026 (still tested)
+x 15.0 EOL Sep 2026
+  14.4 EOL Dec 2026
+  15.1 EOL Mar 2027 (tested)
+  14.5 EOL Jun 2027 (tested)
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
