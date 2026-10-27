@@ -51,7 +51,7 @@ jobs:
   test-mpicc:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
@@ -66,6 +66,7 @@ jobs:
           source util/setchplenv.bash
           source util/cron/test-mpicc.bash
           export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
 
           echo "::group::printchplenv"
           printchplenv --all --internal
@@ -80,12 +81,13 @@ jobs:
           start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
           echo "::endgroup::"
       - name: Build and Test Chapel with mpicc (GASNet)
-        if: always()
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           source util/setchplenv.bash
           source util/cron/test-mpicc.gasnet.bash
           export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
           # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
           # this is a hack to get oversubscription to work, if we ever
           # need to support this for users we should do a proper fix
@@ -107,7 +109,7 @@ jobs:
   test-incremental:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
@@ -135,7 +137,7 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples
           echo "::endgroup::"
       - name: Build and Test Chapel with --incremental and --no-local
-        if: always()
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           source util/setchplenv.bash

@@ -31,7 +31,6 @@
 
 static char* mpi_num_ranks = NULL;
 
-static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {

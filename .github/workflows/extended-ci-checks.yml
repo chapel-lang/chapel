@@ -243,13 +243,20 @@ jobs:
             llvm \
             llvm-dev \
             libzmq3-dev
-      - name: Compile Chapel and run tests
-        if: matrix.comm == 'none'
+      - name: Compile Chapel (comm=${{ matrix.comm }}) and run tests
+        env:
+          COMM: ${{ matrix.comm }}
         run: |
           echo "::group::set environment"
           source util/setchplenv.bash
           export CHPL_LIB_PIC=pic
-          source util/cron/common-python-interop.bash
+          if [[ "$COMM" == "gasnet" ]]; then
+            source util/cron/test-gasnet-everything.bash
+            source util/cron/common-python-interop.bash
+            source util/cron/common-zmq.bash
+          else
+            source util/cron/common-python-interop.bash
+          fi
           export CHPL_TARGET_CPU=native
           echo "::endgroup::"
 
@@ -263,30 +270,6 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
-          echo "::endgroup::"
-      - name: Compile Chapel with GASNet and run tests
-        if: matrix.comm == 'gasnet'
-        run: |
-          echo "::group::set environment"
-          source util/setchplenv.bash
-          export CHPL_LIB_PIC=pic
-          source util/cron/test-gasnet-everything.bash
-          source util/cron/common-python-interop.bash
-          source util/cron/common-zmq.bash
-          export CHPL_TARGET_CPU=native
-          echo "::endgroup::"
-
-          echo "::group::printchplenv"
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel with GASNet"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv mason-deps
-          echo "::endgroup::"
-
-          echo "::group::Run tests with GASNet"
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
           echo "::endgroup::"
 
