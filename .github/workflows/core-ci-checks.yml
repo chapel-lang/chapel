@@ -658,3 +658,6 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+
+  ci-container:
+    uses: $/.github/workflows/build-CI-container.yml
