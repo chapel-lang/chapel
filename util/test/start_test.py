@@ -379,30 +379,14 @@ def test_directory(test, test_type, num_workers):
                     os.path.join(dir, "sub_test"), os.X_OK
                 )
 
-            has_unsafe_par_pretest = (
-                "PRETEST" in files and "PRETEST_PARALLEL_SAFE" not in files
-            )
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
                 with cd(dir):
                     # clean dir
                     clean()
-
                     if not args.clean_only:
-                        # in parallel mode: defer running directories so they
-                        # can run concurrently. directories with PRETEST or
-                        # custom sub_test should not be defered (they may
-                        # generate new tests).
-                        if (
-                            parallel_mode
-                            and not has_unsafe_par_pretest
-                            and not run_local_sub_test
-                        ):
-                            parallel_dirs.append((dir, root))
-                        else:
-                            run_sub_tests([(dir, root)], num_workers)
-
+                        parallel_dirs.append((dir, root))
             # let user know no tests were found
             else:
                 logger.write("[No tests in directory {0}]".format(root))
@@ -412,9 +396,9 @@ def test_directory(test, test_type, num_workers):
                 # generate graphs for all tests in dir
                 generate_graphs()
 
-    # run any deferred directories concurrently
-    if parallel_mode and parallel_dirs:
-        run_sub_tests(parallel_dirs, num_workers)
+    # Run sub_test on gathered test directories, using the desired number of
+    # parallel workers.
+    run_sub_tests(parallel_dirs, num_workers)
 
 
 def summarize():
