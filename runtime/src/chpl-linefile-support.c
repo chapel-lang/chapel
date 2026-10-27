@@ -72,7 +72,7 @@ c_string chpl_rt_fname_case_lookup(const int32_t idx) {
   }
 }
 
-c_string chpl_rt_lookup_filename_prg(chpl_rt_prginfo* prg, const int32_t idx) {
+c_string chpl_rt_lookup_filename(chpl_rt_prginfo* prg, const int32_t idx) {
   if (idx < 0) {
     return chpl_rt_fname_case_lookup(idx);
   } else {
@@ -86,8 +86,8 @@ c_string chpl_rt_lookup_filename_prg(chpl_rt_prginfo* prg, const int32_t idx) {
   }
 }
 
-c_string chpl_rt_lookup_filename(const int32_t idx) {
+c_string chpl_rt_lookup_filename_no_prg(const int32_t idx) {
   chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
-  return chpl_rt_lookup_filename_prg(prg, idx);
+  return chpl_rt_lookup_filename(prg, idx);
 }
 

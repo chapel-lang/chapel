@@ -146,25 +146,25 @@ int chpl_gpu_diags_is_enabled(void) {
   ln, fn, device_id, blk_dim_x, blk_dim_y, blk_dim_z) \
     chpl_gpu_diags_verbose_printf(false, device_id,   \
     "%s:%d: kernel launch (block size: %dx%dx%d)",    \
-    chpl_rt_lookup_filename(fn), ln, blk_dim_x, blk_dim_y, blk_dim_z)
+    chpl_rt_lookup_filename_no_prg(fn), ln, blk_dim_x, blk_dim_y, blk_dim_z)
 
 #define chpl_gpu_diags_verbose_device_to_host_copy( \
   ln, fn, src_device_id, size, commid) \
     chpl_gpu_diags_verbose_printf(false, src_device_id,   \
     "%s:%d: copy from device to host, %zu bytes, commid %d",    \
-    chpl_rt_lookup_filename(fn), ln, size, commid)
+    chpl_rt_lookup_filename_no_prg(fn), ln, size, commid)
 
 #define chpl_gpu_diags_verbose_host_to_device_copy( \
   ln, fn, dst_device_id, size, commid) \
     chpl_gpu_diags_verbose_printf(false, dst_device_id,   \
     "%s:%d: copy from host to device, %zu bytes, commid %d",    \
-    chpl_rt_lookup_filename(fn), ln, size, commid)
+    chpl_rt_lookup_filename_no_prg(fn), ln, size, commid)
 
 #define chpl_gpu_diags_verbose_device_to_device_copy( \
   ln, fn, dst_device_id, src_device_id, size, commid) \
     chpl_gpu_diags_verbose_printf(false, src_device_id,   \
     "%s:%d: copy from device (%d) to device (%d), %zu bytes, commid %d",    \
-    chpl_rt_lookup_filename(fn), ln, src_device_id, dst_device_id, size, commid)
+    chpl_rt_lookup_filename_no_prg(fn), ln, src_device_id, dst_device_id, size, commid)
 
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \

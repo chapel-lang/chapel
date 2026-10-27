@@ -413,7 +413,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
         unsigned int line = chpl_rt_unwind_get_line_num(prg, &cursor,
                                                         ip_offset, t);
         const char* filename =
-          chpl_rt_lookup_filename_prg(prg, chpl_filenumSymTable[t]);
+          chpl_rt_lookup_filename(prg, chpl_filenumSymTable[t]);
         switch (mode) {
           case CHPL_STACK_UNWIND_MODE_FILE:
             if (print_program) {

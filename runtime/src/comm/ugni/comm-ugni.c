@@ -3303,7 +3303,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
 
         //
         // Only try to provide a source file if we can give at least some
-        // of it, and without using snprintf() in chpl_rt_lookup_filename()).
+        // of it, and without using snprintf() in chpl_rt_lookup_filename_no_prg()).
         //
         CHPL_RT_PRGINFO_DECLARE(CHPL_RT_ROOT_PROGRAM_PLACEHOLDER,
                                 chpl_filenameTableSize);
@@ -3319,7 +3319,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
           // Stop copying fname either when we're done or need to leave
           // room for "..." in place of chars that won't fit.
           //
-          const char* fn = chpl_rt_lookup_filename(mr_mregs_supplement[mr_i].fn);
+          const char* fn = chpl_rt_lookup_filename_no_prg(mr_mregs_supplement[mr_i].fn);
           int fnLen = strlen(fn);
           int fni;
           for (fni = fnLen; fni > 0 && (fni <= 3 || bufi > 3); ) {
