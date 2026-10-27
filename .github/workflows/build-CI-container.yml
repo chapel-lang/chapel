@@ -7,6 +7,8 @@ env:
 
 # Serialize runs of this workflow on 'main', to prevent a build from an older
 # ref pushing and overriding the results of a concurrently-building newer ref.
+# Additionally, cancel in-progress runs in merge queue if the merge group is
+# destroyed.
 concurrency:
   group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.event.merge_group.head_ref || github.sha) }}
   queue: ${{ case(github.ref == 'refs/heads/main', 'max', 'single') }}
