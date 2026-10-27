@@ -105,7 +105,7 @@ jobs:
           ./util/buildRelease/smokeTest quickstart chapel-py docs
           tar -cvf docs.tar.gz -C doc/html .
       - name: upload docs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: documentation
           path: docs.tar.gz
@@ -370,7 +370,7 @@ jobs:
     needs: make_doc
     steps:
       - name: download docs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: documentation
 
@@ -421,22 +421,29 @@ jobs:
       EXTENSIONLESS_PYTHON_FILES: |
         test/mason/MasonBashSubTest
         test/man/checkManPages
-      BLACK_OPTIONS: "--check --verbose --line-length 80"
+      BLACK_OPTIONS: "--check --diff --line-length 80"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Check most .py files
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
+          summary: true
+          output-file: "${{ runner.temp }}/black-most.txt"
       - name: Check our .py files under third-party/
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
+          summary: true
+          output-file: "${{ runner.temp }}/black-third-party.txt"
       - name: Find extensionless Python files in util/ and Python sub_tests in test/
+        if: ${{ !cancelled() }}
         run: |
           EXTENSIONLESS_PYTHON_FILES+="$(find util/ -type f ! -name '*.py' -exec grep -Iq . {} \; -exec awk 'FNR == 1 && /^#!.*[[:space:]\/]python([0-9]+([.][0-9]+)*)?([[:space:]]|$)/ { print FILENAME }' {} \;)
           "
@@ -448,10 +455,52 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
       - name: Check extensionless Python files
+        if: ${{ !cancelled() }}
         uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
         with:
           options: "${{ env.BLACK_OPTIONS }}"
           src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"
+          summary: true
+          output-file: "${{ runner.temp }}/black-extensionless.txt"
+      - name: Annotate unformatted files
+        # ideally, black does this for us
+        # sadly, they don't: https://github.com/psf/black/issues/1764
+        if: ${{ failure() && !cancelled() }}
+        run: |
+          python3 - <<'EOF'
+          import glob, os, re
+
+          def esc(s, prop=False):
+              s = s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              return s.replace(":", "%3A").replace(",", "%2C") if prop else s
+
+          for out in sorted(glob.glob(os.path.join(os.environ["RUNNER_TEMP"], "black-*.txt"))):
+              hunks = []  # [file, first changed line, last changed line, diff lines]
+              name, cur = None, 0
+              with open(out, encoding="utf-8") as f:
+                  for l in f.read().splitlines():
+                      if l.startswith("--- "):
+                          name = os.path.relpath(l[4:].split("\t")[0])
+                      elif l.startswith("+++ "):
+                          continue
+                      elif name and (m := re.match(r"@@ -(\d+)", l)):
+                          cur = int(m.group(1))
+                          hunks.append([name, None, None, [l]])
+                      elif hunks and l[:1] in (" ", "-", "+"):
+                          h = hunks[-1]
+                          h[3].append(l)
+                          # anchor on changed lines so the annotation lands inside the PR diff
+                          if l[0] == "-":
+                              h[1] = h[1] or cur
+                              h[2] = cur
+                          elif l[0] == "+" and h[1] is None:
+                              h[1] = h[2] = max(cur - 1, 1)
+                          if l[0] != "+":
+                              cur += 1
+              for name, start, end, lines in hunks:
+                  msg = "File is not formatted with black:\n" + "\n".join(lines)
+                  print(f"::error file={esc(name, True)},line={start or 1},endLine={end or start or 1},title=black::{esc(msg)}")
+          EOF
 
   test_chpl_language_server_chplcheck:
     runs-on: ubuntu-latest
