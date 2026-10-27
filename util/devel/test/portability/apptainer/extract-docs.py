@@ -167,7 +167,7 @@ def extract_script_ref_commands(vfile):
                             "git-clone-chapel.sh" in spath
                             or "gmake-chapel-quick.sh" in spath
                             or "make-chapel-quick.sh" in spath
-                            or "freebsd-repo-fix.sh" in spath
+                            or "freebsd-repo-fix" in spath
                             or "proxy-setup.sh" in spath
                         ):
                             pass  # skip these
