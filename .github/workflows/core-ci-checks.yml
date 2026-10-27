@@ -698,6 +698,7 @@ jobs:
       use-container: false
       cron-script: util/cron/test-gasnet.darwin.bash
       start-test-args: -multilocale-only
+      max-jobs: 15
       pre-build-steps: |
         brew install llvm@22
       make-targets: all test-venv mason-deps
@@ -710,6 +711,7 @@ jobs:
       use-container: false
       cron-script: util/cron/test-gasnet.fast.darwin.bash
       start-test-args: -multilocale-only
+      max-jobs: 15
       pre-build-steps: |
         brew install llvm@22
       make-targets: all test-venv mason-deps
