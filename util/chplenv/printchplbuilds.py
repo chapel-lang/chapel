@@ -485,7 +485,7 @@ def main(argv):
         for var in usedvars:
             if var in diffvars:
                 print("%25s: %-20s" % (var, list(values[var])))
-        sys.exit(0)
+        return 0
 
     if args.sort == Sort.FEWEST or args.sort == Sort.MOST or args.check:
         # Sort based on # of differences from current config
@@ -498,21 +498,21 @@ def main(argv):
         if args.csh > len(builds):
             parser.error("Invalid build %d" % args.csh)
         PrintShellCommands(current, builds[args.csh], shell="csh")
-        sys.exit(0)
+        return 0
 
     if args.bash is not None:
         if args.bash > len(builds):
             parser.error("Invalid build %d" % args.bash)
         PrintShellCommands(current, builds[args.bash], shell="bash")
-        sys.exit(0)
+        return 0
 
     if args.check:
         if len(builds) > 0:
             if builds[0]["diffs"] == 0:
                 print("There is a build for the current configuration.")
-                sys.exit(0)
+                return 0
         print("No build for the current configuration.")
-        sys.exit(1)
+        return 1
 
     if args.current:
         # Print current configuration too
@@ -558,4 +558,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    sys.exit(main(sys.argv))

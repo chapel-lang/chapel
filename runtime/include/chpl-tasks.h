@@ -304,6 +304,16 @@ chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void);
 #endif
 
 //
+// Returns true if the calling thread is running a Chapel task (or is a
+// runtime thread with per-task data), false for threads the runtime
+// didn't create, such as a library's callback thread.
+//
+static inline
+chpl_bool chpl_task_isChapelTask(void) {
+  return chpl_task_getInfoRuntime() != NULL;
+}
+
+//
 // Get the current task's Chapel-related per-task information.
 //
 #ifndef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL

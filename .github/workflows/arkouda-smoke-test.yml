@@ -42,6 +42,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
+          key: ccache-${{ github.job }}
+          append-timestamp: false
       - name: determine version of Arkouda to use
         env:
           GH_TOKEN: ${{ github.token }}
@@ -54,6 +56,11 @@ jobs:
               # Work around issue in release v2026.07.15, which is fixed in
               # https://github.com/Bears-R-Us/arkouda/pull/5524.
               echo "numpy <= 2.4" > requirements-hack.txt
+              echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
+            elif [[ "$arkouda_version" == "v2026.10.14" ]]; then
+              # Work around pandas incompatibility in release v2026.10.14, fixed in
+              # https://github.com/Bears-R-Us/arkouda/pull/5537.
+              echo "pandas == 3.0.6" > requirements-hack.txt
               echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
             fi
           else
@@ -81,7 +88,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: cache Arkouda deps install
         id: cache-arkouda-deps
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 #v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.ARKOUDA_DEP_DIR }}
           key: arkouda-${{ env.ARKOUDA_SHA }}

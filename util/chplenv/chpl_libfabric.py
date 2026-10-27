@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import sys
-import glob
-import os
 
-import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, chpl_comm_ofi_oob
+
+import chpl_comm, chpl_comm_debug, chpl_platform, chpl_comm_ofi_oob
 import overrides, third_party_utils
 
-from utils import error, memoize, try_run_command, warning, check_valid_var
+from utils import error, memoize, warning, check_valid_var
 
 
 @memoize

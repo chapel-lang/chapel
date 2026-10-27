@@ -38,6 +38,16 @@ jobs:
           inputs: |
             .github/workflows
 
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Run yamllint
+        run: yamllint --strict -c .github/yamllint.yml -f github .github
+
   # Canary for any linter failures
   linters-alert-failure:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
@@ -45,6 +55,7 @@ jobs:
     needs:
       - actionlint
       - zizmor
+      - yamllint
     steps:
       - name: Fail
         run: |

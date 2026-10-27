@@ -298,9 +298,7 @@ def find_system_llvm_config():
     if homebrew_prefix:
         unversioned_paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
-    # Search newest version first and stop at the first usable llvm-config,
-    # rather than probing every candidate
-    for vers in llvm_versions():
+    def versioned_paths(vers):
         paths = []
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
@@ -316,13 +314,48 @@ def find_system_llvm_config():
             paths.append(
                 homebrew_prefix + "/opt/llvm@" + vers + "/bin/llvm-config"
             )
+        return paths
 
-        for command in paths + unversioned_paths:
+    # Search newest version first and stop at the first usable llvm-config,
+    # rather than probing every candidate
+    supported = llvm_versions()
+    for vers in supported:
+        for command in versioned_paths(vers) + unversioned_paths:
             version, config_err = check_llvm_config(command)
             if not config_err and version == vers:
                 ok, _ = check_llvm_packages(command)
                 if ok:
                     return command
+
+    # if we didn't find anything, search both newer and older versions
+    # if they are available, warn the user they have an incorrect version of LLVM installed
+    radius = 5
+    supported_i = list([int(v) for v in supported])
+    up_bound = supported_i[0] + radius + 1
+    low_bound = supported_i[-1] - radius
+    unsupported = [
+        str(v)
+        for v in reversed(range(low_bound, up_bound))
+        if v not in supported_i
+    ]
+
+    found = []
+    for vers in unsupported:
+        for command in versioned_paths(vers):
+            version, _ = check_llvm_config(command)
+            if version == vers and version not in found:
+                found.append(version)
+    for command in unversioned_paths:
+        version, _ = check_llvm_config(command)
+        if version and version not in supported and version not in found:
+            found.append(version)
+
+    if found:
+        warning(
+            "Could not find a working install of a supported LLVM version ({0}) - found the following unsupported versions: {1}".format(
+                llvm_versions_string(), ", ".join(found)
+            )
+        )
 
     return ""
 
@@ -335,15 +368,23 @@ def find_system_llvm_config():
 @memoize
 def get_llvm_support():
     llvm_val = get()
+    llvm_support_val = overrides.get("CHPL_LLVM_SUPPORT", None)
+    if llvm_support_val:
+        check_valid_var(
+            "CHPL_LLVM_SUPPORT", llvm_support_val, ("system", "bundled")
+        )
 
     # If using CHPL_LLVM=bundled or CHPL_LLVM=system
     # then CHPL_LLVM_SUPPORT needs to match
-    if llvm_val == "bundled":
-        return "bundled"
-    if llvm_val == "system":
-        return "system"
+    if llvm_val in ("bundled", "system"):
+        if llvm_support_val and llvm_support_val != llvm_val:
+            warning(
+                "CHPL_LLVM_SUPPORT={} is ignored for CHPL_LLVM={}".format(
+                    llvm_support_val, llvm_val
+                )
+            )
+        return llvm_val
 
-    llvm_support_val = overrides.get("CHPL_LLVM_SUPPORT")
     if not llvm_support_val:
         if has_compatible_installed_llvm():
             llvm_support_val = "system"
@@ -1740,6 +1781,13 @@ def _main():
         const="quickstart",
         default="",
     )
+    parser.add_option(
+        "--support",
+        dest="action",
+        action="store_const",
+        const="support",
+        default="",
+    )
 
     options, args = parser.parse_args()
 
@@ -1769,6 +1817,8 @@ def _main():
             sys.stdout.write("system\n")
         else:
             sys.stdout.write("none\n")
+    elif options.action == "support":
+        sys.stdout.write("{0}\n".format(get_llvm_support()))
     else:
         sys.stdout.write("{0}\n".format(llvm_val))
 

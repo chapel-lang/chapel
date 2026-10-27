@@ -92,7 +92,7 @@ jobs:
           } | tee "$GITHUB_ENV" "$GITHUB_OUTPUT"
       - name: download base image tarball
         if: ${{ env.CONFIG != 'base' }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ env.BASE_IMAGE_TARBALL }}
       - name: load base image from tarball
@@ -107,7 +107,7 @@ jobs:
           tags: ${{ env.IMAGE_FULL_NAME }}
           load: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max' || '' }}
       - name: test image
         run: |
           cp test/release/examples/hello.chpl .
@@ -117,7 +117,7 @@ jobs:
           docker tag "$IMAGE_FULL_NAME" "$IMAGE_FULL_NAME-$ARCH"
           docker image save -o "$IMAGE_TARBALL" "$IMAGE_FULL_NAME-$ARCH"
       - name: upload image tarball
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.IMAGE_TARBALL }}
           path: ${{ env.IMAGE_TARBALL }}

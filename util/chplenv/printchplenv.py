@@ -59,6 +59,10 @@ import unittest
 from sys import stdout, path
 import textwrap
 
+import utils
+
+utils.set_buffer_warnings(True)
+
 from chplenv import *
 import chplenv_verify
 

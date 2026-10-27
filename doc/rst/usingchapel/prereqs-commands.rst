@@ -45,7 +45,7 @@
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm-devel clang clang-devel
+      sudo dnf install llvm20-devel clang20 clang20-devel
 
 
   * Debian 12 "Bookworm"::
