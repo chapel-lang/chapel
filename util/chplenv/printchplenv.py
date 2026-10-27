@@ -793,7 +793,9 @@ def parse_args():
     parser.add_argument(
         "--bash", action="store_const", dest="format", const="bash"
     )
-    parser.add_argument("--csh", action="store_const", dest="format", const="csh")
+    parser.add_argument(
+        "--csh", action="store_const", dest="format", const="csh"
+    )
     parser.add_argument(
         "--value", action="store_const", dest="format", const="value"
     )
@@ -816,7 +818,9 @@ def parse_args():
     parser.add_argument(
         "--verify-verbose", action="store_true", dest="verify_verbose"
     )
-    parser.add_argument("--unit-tests", action="store_true", dest="do_unit_tests")
+    parser.add_argument(
+        "--unit-tests", action="store_true", dest="do_unit_tests"
+    )
     # Hijack the help message to use the module docstring
     parser.print_help = lambda *args: stdout.write(__doc__)
 

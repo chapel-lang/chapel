@@ -277,7 +277,9 @@ def _main():
         const="target",
         default="target",
     )
-    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    parser.add_argument(
+        "--host", dest="flag", action="store_const", const="host"
+    )
     parser.add_argument(
         "--comparch", dest="map_to_compiler", action="store_true", default=False
     )

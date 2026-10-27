@@ -32,7 +32,9 @@ def _main():
         const="target",
         default="target",
     )
-    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    parser.add_argument(
+        "--host", dest="flag", action="store_const", const="host"
+    )
     options = parser.parse_args()
 
     arch = get(options.flag)
