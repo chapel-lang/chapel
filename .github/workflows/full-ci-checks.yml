@@ -109,7 +109,7 @@ jobs:
 
           git config --system --add safe.directory "*"
 
-          source util/setchplenv.bash
+          source util/quickstart/setchplenv.bash
 
           # Build bundled LLVM support lib, to make sure we can on 32-bit
           export CHPL_LLVM=none
