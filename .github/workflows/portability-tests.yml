@@ -199,5 +199,6 @@ jobs:
           run: |
             set -ex
             freebsd-version
+            git config --global --add safe.directory "$PWD"
             MAKEJ="-j$(sysctl -n hw.ncpu)"
             bash -euxo pipefail -c ". \"$CHPL_SETENV\" && gmake $MAKEJ && gmake $MAKEJ check"
