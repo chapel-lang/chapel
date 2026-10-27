@@ -3694,7 +3694,9 @@ struct rdcache_s* tls_cache_remote_data(void) {
 #endif
 
   struct rdcache_s *cache = CHPL_TLS_GET(cache_remote_data);
-  if( !cache && chpl_cache_enabled()) {
+  // Threads that aren't Chapel tasks have no per-task cache data, so they
+  // bypass the cache.
+  if( !cache && chpl_cache_enabled() && chpl_task_isChapelTask()) {
     // check also if the cache has already been initialized
     chpl_bool local_is_inited;
 
