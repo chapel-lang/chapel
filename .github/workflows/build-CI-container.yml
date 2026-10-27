@@ -18,6 +18,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  merge_group:
   workflow_dispatch:
   schedule:
     - cron: '0 20 * * 2'
