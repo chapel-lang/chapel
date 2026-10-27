@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-chpl_sanitize=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py)
+chpl_sanitize=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py --exe)
 chpl_target_compiler=$($CHPL_HOME/util/chplenv/chpl_compiler.py --target)
 
 if [[ $chpl_sanitize == "undefined" ]]; then

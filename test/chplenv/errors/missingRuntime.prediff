@@ -12,3 +12,10 @@ echo "====" >>$complog
 unset CHPL_TASKS
 CHPL_CONFIG=. $chpl missingRuntime.chpl >>$complog 2>&1
 echo "====" >>$complog
+
+chpl_llvm=$($CHPL_HOME/util/chplenv/chpl_llvm.py)
+chpl_llvm_support=$($CHPL_HOME/util/chplenv/chpl_llvm.py --support)
+if [[ "$chpl_llvm" == "bundled" || "$chpl_llvm_support" == "bundled" ]]; then
+  grep -v 'Could not find a working install of a supported LLVM version' $complog > $complog.tmp
+  mv $complog.tmp $complog
+fi
