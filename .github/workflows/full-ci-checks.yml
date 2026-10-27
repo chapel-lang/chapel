@@ -139,7 +139,7 @@ jobs:
     with:
       configuration: linux64-c-backend-gasnet
       start-test-args: -multilocale-only
-      max-jobs: 25
+      max-jobs: 15
       make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
   paratest-linux64-clang:
@@ -175,7 +175,7 @@ jobs:
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --multilocale-only
-      max-jobs: 25
+      max-jobs: 15
       make-targets: all test-venv mason-deps
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
@@ -201,7 +201,7 @@ jobs:
       configuration: gasnet-asan
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
-      max-jobs: 25
+      max-jobs: 15
       timeout-minutes: 360
       make-targets: all test-venv mason-deps
   paratest-gasnet-fast:
@@ -212,7 +212,7 @@ jobs:
       cron-script: util/cron/test-gasnet-fast.bash
       container-options: --shm-size=8g # required for SEGMENT=fast
       start-test-args: -multilocale-only
-      max-jobs: 25
+      max-jobs: 15
       make-targets: all test-venv mason-deps
   # runners only have 2 real cores, and smp can't oversubscribe
   # so this won't work yet

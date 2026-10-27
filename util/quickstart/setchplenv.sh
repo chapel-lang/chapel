@@ -87,17 +87,24 @@ export CHPL_RE2
 echo "                           ...none"
 echo " "
 
-USE_UNWIND=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_unwind.py --quickstart`
-echo "Setting CHPL_UNWIND to..."
-CHPL_UNWIND=$USE_UNWIND
-export CHPL_UNWIND
-echo "                           ...$USE_UNWIND"
-echo " "
-
-
 USE_LLVM=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to..."
 CHPL_LLVM=$USE_LLVM
 export CHPL_LLVM
 echo "                           ...$USE_LLVM"
+echo " "
+
+if [ "$USE_LLVM" = "none" ]; then
+    echo "Setting CHPL_LLVM_SUPPORT to..."
+    CHPL_LLVM_SUPPORT=bundled
+    export CHPL_LLVM_SUPPORT
+    echo "                           ...bundled"
+    echo " "
+fi
+
+USE_UNWIND=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_unwind.py --quickstart`
+echo "Setting CHPL_UNWIND to..."
+CHPL_UNWIND=$USE_UNWIND
+export CHPL_UNWIND
+echo "                           ...$USE_UNWIND"
 echo " "

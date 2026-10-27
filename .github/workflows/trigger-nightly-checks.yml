@@ -7,6 +7,11 @@ on:
       timezone: "America/Vancouver"
   workflow_dispatch:
 
+# Ensure we save caches from nightly runs on main, so they can be reused in most
+# other workflows. This should be getting set implicitly, just setting it
+# explicitly for clarity.
+cache-mode: write
+
 permissions:
   contents: read
   packages: read
