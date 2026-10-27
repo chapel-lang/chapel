@@ -26,7 +26,7 @@ concurrency:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  DEFAULT_ARKOUDA_VERSION: release
+  ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version || 'release' }}
 
 defaults:
   run:
@@ -57,7 +57,6 @@ jobs:
       - name: determine version of Arkouda to use
         env:
           GH_TOKEN: ${{ github.token }}
-          ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version || env.DEFAULT_ARKOUDA_VERSION }}
         run: |
           if [[ "$ARKOUDA_VERSION_INPUT" == "release" ]]; then
             echo "Using latest release version of Arkouda"
