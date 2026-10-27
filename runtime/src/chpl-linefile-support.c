@@ -36,7 +36,7 @@ CHPL_TLS_DECL(fileBuff, unknownFileBuffer);
 // See note in chpl-linefile-support.h
 void chpl_saveFilename(const char *filename) { savedFilename = filename; }
 
-static c_string case_lookup(const int32_t idx) {
+c_string chpl_rt_fname_case_lookup(const int32_t idx) {
   if (idx >= 0) {
     return NULL;
   }
@@ -74,7 +74,7 @@ static c_string case_lookup(const int32_t idx) {
 
 c_string chpl_rt_lookup_filename_prg(chpl_rt_prginfo* prg, const int32_t idx) {
   if (idx < 0) {
-    return case_lookup(idx);
+    return chpl_rt_fname_case_lookup(idx);
   } else {
     if (idx < CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTableSize)) {
       return CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTable)[idx];

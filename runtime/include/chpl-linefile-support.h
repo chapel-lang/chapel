@@ -40,6 +40,7 @@ void chpl_saveFilename(const char *filename);
 
 c_string chpl_rt_lookup_filename_prg(chpl_rt_prginfo* prg, const int32_t idx);
 c_string chpl_rt_lookup_filename(const int32_t idx);
+c_string chpl_rt_fname_case_lookup(const int32_t idx);
 
 #ifdef __cplusplus
 }

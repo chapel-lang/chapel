@@ -58,8 +58,14 @@ module ChapelRuntimeInterface {
 
   export /** So the compiler can see it. */
   proc chpl_lookupFilename(idx: int(32)): c_ptrConst(c_char) {
-    extern var chpl_filenameTable: c_ptr(c_ptrConst(c_char));
-    return chpl_filenameTable[idx];
+    if idx < 0 {
+      param cname = 'chpl_rt_fname_case_lookup';
+      extern cname proc fn(idx: int(32)): c_ptrConst(c_char);
+      return fn(idx);
+    } else {
+      extern const chpl_filenameTable: c_ptr(c_ptrConst(c_char));
+      return chpl_filenameTable[idx];
+    }
   }
 
   export /** So the compiler can see it. */
