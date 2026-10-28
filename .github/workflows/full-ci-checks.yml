@@ -84,6 +84,62 @@ jobs:
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
         brew install llvm@22
+  test-quickstart-darwin:
+    # written as a normal job, not a paratest, since its only one dir
+    runs-on: macos-latest
+    env:
+      CHPL_NIGHTLY_DO_NOTHING: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with quickstart on darwin
+        shell: bash
+        run: |
+          echo "::group::set environment"
+          brew install llvm@22
+          source util/setchplenv.bash
+          source util/cron/test-quickstart.darwin.bash
+          echo "::endgroup::"
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+  paratest-gasnet_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment everything)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
+  paratest-gasnet_fast_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.fast.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.fast.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
   paratest-linux64-aarch64:
     name: Chapel paratest on linux64 aarch64
     uses: $/.github/workflows/ga-paratest.yml
