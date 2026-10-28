@@ -76,14 +76,44 @@ use IO;
 /*
   Available values for different Internet
   Protocol Families to be used when creating Sockets.
+
+  Casting an :type:`IPFamily` to an integral type gives the platform's
+  ``AF_*`` value, and casting an ``AF_*`` value to :type:`IPFamily` gives
+  the matching family.
 */
 enum IPFamily {
   /* IPv4 */
-  IPv4 = 2,
+  IPv4,
   /* IPv6 */
-  IPv6 = 10,
+  IPv6,
   /* IP Unspecified */
-  IPUnspec = 0
+  IPUnspec
+}
+
+/* Returns the platform's ``AF_*`` value for `x`. */
+@chpldoc.nodoc
+operator :(x: IPFamily, type t: integral): t {
+  select x {
+    when IPFamily.IPv4 do return AF_INET:t;
+    when IPFamily.IPv6 do return AF_INET6:t;
+    when IPFamily.IPUnspec do return AF_UNSPEC:t;
+    otherwise do halt("unsupported IPFamily");
+  }
+}
+
+/*
+  Returns the :type:`IPFamily` for the ``AF_*`` value `x`.
+
+  :throws IllegalArgumentError: If `x` is not a supported family.
+*/
+@chpldoc.nodoc
+operator :(x: integral, type t: IPFamily): IPFamily throws {
+  const v = x:int;
+  if v == AF_INET:int then return IPFamily.IPv4;
+  if v == AF_INET6:int then return IPFamily.IPv6;
+  if v == AF_UNSPEC:int then return IPFamily.IPUnspec;
+  throw new IllegalArgumentError("bad cast from int '" + v:string +
+                                 "' to enum 'IPFamily'");
 }
 
 /* Type of Standard IPv4 Address */
@@ -267,8 +297,12 @@ proc tcpConn.socketFd throws {
   var err:errorCode = 0;
   on this._home {
     var localtempfd = tempfd;
-    err = qio_get_fd(this._file_internal, localtempfd);
-    if err then try ioerror(err, "in tcpConn.socketFd");
+    if const sf = this.filePlugin():borrowed SocketFile? {
+      localtempfd = sf.fd;
+    } else {
+      err = qio_get_fd(this._file_internal, localtempfd);
+      if err then try ioerror(err, "in tcpConn.socketFd");
+    }
     tempfd = localtempfd;
   }
   return tempfd;
@@ -429,6 +463,7 @@ private extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptrCo
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
+extern const AF_UNSPEC: c_int;
 
 // types for 'sys_sockaddr_t' implementation
 @chpldoc.nodoc
@@ -662,7 +697,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
   // successfully return file
   if err_out == 0 {
-    return new file(fdOut):tcpConn;
+    return openSocketFile(fdOut);
   }
   var localSync: sync c_short;
   // create event pending state
@@ -710,7 +745,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       }
     }
   }
-  return new file(fdOut):tcpConn;
+  return openSocketFile(fdOut);
 }
 
 proc tcpListener.accept(timeout: real): tcpConn throws {
@@ -856,8 +891,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     throw createSystemError(err_out,"connect() failed");
   }
   if err_out == 0 {
-    setBlocking(socketFd, true);
-    return new file(socketFd):tcpConn;
+    return openSocketFile(socketFd);
   }
   var localSync: sync c_short = 0;
   localSync.readFE();
@@ -875,12 +909,12 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     throw createSystemError(ETIMEDOUT, "connect() timed out");
   }
   err_out = sys_connect(socketFd, address._addressStorage);
-  if err_out != 0 {
+  // macOS/BSD report EISCONN once the non-blocking connect has completed
+  if err_out != 0 && err_out != EISCONN {
     sys_close(socketFd);
     throw createSystemError(err_out,"connect() failed");
   }
-  setBlocking(socketFd, true);
-  return new file(socketFd):tcpConn;
+  return openSocketFile(socketFd);
 }
 
 proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
@@ -1587,6 +1621,143 @@ pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(di
 proc syncRWTCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
   var syncVariablePtr = arg: c_ptr(sync c_short);
   syncVariablePtr.deref().writeEF(event);
+}
+
+private extern proc sys_read(fd: c_int, buf: c_ptr(void), count: c_size_t,
+                             ref num_read_out: c_ssize_t): c_int;
+private extern proc sys_write(fd: c_int, buf: c_ptrConst(void), count: c_size_t,
+                              ref num_written_out: c_ssize_t): c_int;
+private extern proc chpl_macro_int_EEOF(): c_int;
+private extern proc qio_channel_get_allocated_ptr_unlocked(
+  ch: qio_channel_ptr_t, amt_requested: int(64), ref ptr_out: c_ptr(void),
+  ref len_out: c_ssize_t, ref offset_out: int(64)): errorCode;
+private extern proc qio_channel_advance_available_end_unlocked(
+  ch: qio_channel_ptr_t, len: c_ssize_t);
+private extern proc qio_channel_get_write_behind_ptr_unlocked(
+  ch: qio_channel_ptr_t, ref ptr_out: c_ptr(void), ref len_out: c_ssize_t,
+  ref offset_out: int(64)): errorCode;
+private extern proc qio_channel_advance_write_behind_unlocked(
+  ch: qio_channel_ptr_t, len: c_ssize_t);
+private extern proc _qio_buffered_setup_cached(ch: qio_channel_ptr_t);
+
+/* Park the calling task until 'fd' is ready for 'what' (EV_READ or EV_WRITE),
+   without blocking the worker thread it runs on. */
+private proc waitForSocket(fd: c_int, what: c_short): errorCode {
+  var localSync: sync c_short;
+  var ev = event_new(event_loop_base, fd, what, c_ptrTo(syncRWTCallback),
+                     c_ptrTo(localSync):c_ptr(void));
+  if ev == nil then return ENOMEM;
+  defer event_free(ev);
+  if event_add(ev, nil) != 0 then return EINVAL;
+  localSync.readFE();
+  return 0;
+}
+
+/* Backs a tcpConn: the socket is non-blocking, and reads/writes that would
+   block wait on the libevent loop instead of blocking a worker */
+@chpldoc.nodoc
+class SocketFile: QioPluginFile {
+  var fd: c_int;
+
+  override proc setupChannel(out pluginChannel: unmanaged QioPluginChannel?,
+                             start: int(64), end: int(64),
+                             qioChannelPtr: qio_channel_ptr_t): errorCode {
+    pluginChannel = new unmanaged SocketChannel(fd, qioChannelPtr);
+    return 0;
+  }
+
+  override proc close(): errorCode {
+    var err: errorCode = 0;
+    if fd != -1 {
+      err = sys_close(fd);
+      fd = -1;
+    }
+    return err;
+  }
+}
+
+@chpldoc.nodoc
+class SocketChannel: QioPluginChannel {
+  var fd: c_int;
+  var qio_ch: qio_channel_ptr_t;
+
+  override proc readAtLeast(amt: int(64)): errorCode {
+    var remaining = amt;
+    while remaining > 0 {
+      var ptr: c_ptr(void);
+      var len: c_ssize_t;
+      var offset: int(64);
+      var err = qio_channel_get_allocated_ptr_unlocked(qio_ch, remaining,
+                                                       ptr, len, offset);
+      if err then return err;
+      if len <= 0 then return chpl_macro_int_EEOF():errorCode;
+
+      var got: c_ssize_t = 0;
+      err = sys_read(fd, ptr, len:c_size_t, got);
+      if err == EAGAIN || err == EWOULDBLOCK {
+        err = waitForSocket(fd, EV_READ);
+        if err then return err;
+        continue;
+      }
+      if err == EINTR then continue;
+      if err then return err;
+
+      qio_channel_advance_available_end_unlocked(qio_ch, got);
+      remaining -= got;
+    }
+    return 0;
+  }
+
+  override proc write(amt: int(64)): errorCode {
+    var remaining = amt;
+    while remaining > 0 {
+      var ptr: c_ptr(void);
+      var len: c_ssize_t;
+      var offset: int(64);
+      var err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len,
+                                                          offset);
+      if err then return err;
+      if len > remaining then len = remaining:c_ssize_t;
+
+      var wrote: c_ssize_t = 0;
+      err = sys_write(fd, ptr, len:c_size_t, wrote);
+      if err == EAGAIN || err == EWOULDBLOCK {
+        err = waitForSocket(fd, EV_WRITE);
+        if err then return err;
+        continue;
+      }
+      if err == EINTR then continue;
+      if err then return err;
+
+      qio_channel_advance_write_behind_unlocked(qio_ch, wrote);
+      remaining -= wrote;
+    }
+    _qio_buffered_setup_cached(qio_ch);
+    return 0;
+  }
+
+  override proc close(): errorCode {
+    return 0;
+  }
+}
+
+/* Wrap a connected socket in a tcpConn; takes ownership of 'fd'. */
+private proc openSocketFile(fd: c_int): tcpConn throws {
+  try {
+    setBlocking(fd, false);
+  } catch e {
+    sys_close(fd);
+    throw e;
+  }
+  var pluginFile = new unmanaged SocketFile(fd);
+  try {
+    return openplugin(pluginFile, ioMode.rw, seekable=false,
+                      defaultIOStyleInternal()): tcpConn;
+  } catch e {
+    pluginFile.close();
+    delete pluginFile;
+    throw e;
+  }
 }
 
 @chpldoc.nodoc

@@ -145,26 +145,26 @@ void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
   chpl_comm_diags_verbose_printf(false,                                  \
                                  "%s:%d: remote %s, node %d, %zu bytes, " \
                                  "commid %d",                            \
-                                 chpl_lookupFilename(fn), ln, op,        \
+                                 chpl_rt_lookup_filename_no_prg(fn), ln, op,        \
                                  (int) node, size, (int) commid)
 
 #define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn, commid)      \
   chpl_comm_diags_verbose_printf(false,                                 \
                                  "%s:%d: remote strided %s, node %d, "  \
                                  "commid %d",                           \
-                                 chpl_lookupFilename(fn), ln, op,       \
+                                 chpl_rt_lookup_filename_no_prg(fn), ln, op,       \
                                  (int) node, (int) commid)
 
 #define chpl_comm_diags_verbose_amo(op, node, ln, fn)                   \
   chpl_comm_diags_verbose_printf(true,                                  \
                                  "%s:%d: remote %s, node %d",           \
-                                 chpl_lookupFilename(fn), ln, op,       \
+                                 chpl_rt_lookup_filename_no_prg(fn), ln, op,       \
                                  (int) node)
 
 #define chpl_comm_diags_verbose_executeOn(kind, node, ln, fn)           \
   chpl_comm_diags_verbose_printf(false,                                 \
                                  "%s:%d: remote %-*sexecuteOn, node %d", \
-                                 chpl_lookupFilename(fn), ln,           \
+                                 chpl_rt_lookup_filename_no_prg(fn), ln,           \
                                  ((int) strlen(kind)                    \
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)

@@ -66,7 +66,7 @@ static qsubVersion determineQsubVersion(void) {
 
   memset(version, 0, buflen);
   if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine qsub version", 0, 0);
+    chpl_rt_error("Error trying to determine qsub version", 0, 0);
   }
 
   if (strstr(version, "NCCS")) {
@@ -130,7 +130,7 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
       break;
     case nccs:
       if (!queue && !walltime)
-        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+        chpl_rt_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                    "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                    "environment variables", 0, 0);
       if (numCoresPerLocale)

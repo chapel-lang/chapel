@@ -252,7 +252,7 @@ int chpl_gpu_query_attribute(int dev, int attribute);
 // This works exactly the same as the standard one.
 
 static inline void chpl_assert_on_gpu(int32_t ln, int32_t fn) {
-  chpl_error("assertOnGpu() failed", ln, fn);
+  chpl_rt_error("assertOnGpu() failed", ln, fn);
 }
 
 #endif // HAS_GPU_LOCALE

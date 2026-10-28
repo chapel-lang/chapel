@@ -158,8 +158,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SIZEOF_BUNDLE:
   case PRIM_SIZEOF_DDATA_ELEMENT:
 
-  case PRIM_LOOKUP_FILENAME:
-
   case PRIM_STACK_ALLOCATE_CLASS:
 
   case PRIM_ZERO_VARIABLE:

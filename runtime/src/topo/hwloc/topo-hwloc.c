@@ -287,7 +287,7 @@ int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
   cantReserveCPU = "chpl_topo_getNumCPUsPhysical called";
   int cpus = (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
   if (cpus == -1) {
-    chpl_error("number of cpus is uninitialized", 0, 0);
+    chpl_rt_error("number of cpus is uninitialized", 0, 0);
   }
   return cpus;
 }
@@ -297,7 +297,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
   cantReserveCPU = "chpl_topo_getNumCPUsLogical called";
   int cpus = (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
   if (cpus == -1) {
-    chpl_error("number of cpus is uninitialized", 0, 0);
+    chpl_rt_error("number of cpus is uninitialized", 0, 0);
   }
   return cpus;
 }
@@ -377,7 +377,7 @@ static void cpuInfoInit(void) {
                "\"%s\" is not a valid value for CHPL_RT_USE_PU_KIND.\n"
                "Must be one of \"performance\", \"efficiency\", or \"all\".",
                kindStr);
-        chpl_error(msg, 0, 0);
+        chpl_rt_error(msg, 0, 0);
     }
   }
 
@@ -453,7 +453,7 @@ static void cpuInfoInit(void) {
 
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
   if (numCPUsPhysAcc == 0) {
-    chpl_error("No useable cores.", 0, 0);
+    chpl_rt_error("No useable cores.", 0, 0);
   }
 
   if (numCPUsLogAll == numCPUsLogAcc) {
@@ -584,7 +584,7 @@ static void partitionResources(void) {
       snprintf(msg, sizeof(msg),
                "CHPL_RT_COLOCALE_OBJ_TYPE is not a valid type: \"%s\"",
                coLocaleObjType);
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
   }
 
@@ -656,7 +656,7 @@ static void partitionResources(void) {
           char msg[200];
           snprintf(msg, sizeof(msg), "Node only has %d %s(s)", numObjs,
                    objTypeString(myRootType));
-          chpl_error(msg, 0, 0);
+          chpl_rt_error(msg, 0, 0);
         }
         if (numObjs > numPartitions) {
           int coresPerPartition = numCores / numObjs;
@@ -723,7 +723,7 @@ static void partitionResources(void) {
           char msg[200];
           snprintf(msg, sizeof(msg), "Cannot run %d co-locales on %d cores.",
                    numPartitions, numCPUsPhysAcc);
-          chpl_error(msg, 0, 0);
+          chpl_rt_error(msg, 0, 0);
         }
         unusedCores = numCPUsPhysAcc % numPartitions;
         int count = 0;
