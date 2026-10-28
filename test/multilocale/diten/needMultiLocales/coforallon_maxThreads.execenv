@@ -1,1 +1,6 @@
-CHPL_RT_NUM_THREADS_PER_LOCALE=4
+#!/usr/bin/env python3
+
+import os
+
+threads = 3 if os.getenv("CHPL_TARGET_PLATFORM") == "darwin" else 4
+print(f"CHPL_RT_NUM_THREADS_PER_LOCALE={threads}")

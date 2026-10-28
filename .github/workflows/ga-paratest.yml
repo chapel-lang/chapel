@@ -409,6 +409,9 @@ jobs:
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_UNITS: ${{ matrix.units }}
         run: |
+          mkdir -p "$PARATEST_RESULTS_DIR"
+          touch "$PARATEST_RESULTS_DIR/job.txt"
+
           echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
           # shellcheck source=/dev/null
           source "$RUNNER_TEMP/pre-build-steps.bash"
@@ -522,9 +525,7 @@ jobs:
               "${summary_files[@]}"
           fi
 
-          # each test job's artifact is downloaded into its own directory
-          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d \
-            -name "paratest-$CONFIGURATION-dir-results-*" | wc -l)
+          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -name job.txt | wc -l)
           actual_jobs=$((actual_jobs))
 
           mapfile -t status_files < <(
