@@ -26,7 +26,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: Compile Chapel and run example tests
         run: |
           source util/setchplenv.bash

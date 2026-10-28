@@ -57,7 +57,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.runner }}
-          append-timestamp: false
       - name: build chapel
         run: |
           ./util/buildRelease/smokeTest chpl mason
@@ -155,7 +154,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.gcc_version }}
-          append-timestamp: false
       - name: Check desired GCC version is default
         run: |
           which gcc
@@ -213,7 +211,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.python_version }}
-          append-timestamp: false
       - name: Check desired Python version is default
         run: |
           which python || true
@@ -274,7 +271,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.llvm_version }}
-          append-timestamp: false
       - name: Check desired LLVM version is default
         run: |
           which llvm-config-${{ matrix.llvm_version }}
@@ -318,7 +314,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: set vars to make tarball from correct branch
         run: |
           {
@@ -354,7 +349,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.os }}
-          append-timestamp: false
       - name: run homebrew testing
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -381,7 +375,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
         run: |

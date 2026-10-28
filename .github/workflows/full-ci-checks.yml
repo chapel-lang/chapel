@@ -40,7 +40,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run test-make-install-check.bash
         env:
           TMPDIR: ${{ runner.temp }}
@@ -63,7 +62,6 @@ jobs:
         with:
           path: ./${{ env.CCACHE_DIR_NAME }}
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
