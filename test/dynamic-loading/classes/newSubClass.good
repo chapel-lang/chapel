@@ -2,4 +2,4 @@
 2
 3
 ================================================================================
-$CHPL_HOME/modules/packages/DynamicLoading.chpl:19: error: class instance was allocated by a different Chapel program
+newSubClassLib.chpl:20: error: class instance was allocated by a different Chapel program

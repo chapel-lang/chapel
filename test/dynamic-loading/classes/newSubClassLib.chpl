@@ -17,7 +17,5 @@ new B();
 export proc callGetX(ptr: c_ptr(void)) {
   var baseClass = (ptr : unmanaged A?)!;
   // for now, this will halt
-  // TODO: it gives us bad line linfo because `chpl_lookupFilename`
-  // always uses the root program
   return baseClass.getX();
 }

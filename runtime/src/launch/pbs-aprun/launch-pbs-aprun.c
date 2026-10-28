@@ -78,7 +78,7 @@ static qsubVersion determineQsubVersion(void) {
 
   memset(version, 0, buflen);
   if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine qsub version", 0, 0);
+    chpl_rt_error("Error trying to determine qsub version", 0, 0);
   }
 
   if (strstr(version, "NCCS")||strstr(version, "OLCF")) {
@@ -192,7 +192,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -l nodes=%d\n", numLocales);
     } else {
       if (!queue && !walltime)
-        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+        chpl_rt_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                    "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                    "environment variables", 0, 0);
       length += snprintf(optionString + length, maxOptLength - length,
@@ -256,7 +256,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
       char msg[256];
       snprintf(msg, 256, "Error creating qsub script '%s': %s",
                qsubOptions, strerror(errno));
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
     fprintf(qsubScript, "cd $PBS_O_WORKDIR\n");
     fprintf(qsubScript, "aprun ");
@@ -266,7 +266,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
       char msg[256];
       snprintf(msg, 256, "Error creating temporary script '%s': %s",
                qsubOptions, strerror(errno));
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
 
     if (verbosity < 2) {
@@ -462,7 +462,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
         strcmp(_ccArg, "cpu")) {
       char msg[256];
       snprintf(msg, 256, "'%s' is not a valid cpu assignment", _ccArg);
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
     return numArgs;
   }

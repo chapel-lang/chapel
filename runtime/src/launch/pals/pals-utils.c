@@ -70,7 +70,7 @@ char* int_str(int val) {
     size_t buf_len = 20 + 1;
     char* buf = chpl_mem_alloc(buf_len, CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     if (snprintf(buf, buf_len, "%d", val) >= buf_len) {
-        chpl_error("int_str buffer overflow", 0, 0);
+        chpl_rt_error("int_str buffer overflow", 0, 0);
     }
     return buf;
 }

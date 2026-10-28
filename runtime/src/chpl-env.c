@@ -180,7 +180,7 @@ void chpl_env_set(const char* evName, const char* evVal, int overwrite) {
   if (setenv(evName, evVal, overwrite) != 0) {
     char buf[200];
     snprintf(buf, sizeof(buf), "cannot setenv %s=\"%s\"", evName, evVal);
-    chpl_error(buf, 0, 0);
+    chpl_rt_error(buf, 0, 0);
   }
 }
 
