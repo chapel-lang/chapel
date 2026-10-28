@@ -177,7 +177,7 @@ jobs:
         config: [quickstart, default]
     env:
       BSD_CONFIG: ${{ matrix.bsd_config }}
-      CHPL_SETENV: ${{ matrix.config == 'quickstart' && 'util/quickstart/setchplenv.bash' || 'util/setchplenv.bash' }}
+      TEST_CONFIG: ${{ matrix.config }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -193,12 +193,30 @@ jobs:
           sync: rsync
           copyback: false
           mem: 12288
-          envs: BSD_CONFIG CHPL_SETENV
+          envs: BSD_CONFIG TEST_CONFIG
           prepare: |
             "util/devel/test/portability/bsd-vm/current/$BSD_CONFIG/provision.sh"
           run: |
             set -ex
             freebsd-version
             git config --global --add safe.directory "$PWD"
-            MAKEJ="-j$(sysctl -n hw.ncpu)"
-            bash -euxo pipefail -c ". \"$CHPL_SETENV\" && gmake $MAKEJ && gmake $MAKEJ check"
+            export MAKEJ="-j$(sysctl -n hw.ncpu)"
+            bash -euxo pipefail -c '
+              if [[ "$TEST_CONFIG" == quickstart ]]; then
+                . util/quickstart/setchplenv.bash
+              else
+                . util/setchplenv.bash
+              fi
+              gmake $MAKEJ
+              gmake $MAKEJ check
+              printchplenv --all --internal
+              if [[ "$TEST_CONFIG" == default ]]; then
+                chplenv=$(printchplenv --all --simple)
+                if grep -qx "CHPL_RE2=none" <<< "$chplenv"; then
+                  echo "error: expected CHPL_RE2 to not be none" >&2; exit 1;
+                fi
+                if grep -qx "CHPL_GMP=none" <<< "$chplenv"; then
+                  echo "error: expected CHPL_GMP to not be none" >&2; exit 1;
+                fi
+              fi
+            '
