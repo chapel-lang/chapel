@@ -52,7 +52,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: make check
         run: |
           ./util/buildRelease/smokeTest chpl
@@ -73,7 +72,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: make chplvis
         run: |
           bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -94,7 +92,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: make frontend-docs
         run: |
           make frontend-docs
@@ -127,7 +124,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: make mason
         # Use a quickstart config to keep it from running to long
         # While there, run a make check in that config for more coverage
@@ -186,7 +182,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: set CHPL_HOME
         run: |
           echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -217,7 +212,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run create_tarball.bash
         run: |
          ./util/cron/create_tarball.bash
@@ -238,7 +232,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: set llvm_none make check
         run: |
          CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -518,7 +511,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
         with:
@@ -575,7 +567,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.os }}-${{ matrix.config }}
-          append-timestamp: false
       - name: install deps
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -626,7 +617,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run test-networking-packages.bash
         run: |
           ./util/cron/test-networking-packages.bash
