@@ -14,20 +14,8 @@ import re
 import sys
 from contextlib import contextmanager
 
-directories = ["current", "../vagrant/current"]
-compatibility_notes = {
-    "FreeBSD": (
-        "Outdated FreeBSD testing",
-        """Our portability testing for FreeBSD relies on public Vagrant boxes. At time of
-writing (May 2026), we have been unable to find a box for FreeBSD releases
-newer than 14.3. Due to limited resources, and lacking information on how
-widely used Chapel is on FreeBSD, we have not taken on the work of making our
-own box or otherwise continuing to update this test coverage. It is still our
-intention to support FreeBSD as a best effort, so feel free to open bug reports
-for Chapel on FreeBSD versions newer than we test, and/or let us know if this
-lack of testing coverage causes you concern.""",
-    ),
-}
+directories = ["current", "../bsd-vm/current"]
+compatibility_notes = {}
 
 
 def gather_provision_script_cmds(path):
@@ -165,7 +153,7 @@ def extract_sdef_commands(sdef):
     return cmds
 
 
-def extract_vfile_commands(vfile):
+def extract_script_ref_commands(vfile):
     cmds = []
     with open(vfile) as file:
         for line in file:
@@ -179,7 +167,7 @@ def extract_vfile_commands(vfile):
                             "git-clone-chapel.sh" in spath
                             or "gmake-chapel-quick.sh" in spath
                             or "make-chapel-quick.sh" in spath
-                            or "freebsd-repo-fix.sh" in spath
+                            or "freebsd-repo-fix" in spath
                             or "proxy-setup.sh" in spath
                         ):
                             pass  # skip these
@@ -200,8 +188,6 @@ def cd(newdir):
 
 
 def main():
-    directories = ["current", "../vagrant/current"]
-
     subdirs = []
     for d in directories:
         for subdir in os.listdir(d):
@@ -242,10 +228,13 @@ def main():
         if os.path.isdir(subpath):
             sdef = os.path.join(subpath, "image.def")
             vfile = os.path.join(subpath, "Vagrantfile")
+            pfile = os.path.join(subpath, "provision.sh")
             if os.path.exists(sdef):
                 cmds = extract_sdef_commands(sdef)
             elif os.path.exists(vfile):
-                cmds = extract_vfile_commands(vfile)
+                cmds = extract_script_ref_commands(vfile)
+            elif os.path.exists(pfile):
+                cmds = extract_script_ref_commands(pfile)
             else:
                 print("NO CMDS FILE FOUND for", subpath)
 

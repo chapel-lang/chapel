@@ -33,6 +33,7 @@ jobs:
     outputs:
       apptainer_configs: ${{ steps.configs.outputs.apptainer_configs }}
       vagrant_configs: ${{ steps.configs.outputs.vagrant_configs }}
+      freebsd_configs: ${{ steps.configs.outputs.freebsd_configs }}
     env:
       PORTABILITY_TEST_DIR: "util/devel/test/portability"
     steps:
@@ -54,6 +55,11 @@ jobs:
           pushd vagrant/current
           vagrant_configs=$(find . -type d -mindepth 1 -maxdepth 1 -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
           echo "vagrant_configs=[$vagrant_configs]" >> "$GITHUB_OUTPUT"
+          popd
+
+          pushd bsd-vm/current
+          freebsd_configs=$(find . -type d -mindepth 1 -maxdepth 1 -name 'freebsd-*' -exec basename {} \; | awk '{ printf "%s%s", sep, "\""$0"\"" ; sep=", "}')
+          echo "freebsd_configs=[$freebsd_configs]" >> "$GITHUB_OUTPUT"
           popd
 
   portability-tests-apptainer:
@@ -159,3 +165,58 @@ jobs:
               ./chapel-clean.sh
               ./chapel-default.sh
           fi
+
+  portability-tests-freebsd:
+    runs-on: ubuntu-latest
+    needs: define-portability-test-configs
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        bsd_config: ${{ fromJSON(needs.define-portability-test-configs.outputs.freebsd_configs) }}
+        config: [quickstart, default]
+    env:
+      BSD_CONFIG: ${{ matrix.bsd_config }}
+      TEST_CONFIG: ${{ matrix.config }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: get release for ${{ matrix.bsd_config }}
+        id: release
+        run: |
+          echo "release=${BSD_CONFIG#freebsd-}" >> "$GITHUB_OUTPUT"
+      - name: test ${{ matrix.bsd_config }} config ${{ matrix.config }}
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
+        with:
+          release: ${{ steps.release.outputs.release }}
+          sync: rsync
+          copyback: false
+          mem: 12288
+          envs: BSD_CONFIG TEST_CONFIG
+          prepare: |
+            "util/devel/test/portability/bsd-vm/current/$BSD_CONFIG/provision.sh"
+          run: |
+            set -ex
+            freebsd-version
+            git config --global --add safe.directory "$PWD"
+            export MAKEJ="-j$(sysctl -n hw.ncpu)"
+            bash -euxo pipefail -c '
+              if [[ "$TEST_CONFIG" == quickstart ]]; then
+                . util/quickstart/setchplenv.bash
+              else
+                . util/setchplenv.bash
+              fi
+              gmake $MAKEJ
+              gmake $MAKEJ check
+              printchplenv --all --internal
+              if [[ "$TEST_CONFIG" == default ]]; then
+                chplenv=$(printchplenv --all --simple)
+                if grep -qx "CHPL_RE2=none" <<< "$chplenv"; then
+                  echo "error: expected CHPL_RE2 to not be none" >&2; exit 1;
+                fi
+                if grep -qx "CHPL_GMP=none" <<< "$chplenv"; then
+                  echo "error: expected CHPL_GMP to not be none" >&2; exit 1;
+                fi
+              fi
+            '
