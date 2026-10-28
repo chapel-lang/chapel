@@ -40,7 +40,8 @@ void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx);
 void chpl_warning_explicit(const char *message, int32_t lineno,
                            const char *filename);
 void chpl_error_preformatted(const char* message);
-void chpl_error(const char* message, int32_t lineno, int32_t filenameIdx);
+void chpl_rt_error(const char* message, int32_t lineno, int32_t filenameIdx);
+void chpl_prg_error(const char* message, int32_t lineno, const char* filename);
 void chpl_error_explicit(const char *message, int32_t lineno,
                          const char *filename);
 void chpl_internal_error(const char* message);
@@ -62,10 +63,17 @@ void chpl_internal_error_v(const char *restrict format, ...)
             message);                                                          \
   } while (0)
 
-#define chpl_error(message, lineno, filename)                                  \
+#define chpl_rt_error(message, lineno, filename)                               \
   do {                                                                         \
     fflush(stdout);                                                            \
     fprintf(stderr, "error: %s\n", message);                                   \
+    exit(1);                                                                   \
+  } while (0)
+
+#define chpl_prg_error(message, lineno, filename)                              \
+  do {                                                                         \
+    fflush(stdout);                                                            \
+    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message); \
     exit(1);                                                                   \
   } while (0)
 

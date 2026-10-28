@@ -1963,7 +1963,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                            CPtrType::getCVoidPtrType(context));
       break;
     /* primitives that return a c_string*/
-    case PRIM_LOOKUP_FILENAME:
     case PRIM_CLASS_NAME_BY_ID:
     case PRIM_REF_TO_STRING:{
       type = QualifiedType(QualifiedType::CONST_VAR,

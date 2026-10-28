@@ -428,7 +428,7 @@ jobs:
           persist-credentials: false
       - name: Check most .py files
         if: ${{ !cancelled() }}
-        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
+        uses: psf/black@258e7dbf348bc23cb70b8cdf693481c04634ebcc # 26.10.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '^/(third-party|test)/'"
           src: "."
@@ -436,7 +436,7 @@ jobs:
           output-file: "${{ runner.temp }}/black-most.txt"
       - name: Check our .py files under third-party/
         if: ${{ !cancelled() }}
-        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
+        uses: psf/black@258e7dbf348bc23cb70b8cdf693481c04634ebcc # 26.10.1
         with:
           options: "${{ env.BLACK_OPTIONS }} --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
@@ -456,7 +456,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Check extensionless Python files
         if: ${{ !cancelled() }}
-        uses: psf/black@4f1883b1f15305a0e83a7c87991f46292bf09f85 # 26.10.0
+        uses: psf/black@258e7dbf348bc23cb70b8cdf693481c04634ebcc # 26.10.1
         with:
           options: "${{ env.BLACK_OPTIONS }}"
           src: "${{ env.EXTENSIONLESS_PYTHON_FILES }}"

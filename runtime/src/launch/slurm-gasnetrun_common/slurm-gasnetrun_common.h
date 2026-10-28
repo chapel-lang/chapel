@@ -91,7 +91,7 @@ static sbatchVersion determineSlurmVersion(void) {
 
   memset(version, 0, buflen);
   if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine slurm version", 0, 0);
+    chpl_rt_error("Error trying to determine slurm version", 0, 0);
   }
 
   if (strstr(version, "slurm")) {

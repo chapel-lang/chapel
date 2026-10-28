@@ -245,7 +245,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_STRING_COPY:
     case PRIM_GET_SERIAL:
     case PRIM_NOOP:
-    case PRIM_LOOKUP_FILENAME:
     case PRIM_REF_TO_STRING:
     case PRIM_CLASS_NAME_BY_ID:
     case PRIM_BLOCK_LOCAL:

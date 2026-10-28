@@ -724,7 +724,7 @@ static void report_all_tasks(void) {
   // print out pending tasks
   printf("Pending tasks:\n");
   while (pendingTask != NULL) {
-    printf("- %s:%d\n", chpl_lookupFilename(pendingTask->taskBundle->filename),
+    printf("- %s:%d\n", chpl_rt_lookup_filename_no_prg(pendingTask->taskBundle->filename),
            pendingTask->taskBundle->lineno);
     pendingTask = pendingTask->next;
   }

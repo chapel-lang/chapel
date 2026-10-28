@@ -372,12 +372,17 @@ def test_directory(test, test_type, num_workers):
                         are_tests = True
                         break
 
-            # don't run local 'sub_test's on --performance or --gen-graphs runs
             run_local_sub_test = False
-            if test_type == "run":
-                run_local_sub_test = os.access(
-                    os.path.join(dir, "sub_test"), os.X_OK
-                )
+            if os.access(os.path.join(dir, "sub_test"), os.X_OK):
+                # Don't descend further after finding a custom sub_test
+                del dirs[:]
+                # Ensure there are no additional custom sub_tests in dirs under this one
+                if child_sub_tests := glob.glob(f"{dir}*/**/sub_test"):
+                    logger.write(
+                        f"[Error running sub_test in {dir}: unexpected sub_test files in child director{'ies' if len(child_sub_tests) > 1 else 'y'}: {', '.join(child_sub_tests)}]"
+                    )
+                # don't run local 'sub_test's on --performance or --gen-graphs runs
+                run_local_sub_test = test_type == "run"
 
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:

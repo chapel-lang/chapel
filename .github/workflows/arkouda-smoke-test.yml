@@ -10,13 +10,23 @@ on:
       arkouda-version:
         required: true
         type: string
+  pull_request:
+    paths:
+      - 'test/studies/arkouda/**'
+      - '.github/workflows/arkouda-smoke-test.yml'
 
 permissions:
   contents: read
   packages: read
 
+# Allow only one instance to run on a PR at once, cancelling older runs to save resources.
+concurrency:
+  group: ${{ github.workflow }}-arkouda-${{ inputs.arkouda-version }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   NIGHTLY_TEST_SETTINGS: true
+  ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version || 'release' }}
 
 defaults:
   run:
@@ -26,7 +36,7 @@ jobs:
   arkouda-smoke-test:
     runs-on: ubuntu-latest
     container:
-      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      image: ${{ inputs.CHAPEL_CI_IMAGE || 'ghcr.io/chapel-lang/chapel-github-ci:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -47,7 +57,6 @@ jobs:
       - name: determine version of Arkouda to use
         env:
           GH_TOKEN: ${{ github.token }}
-          ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version }}
         run: |
           if [[ "$ARKOUDA_VERSION_INPUT" == "release" ]]; then
             echo "Using latest release version of Arkouda"

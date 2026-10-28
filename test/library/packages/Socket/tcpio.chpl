@@ -2,11 +2,6 @@ use Socket;
 use UnitTest;
 use IO;
 
-/* Note: if recv_string or recv_number hang,
-   it could be due to issue #22691. In practice, they
-   have not been hanging in nightly testing, bit it is possible
-   that they could. */
-
 proc recv_string(test: borrowed Test) throws {
   var port:uint(16) = 8811;
   var address = ipAddr.ipv4(IPv4Localhost, port);
@@ -44,9 +39,8 @@ proc recv_number(test: borrowed Test) throws {
   }
 }
 
-/* Commented out to reduce nightly testing noise until #22691 is addressed
 proc send_string(test: borrowed Test) throws {
-  var port:uint(16) = 6000;
+  var port:uint(16) = 8812;
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
   sync {
@@ -65,7 +59,7 @@ proc send_string(test: borrowed Test) throws {
 }
 
 proc send_number(test: borrowed Test) throws {
-  var port:uint(16) = 6000;
+  var port:uint(16) = 8813;
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
   sync {
@@ -81,7 +75,6 @@ proc send_number(test: borrowed Test) throws {
     writer.write(42, " ");
   }
 }
-*/
 
 /*
  This test is commented out because test systems don't necessarily
