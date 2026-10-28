@@ -344,7 +344,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
   char buffer[256];
 
   // Whether the stacktrace header has been printed yet.
-  bool has_printed_header = false;
+  chpl_bool has_printed_header = false;
 
   if (unw_getcontext(&uc) != 0) {
     DEBUG_PRINT(("unw_getcontext failed\n"));
@@ -375,7 +375,7 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
 
     if (chpl_sizeSymTable <= 0) continue;
 
-    bool print_program = chpl_rt_prginfo_id(prg) != CHPL_RT_PRGINFO_ROOT_ID;
+    chpl_bool print_program = chpl_rt_prginfo_id(prg) != CHPL_RT_PRGINFO_ROOT_ID;
 
     if (!has_printed_header) {
       has_printed_header = true;
