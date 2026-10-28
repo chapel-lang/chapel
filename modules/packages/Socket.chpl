@@ -394,11 +394,11 @@ private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_shor
                               callback: c_fn_ptr, callback_arg: c_ptr(void)): c_ptr(event);
 private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(struct_timeval)):c_int;
 private extern proc event_del(ev: c_ptr(event)):c_int;
-private extern proc event_free(ev: c_ptr(event)):c_int;
+private extern proc event_free(ev: c_ptr(event));
 private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
 private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
-private extern proc evthread_use_pthreads();
+private extern proc evthread_use_pthreads(): c_int;
 private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t),
                                    start_routine: c_fn_ptr, arg: c_ptr(void)): c_int;
 private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_ptr(void))): c_int;
