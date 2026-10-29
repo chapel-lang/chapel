@@ -190,6 +190,7 @@ jobs:
         uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
         with:
           release: ${{ steps.release.outputs.release }}
+          disable-cache: true
           sync: rsync
           copyback: false
           mem: 12288
