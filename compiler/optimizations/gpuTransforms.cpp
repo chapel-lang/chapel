@@ -238,7 +238,7 @@ FnSymbol* CreateGpuFunctionSpecializations::createGpuSpecializationOfFn(FnSymbol
 
   if (specMapFnIter != specMap_.end()) {
     return nullptr;
-  } else if (!fn->hasFlag(FLAG_EXTERN)) {
+  } else if (!fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_EXPORT)) {
     FnSymbol* gpuSpecFn = fn->copy();
     gpuSpecFn->addFlag(FLAG_GPU_SPECIALIZATION);
     fn->defPoint->insertBefore(new DefExpr(gpuSpecFn));
