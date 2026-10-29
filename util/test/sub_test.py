@@ -32,7 +32,8 @@
 # CHPL_TEST_VGRND_COMP: Use valgrind on the compiler
 # CHPL_TEST_VGRND_EXE: Use valgrind on the test program
 # CHPL_VALGRIND_OPTS: Options to valgrind
-# CHPL_TEST_FUTURES: 2 == test futures only
+# CHPL_TEST_FUTURES: 3 == test futures that have a .skipif
+#                    2 == test futures only
 #                    1 == test futures and non-futures
 #                    0 == test non-futures only
 # CHPL_TEST_NOTESTS: Test the tests that are marked "notest" (see below)
