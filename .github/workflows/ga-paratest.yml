@@ -484,7 +484,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: util/test/merge_start_test_log_summary
+          sparse-checkout: |
+            util/chplenv/
+            util/test/convert_start_test_log_to_junit_xml.py
+            util/test/merge_start_test_log_summary
+            util/test/print_start_test_log_failures
           sparse-checkout-cone-mode: false
       - name: download test results
         id: download-results
@@ -590,14 +594,38 @@ jobs:
               echo
               echo "start_test log summary:"
               echo "-----------------------"
-              echo '```'
               cat "$AGGREGATED_RESULTS_DIR/results.log.summary"
-              echo '```'
             else
               echo "No results.log.summary file found"
             fi
 
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$overall_status" != "0" ]]; then
+            mapfile -t failed_tests < <(
+              grep -a '^\[Error' "$AGGREGATED_RESULTS_DIR/results.log.summary" 2>/dev/null || true
+            )
+            num_failed_tests=${#failed_tests[@]}
+            if (( num_failed_tests > 0 )); then
+              echo
+              echo "Output of failed tests:"
+              echo "-----------------------"
+              "$CHPL_HOME/util/test/print_start_test_log_failures" --ga-groups \
+                "$AGGREGATED_RESULTS_DIR/results.log" ||
+                echo "::warning::Failed to extract output of failed tests"
+
+              max_listed=50
+              {
+                echo "$num_failed_tests failed test(s) in $CONFIGURATION:"
+                echo '```'
+                printf '%s\n' "${failed_tests[@]:0:max_listed}"
+                if (( num_failed_tests > max_listed )); then
+                  echo "... and $((num_failed_tests - max_listed)) more"
+                fi
+                echo '```'
+              } > "$RUNNER_TEMP/failure-email-addendum.md"
+            fi
+          fi
 
           exit "$overall_status"
       - name: upload aggregated results
@@ -609,6 +637,14 @@ jobs:
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
+      - name: upload failure email addendum
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-email-addendum-${{ job.check_run_id }}
+          path: ${{ runner.temp }}/failure-email-addendum.md
+          if-no-files-found: ignore
+          retention-days: 3
       - name: restore test directory durations
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

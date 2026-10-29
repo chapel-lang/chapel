@@ -49,10 +49,21 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       EMAIL_BODY_FILENAME: email.md
+      ADDENDA_DIR: failure-email-addenda
     steps:
       - name: determine date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      # Any job can add details to this email by uploading a
+      # failure-email-addendum.md file in an artifact named
+      # failure-email-addendum-${{ job.check_run_id }}
+      - name: download failure email addenda
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: failure-email-addendum-*
+          merge-multiple: false
+          path: ${{ env.ADDENDA_DIR }}
       - name: generate fallback email body
         run: |
           cat << EOF > "$EMAIL_BODY_FILENAME"
@@ -95,6 +106,14 @@ jobs:
               sleep 0.25
               failed_jobs_text+="$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success" and .conclusion != "skipped")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
             "
+              addendum="$ADDENDA_DIR/failure-email-addendum-$id/failure-email-addendum.md"
+              if [[ -s "$addendum" ]]; then
+                # indent so the addendum nests under the job's bullet point
+                failed_jobs_text+="
+            $(sed 's/^/  /' "$addendum")
+
+            "
+              fi
             done
 
             [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
