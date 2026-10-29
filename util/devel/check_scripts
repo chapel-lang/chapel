@@ -12,19 +12,21 @@ import sys, subprocess
 #
 # Parse command line args
 #
-from optparse import OptionParser
+import argparse
 
-parser = OptionParser("usage: %prog [options] dir1 dir2 ...")
-parser.add_option(
+parser = argparse.ArgumentParser(usage="%(prog)s [options] dir1 dir2 ...")
+parser.add_argument(
     "-i",
     "--ignore",
     action="store",
-    type="string",
+    type=str,
     dest="ignore",
     help="directories to ignore",
 )
+parser.add_argument("args", nargs="*", help=argparse.SUPPRESS)
 
-options, args = parser.parse_args()
+options = parser.parse_args()
+args = options.args
 
 if len(args) < 1:
     dirs = "."

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import optparse
+import argparse
 import sys
 
 import chpl_cpu, overrides
-from utils import error, memoize, warning
+from utils import error, memoize
 
 
 @memoize
@@ -23,21 +23,17 @@ def get(flag="host"):
     return chpl_cpu.get_default_machine(flag)
 
 
-def validate(flag="host"):
-    pass
-
-
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target]")
+    parser.add_argument(
         "--target",
         dest="flag",
         action="store_const",
         const="target",
         default="target",
     )
-    parser.add_option("--host", dest="flag", action="store_const", const="host")
-    options, args = parser.parse_args()
+    parser.add_argument("--host", dest="flag", action="store_const", const="host")
+    options = parser.parse_args()
 
     arch = get(options.flag)
 

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Normalize argparse layout to one line per item:
+# usage, description, section headings, and "option: help text".
+COLUMNS=1000 PYTHON_COLORS=0 NO_COLOR=1 \
+  $CHPL_HOME/util/printchplenv --help 2>&1 | awk '
+  function flush() { if (cur != "") print cur; cur = "" }
+  /^usage:/ { flush(); print; next }
+  /^$/      { flush(); next }
+  # skip the default group title
+  /^[^ ].*:$/ { flush(); next }
+  /^[^ ]/   { cur = (cur == "" ? $0 : cur " " $0); next }
+  /^  \[/   { flush(); sub(/^ +/, ""); print; next }
+  /^  -/    {
+    flush(); sub(/^  /, "")
+    if (match($0, /  +/)) {
+      cur = "  " substr($0, 1, RSTART - 1) ": " substr($0, RSTART + RLENGTH)
+    } else {
+      cur = "  " $0 ":"
+    }
+    next
+  }
+  # continuation of a wrapped line
+  /^ +/     { sub(/^ +/, ""); cur = cur " " $0; next }
+  END { flush() }
+' > $2

@@ -1,0 +1,28 @@
+usage: printchplenv [options]
+Print the current Chapel configuration. Arguments allow selection of what gets printed [content], how it gets printed [format], and what gets filtered [filter]. The default [content] provides user-facing variables.
+  -h, --help: show this help message and exit
+[shortcut]
+  --all: Shortcut for --compiler --runtime --launcher, includes defaults
+[content]
+  --compiler: Select variables describing the configuration of the compiler
+  --runtime: Select variables describing the configuration of the runtime
+  --launcher: Select variables describing the configuration of the launcher
+  --internal: Select additional variables used during builds. Incompatible with --path
+[filter]
+  --no-tidy: Show all sub-variables, including those irrelevant to the current configuration (by default they are omitted)
+  --anonymize: Omit machine specific details, script location, and CHPL_HOME
+  --overrides: Omit variables that have not been user supplied via environment or chplconfig
+  --only-path: Omit variables that do not contribute to the build path
+  --only VARS: Print only the variables listed in VARS, separated by commas
+[format]
+  --pretty: (default) Print variables in format: CHPL_KEY: VALUE, indicating which options are set by environment variables (*) and which are set by configuration files (+)
+  --simple: Print variables in format: CHPL_KEY=VALUE. Output is compatible with chplconfig format
+  --make: Print variables in format: CHPL_MAKE_KEY=VALUE
+  --cmake: Print variables in format: CHPL_KEY VALUE with quotes stripped from values. Output is compatible with cmake format
+  --path: Print variables in format: VALUE1/VALUE2/... Always excludes CHPL_HOME and CHPL_MAKE
+  --bash: Print variables in format: export CHPL_KEY=VALUE
+  --csh: Print variables in format: setenv CHPL_KEY VALUE
+  --value: Print only the values of the variables
+[misc]
+  --ignore-errors: Continue processing even if an error occurs
+  --verify: Run verification tests on the current Chapel configuration

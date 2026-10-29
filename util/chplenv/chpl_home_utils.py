@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Access to home variables"""
 
-import optparse
+import argparse
 import os
 import re
 import sys
 
-import chpl_bin_subdir, chpl_python_version, overrides
+import overrides
 from utils import memoize
 
 
@@ -232,50 +232,50 @@ def using_chapel_module():
 
 
 def _main():
-    parser = optparse.OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "--home", action="store_const", dest="func", const=get_chpl_home
     )
-    parser.add_option(
+    parser.add_argument(
         "--third-party",
         action="store_const",
         dest="func",
         const=get_chpl_third_party,
     )
-    parser.add_option(
+    parser.add_argument(
         "--chpldeps", action="store_const", dest="func", const=get_chpldeps
     )
-    parser.add_option(
+    parser.add_argument(
         "--chpldeps-chapel-py",
         action="store_const",
         dest="func",
         const=lambda: get_chpldeps(True),
     )
-    parser.add_option(
+    parser.add_argument(
         "--using-module",
         action="store_const",
         dest="func",
         const=using_chapel_module,
     )
-    parser.add_option(
+    parser.add_argument(
         "--configured-install-lib-prefix",
         action="store_const",
         dest="func",
         const=get_chpl_configured_install_lib_prefix,
     )
-    parser.add_option(
+    parser.add_argument(
         "--runtime-lib",
         action="store_const",
         dest="func",
         const=get_chpl_runtime_lib,
     )
-    parser.add_option(
+    parser.add_argument(
         "--runtime-incl",
         action="store_const",
         dest="func",
         const=get_chpl_runtime_incl,
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if options.func:
         sys.stdout.write("{0}\n".format(options.func()))

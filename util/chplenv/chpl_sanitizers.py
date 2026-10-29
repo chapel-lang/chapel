@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-import optparse
-import os
+import argparse
 import sys
 
 import overrides
 from utils import memoize, error
-import chpl_tasks, chpl_mem, chpl_compiler
+import chpl_mem, chpl_compiler
 
 
 @memoize
@@ -43,11 +42,11 @@ def get(flag=""):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--exe])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--exe])")
+    parser.add_argument(
         "--exe", dest="flag", action="store_const", const="exe", default=""
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     sanitizers_val = get(options.flag)
     sys.stdout.write("{0}\n".format(sanitizers_val))
