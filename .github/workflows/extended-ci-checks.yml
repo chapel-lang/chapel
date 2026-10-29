@@ -575,6 +575,7 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64
+      ccache-key: ccache-x86-default
       cron-script: util/cron/test-linux64.bash
       start-test-args: --futures
       make-targets: all test-venv chpldoc mason protoc-gen-chpl
