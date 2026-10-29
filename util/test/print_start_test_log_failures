@@ -3,10 +3,7 @@
 """Print the full start_test log output of each failed test."""
 
 import argparse
-import os
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from convert_start_test_log_to_junit_xml import _parse_start_test_log
 
 
