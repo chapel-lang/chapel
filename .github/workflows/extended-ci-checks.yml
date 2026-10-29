@@ -19,6 +19,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 20
   APT_NETWORK_CONF: |
@@ -182,20 +183,25 @@ jobs:
           CXX=$(which g++)
           export CXX
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
 
   python-version-tests:
     strategy:
       fail-fast: false
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        comm: ["none", "gasnet"]
     runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
       - name: Install Python
@@ -218,7 +224,10 @@ jobs:
 
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
-      - name: Install LLVM dependency
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install numpy cython
+      - name: Install system dependencies
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -229,19 +238,37 @@ jobs:
             libclang-cpp-dev \
             libedit-dev \
             llvm \
-            llvm-dev
-      - name: Compile Chapel and run example tests
+            llvm-dev \
+            libzmq3-dev
+      - name: Compile Chapel (comm=${{ matrix.comm }}) and run tests
+        env:
+          COMM: ${{ matrix.comm }}
         run: |
+          echo "::group::set environment"
           source util/setchplenv.bash
+          export CHPL_LIB_PIC=pic
+          if [[ "$COMM" == "gasnet" ]]; then
+            source util/cron/test-gasnet-everything.bash
+            source util/cron/common-python-interop.bash
+            source util/cron/common-zmq.bash
+          else
+            source util/cron/common-python-interop.bash
+          fi
+          export CHPL_TARGET_CPU=native
+          echo "::endgroup::"
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
 
   llvm-version-tests:
     strategy:
@@ -289,14 +316,18 @@ jobs:
 
           export CHPL_LLVM=system
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
