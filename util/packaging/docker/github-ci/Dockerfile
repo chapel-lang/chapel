@@ -35,6 +35,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     g++ \
     gcc \
     gdb \
+    gfortran \
     git \
     jq \
     libclang-${LLVM_VERSION}-dev \
