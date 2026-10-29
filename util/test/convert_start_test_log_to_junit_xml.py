@@ -5,9 +5,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import argparse
 import getpass
 import logging
-import optparse
 import os.path
 import re
 import sys
@@ -443,41 +443,43 @@ def _clean_xml(xml_string):
 
 def _parse_args():
     """Parse and return cli arguments."""
-    parser = optparse.OptionParser(
-        usage="usage: %prog [options] args", description=__doc__
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [options] args", description=__doc__
     )
-    parser.add_option(
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
-        help="Enable verbose output. (default: %default)",
+        default=None,
+        help="Enable verbose output. (default: %(default)s)",
     )
-    parser.add_option(
+    parser.add_argument(
         "-l",
         "--start-test-log",
         default=_start_test_default_log(),
-        help="start_test log file. (default: %default)",
+        help="start_test log file. (default: %(default)s)",
     )
-    parser.add_option(
+    parser.add_argument(
         "-o",
         "--junit-xml",
         default=_junit_xml_default(),
-        help="jUnit XML output file. (default: %default)",
+        help="jUnit XML output file. (default: %(default)s)",
     )
-    parser.add_option(
+    parser.add_argument(
         "-p",
         "--remove-prefix",
-        help=("Remove this prefix from all tests " "(default: %default)"),
+        help=("Remove this prefix from all tests " "(default: %(default)s)"),
     )
-    parser.add_option(
+    parser.add_argument(
         "--debug",
         action="store_true",
+        default=None,
         help=(
             "Throw exceptions when invalid data is "
-            "encountered. (default: %default)"
+            "encountered. (default: %(default)s)"
         ),
     )
-    opts, _ = parser.parse_args()
+    opts = parser.parse_args()
     return opts
 
 

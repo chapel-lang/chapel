@@ -6,10 +6,10 @@ email (cygwin). Message body is taken from stdin.
 
 from __future__ import print_function
 
+import argparse
 import email.mime.text
 import getpass
 import logging
-import optparse
 import os
 import smtplib
 import socket
@@ -107,25 +107,27 @@ def send_email(
         )
 
 
-def _parse_headers(option, opt, value, parser, *args, **kwargs):
-    """OptionParser callback function for parsing header values passed by user.
+class _ParseHeaders(argparse.Action):
+    """argparse action for parsing header values passed by user.
 
     It takes values that have commas (e.g. the user specified
     --header=Reply-To=X@y.com,Precedence=bulk), breaks them apart and adds the
     individual name/value pairs to the dict of values.
     """
-    # Get the existing values the parser knows about for this particular
-    # option.
-    value_dict = getattr(parser.values, option.dest, None) or {}
 
-    # Split the value provided.
-    parsed_vals = value.split(",")
-    for v in parsed_vals:
-        key, value = v.split("=")
-        value_dict[key] = value
+    def __call__(self, parser, namespace, value, option_string=None):
+        # Get the existing values the parser knows about for this particular
+        # option.
+        value_dict = getattr(namespace, self.dest, None) or {}
 
-    # Set the updated dict to the oiption value.
-    setattr(parser.values, option.dest, value_dict)
+        # Split the value provided.
+        parsed_vals = value.split(",")
+        for v in parsed_vals:
+            key, value = v.split("=")
+            value_dict[key] = value
+
+        # Set the updated dict to the oiption value.
+        setattr(namespace, self.dest, value_dict)
 
 
 def _default_sender():
@@ -206,55 +208,53 @@ def _get_smtp_password(
 def _parse_args():
     """Parse and return command line arguments."""
 
-    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
-        """Help formatter that does not wrap the description text."""
-
-        def _format_text(self, text):
-            return text
-
-    show_default_text = lambda value: " (default: %default)" if value else ""
+    show_default_text = lambda value: " (default: %(default)s)" if value else ""
     hide_default_text = lambda value: " (default: ********)" if value else ""
 
-    parser = optparse.OptionParser(
-        usage="usage: %prog [options] recipient_email [...]",
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [options] recipient_email [...]",
         description=__doc__,
-        formatter=NoWrapHelpFormatter(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_option(
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Verbose output."
     )
+    parser.add_argument(
+        "recipients",
+        nargs="*",
+        metavar="recipient_email",
+        help=argparse.SUPPRESS,
+    )
 
-    mail_group = optparse.OptionGroup(parser, "Mail Options")
+    mail_group = parser.add_argument_group("Mail Options")
 
-    mail_group.add_option(
+    mail_group.add_argument(
         "-s", "--subject", default=None, help="Email subject."
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "-H",
         "--header",
-        action="callback",
-        type="string",
-        callback=_parse_headers,
+        action=_ParseHeaders,
         help=(
             "Email header(s) of form NAME=VALUE. "
             "Specify more than one with comma delimited list."
         ),
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "-S",
         "--sender",
         metavar="CHPL_UTIL_SMTP_SENDER",
         default=_default_sender(),
-        help="Sender email address. (default: %default)",
+        help="Sender email address. (default: %(default)s)",
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "--smtp-host",
         metavar="CHPL_UTIL_SMTP_HOST",
         default=_default_smtp_host(),
-        help="SMTP host to use when sending email. (default: %default)",
+        help="SMTP host to use when sending email. (default: %(default)s)",
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "-u",
         "--smtp-user",
         metavar="CHPL_UTIL_SMTP_USER",
@@ -262,7 +262,7 @@ def _parse_args():
         help="Optional user for SMTP login. Also requests TLS connection."
         + show_default_text(_default_smtp_user()),
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "-p",
         "--smtp-password",
         metavar="CHPL_UTIL_SMTP_PASSWORD",
@@ -270,7 +270,7 @@ def _parse_args():
         help="Password for --smtp-user."
         + hide_default_text(_default_smtp_password()),
     )
-    mail_group.add_option(
+    mail_group.add_argument(
         "-P",
         "--smtp-password-file",
         metavar="CHPL_UTIL_SMTP_PASSWORD_FILE",
@@ -279,13 +279,7 @@ def _parse_args():
         + show_default_text(_default_smtp_password_file()),
     )
 
-    parser.add_option_group(mail_group)
-
-    opts, args = parser.parse_args()
-
-    # Add all positional arguments as recipients.
-    opts.recipients = args
-    return opts
+    return parser.parse_intermixed_args()
 
 
 def _setup_logging(verbose=False):

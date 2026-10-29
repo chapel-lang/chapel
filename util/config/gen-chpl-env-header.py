@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import optparse
 import os
 import re
 import sys
@@ -48,7 +47,7 @@ def generate_env_defines(env):
     ret += "// Macro constants to use with 'strcmp'...\n"
     for k, v in env.items():
         macro_name = k.upper() + "_RT"
-        ret += " ".join(("#define", macro_name, f'"{v}"')) + "\n"
+        ret += " ".join(("#define", macro_name, '"{}"'.format(v))) + "\n"
     return ret
 
 
@@ -61,7 +60,7 @@ def generate_env_lookup_table(env):
     ret += "// Sorted lookup table expression for use at runtime.\n"
     ret += "// This is a null-terminated array of 'const char*[2]'.\n"
     size = len(env)
-    ret += f"#define CHPL_RT_ENV_LOOKUP_TABLE_SIZE {size}\n"
+    ret += "#define CHPL_RT_ENV_LOOKUP_TABLE_SIZE {}\n".format(size)
     ret += "#define CHPL_RT_ENV_LOOKUP_TABLE_INIT_EXPR { \\\n"
     for k in sorted(env.keys()):
         entry_k = k.upper()
@@ -92,7 +91,9 @@ def generate_env_header_str(env, template_str):
 def main():
     expected = 2
     if len(sys.argv) - 1 != expected:
-        print(f"Expected exactly {expected} arguments!", f=stderr)
+        print(
+            "Expected exactly {} arguments!".format(expected), file=sys.stderr
+        )
         return
     path_template = sys.argv[1]
     path_out_env_header = sys.argv[2]
