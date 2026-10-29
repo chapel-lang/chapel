@@ -4,21 +4,12 @@ import os
 import subprocess
 import sys
 import unittest
-
-try:
-    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
-    # Prefer `shutil.which` in Python 3.2+
-    from shutil import which
-except ImportError:
-    # Backport for pre Python 3.2
-    from distutils.spawn import find_executable as which
-
+from shutil import which  # pylint: disable=unused-import
 
 _CHPL_DEVELOPER = False
 
 
 def CHPL_DEVELOPER():
-    global _CHPL_DEVELOPER
     return _CHPL_DEVELOPER
 
 
@@ -38,9 +29,9 @@ _buffer_warnings = False
 
 
 def flush_warnings():
-    for warning in _warning_buffer:
+    for w in _warning_buffer:
         sys.stderr.write("Warning: ")
-        sys.stderr.write(warning)
+        sys.stderr.write(w)
         sys.stderr.write("\n")
     _warning_buffer.clear()
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
+import argparse
 import filecmp
-import optparse
 import os
 import shutil
 import sys
@@ -12,12 +12,12 @@ quiet = False
 def main():
     global quiet
 
-    parser = optparse.OptionParser(
-        usage="usage: %prog dst src",
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s dst src",
         description="Updates dst with src. If they differ, copies dst to src. "
         "Deletes src either way.",
     )
-    parser.add_option(
+    parser.add_argument(
         "--update",
         action="store_true",
         dest="update",
@@ -27,7 +27,7 @@ def main():
             "Removes src either way"
         ),
     )
-    parser.add_option(
+    parser.add_argument(
         "--copy",
         action="store_true",
         dest="copy",
@@ -37,14 +37,16 @@ def main():
             "Multiple src args are OK if dst is a directory."
         ),
     )
-    parser.add_option(
+    parser.add_argument(
         "--quiet",
         action="store_true",
         dest="quiet",
         help=("Do not print out when copying a file."),
     )
+    parser.add_argument("args", nargs="*")
 
-    options, args = parser.parse_args()
+    options = parser.parse_args()
+    args = options.args
 
     if options.quiet:
         quiet = True

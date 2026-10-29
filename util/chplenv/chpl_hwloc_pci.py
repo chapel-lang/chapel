@@ -13,7 +13,7 @@ import sys
 import chpl_hwloc, chpl_comm, chpl_locale_model, chpl_gpu
 import overrides
 
-from utils import error, memoize, check_valid_var
+from utils import memoize, check_valid_var
 
 
 @memoize

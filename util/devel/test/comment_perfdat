@@ -24,16 +24,16 @@ def isDotDatFile(filename):
 
 
 from datetime import date
-from optparse import OptionParser
+import argparse
 
-parser = OptionParser(
-    "usage: %prog [options] [.dat files] [directories]\n\n"
+parser = argparse.ArgumentParser(
+    usage="%(prog)s [options] [.dat files] [directories]\n\n"
     + "Adds comments from COMMENT_FILE, according to COMMENT_DATE, to\n"
     + ".dat files passed as arguments and located in the directory arguments,\n"
     + "or to all .dat files in the current directory if none are given.\n"
     + "The resulting files are placed in OUTPUT_DIR (not modified in place)."
 )
-parser.add_option(
+parser.add_argument(
     "-d",
     "--date",
     action="store",
@@ -41,7 +41,7 @@ parser.add_option(
     default=date.today().strftime("%m/%d/%y"),
     help="Date associated with the comment.  Comment will be place before that date's entry (default: today's date)",
 )
-parser.add_option(
+parser.add_argument(
     "-f",
     "--filename",
     action="store",
@@ -49,17 +49,17 @@ parser.add_option(
     default=None,
     help="File from which to read comments (default: stdin). Leading '#' in comments are optional",
 )
-parser.add_option(
+parser.add_argument(
     "-o",
     "--outdir",
     action="store",
-    type="string",
+    type=str,
     dest="outdir",
     default="./COMMENTED",
     help="output directory (default: './COMMENTED')",
     metavar="OUTPUT_DIR",
 )
-parser.add_option(
+parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
@@ -67,8 +67,7 @@ parser.add_option(
     default=False,
     help="Print status messages to stdout (default)",
 )
-# -q must follow -v to make verbose=True by default
-parser.add_option(
+parser.add_argument(
     "-q",
     "--quiet",
     action="store_false",
@@ -76,8 +75,14 @@ parser.add_option(
     default=True,
     help="Suppress status messages on stdout",
 )
+parser.set_defaults(verbose=True)
+parser.add_argument("paths", nargs="*", metavar="PATH")
 
-options, args = parser.parse_args()
+options, extra = parser.parse_known_args()
+for a in extra:
+    if a.startswith("-") and a != "-":
+        parser.error("no such option: %s" % a)
+args = options.paths + extra
 
 verbose = options.verbose
 comment_date = options.comment_date

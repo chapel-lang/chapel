@@ -1,6 +1,7 @@
 // Regression test for #22691: with a single worker thread, a task waiting to
 // read from a tcpConn must not block that worker, or the peer task never runs.
 use Socket, IO, Time;
+config param noRegex = false; // dummy config so COMPOPTS-level -snoRegex doesn't break
 
 var server = listen(ipAddr.ipv4(IPv4Localhost, 0));
 const address = server.addr;

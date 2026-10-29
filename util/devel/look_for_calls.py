@@ -14,9 +14,9 @@ success, 1 if calls were found, and 2 if there were fatal errors trying to run
 this script.
 """
 
+import argparse
 import contextlib
 import fnmatch
-import optparse
 import os
 import shutil
 import subprocess
@@ -171,51 +171,49 @@ def get_exit_funcs():
 def main():
     """Parse options and check for calls"""
 
-    class MyParser(optparse.OptionParser):
-        """Optparse wrapper that doesn't strip newlines from the epilog"""
-
-        def format_epilog(self, formatter):
-            return self.epilog
-
-    parser = MyParser(epilog="\n{0}".format(__doc__))
-    parser.add_option(
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [options]",
+        epilog="\n{0}".format(__doc__),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
         "--search-dir",
         dest="search_dir",
         default=os.getcwd(),
         help="directory to check for alloc calls [default: CWD]",
     )
-    parser.add_option(
+    parser.add_argument(
         "--exclude-paths",
         dest="exclude_paths",
         default="",
         help="comma separated list of (sub)paths/files to skip",
     )
-    parser.add_option(
+    parser.add_argument(
         "--abs-paths",
         dest="abs_paths",
         action="store_true",
         help="report abs paths vs. rel to --search-dir/../",
     )
-    parser.add_option(
+    parser.add_argument(
         "--check-alloc",
         dest="check_alloc",
         action="store_true",
         help="check for calls to the system allocator",
     )
-    parser.add_option(
+    parser.add_argument(
         "--check-exit",
         dest="check_exit",
         action="store_true",
         help="check for calls to exit routines",
     )
-    parser.add_option(
+    parser.add_argument(
         "--check-calls",
         dest="check_calls",
         default="",
         help="comma separated list of calls to check for",
     )
 
-    options = parser.parse_args()[0]
+    options = parser.parse_args()
 
     check_calls = [x.strip() for x in options.check_calls.split(",") if x]
     if options.check_exit:

@@ -2,8 +2,7 @@
 Verifies that the current environment is set up correctly for building Chapel, and that once built the compiler will function correctly.
 """
 
-import functools
-from utils import try_run_command, memoize
+from utils import try_run_command
 import tempfile
 import shutil
 import sys
@@ -130,10 +129,10 @@ class TestCompile(VerificationPass):
         with open(hello_file[1], "w") as f:
             f.write(self._program())
 
-        with FileCleanupManager(tmpdir) as fcm:
+        with FileCleanupManager(tmpdir):
             cmd = (
                 self._compiler()
-                + [hello_file[1], "-o", f"{tmpdir}/a.out"]
+                + [hello_file[1], "-o", os.path.join(tmpdir, "a.out")]
                 + self._compiler_args()
             )
             self.log("Trying to compile with '{}'".format(" ".join(cmd)))
@@ -144,7 +143,7 @@ class TestCompile(VerificationPass):
                 return False
 
             # Run the program
-            cmd = [f"{tmpdir}/a.out"]
+            cmd = [os.path.join(tmpdir, "a.out")]
             self.log("Trying to run with '{}'".format(" ".join(cmd)))
             succ, ret, out, _ = try_run_command(cmd, combine_output=True)
             if not succ or ret != 0:
@@ -318,7 +317,7 @@ class TestHostCanFindLLVM(TestCompile):
     def _program(self):
         llvm_version = self.chplenv.get("CHPL_LLVM_VERSION", "0")
         if self.chplenv.get("CHPL_LLVM") != "none":
-            return f"""
+            return """
 #include "clang/Basic/Version.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
@@ -335,9 +334,9 @@ int main() {{
     llvm::Module M("mymod", Context);
     return 0;
 }}
-"""
+""".format(llvm_version=llvm_version)
         else:
-            return f"""
+            return """
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Config/llvm-config.h"
 #include <iostream>
@@ -351,7 +350,7 @@ int main() {{
     llvm::outs() << "Hello, LLVM!\\n";
     return 0;
 }}
-"""
+""".format(llvm_version=llvm_version)
 
     def explain(self):
         compiler = self._compiler()
@@ -377,13 +376,12 @@ def verify(chplenv, verbose=False):
     for k, v in chplenv.items():
         mychplenv[k.strip()] = v
 
-    global passes
     for name, cls in passes:
         p = cls(mychplenv, verbose=verbose)
         if p.skipif():
-            log(f"Skipping verification pass {name}", verbose=verbose)
+            log("Skipping verification pass {}".format(name), verbose=verbose)
         else:
-            log(f"Running verification pass {name}", verbose=verbose)
+            log("Running verification pass {}".format(name), verbose=verbose)
             if not p.verify():
                 return (False, p.explain())
     return (True, None)

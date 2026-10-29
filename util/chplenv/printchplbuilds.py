@@ -4,13 +4,11 @@
 # that correspond to that path.
 
 import os
-import utils
 import printchplenv
 import sys
 import stat
 from collections import OrderedDict
 import argparse
-from pprint import pprint
 import datetime
 from enum import Enum, unique
 from collections import defaultdict
@@ -104,8 +102,7 @@ nextStates = {
 # variable with the "-debug" suffix removed.
 
 
-def ProcessDebug(fields, config):
-    global used
+def ProcessDebug(fields, config, used):
     var = prefixes[fields[0]]
     value = "-".join(fields[1:])
     if var in ("CHPL_COMM", "CHPL_HWLOC", "CHPL_TASKS"):
@@ -124,9 +121,7 @@ def ProcessDebug(fields, config):
 # value is its value. As a side effect the variables are added to the "used" set.
 
 
-def Parse(path):
-    global used
-
+def Parse(path, used):
     state = State.TARGET_PLATFORM
 
     config = {}
@@ -141,7 +136,7 @@ def Parse(path):
         if state == State.PREFIX and "-" in component:
             fields = component.split("-")
             var = prefixes[fields[0]]
-            value = ProcessDebug(fields, config)
+            value = ProcessDebug(fields, config, used)
             if var == "CHPL_COMM":
                 if value == "ofi":
                     nextState = State.LIBFABRIC
@@ -171,7 +166,7 @@ def Parse(path):
 # relevant to the current configuration.
 
 
-def GetConfig(all=False):
+def GetConfig(all=False):  # pylint: disable=redefined-builtin
     config = OrderedDict()
     excludes = ["CHPL_HOME"]
     filters = ["no-tidy"] if all else ["tidy"]
@@ -205,7 +200,6 @@ def GetConfig(all=False):
 def FindDiffVars(usedvars, a, b):
     result = []
     for var in usedvars:
-        value = a.get(var, "NA")
         if a.get(var, "NA") != b.get(var, "NA"):
             result.append(var)
     return result
@@ -214,8 +208,7 @@ def FindDiffVars(usedvars, a, b):
 # print shell commands to change the environment variables from current to config
 
 
-def PrintShellCommands(current, config, shell="bash"):
-    global usedvars
+def PrintShellCommands(current, config, usedvars, shell="bash"):
     if shell == "csh":
         print("set noglob;")
     for var in usedvars:
@@ -269,9 +262,6 @@ class Sort(Enum):
 
 
 def main(argv):
-    global configs
-    global used
-    global usedvars
     description = (
         "Displays the available Chapel runtime builds. Values that differ from"
         " the current configuration have a '*' suffix. '+' denotes a variable that is set but"
@@ -436,7 +426,7 @@ def main(argv):
         used.add(var)
 
     if args.path is not None:
-        builds = [Parse(args.path.split(os.sep))]
+        builds = [Parse(args.path.split(os.sep), used)]
     else:
         # gather the paths for all builds
         base = chpl_home_utils.get_chpl_runtime_lib()
@@ -444,7 +434,7 @@ def main(argv):
         # "targets" is a list of all paths that contain the runtime static lib
         targets = []
         rt_static_lib = static_runtime_lib_name()
-        for root, dirs, files in os.walk(base):
+        for root, _, files in os.walk(base):
             for target in filter(lambda x: x == rt_static_lib, files):
                 targets.append(os.path.join(root, target))
 
@@ -463,7 +453,7 @@ def main(argv):
 
         builds = []
         for target, path in zip(targets, paths):
-            build = Parse(path)
+            build = Parse(path, used)
             build["MTIME"] = os.stat(target)[stat.ST_MTIME]
             builds.append(build)
 
@@ -497,13 +487,13 @@ def main(argv):
     if args.csh is not None:
         if args.csh > len(builds):
             parser.error("Invalid build %d" % args.csh)
-        PrintShellCommands(current, builds[args.csh], shell="csh")
+        PrintShellCommands(current, builds[args.csh], usedvars, shell="csh")
         return 0
 
     if args.bash is not None:
         if args.bash > len(builds):
             parser.error("Invalid build %d" % args.bash)
-        PrintShellCommands(current, builds[args.bash], shell="bash")
+        PrintShellCommands(current, builds[args.bash], usedvars, shell="bash")
         return 0
 
     if args.check:

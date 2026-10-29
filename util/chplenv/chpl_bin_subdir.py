@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import sys
 
 import chpl_home_utils
@@ -36,18 +36,15 @@ def get(flag="host"):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target]")
+    parser.add_argument(
         "--target", dest="flag", action="store_const", const="target"
     )
-    parser.add_option(
-        "--host",
-        dest="flag",
-        action="store_const",
-        const="host",
-        default="host",
+    parser.add_argument(
+        "--host", dest="flag", action="store_const", const="host"
     )
-    options, args = parser.parse_args()
+    parser.set_defaults(flag="host")
+    options = parser.parse_args()
 
     bin_subdir = get(options.flag)
 

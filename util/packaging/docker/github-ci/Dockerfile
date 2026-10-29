@@ -2,7 +2,7 @@
 # tzdata is necessary for util/test/check_annotations.py to function properly (get the right dates)
 # locales is necessary for util/buildRelease/smokeTest docs
 
-FROM ubuntu:24.04
+FROM ubuntu:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -43,7 +43,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libclang-rt-${LLVM_VERSION}-dev \
     libcurl4-openssl-dev \
     libedit-dev \
-    libfltk-dev \
+    libfltk1.4-dev \
     libhdf5-dev \
     libopenmpi-dev \
     libprotoc-dev \

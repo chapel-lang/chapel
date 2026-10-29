@@ -2,9 +2,9 @@
 import os
 import sys
 
-import chpl_compiler, chpl_platform, overrides, third_party_utils
+import overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning, error, check_valid_var
+from utils import memoize, check_valid_var
 
 
 # returns True if CHPL_RE2 was set by the user
@@ -90,20 +90,20 @@ def get_link_args():
 
 
 def _main():
-    import optparse
+    import argparse
 
-    parser = optparse.OptionParser(usage="usage: %prog [options]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [options]")
+    parser.add_argument(
         "--compile",
         dest="which",
         action="store_const",
         const="compile",
         default=None,
     )
-    parser.add_option(
+    parser.add_argument(
         "--link", dest="which", action="store_const", const="link"
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
     if options.which == "compile":
         val = get_compile_args()
     elif options.which == "link":
