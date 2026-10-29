@@ -220,7 +220,7 @@ jobs:
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-linux64.bash
       start-test-args: --futures
-      make-targets: all test-venv chpldoc mason protoc-gen-chpl
+      make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
   paratest-linux64-gasnet-everything-aarch64:
     name: Chapel paratest on linux64 aarch64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
@@ -247,7 +247,7 @@ jobs:
       configuration: fast
       cron-script: util/cron/test-fast.bash
       start-test-args: -compopts --fast -compopts --ccflags -compopts -Wno-invalid-feature-combination
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
   paratest-gasnet-asan:
     name: Chapel paratest with GASNet and AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
@@ -294,7 +294,8 @@ jobs:
       configuration: memleaks
       cron-script: util/cron/test-memleaks.bash
       start-test-args: -memleaks
-      make-targets: all test-venv mason-deps
+      futures-mode: 0
+      make-targets: all test-venv mason-deps spectests
   paratest-no-local:
     name: Chapel paratest with --no-local
     uses: $/.github/workflows/ga-paratest.yml
@@ -308,6 +309,15 @@ jobs:
     with:
       configuration: quickstart
       cron-script: util/cron/test-quickstart.bash
+      make-targets: all test-venv mason-deps spectests
+  paratest-quickstart-gasnet:
+    name: Chapel paratest with quickstart and GASNet
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: quickstart-gasnet
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      cron-script: util/cron/test-gasnet.quickstart.bash
       make-targets: all test-venv mason-deps
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
@@ -315,14 +325,14 @@ jobs:
     with:
       configuration: ubsan.clang
       cron-script: util/cron/test-ubsan.clang.bash
-      make-targets: all test-venv mason
+      make-targets: all test-venv mason spectests
   paratest-ubsan-gnu:
     name: Chapel paratest with UndefinedBehaviorSanitizer (gnu)
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: ubsan.gnu
       cron-script: util/cron/test-ubsan.gnu.bash
-      make-targets: all test-venv mason
+      make-targets: all test-venv mason spectests
   paratest-verify:
     name: Chapel paratest with --verify
     uses: $/.github/workflows/ga-paratest.yml
@@ -330,4 +340,4 @@ jobs:
       configuration: verify
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests

@@ -25,8 +25,8 @@ fi
 
 if command -v gdb >/dev/null ; then
 
-  # skip for gdb pre version 16
-  if [[ $(gdb --version | head -n 1 | awk '{print $NF}' | cut -d. -f1) -lt 16 ]]; then
+  # skip for gdb pre version 15
+  if [[ $(gdb --version | head -n 1 | awk '{print $NF}' | cut -d. -f1) -lt 15 ]]; then
     echo "True"
   else
     echo "False"
