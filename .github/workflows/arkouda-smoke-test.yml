@@ -122,8 +122,8 @@ jobs:
             cd arkouda
             # Download sources serially first before building, as it is flaky and
             # that'll make it easier to diagnose failures.
-            make deps-download-source
-            make -j"$num_procs" install-deps
+            make deps-download-source ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"}
+            make -j"$num_procs" install-deps ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"}
       - name: check contents of Arkouda deps install
         run: |
           test -d "$ARKOUDA_DEP_DIR"
