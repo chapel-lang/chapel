@@ -56,6 +56,11 @@ on:
         description: Maximum number of test jobs to run concurrently; 0 is unrestricted. If unset, defaults to 20 for non-merge-queue runs, and unrestricted for merge queue runs.
         required: false
         type: number
+      test-parallelism:
+        description: Shell expression for the --parallel value passed to start_test in each test job, defaults to the number of CPUs
+        required: false
+        type: string
+        default: $(util/buildRelease/chpl-make-cpu_count)
       timeout-minutes:
         description: Maximum number of minutes each job may run
         required: false
@@ -407,6 +412,7 @@ jobs:
       - name: run tests
         env:
           START_TEST_ARGS: ${{ inputs.start-test-args }}
+          TEST_PARALLELISM: ${{ inputs.test-parallelism }}
           TEST_UNITS: ${{ matrix.units }}
         run: |
           mkdir -p "$PARATEST_RESULTS_DIR"
@@ -420,7 +426,7 @@ jobs:
             source "$CRON_SCRIPT"
           fi
 
-          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          num_procs=$(eval echo "$TEST_PARALLELISM")
           base_cmd=("$CHPL_HOME/util/start_test")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
