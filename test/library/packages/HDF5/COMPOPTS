@@ -4,5 +4,16 @@ INSTALL_DIR=`h5cc -showconfig | sed -n -e 's/ *Installation point: \(.*\)/\1/p'`
 INC_FLAGS="-I$INSTALL_DIR/include"
 LIB_FLAGS="-L$INSTALL_DIR/lib -lhdf5"
 
+# Debian/Ubuntu put headers/libs in an hdf5/serial subdir; get them from h5cc
+if [ ! -f "$INSTALL_DIR/include/hdf5.h" ]; then
+  INC_FLAGS=""
+  LIB_FLAGS="-lhdf5"
+  for flag in $(h5cc -show); do
+    case "$flag" in
+      -I*) INC_FLAGS="$INC_FLAGS $flag" ;;
+      -L*) LIB_FLAGS="$flag $LIB_FLAGS" ;;
+    esac
+  done
+fi
 
 echo $INC_FLAGS $LIB_FLAGS

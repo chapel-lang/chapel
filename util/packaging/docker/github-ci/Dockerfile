@@ -45,8 +45,11 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libedit-dev \
     libfltk1.4-dev \
+    libhdf5-dev \
     libopenmpi-dev \
     libprotoc-dev \
+    libssl-dev \
+    libyaml-dev \
     libzmq3-dev \
     llvm-${LLVM_VERSION} \
     llvm-${LLVM_VERSION}-dev \
@@ -59,15 +62,18 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     openmpi-bin \
     perl \
     pkg-config \
+    protobuf-compiler \
     python3 \
     python3-dev \
     python3-pip \
+    python3-protobuf \
     python3-venv \
     sudo \
     time \
     tzdata \
     wget \
     xxd \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-${LLVM_VERSION} 100 \
     && update-alternatives --install /usr/bin/lldb-server lldb-server /usr/bin/lldb-server-${LLVM_VERSION} 100 \

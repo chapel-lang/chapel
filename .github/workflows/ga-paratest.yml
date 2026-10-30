@@ -24,7 +24,7 @@ on:
         description: Space separated make targets to build. If a custom 'build-steps' is provided, this is ignored.
         required: false
         type: string
-        default: "all test-venv chpldoc mason"
+        default: "all test-venv chpldoc mason spectests"
       build-steps:
         description: Commands to execute to build. By default, invokes the make command with the default make targets specified in `make-targets`
         required: false
@@ -42,6 +42,11 @@ on:
         required: false
         type: string
         default: ""
+      futures-mode:
+        description: Futures mode to pass to start_test (3 == test futures that have a .skipif, 2 == test futures only, 1 == test futures and non-futures, 0 == test non-futures only)
+        required: false
+        type: number
+        default: 3
       test-dirs:
         description: Space-separated test directories (for example test/types), defaults to all test directories
         required: false
@@ -421,7 +426,7 @@ jobs:
           fi
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          base_cmd=("$CHPL_HOME/util/start_test")
+          base_cmd=("$CHPL_HOME/util/start_test" --futures "${{ inputs.futures-mode }}")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
             base_cmd+=("${start_test_args[@]}")
