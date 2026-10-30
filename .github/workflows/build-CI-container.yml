@@ -1,8 +1,28 @@
 name: build-CI-container
 
+# Every newly built image is pushed to a staging tag and must pass the CI checks
+# before being promoted to latest. Pre-merge (PR and merge queue) builds happen
+# via workflow_call from trigger-pr-checks.yml.
+on:
+  push:
+    branches: [ main ]
+    # prevents CI updates throttling normal pushes to main
+    # Keep in sync with the docker-sources filter below.
+    paths:
+      - util/packaging/docker/github-ci/Dockerfile
+      - .github/workflows/build-CI-container.yml
+  workflow_call:
+    outputs:
+      ran-checks:
+        description: Whether a new image was built and the CI checks were run in it
+        value: ${{ jobs.should-build-ci-container.outputs.should-build }}
+  workflow_dispatch:
+  schedule:
+    - cron: '0 20 * * 2'
+
 env:
   REGISTRY: ghcr.io
-  CHAPEL_CI_IMAGE: ghcr.io/chapel-lang/chapel-github-ci:latest
+  CHAPEL_CI_IMAGE_REPO: ghcr.io/chapel-lang/chapel-github-ci
   DOCKERFILE: util/packaging/docker/github-ci/Dockerfile
 
 # Serialize runs of this workflow on 'main', to prevent a build from an older
@@ -10,22 +30,13 @@ env:
 # Additionally, cancel in-progress runs in merge queue if the merge group is
 # destroyed.
 concurrency:
-  group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.event.merge_group.head_ref || github.sha) }}
+  group: build-CI-container-${{ case(github.ref == 'refs/heads/main', 'main', github.event.merge_group.head_ref || github.sha) }}
   queue: ${{ case(github.ref == 'refs/heads/main', 'max', 'single') }}
   cancel-in-progress: ${{ github.event_name == 'merge_group' }}
 
 permissions:
   contents: read
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-  merge_group:
-    types: [checks_requested, destroyed]
-  workflow_dispatch:
-  schedule:
-    - cron: '0 20 * * 2'
+  packages: read
 
 defaults:
   run:
@@ -38,6 +49,8 @@ jobs:
     outputs:
       should-build: ${{ steps.should-build.outputs.should-build }}
       should-push: ${{ steps.should-build.outputs.should-push }}
+      should-promote: ${{ steps.should-build.outputs.should-promote }}
+      image: ${{ steps.should-build.outputs.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -55,10 +68,30 @@ jobs:
         id: should-build
         env:
           SHOULD_BUILD: ${{ fromJSON(steps.changes.outputs.docker-sources) || contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
-          SHOULD_PUSH: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+          CAN_PUSH: ${{ github.repository_owner == 'chapel-lang' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+          PRE_MERGE: ${{ contains(fromJSON('["pull_request","merge_group"]'), github.event_name) }}
+          SHA: ${{ github.sha }}
         run: |
-          echo "should-build=$SHOULD_BUILD" >> "$GITHUB_OUTPUT"
-          echo "should-push=$SHOULD_PUSH" >> "$GITHUB_OUTPUT"
+          image="$CHAPEL_CI_IMAGE_REPO:latest"
+          should_push=false
+          should_promote=false
+          if [[ "$SHOULD_BUILD" == "true" ]]; then
+            if [[ "$CAN_PUSH" == "true" ]]; then
+              image="$CHAPEL_CI_IMAGE_REPO:sha-$SHA"
+              should_push=true
+              if [[ "$PRE_MERGE" != "true" ]]; then
+                should_promote=true
+              fi
+            else
+              echo "::warning::Cannot push the new CI image, so checks will run in $image instead."
+            fi
+          fi
+          {
+            echo "should-build=$SHOULD_BUILD"
+            echo "should-push=$should_push"
+            echo "should-promote=$should_promote"
+            echo "image=$image"
+          } >> "$GITHUB_OUTPUT"
 
   build-test-ci-container:
     needs: should-build-ci-container
@@ -93,18 +126,20 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build ${{ env.ARCH }} Docker Image, and push if on main
+      - name: Build ${{ env.ARCH }} Docker Image${{ fromJSON(needs.should-build-ci-container.outputs.should-push) && ', and push' || '' }}
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: ${{ env.DOCKERFILE }}
           platforms: linux/${{ env.ARCH }}
-          tags: ${{ env.CHAPEL_CI_IMAGE }}-${{ env.ARCH }}
+          tags: ${{ needs.should-build-ci-container.outputs.image }}-${{ env.ARCH }}
           push: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
           cache-from: type=gha,scope=${{ env.ARCH }}
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=gha,scope={0},mode=max', env.ARCH) || '' }}
-      - name: Run image checks
+      - name: Run basic image checks
+        env:
+          IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
         run: |
-          docker run --rm -i -v "$PWD:/chapel" -w /chapel "$CHAPEL_CI_IMAGE-$ARCH" bash -exuo pipefail <<'EOF'
+          docker run --rm -i -v "$PWD:/chapel" -w /chapel "$IMAGE-$ARCH" bash -exuo pipefail <<'EOF'
           source util/quickstart/setchplenv.bash
           printchplenv --all --internal
 
@@ -120,18 +155,53 @@ jobs:
             echo "ERROR: image LLVM version $actual_llvm does not match latest supported $latest_llvm"
             exit 1
           fi
-
-          num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make check
-
-          CHPL_HOST_COMPILER=clang make -j"$num_procs"
-          CHPL_HOST_COMPILER=clang make check
           EOF
 
   push-multiarch-ci-container:
     needs: [should-build-ci-container, build-test-ci-container]
-    if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Login to GitHub Container Registry
+        if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create and push multi-arch manifest
+        if: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
+        env:
+          IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
+        run: |
+          docker buildx imagetools create -t "$IMAGE" "$IMAGE-amd64" "$IMAGE-arm64"
+
+  core-checks:
+    needs: [should-build-ci-container, push-multiarch-ci-container]
+    uses: $/.github/workflows/core-ci-checks.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
+      publish: false
+
+  extended-checks:
+    needs: [should-build-ci-container, push-multiarch-ci-container]
+    uses: $/.github/workflows/extended-ci-checks.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
+      publish: false
+
+  full-checks:
+    needs: [should-build-ci-container, push-multiarch-ci-container]
+    # Disabled for now; remove this to also run the full checks.
+    if: false
+    uses: $/.github/workflows/full-ci-checks.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
+
+  promote-ci-container:
+    needs: [should-build-ci-container, core-checks, extended-checks, full-checks]
+    if: ${{ !cancelled() && needs.should-build-ci-container.outputs.should-promote == 'true' && needs.core-checks.result == 'success' && needs.extended-checks.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.full-checks.result) }}
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -142,9 +212,13 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create and push multi-arch manifest
+      - name: Tag the tested image as latest
+        env:
+          IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
         run: |
-          docker buildx imagetools create -t "$CHAPEL_CI_IMAGE" "$CHAPEL_CI_IMAGE-amd64" "$CHAPEL_CI_IMAGE-arm64"
+          for suffix in "" -amd64 -arm64; do
+            docker buildx imagetools create -t "$CHAPEL_CI_IMAGE_REPO:latest$suffix" "$IMAGE$suffix"
+          done
 
   ci-container-alert-failure:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
@@ -153,6 +227,10 @@ jobs:
       - should-build-ci-container
       - build-test-ci-container
       - push-multiarch-ci-container
+      - core-checks
+      - extended-checks
+      - full-checks
+      - promote-ci-container
     steps:
       - name: Fail
         run: |

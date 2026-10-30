@@ -7,6 +7,10 @@ on:
       CHAPEL_CI_IMAGE:
         type: string
         default: ghcr.io/chapel-lang/chapel-github-ci:latest
+      publish:
+        description: Publish the docs on push, schedule, and workflow_dispatch events
+        type: boolean
+        default: true
     secrets:
       WEBSITE_KEY:
         required: false
@@ -355,7 +359,7 @@ jobs:
           ./util/buildRelease/check-release-files.bash
 
   publish-docs:
-    if: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+    if: ${{ inputs.publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
     concurrency:
       group: 'publish-docs'
       queue: single

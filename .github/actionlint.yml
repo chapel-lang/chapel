@@ -17,3 +17,7 @@ config-variables: null
 paths:
   .github/workflows/**/*.yml:
     ignore:
+  # full-checks is intentionally disabled with `if: false` for now
+  .github/workflows/build-CI-container.yml:
+    ignore:
+      - 'constant expression "false" in condition'
