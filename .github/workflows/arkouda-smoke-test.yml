@@ -27,6 +27,7 @@ concurrency:
 env:
   NIGHTLY_TEST_SETTINGS: true
   ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version || 'release' }}
+  APT_INSTALL_TIMEOUT_MINS: 20
 
 defaults:
   run:
@@ -133,6 +134,11 @@ jobs:
         run: |
           test -d "$ARKOUDA_DEP_DIR"
           ls -R "$ARKOUDA_DEP_DIR"
+      - name: setup latest Python
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.x
       - name: build Chapel and run Arkouda smoke testing
         run: |
           source ./util/cron/common.bash
