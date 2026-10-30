@@ -5697,9 +5697,9 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
           if (!atomic_load_explicit_bool(&p->complete,
                                         chpl_memory_order_acquire)) {
             allComplete = false;
-          } else {
+          } else if (p != handle) {
             // if a suboperation just completed then unlocalize mr
-            if ((p != handle) && (!p->reported) && (p->mrAddr != NULL)) {
+            if (p->mrAddr != NULL) {
               if (p->size) {
                 mrUnLocalizeTarget(p->mrAddr, p->addr, p->size);
               } else {
@@ -5707,8 +5707,9 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
               }
               p->mrAddr = NULL;
             }
+            // the top handle is only reported once all suboperations are done
             p->reported = true;
-           }
+          }
         }
       }
       if (allComplete) {
