@@ -27,6 +27,7 @@ concurrency:
 env:
   NIGHTLY_TEST_SETTINGS: true
   ARKOUDA_VERSION_INPUT: ${{ inputs.arkouda-version || 'release' }}
+  APT_INSTALL_TIMEOUT_MINS: 20
 
 defaults:
   run:
@@ -69,7 +70,15 @@ jobs:
               # Work around pandas incompatibility in release v2026.10.14, fixed in
               # https://github.com/Bears-R-Us/arkouda/pull/5537.
               echo "pandas == 3.0.6" > requirements-hack.txt
-              echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
+              {
+                echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt"
+                # libiconv 1.17 fails to build with GCC 15 (C23), fixed in
+                # https://github.com/Bears-R-Us/arkouda/pull/5538.
+                echo "AK_ICONV_VER=1.19"
+                # arrow 19 can't be built with newer versions of CMake
+                # https://github.com/Bears-R-Us/arkouda/pull/5539
+                echo "AK_ARROW_VER=25.0.1"
+              } >> "$GITHUB_ENV"
             fi
           else
             arkouda_version="$ARKOUDA_VERSION_INPUT"
@@ -119,12 +128,18 @@ jobs:
             cd arkouda
             # Download sources serially first before building, as it is flaky and
             # that'll make it easier to diagnose failures.
-            make deps-download-source
-            make -j"$num_procs" install-deps
+            make deps-download-source ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"} ${AK_ARROW_VER:+"ARROW_VER=$AK_ARROW_VER"}
+            make -j"$num_procs" install-deps ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"} ${AK_ARROW_VER:+"ARROW_VER=$AK_ARROW_VER"}
       - name: check contents of Arkouda deps install
         run: |
           test -d "$ARKOUDA_DEP_DIR"
           ls -R "$ARKOUDA_DEP_DIR"
+      - name: setup Python
+        timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # pin 3.13, many 3.14 point releases break arkouda and 3.15 isn't supported yet
+          python-version: 3.13
       - name: build Chapel and run Arkouda smoke testing
         run: |
           source ./util/cron/common.bash

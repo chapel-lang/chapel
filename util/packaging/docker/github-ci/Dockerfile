@@ -25,6 +25,7 @@ RUN wget -nv -O /etc/apt/keyrings/apt.llvm.org.asc https://apt.llvm.org/llvm-sna
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
+    bsdextrautils \
     ccache \
     clang-${LLVM_VERSION} \
     cmake \

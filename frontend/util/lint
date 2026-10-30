@@ -13,9 +13,6 @@ import tempfile
 
 
 log = partial(print, file=sys.stderr)
-
-compile_commands = None
-
 lib_dir = Path('frontend/lib')
 
 # What lib dirs dirs do we look in for .cpp files to check
@@ -42,7 +39,7 @@ def files_changed(to='main') -> Set[Path]:
     proc = run(['git', 'diff', to, '--name-only'])
     return set(map(Path, proc.stdout.strip().split('\n')))
 
-def check_file(filename):
+def check_file(filename, compile_commands=None):
     """
     Check a file for errors, returning one LintError per method that fails
     Currently logs the parsed fields and methods for each class to aid in debugging
@@ -54,22 +51,23 @@ def check_file(filename):
 
     return subprocess.run(args, check=False, capture_output=True, text=True)
 
-def check_files(files, jobs=1) -> List[subprocess.CompletedProcess]:
+def check_files(files, jobs=1, compile_commands=None) -> List[subprocess.CompletedProcess]:
     """
     Check multiple files with parallelism = `jobs`
     Repeated errors are de-duped (since things that get included can be checked multiple times)
     Failed results are those where we got an error from clang
     """
     procs = []
+    check = partial(check_file, compile_commands=compile_commands)
     with multiprocessing.Pool(jobs) as pool:
-        for result in pool.imap_unordered(check_file, files):
+        for result in pool.imap_unordered(check, files):
             procs.append(result)
 
     return procs
 
-def main(args):
+def main(args, compile_commands=None):
     """Run and report errors; Exits with 0 only if no failures and no errors"""
-    procs = check_files(args.files, jobs=args.jobs)
+    procs = check_files(args.files, jobs=args.jobs, compile_commands=compile_commands)
 
     for p in procs:
         if p.stdout:
@@ -117,6 +115,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     tempdir = None
+    compile_commands = None
     if args.compile_commands is not None:
         commands = []
         with open(args.compile_commands / 'compile_commands.json') as f:
@@ -135,4 +134,4 @@ if __name__ == '__main__':
             f.write(json.dumps(commands))
         compile_commands = tempdir.name
 
-    main(args)
+    main(args, compile_commands=compile_commands)
