@@ -395,7 +395,7 @@ jobs:
   #   name: Chapel paratest with GASNet SMP conduit
   #   uses: $/.github/workflows/ga-paratest.yml
   #   with:
- #      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+  #     CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
   #     configuration: gasnet-fast
   #     cron-script: util/cron/test-gasnet-smp.bash
   #     container-options: --shm-size=8g # required for SEGMENT=fast
