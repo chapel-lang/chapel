@@ -200,7 +200,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         comm: ["none", "gasnet"]
     runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
     steps:
