@@ -146,6 +146,9 @@ jobs:
           export CHPL_TEST_ARKOUDA_PERF=false
           source ./util/cron/common-arkouda.bash
 
+          # h5py may lack wheels for the latest Python; let a source build find Arkouda's HDF5
+          export HDF5_DIR="$ARKOUDA_HDF5_PATH"
+
           export NIGHTLY_TEST_SETTINGS=true
           export CHPL_SMOKE_SKIP_DOC=true
           export CHPL_SMOKE_SKIP_MAKE_MASON=true
