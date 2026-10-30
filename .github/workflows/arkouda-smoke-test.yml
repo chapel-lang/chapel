@@ -73,6 +73,9 @@ jobs:
               # libiconv 1.17 fails to build with GCC 15 (C23), fixed in
               # https://github.com/Bears-R-Us/arkouda/pull/5538.
               echo "AK_ICONV_VER=1.19" >> "$GITHUB_ENV"
+              # arrow 19 can't be built with newer versions of CMake
+              # https://github.com/Bears-R-Us/arkouda/pull/5539
+              echo "AK_ARROW_VER=25.0.1" >> "$GITHUB_ENV"
             fi
           else
             arkouda_version="$ARKOUDA_VERSION_INPUT"
