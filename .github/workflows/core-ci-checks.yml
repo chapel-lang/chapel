@@ -502,6 +502,9 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
+    env:
+      # always run on nightly builds
+      RUN_ALL: ${{ contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -513,6 +516,7 @@ jobs:
           key: ccache-${{ github.job }}
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
+        if: env.RUN_ALL != 'true'
         with:
           filters: |
             cls_sources:
@@ -523,21 +527,21 @@ jobs:
               - 'tools/chplcheck/**'
               - 'test/chplcheck/**'
       - name: build chapel-py
-        if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           make chapel-py-venv -j"$(./util/buildRelease/chpl-make-cpu_count)"
       - name: build chpl and test-venv
-        if: steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           # start_test requires both test-venv and a working chpl install
           ./util/buildRelease/smokeTest quickstart chpl
           make test-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
       - name: test chpl-language-server
-        if: steps.changes.outputs.cls_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.cls_sources == 'true'
         run: |
           make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
       - name: test chplcheck
-        if: steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
           # chplcheck tests have a very flat directory structure,
