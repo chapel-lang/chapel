@@ -268,6 +268,40 @@ jobs:
         run: |
           ./util/buildRelease/smokeTest lint
 
+  check_min_python:
+    runs-on: ubuntu-latest
+    # keep in sync with the minimum Python version in doc/rst/usingchapel/prereqs.rst
+    container: python:3.5-buster@sha256:42a37d6b8c00b186bdfb2b620fa8023eb775b3eb3a768fd3c2e421964eee9665
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: check python version
+        run: |
+          python3 --version
+          python3 -c 'import sys; assert sys.version_info[:2] == (3, 5)'
+      - name: printchplenv
+        run: |
+          ./util/printchplenv --all --internal
+
+  pylint_build_scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: install pylint
+        run: |
+          pipx install pylint
+      - name: run pylint
+        # keep in sync with the minimum Python version in doc/rst/usingchapel/prereqs.rst
+        run: |
+          { find util/chplenv util/config -maxdepth 1 -type f -name '*.py'
+            grep -lsE '^#!.*python' util/chplenv/* util/config/*
+          } | sort -u | xargs pylint \
+            --py-version 3.5 \
+            --disable=R,C,broad-exception-raised,unspecified-encoding,global-statement,pointless-string-statement,logging-format-interpolation,unnecessary-pass,fixme,wildcard-import,bare-except
+
   check_large_files:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-slim
