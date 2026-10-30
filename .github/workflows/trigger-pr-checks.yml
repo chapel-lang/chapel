@@ -32,8 +32,19 @@ defaults:
     shell: bash -exuo pipefail {0}
 
 jobs:
-  core-checks:
+  # If the CI image's sources changed, this builds it and runs the core and
+  # extended checks in it, in place of the checks below.
+  ci-image:
     if: ${{ ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
+    permissions:
+      contents: read
+      packages: write
+    # actionlint:ignore-next-line cache-operation -- ignore warning that callee's cache save won't work with caller's cache-mode: read, which is intended
+    uses: $/.github/workflows/build-CI-container.yml
+
+  core-checks:
+    needs: ci-image
+    if: ${{ needs.ci-image.outputs.ran-checks != 'true' && ! (github.event_name == 'merge_group' && github.event.action == 'destroyed') }}
     uses: $/.github/workflows/core-ci-checks.yml
 
   should-run-extended-checks:
@@ -53,8 +64,8 @@ jobs:
           echo "run-all=$run_all" >> "$GITHUB_OUTPUT"
 
   extended-checks:
-    needs: should-run-extended-checks
-    if: needs.should-run-extended-checks.outputs.run-all == 'true'
+    needs: [ci-image, should-run-extended-checks]
+    if: needs.ci-image.outputs.ran-checks != 'true' && needs.should-run-extended-checks.outputs.run-all == 'true'
     # actionlint:ignore-next-line cache-operation -- ignore warning that callee's cache save won't work with caller's cache-mode: read, which is intended
     uses: $/.github/workflows/extended-ci-checks.yml
 
@@ -68,6 +79,7 @@ jobs:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-slim
     needs:
+      - ci-image
       - core-checks
       - extended-checks
     steps:
