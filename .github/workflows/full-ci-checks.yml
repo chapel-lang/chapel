@@ -401,6 +401,8 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: memleaks
+      ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-memleaks.bash
       start-test-args: -memleaks
       make-targets: all test-venv mason-deps
@@ -409,6 +411,8 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: no-local
+      ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-no-local.bash
       start-test-args: -compopts --no-local
   paratest-quickstart:
@@ -416,6 +420,7 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: quickstart
+      ccache-key: ccache-x86-llvm-none
       cron-script: util/cron/test-quickstart.bash
       make-targets: all test-venv mason-deps
   paratest-ubsan-clang:
@@ -437,6 +442,8 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: verify
+      ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
       make-targets: all test-venv mason-deps
