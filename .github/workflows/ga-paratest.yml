@@ -423,6 +423,7 @@ jobs:
       - name: run tests
         env:
           START_TEST_ARGS: ${{ inputs.start-test-args }}
+          FUTURES_MODE: ${{ inputs.futures-mode }}
           TEST_UNITS: ${{ matrix.units }}
         run: |
           mkdir -p "$PARATEST_RESULTS_DIR"
@@ -437,7 +438,7 @@ jobs:
           fi
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          base_cmd=("$CHPL_HOME/util/start_test" --futures "${{ inputs.futures-mode }}")
+          base_cmd=("$CHPL_HOME/util/start_test" --futures-mode "$FUTURES_MODE")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
             base_cmd+=("${start_test_args[@]}")

@@ -328,7 +328,7 @@ jobs:
       configuration: linux64-aarch64
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-linux64.bash
-      start-test-args: --futures
+      futures-mode: 1
       make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
   paratest-linux64-gasnet-everything-aarch64:
     name: Chapel paratest on linux64 aarch64 with gasnet-everything
