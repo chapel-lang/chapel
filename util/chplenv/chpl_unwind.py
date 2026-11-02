@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
-import optparse
+import argparse
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize, warning, check_valid_var
+from utils import error, memoize, check_valid_var
 
 
 @memoize
@@ -102,15 +102,15 @@ def get_link_args():
 
 
 def _main():
-    parser = optparse.OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "--quickstart",
         dest="action",
         action="store_const",
         const="quickstart",
         default="",
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if options.action == "quickstart":
         if system_library_available():

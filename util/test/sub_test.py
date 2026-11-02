@@ -353,6 +353,19 @@ def WaitForFiles(
             waited += 1
 
 
+def CatFiles(files):
+    output = b""
+    for f in files:
+        try:
+            with open(f, "rb") as fh:
+                output += fh.read()
+        except OSError as e:
+            output += ("cat: %s: %s\n" % (f, e.strerror)).encode(
+                errors="surrogateescape"
+            )
+    return str(output, encoding="utf-8", errors="surrogateescape")
+
+
 # If CHPL_TEST_LIMIT_RUNNING_EXECUTABLES is set, use a file lock to serialize
 # process execution.
 def create_exec_limiter():
@@ -2295,12 +2308,7 @@ def run_test(test_args, testname, out=sys.stdout):
                 )
                 out.flush()
                 WaitForFiles(catfiles.split())
-                catoutput = run_process(
-                    ["cat"] + catfiles.split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                )[1]
-                output += catoutput
+                output += CatFiles(catfiles.split())
 
             # Sadly these scripts require an actual file
             with open(complog, "w") as complogfile:
@@ -3053,12 +3061,7 @@ def run_test(test_args, testname, out=sys.stdout):
                     )
                     out.flush()
                     WaitForFiles(catfiles.split())
-                    cat_output = run_process(
-                        ["cat"] + catfiles.split(),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                    )[1]
-                    output += cat_output
+                    output += CatFiles(catfiles.split())
 
                 # It's got surrogates, so encode it as bytes and write it as binary
                 mode = "w"

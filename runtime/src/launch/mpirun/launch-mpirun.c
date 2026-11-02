@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpl-env-gen.h"
@@ -30,13 +31,9 @@
 
 static char* mpi_num_ranks = NULL;
 
-static char _nlbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
-  const int largc = 3;
-  char *largv[largc];
-
   int numranks;
 
   // TODO When MPI Comm layer is supported, support -nl>1 && CHPL_COMM!=none
@@ -53,11 +50,20 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     numranks = atoi(mpi_num_ranks);
   }
 
+  char** largv = NULL;
+  int largv_len = 0;
+  int largc = 0;
+  #define ADD_LARGV(arg) chpl_append_to_largv(&largc, (const char***) &largv, \
+                                            &largv_len, arg)
 
-  largv[0] = (char *) launch_cmd;
-  largv[1] = (char *) "-np";
-  snprintf(_nlbuf, sizeof(_nlbuf), "%d", numranks);
-  largv[2] = _nlbuf;
+  ADD_LARGV(launch_cmd);
+  static char nlbuf[16];
+  snprintf(nlbuf, sizeof(nlbuf), "%d", numranks);
+  ADD_LARGV("-np");
+  ADD_LARGV(nlbuf);
+  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+    ADD_LARGV("--oversubscribe");
+  }
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }

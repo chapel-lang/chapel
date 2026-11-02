@@ -18,6 +18,8 @@ CHPL_COMM != none
 # ASAN will report a stack overflow, which is great but not what the .good file
 # expects
 CHPL_SANITIZE_EXE <= address
+UBSAN also reports a stack overflow
+CHPL_SANITIZE_EXE <= undefined
 
 # Call stack size is too small for larger arm page sizes
 CHPL_TARGET_ARCH == aarch64

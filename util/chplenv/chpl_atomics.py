@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import optparse
+import argparse
 import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
@@ -114,18 +114,18 @@ def get(flag="target"):
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--network|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--network|target])")
+    parser.add_argument(
         "--target",
         dest="flag",
         action="store_const",
         const="target",
         default="target",
     )
-    parser.add_option(
+    parser.add_argument(
         "--network", dest="flag", action="store_const", const="network"
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     atomics_val = get(options.flag)
     sys.stdout.write("{0}\n".format(atomics_val))

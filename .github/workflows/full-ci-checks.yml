@@ -14,6 +14,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
 
 defaults:
@@ -40,12 +41,119 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run test-make-install-check.bash
         env:
           TMPDIR: ${{ runner.temp }}
         run: |
           ./util/cron/test-make-install-check.bash
+
+  test-mpicc:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with mpicc
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+      - name: Build and Test Chapel with mpicc (GASNet)
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.gasnet.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
+          # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
+          # this is a hack to get oversubscription to work, if we ever
+          # need to support this for users we should do a proper fix
+          export MPIRUN_CMD='mpirun --oversubscribe --bind-to none -mca mpi_yield_when_idle 1 -np %M %P %A MPIRUN_CMD_OK'
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+
+  test-incremental:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with --incremental
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-linux64.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+      - name: Build and Test Chapel with --incremental and --no-local
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-no-local.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
 
   test-llvm-bundled:
     uses: $/.github/workflows/test-llvm-bundled.yml
@@ -63,7 +171,6 @@ jobs:
         with:
           path: ./${{ env.CCACHE_DIR_NAME }}
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
@@ -158,6 +265,62 @@ jobs:
       cron-script: util/cron/test-darwin.bash
       pre-build-steps: |
         brew install llvm@22
+  test-quickstart-darwin:
+    # written as a normal job, not a paratest, since its only one dir
+    runs-on: macos-latest
+    env:
+      CHPL_NIGHTLY_DO_NOTHING: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with quickstart on darwin
+        shell: bash
+        run: |
+          echo "::group::set environment"
+          brew install llvm@22
+          source util/setchplenv.bash
+          source util/cron/test-quickstart.darwin.bash
+          echo "::endgroup::"
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+  paratest-gasnet_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment everything)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
+  paratest-gasnet_fast_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.fast.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.fast.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
   paratest-linux64-aarch64:
     name: Chapel paratest on linux64 aarch64
     uses: $/.github/workflows/ga-paratest.yml
@@ -277,3 +440,19 @@ jobs:
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
       make-targets: all test-venv mason-deps
+  paratest-locks-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=locks
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: locks-atomics
+      cron-script: util/cron/test-linux64-locks-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+  paratest-intrinsics-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=intrinsics
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: intrinsics-atomics
+      cron-script: util/cron/test-linux64-intrinsics-atomics.bash
+      make-targets: all test-venv mason-deps
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic

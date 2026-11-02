@@ -33,7 +33,7 @@ components since there should be no components starting with $CHPL_HOME.
 Mentioned only to avoid reintroducing #10196 when this function is modified.
 """
 
-import optparse
+import argparse
 import os
 import re
 import sys
@@ -76,12 +76,14 @@ def update_path_env():
 
 
 def main():
-    parser = optparse.OptionParser(usage=__doc__)
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage=__doc__)
+    parser.add_argument(
         "--shell", dest="shell", default="bash", help="shell being used"
     )
+    parser.add_argument("args", nargs="*", metavar="path-value")
 
-    options, args = parser.parse_args()
+    options = parser.parse_args()
+    args = options.args
 
     if options.shell == "fish":
         delim = " "

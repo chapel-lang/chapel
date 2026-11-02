@@ -4,4 +4,4 @@ var A: [1..n] T;
 config const i = n / 2;
 config const val = 22:T;
 A(i) = val;
-writeln(A(i));
+writeln("A(", i, ") = ", A(i));

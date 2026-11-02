@@ -86,7 +86,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: build tarball
         run: |
             export CHPL_VERSION='release'

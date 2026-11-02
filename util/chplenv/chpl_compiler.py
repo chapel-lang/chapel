@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import os
 import sys
 
-import chpl_platform, chpl_locale_model, overrides
+import chpl_platform, overrides
 import homebrew_utils
 from utils import which, error, memoize, warning
 
@@ -471,7 +471,7 @@ def get_compiler_command(flag, lang):
 # flag should be host or target.
 # returns a Python list of -I flags
 @memoize
-def get_bundled_compile_args(flag):
+def get_bundled_compile_args(flag):  # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering
@@ -497,7 +497,7 @@ def get_system_compile_args(flag):
     if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
 
-        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
+        comp_args, _ = chpl_llvm.get_clang_prgenv_args()
         paths.extend(comp_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
@@ -520,7 +520,7 @@ def get_system_compile_args(flag):
 # flag should be host or target.
 # returns a Python list of -L flags
 @memoize
-def get_bundled_link_args(flag):
+def get_bundled_link_args(flag):  # pylint: disable=unused-argument
     paths = []
 
     # TODO - port over third-party arg gathering
@@ -546,7 +546,7 @@ def get_system_link_args(flag):
     if compiler_val == "llvm" and flag == "target":
         import chpl_llvm
 
-        comp_args, link_args = chpl_llvm.get_clang_prgenv_args()
+        _, link_args = chpl_llvm.get_clang_prgenv_args()
         paths.extend(link_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
@@ -602,18 +602,18 @@ def validate_compiler_settings():
 
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--host|target])")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [--host|target])")
+    parser.add_argument(
         "--host",
         dest="flag",
         action="store_const",
         const="host",
         default="host",
     )
-    parser.add_option(
+    parser.add_argument(
         "--target", dest="flag", action="store_const", const="target"
     )
-    parser.add_option(
+    parser.add_argument(
         "--cc",
         dest="which",
         action="store_const",
@@ -621,28 +621,28 @@ def _main():
         default=None,
         help="get CHPL_{flag}_CC",
     )
-    parser.add_option(
+    parser.add_argument(
         "--cxx",
         dest="which",
         action="store_const",
         const="c++",
         help="get CHPL_{flag}_CXX",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compiler-only",
         dest="parts",
         action="store_const",
         const="compiler",
         default="all",
     )
-    parser.add_option(
+    parser.add_argument(
         "--additional",
         dest="parts",
         action="store_const",
         const="additional",
         help="get additional compiler args",
     )
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if options.which is None:
         compiler_val = get(options.flag)

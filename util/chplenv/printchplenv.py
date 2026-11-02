@@ -52,18 +52,18 @@ Options:
 
 from collections import namedtuple
 from functools import partial
-import optparse
+import argparse
 import os
 import re
 import unittest
-from sys import stdout, path
+from sys import stdout
 import textwrap
 
 import utils
 
 utils.set_buffer_warnings(True)
 
-from chplenv import *
+from chplenv import *  # pylint: disable=unused-wildcard-import
 import chplenv_verify
 
 ChapelEnv = namedtuple("ChapelEnv", ["name", "content", "shortname"])
@@ -190,8 +190,6 @@ ENV_VALS = {}
 
 
 def compute_all_values():
-    global ENV_VALS
-
     ENV_VALS["CHPL_HOME"] = chpl_home_utils.get_chpl_home()
     ENV_VALS["CHPL_HOST_PLATFORM"] = chpl_platform.get("host")
 
@@ -279,8 +277,6 @@ def compute_all_values():
 
     # error checking that would be hard to do in the .get functions
     # due to circular dependencies
-    chpl_arch.validate("host")
-    chpl_arch.validate("target")
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
     chpl_gpu.validate(ENV_VALS["CHPL_LOCALE_MODEL"])
@@ -290,8 +286,6 @@ def compute_all_values():
 
 
 def compute_internal_values():
-    global ENV_VALS
-
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
     backend_info = chpl_cpu.get("target", map_to_compiler=True)
@@ -454,7 +448,6 @@ def filter_overrides(chpl_env):
 
 def filter_tidy(chpl_env):
     comm = ENV_VALS["CHPL_COMM"]
-    llvm = ENV_VALS["CHPL_LLVM"]
     locale = ENV_VALS["CHPL_LOCALE_MODEL"]
     gpu = ENV_VALS["  CHPL_GPU"]
     host_mem = ENV_VALS["CHPL_HOST_MEM"]
@@ -586,8 +579,6 @@ def _print_var(key, value, print_format=None, shortname=None, raw=False):
 def printchplenv(
     contents, print_filters=None, print_format="pretty", only=None, raw=False
 ):
-    global CHPL_ENVS
-
     if print_filters is None:
         print_filters = set(["tidy"])
 
@@ -739,8 +730,8 @@ def diagnose_missing_library(lib_type):
 
 
 def parse_args():
-    parser = optparse.OptionParser(
-        usage="usage: %prog [options]",
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [options]",
         description="Print the current Chapel configuration. "
         "[content] arguments determine what gets printed. "
         "[filter] arguments determine what gets omitted. "
@@ -749,93 +740,95 @@ def parse_args():
     )
 
     # [shortcut]
-    parser.add_option("--all", action="store_true", dest="all")
+    parser.add_argument("--all", action="store_true", dest="all")
 
     # [content]
     parser.set_defaults(content=[])
-    parser.add_option(
+    parser.add_argument(
         "--compiler", action="append_const", dest="content", const="compiler"
     )
-    parser.add_option(
+    parser.add_argument(
         "--runtime", action="append_const", dest="content", const="runtime"
     )
-    parser.add_option(
+    parser.add_argument(
         "--launcher", action="append_const", dest="content", const="launcher"
     )
-    parser.add_option(
+    parser.add_argument(
         "--internal", action="append_const", dest="content", const="internal"
     )
 
     # [filter]
     parser.set_defaults(tidy=True)
     parser.set_defaults(filter=[])
-    parser.add_option("--tidy", action="store_true", dest="tidy")
-    parser.add_option("--no-tidy", action="store_false", dest="tidy")
-    parser.add_option(
+    parser.add_argument("--tidy", action="store_true", dest="tidy")
+    parser.add_argument("--no-tidy", action="store_false", dest="tidy")
+    parser.add_argument(
         "--anonymize", action="append_const", dest="filter", const="anonymize"
     )
-    parser.add_option(
+    parser.add_argument(
         "--overrides", action="append_const", dest="filter", const="overrides"
     )
-    parser.add_option(
+    parser.add_argument(
         "--only-path", action="append_const", dest="filter", const="only-path"
     )
-    parser.add_option("--only", type=str, nargs=1, default=None, dest="only")
+    parser.add_argument("--only", type=str, default=None, dest="only")
 
     # [format]
     parser.set_defaults(format="pretty")
-    parser.add_option(
+    parser.add_argument(
         "--pretty", action="store_const", dest="format", const="pretty"
     )
-    parser.add_option(
+    parser.add_argument(
         "--simple", action="store_const", dest="format", const="simple"
     )
-    parser.add_option(
+    parser.add_argument(
         "--make", action="store_const", dest="format", const="make"
     )
-    parser.add_option(
+    parser.add_argument(
         "--cmake", action="store_const", dest="format", const="cmake"
     )
-    parser.add_option(
+    parser.add_argument(
         "--path", action="store_const", dest="format", const="path"
     )
-    parser.add_option(
+    parser.add_argument(
         "--bash", action="store_const", dest="format", const="bash"
     )
-    parser.add_option("--csh", action="store_const", dest="format", const="csh")
-    parser.add_option(
+    parser.add_argument(
+        "--csh", action="store_const", dest="format", const="csh"
+    )
+    parser.add_argument(
         "--value", action="store_const", dest="format", const="value"
     )
 
     # [misc]
-    parser.add_option(
+    parser.add_argument(
         "--ignore-errors", action="store_true", dest="ignore_errors"
     )
-    parser.add_option("--verify", action="store_true", dest="verify")
-    parser.add_option(
+    parser.add_argument("--verify", action="store_true", dest="verify")
+    parser.add_argument(
         "--diagnose-lib",
-        nargs=1,
         type=str,
         dest="diagnose_lib",
         default=None,
     )
 
     # [hidden]
-    parser.add_option("--devel", action="store_true", dest="devel")
-    parser.add_option("--no-devel", action="store_true", dest="nodevel")
-    parser.add_option(
+    parser.add_argument("--devel", action="store_true", dest="devel")
+    parser.add_argument("--no-devel", action="store_true", dest="nodevel")
+    parser.add_argument(
         "--verify-verbose", action="store_true", dest="verify_verbose"
     )
-    parser.add_option("--unit-tests", action="store_true", dest="do_unit_tests")
+    parser.add_argument(
+        "--unit-tests", action="store_true", dest="do_unit_tests"
+    )
     # Hijack the help message to use the module docstring
-    # optparse is not robust enough to support help msg sections for args.
-    parser.print_help = lambda: stdout.write(__doc__)
+    parser.print_help = lambda *args: stdout.write(__doc__)
 
     return parser.parse_args()
 
 
 def main():
-    options, args = parse_args()
+    options = parse_args()
 
     utils.init_CHPL_DEVELOPER()
     # let the command line override the environment variable
@@ -912,8 +905,6 @@ def main():
 
     # at this point, we should run the verification tests
     if options.verify or options.verify_verbose:
-        global ENV_VALS
-
         success, reason = chplenv_verify.verify(
             ENV_VALS, verbose=options.verify_verbose
         )
