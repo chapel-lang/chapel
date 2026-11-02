@@ -672,6 +672,8 @@ all:
     - Use per-class vmtables (#29445)
   10/14/26:
     - Rewrite a number of constants as dynamically loaded (#29348)
+  10/22/26:
+    - Add check for using classes across program boundaries (#29472)
 
 # End all
 
