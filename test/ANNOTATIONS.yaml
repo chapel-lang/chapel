@@ -2743,6 +2743,8 @@ arkouda: &arkouda-base
     - Switched system LLVM to 22 requiring Arkouda-release to use CHPL_LLVM=bundled which runs faster due to better -O levels (#28821)
   06/30/26:
     - Updated Arkouda release to Chapel 2.9 permitting the use of CHPL_LLVM=system again now using LLVM 22 (#29033)
+  10/07/26:
+    - Support for floating point values in sparse matrices (#5531)
 
 arkouda-string:
   <<: *arkouda-base
