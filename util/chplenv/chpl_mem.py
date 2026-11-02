@@ -41,6 +41,7 @@ def get(flag="host"):
         else:
             mem_val = "jemalloc"
     else:
+        mem_val = None
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     var_name = "CHPL_{0}_MEM".format(flag.upper())

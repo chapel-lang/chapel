@@ -14,6 +14,7 @@ def get(flag="host"):
     elif flag == "target":
         arch_val = overrides.get("CHPL_TARGET_ARCH", "")
     else:
+        arch_val = None
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if arch_val:

@@ -6,6 +6,14 @@ import sys
 import unittest
 from shutil import which  # pylint: disable=unused-import
 
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    # fallback shouldn't be needed, added in Python 3.5.2
+    # but prior point releases don't have it and we support Python 3.5
+    # just covering all our bases
+    TYPE_CHECKING = False
+
 _CHPL_DEVELOPER = False
 
 
@@ -118,6 +126,51 @@ def try_run_command(command, cmd_input=None, combine_output=False):
     my_stdout = output[0].decode("utf-8")
     my_sterr = output[1].decode("utf-8") if output[1] else None
     return (True, process.returncode, my_stdout, my_sterr)
+
+
+if TYPE_CHECKING:
+    from typing import Literal, Optional, Sequence, Tuple, Union, overload
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[True] = ...,
+        stderr: Literal[False] = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> str: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[True] = ...,
+        *,
+        stderr: Literal[True],
+        cmd_input: Optional[str] = ...,
+    ) -> Tuple[str, Optional[str]]: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[False],
+        stderr: Literal[True],
+        cmd_input: Optional[str] = ...,
+    ) -> Optional[str]: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[False],
+        stderr: Literal[False] = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> None: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: bool = ...,
+        stderr: bool = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> Union[str, Tuple[str, Optional[str]], None]: ...
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):

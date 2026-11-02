@@ -203,6 +203,7 @@ def get(flag="host"):
     elif flag == "target":
         compiler_val = overrides.get("CHPL_TARGET_COMPILER", "")
     else:
+        compiler_val = None
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     default_llvm = False
