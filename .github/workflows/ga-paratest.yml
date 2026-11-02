@@ -515,6 +515,7 @@ jobs:
           EXPECTED_JOBS: ${{ needs.plan.outputs.job-count }}
           EXPECTED_DIRS: ${{ needs.plan.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
           rm -f "$AGGREGATED_RESULTS_DIR/results.log"
@@ -634,7 +635,7 @@ jobs:
                   echo "... and $((num_failed_tests - max_listed)) more"
                 fi
                 echo '```'
-              } > "$RUNNER_TEMP/failure-email-addendum.md"
+              } > "$FAILURE_EMAIL_ADDENDUM"
             fi
           fi
 
@@ -653,7 +654,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: failure-email-addendum-${{ job.check_run_id }}
-          path: ${{ runner.temp }}/failure-email-addendum.md
+          path: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
           if-no-files-found: ignore
           retention-days: 3
       - name: restore test directory durations
