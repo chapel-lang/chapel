@@ -5,7 +5,14 @@ import subprocess
 import sys
 import unittest
 from shutil import which  # pylint: disable=unused-import
-from typing import TYPE_CHECKING
+
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    # fallback shouldn't be needed, added in Python 3.5.2
+    # but prior point releases don't have it and we support Python 3.5
+    # just covering all our bases
+    TYPE_CHECKING = False
 
 _CHPL_DEVELOPER = False
 
