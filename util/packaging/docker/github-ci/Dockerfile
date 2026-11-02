@@ -66,6 +66,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     sudo \
     time \
     tzdata \
+    valgrind \
     wget \
     xxd \
     && rm -rf /var/lib/apt/lists/* \

@@ -697,3 +697,53 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+
+
+
+  test_valgrind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    env:
+      CHPL_HOME: ${{ github.workspace }}
+      CHPL_NIGHTLY_DO_NOTHING: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          key: ccache-${{ github.job }}
+      - name: build and test the compiler under valgrind
+        run: |
+          echo "::group::Starting valgrind test"
+          export PATH="/usr/lib/ccache:$PATH"
+          source util/cron/test-valgrind.bash
+          "$CHPL_HOME/util/printchplenv" --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Compiling Chapel"
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Running tests under valgrind"
+          "$CHPL_HOME/util/start_test" -valgrind --parallel "$num_procs" \
+            test/release/examples
+          echo "::endgroup::"
+
+  paratest-valgrindexe:
+    name: Chapel paratest with valgrind on executables
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: valgrindexe
+      cron-script: util/cron/test-valgrindexe.bash
+      start-test-args: -valgrindexe
+      timeout-minutes: 360
