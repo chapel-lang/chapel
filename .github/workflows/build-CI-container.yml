@@ -82,6 +82,9 @@ jobs:
               if [[ "$PRE_MERGE" != "true" ]]; then
                 should_promote=true
               fi
+            elif [[ "$PRE_MERGE" == "true" ]]; then
+              echo "::error::This PR changes the CI image, but fork PRs can't push it to test with. Open the PR from a branch in chapel-lang/chapel instead."
+              exit 1
             else
               echo "::warning::Cannot push the new CI image, so checks will run in $image instead."
             fi
