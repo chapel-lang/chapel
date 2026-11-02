@@ -12,6 +12,7 @@ def get(flag="target"):
     if flag == "network":
         valid = ["none", "ofi", "ugni"]
         atomics_val = overrides.get("CHPL_NETWORK_ATOMICS")
+        is_user_specified = atomics_val is not None
         comm_val = chpl_comm.get()
         if not atomics_val:
             if comm_val in ["ofi", "ugni"] and get("target") != "locks":
@@ -95,6 +96,7 @@ def get(flag="target"):
         )
 
     else:
+        is_user_specified = False
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if flag == "target" and atomics_val == "intrinsics":

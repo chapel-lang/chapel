@@ -49,6 +49,7 @@ def get(flag="target"):
         else:
             jemalloc_val = "none"
     else:
+        jemalloc_val = None
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if flag == "host":
