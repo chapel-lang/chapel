@@ -81,6 +81,16 @@ on:
         required: false
         type: string
         default: ""
+      ccache-key:
+        description: ccache key to share with other jobs, defaults to a key unique to this configuration
+        required: false
+        type: string
+        default: ""
+      ccache-save:
+        description: Whether to save the ccache at the end of the build. Only one job per shared ccache-key should save.
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -127,7 +137,8 @@ jobs:
       - name: set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
-          key: ccache-${{ github.job }}-${{ inputs.configuration }}
+          key: ${{ inputs.ccache-key || format('ccache-{0}-{1}', github.job, inputs.configuration) }}
+          save: ${{ inputs.ccache-save }}
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}

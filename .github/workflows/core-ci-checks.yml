@@ -51,7 +51,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-default
+          save: false # paratest-linux64 is the writer
       - name: make check
         run: |
           ./util/buildRelease/smokeTest chpl
@@ -91,7 +92,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-llvm-none
+          save: false # paratest-quickstart is the writer
       - name: make frontend-docs
         run: |
           make frontend-docs
@@ -123,7 +125,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-llvm-none
+          save: false # paratest-quickstart is the writer
       - name: make mason
         # Use a quickstart config to keep it from running to long
         # While there, run a make check in that config for more coverage
@@ -510,7 +513,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-llvm-none
+          save: false # paratest-quickstart is the writer
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
         with:
@@ -616,7 +620,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-llvm-none
+          save: false # paratest-quickstart is the writer
       - name: run test-networking-packages.bash
         run: |
           ./util/cron/test-networking-packages.bash
