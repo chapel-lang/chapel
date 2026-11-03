@@ -7,6 +7,10 @@ on:
       CHAPEL_CI_IMAGE:
         type: string
         default: ghcr.io/chapel-lang/chapel-github-ci:latest
+      # keep in sync with the minimum Python version in doc/rst/usingchapel/prereqs.rst
+      MIN_PYTHON_VERSION:
+        type: string
+        default: "3.5"
     secrets:
       WEBSITE_KEY:
         required: false
@@ -270,6 +274,42 @@ jobs:
       - name: smokeTest lint
         run: |
           ./util/buildRelease/smokeTest lint
+
+  check_min_python:
+    runs-on: ubuntu-latest
+    container: python:${{ inputs.MIN_PYTHON_VERSION }}-buster@sha256:42a37d6b8c00b186bdfb2b620fa8023eb775b3eb3a768fd3c2e421964eee9665
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: check python version
+        env:
+          MIN_PYTHON_VERSION: ${{ inputs.MIN_PYTHON_VERSION }}
+        run: |
+          python3 --version
+          python3 -c 'import os, sys; assert ("%d.%d" % sys.version_info[:2]) == os.environ["MIN_PYTHON_VERSION"]'
+      - name: printchplenv
+        run: |
+          ./util/printchplenv --all --internal
+
+  pylint_build_scripts:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: install pylint
+        run: |
+          pipx install pylint
+      - name: run pylint
+        env:
+          MIN_PYTHON_VERSION: ${{ inputs.MIN_PYTHON_VERSION }}
+        run: |
+          { find util/chplenv util/config -maxdepth 1 -type f -name '*.py'
+            grep -lsE '^#!.*python' util/chplenv/* util/config/*
+          } | sort -u | xargs pylint \
+            --py-version "$MIN_PYTHON_VERSION" \
+            --disable=R,C,broad-exception-raised,unspecified-encoding,global-statement,pointless-string-statement,logging-format-interpolation,unnecessary-pass,fixme,wildcard-import,bare-except
 
   check_large_files:
     if: github.event_name == 'pull_request'
