@@ -58,7 +58,7 @@ jobs:
 
           name_prefix="chapel"
           BASE_IMAGE_TARBALL="$TARBALL_NAME_PREFIX$name_prefix-$SHA_TAG-$ARCH.tar"
-          BASE_IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$name_prefix:$SHA_TAG"
+          BASE_IMAGE_FULL_NAME="$LOCAL_REGISTRY/$NAMESPACE/$name_prefix:$SHA_TAG-$ARCH"
 
           if [[ "$CONFIG" == "base" ]]; then
             IMAGE_NAME="$name_prefix"
@@ -102,6 +102,7 @@ jobs:
       - name: build image ${{ env.IMAGE_FULL_NAME }}
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
+          context: .
           file: ${{ env.DOCKERFILE }}
           build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
           tags: ${{ env.IMAGE_FULL_NAME }}
