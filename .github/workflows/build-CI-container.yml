@@ -222,20 +222,3 @@ jobs:
           for suffix in "" -amd64 -arm64; do
             docker buildx imagetools create -t "$CHAPEL_CI_IMAGE_REPO:latest$suffix" "$IMAGE$suffix"
           done
-
-  ci-container-alert-failure:
-    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-    runs-on: ubuntu-slim
-    needs:
-      - should-build-ci-container
-      - build-test-ci-container
-      - push-multiarch-ci-container
-      - core-checks
-      - extended-checks
-      - full-checks
-      - promote-ci-container
-    steps:
-      - name: Fail
-        run: |
-          echo "A required status check has failed"
-          exit 1
