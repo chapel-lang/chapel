@@ -75,7 +75,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: check version reported by chpl in SHA tagged image
         run: |
-          chpl_version_output=$(docker run --rm chapel/chapel:2.10.0 chpl --version)
+          chpl_version_output=$(docker run --rm "$SHA_TAGGED_IMAGE" chpl --version)
           chpl_version=$(echo "$container_version_output" | head -n 1 | cut -w -f3)
           if [[ "$chpl_version" != "$RELEASE_VERSION" ]]; then
             echo "chpl version in container ($chpl_version) does not match expected release version $RELEASE_VERSION"
