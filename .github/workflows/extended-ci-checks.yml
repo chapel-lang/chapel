@@ -203,9 +203,9 @@ jobs:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         comm: ["none", "gasnet"]
         include:
-          - { python_version: "3.10", runner: ubuntu-24.04 }
-          - { python_version: "3.11", runner: ubuntu-24.04 }
-          - { python_version: "3.12", runner: ubuntu-24.04 }
+          - {python_version: "3.10", runner: ubuntu-24.04}
+          - {python_version: "3.11", runner: ubuntu-24.04}
+          - {python_version: "3.12", runner: ubuntu-24.04}
     runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Install Python
