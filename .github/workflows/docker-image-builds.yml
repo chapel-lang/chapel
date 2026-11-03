@@ -107,8 +107,6 @@ jobs:
           build-args: "MAKE_THREADS=${{ env.MAKE_THREADS }}"
           tags: ${{ env.IMAGE_FULL_NAME }}
           load: true
-          cache-from: type=gha
-          cache-to: ${{ github.ref == 'refs/heads/main' && 'type=gha,mode=max' || '' }}
       - name: test image
         run: |
           cp test/release/examples/hello.chpl .
