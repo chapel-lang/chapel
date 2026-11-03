@@ -2080,7 +2080,7 @@ GenRet TypeSymbol::codegen() {
 #ifdef HAVE_LLVM
 
 bool useAggregateABI() {
-  return !optimizeCCode && !gCodegenGPU;
+  return !gCodegenGPU;
 }
 
 llvm::Type* codegenFormalTypeLLVM(const FunctionType::Formal* formal) {
