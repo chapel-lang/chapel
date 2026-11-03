@@ -468,6 +468,8 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64-pic
+      ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-linux64.bash
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
@@ -478,6 +480,8 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64-pic-gasnet-everything
+      ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-gasnet-everything.bash
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
