@@ -1,1 +1,6 @@
 Dockerfile
+.git
+test/*
+!test/release
+third-party/llvm/llvm-src
+third-party/gmp/gmp-src
