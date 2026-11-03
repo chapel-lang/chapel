@@ -202,7 +202,11 @@ jobs:
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         comm: ["none", "gasnet"]
-    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
+        include:
+          - {python_version: "3.10", runner: ubuntu-24.04}
+          - {python_version: "3.11", runner: ubuntu-24.04}
+          - {python_version: "3.12", runner: ubuntu-24.04}
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Install Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
@@ -216,7 +220,9 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}-${{ matrix.python_version }}
+          # Only the first version on each image saves.
+          key: python-version-tests-${{ matrix.runner || 'ubuntu-latest' }}
+          save: ${{ contains(fromJSON('["3.10","3.13"]'), matrix.python_version) }}
       - name: Check desired Python version is default
         run: |
           which python || true
