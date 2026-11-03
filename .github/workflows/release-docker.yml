@@ -73,6 +73,16 @@ jobs:
             echo "RELEASE_TAGGED_IMAGE=$RELEASE_TAGGED_IMAGE"
             echo "LATEST_TAGGED_IMAGE=$LATEST_TAGGED_IMAGE"
           } >> "$GITHUB_ENV"
+      - name: check version reported by chpl in SHA tagged image
+        run: |
+          chpl_version_output=$(docker run --rm chapel/chapel:2.10.0 chpl --version)
+          chpl_version=$(echo "$container_version_output" | head -n 1 | cut -w -f3)
+          if [[ "$chpl_version" != "$RELEASE_VERSION" ]]; then
+            echo "chpl version in container ($chpl_version) does not match expected release version $RELEASE_VERSION"
+            echo "chpl --version output in container:"
+            echo "$chpl_version_output"
+            exit 1
+          fi
       - name: log in to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
