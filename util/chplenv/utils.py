@@ -145,7 +145,7 @@ if TYPE_CHECKING:
         stdout: Literal[True] = ...,
         *,
         stderr: Literal[True],
-        cmd_input: Optional[str] = ...,
+        cmd_input: Optional[str] = ...
     ) -> Tuple[str, Optional[str]]: ...
 
     @overload
