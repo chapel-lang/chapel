@@ -173,14 +173,14 @@ jobs:
     uses: $/.github/workflows/core-ci-checks.yml
     with:
       CHAPEL_CI_IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
-      can_publish: false
+      skip_publish: true
 
   extended-checks:
     needs: [should-build-ci-container, push-multiarch-ci-container]
     uses: $/.github/workflows/extended-ci-checks.yml
     with:
       CHAPEL_CI_IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
-      can_publish: false
+      skip_publish: true
 
   full-checks:
     needs: [should-build-ci-container, push-multiarch-ci-container]
