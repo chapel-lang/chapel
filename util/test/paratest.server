@@ -412,7 +412,7 @@ sub nodes_free {
 }
 
 
-# Return true if a *.chpl, *.test.c, *.ml-test.c, or a PRETEST exists. Otherwise false.
+# Return true if a *.chpl, *.test.c, *.test.cpp, *.ml-test.c, *.ml-test.cpp, or a PRETEST exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     local ($found);
@@ -423,7 +423,9 @@ sub chpl_files {
         }
         if ($fname =~ /\.chpl$/     ||
             $fname =~ /\.test\.c$/  ||
+            $fname =~ /\.test\.cpp$/  ||
             $fname =~ /\.ml-test\.c$/ ||
+            $fname =~ /\.ml-test\.cpp$/ ||
             $fname =~ /PRETEST$/ ||
             $fname eq "sub_test"
         ) {
