@@ -11,8 +11,8 @@ on:
       MIN_PYTHON_VERSION:
         type: string
         default: "3.5"
-      publish:
-        description: Publish the docs on push, schedule, and workflow_dispatch events
+      can_publish:
+        description: Is publishing allowed for the docs on push, schedule, and workflow_dispatch events
         type: boolean
         default: true
     secrets:
@@ -402,7 +402,7 @@ jobs:
           ./util/buildRelease/check-release-files.bash
 
   publish-docs:
-    if: ${{ inputs.publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+    if: ${{ inputs.can_publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
     concurrency:
       group: 'publish-docs'
       queue: single
