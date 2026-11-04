@@ -483,7 +483,6 @@ jobs:
       cron-script: util/cron/test-linux64.bash
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
-      start-test-args: --futures
       make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
   paratest-linux64-pic-gasnet-everything:
     name: Chapel paratest on linux64 with LIB_PIC=pic and gasnet-everything
@@ -495,5 +494,4 @@ jobs:
       cron-script: util/cron/test-gasnet-everything.bash
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
-      start-test-args: --futures
       make-targets: all test-venv mason-deps spectests
