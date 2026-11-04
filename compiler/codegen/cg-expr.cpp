@@ -3655,7 +3655,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
     if (sret) {
       if (returnsLeaf) {
-        std::SmallVector<llvm::Value*, 4> idxs = {irBuilder->getInt32(0)};
+        llvm::SmallVector<llvm::Value*, 4> idxs = {irBuilder->getInt32(0)};
         for (unsigned idx : retLeafPath)
           idxs.push_back(irBuilder->getInt32(idx));
         llvm::Value* leafPtr =
