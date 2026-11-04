@@ -343,6 +343,7 @@ jobs:
 
           NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          # shellcheck disable=SC2016 # Expansion is meant to happen when .bashrc is sourced.
           echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
 
           brew install gcc cmake python gmp llvm@22
