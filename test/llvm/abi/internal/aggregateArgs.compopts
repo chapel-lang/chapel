@@ -1,0 +1,1 @@
+--no-local --llvm-print-ir-stage none --llvm-print-ir takesComplex,returnsComplex,takesRange,takesClass,returnsClass,takesSmall,returnsSmall,takesFour,takesBig,returnsBig,takesArr,takesNested4,returnsNested4,takesNested5,takesRec,takesRecConst,returnsRec,takesOuter,returnsOuter,callAll
