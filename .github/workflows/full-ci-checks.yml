@@ -460,6 +460,7 @@ jobs:
       CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: quickstart
       ccache-key: x86-llvm-none
+      ccache-save: false
       cron-script: util/cron/test-quickstart.bash
       make-targets: all test-venv mason-deps spectests
   paratest-quickstart-gasnet:
@@ -471,6 +472,7 @@ jobs:
       max-jobs: 15
       cron-script: util/cron/test-gasnet.quickstart.bash
       make-targets: all test-venv mason-deps
+      ccache-key: x86-llvm-none
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
     uses: $/.github/workflows/ga-paratest.yml
