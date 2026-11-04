@@ -258,12 +258,15 @@ bool argRequiresCPtr(const FunctionType::Formal* formal);
 #ifdef HAVE_LLVM
 // non-foreign Chapel functions take aggregate formals
 // as separate scalar leaves (or a pointer to a copy) and return aggregates
-// through a hidden first pointer argument
+// as their only scalar leaf or through a hidden first pointer argument
 bool useAggregateABI();
 llvm::Type* codegenFormalTypeLLVM(const FunctionType::Formal* formal);
+using AggregateLeafPath = llvm::SmallVector<unsigned, 4>;
 // Returns false if 'ty' is passed as a pointer to a copy instead of leaves
 bool getAggregateArgLeaves(llvm::Type* ty,
-                           std::vector<std::vector<unsigned>>& leafPaths);
+                           llvm::SmallVectorImpl<AggregateLeafPath>& leafPaths);
+// Returns true if the struct 'ty' has exactly one scalar leaf, at 'leafPath'
+bool getAggregateReturnLeaf(llvm::Type* ty, AggregateLeafPath& leafPath);
 // Appends the parameter types for a formal of type 'ty'; true if indirect
 bool appendAggregateABIParamTypes(llvm::Type* ty,
                                   std::vector<llvm::Type*>& out);

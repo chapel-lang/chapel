@@ -3189,7 +3189,7 @@ static void codegenAggregateABIArg(GenRet arg, llvm::Type* formalTy,
     val = convertValueToType(val, formalTy, !arg.isUnsigned, true);
   INT_ASSERT(val);
 
-  std::vector<std::vector<unsigned>> leafPaths;
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
   if (getAggregateArgLeaves(formalTy, leafPaths)) {
     for (const auto& path : leafPaths) {
       llvm::Value* leaf = val;
@@ -3353,6 +3353,8 @@ static GenRet codegenCallExprInner(GenRet function,
 
     std::vector<llvm::Value *> llArgs;
     llvm::AllocaInst* sret = NULL;
+    AggregateLeafPath retLeafPath;
+    bool returnsLeaf = false;
     llvm::Type* chapelRetTy = NULL;
     bool chplRetTySigned = false;
     int retAlignment = ALIGNMENT_DEFER;
@@ -3398,7 +3400,9 @@ static GenRet codegenCallExprInner(GenRet function,
       }
     } else if (aggABI && chapelRetTy && chapelRetTy->isAggregateType()) {
       sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
-      llArgs.push_back(sret);
+      returnsLeaf = getAggregateReturnLeaf(chapelRetTy, retLeafPath);
+      if (!returnsLeaf)
+        llArgs.push_back(sret);
     }
 
     ArgSymbol* formal = NULL;
@@ -3649,7 +3653,16 @@ static GenRet codegenCallExprInner(GenRet function,
 
     ret.val = c;
 
-    if( sret ) {
+    if (sret) {
+      if (returnsLeaf) {
+        std::SmallVector<llvm::Value*, 4> idxs = {irBuilder->getInt32(0)};
+        for (unsigned idx : retLeafPath)
+          idxs.push_back(irBuilder->getInt32(idx));
+        llvm::Value* leafPtr =
+          irBuilder->CreateInBoundsGEP(chapelRetTy, sret, idxs);
+        trackLLVMValue(leafPtr);
+        trackLLVMValue(irBuilder->CreateStore(c, leafPtr));
+      }
       ret.val = codegenLoadLLVM(sret, fn?(fn->retType):(NULL));
       immutableAggregateTemps.insert(sret);
       noteAggregateValueToErase(ret.val);
@@ -5253,7 +5266,15 @@ DEFINE_PRIM(RETURN) {
         trackLLVMValue(returnInst);
       } else {
         ret = codegenCast(ret.chplType, ret);
-        returnInst = irBuilder->CreateRet(ret.val);
+        llvm::Value* retVal = ret.val;
+        AggregateLeafPath leafPath;
+        if (useAggregateABI() &&
+            retVal->getType() != curFn->getReturnType() &&
+            getAggregateReturnLeaf(retVal->getType(), leafPath)) {
+          for (unsigned idx : leafPath)
+            retVal = getAggregateField(retVal, idx);
+        }
+        returnInst = irBuilder->CreateRet(retVal);
         trackLLVMValue(returnInst);
       }
     }

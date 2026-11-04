@@ -2086,9 +2086,9 @@ llvm::Type* codegenFormalTypeLLVM(const FunctionType::Formal* formal) {
   return codegenFormalType(formal->qual(), formal->type()).type;
 }
 
-static bool collectAggregateLeaves(llvm::Type* ty,
-                                   std::vector<unsigned>& path,
-                                   std::vector<std::vector<unsigned>>& out) {
+static bool
+collectAggregateLeaves(llvm::Type* ty, AggregateLeafPath& path,
+                       llvm::SmallVectorImpl<AggregateLeafPath>& out) {
   if (auto sTy = llvm::dyn_cast<llvm::StructType>(ty)) {
     for (unsigned i = 0; i < sTy->getNumElements(); i++) {
       path.push_back(i);
@@ -2103,18 +2103,29 @@ static bool collectAggregateLeaves(llvm::Type* ty,
   return true;
 }
 
-bool getAggregateArgLeaves(llvm::Type* ty,
-                           std::vector<std::vector<unsigned>>& leafPaths) {
+bool
+getAggregateArgLeaves(llvm::Type* ty,
+                      llvm::SmallVectorImpl<AggregateLeafPath>& leafPaths) {
   const size_t maxLeaves = 4;
-  std::vector<unsigned> path;
+  AggregateLeafPath path;
   leafPaths.clear();
   return collectAggregateLeaves(ty, path, leafPaths) &&
          leafPaths.size() <= maxLeaves;
 }
 
+bool getAggregateReturnLeaf(llvm::Type* ty, AggregateLeafPath& leafPath) {
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
+  AggregateLeafPath path;
+  if (!ty->isStructTy() || !collectAggregateLeaves(ty, path, leafPaths) ||
+      leafPaths.size() != 1)
+    return false;
+  leafPath = leafPaths[0];
+  return true;
+}
+
 bool appendAggregateABIParamTypes(llvm::Type* ty,
                                   std::vector<llvm::Type*>& out) {
-  std::vector<std::vector<unsigned>> leafPaths;
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
   if (!ty->isAggregateType()) {
     out.push_back(ty);
   } else if (getAggregateArgLeaves(ty, leafPaths)) {
@@ -2350,9 +2361,15 @@ codegenFunctionTypeLLVMImpl(
       llvmAddAttr(ctx, outAttrs, argTys.size(), b);
     }
   } else if (aggABI && returnTy->isAggregateType()) {
-    argTys.push_back(getPointerType(returnTy, stackSpace));
-    outArgNames.push_back("indirect_return");
-    returnTy = llvm::Type::getVoidTy(ctx);
+    AggregateLeafPath leafPath;
+    if (getAggregateReturnLeaf(returnTy, leafPath)) {
+      // like C, return the first leaf of the aggregate directly
+      returnTy = llvm::ExtractValueInst::getIndexedType(returnTy, leafPath);
+    } else {
+      argTys.push_back(getPointerType(returnTy, stackSpace));
+      outArgNames.push_back("indirect_return");
+      returnTy = llvm::Type::getVoidTy(ctx);
+    }
   }
 
   for (int i = 0; i < ft->numFormals(); i++) {
@@ -3001,7 +3018,7 @@ static GenRet createTempVarForFormal(ArgSymbol* astArg, llvm::Value* llvmArg) {
 
 // Stores the next LLVM arguments to the leaves of the aggregate at 'ptr'
 static void storeLeavesFromArgs(llvm::Type* ty, llvm::Value* ptr,
-                                const std::vector<std::vector<unsigned>>& leafPaths,
+                                llvm::ArrayRef<AggregateLeafPath> leafPaths,
                                 llvm::Function::arg_iterator& ai) {
   llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
   const llvm::DataLayout& DL = gGenInfo->module->getDataLayout();
@@ -3173,6 +3190,7 @@ void FnSymbol::codegenDef() {
     bool aggABI = useAggregateABI() && !ft->hasForeignLinkage();
     if (aggABI && ft->returnType() != dtVoid &&
         ft->returnType() != dtNothing &&
+        func->getReturnType()->isVoidTy() &&
         ft->returnType()->codegen().type->isAggregateType()) {
       info->currentFunctionRetPtr = &*ai++;
     }
@@ -3186,7 +3204,7 @@ void FnSymbol::codegenDef() {
         llvm::Type* formalTy = codegenFormalTypeLLVM(ft->formal(formalIdx));
         if (formalTy->isAggregateType()) {
           Type* argType = arg->typeInfo();
-          std::vector<std::vector<unsigned>> leafPaths;
+          llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
           if (getAggregateArgLeaves(formalTy, leafPaths)) {
             GenRet tmp = createTempVar(argType);
             storeLeavesFromArgs(formalTy, tmp.val, leafPaths, ai);
