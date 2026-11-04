@@ -59,7 +59,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-default
+          key: x86-default
           save: false
       - name: make check
         run: |
@@ -80,7 +80,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-default
+          key: x86-default
           save: false
       - name: make chplvis
         run: |
@@ -101,7 +101,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-llvm-none
+          key: x86-llvm-none
           save: false
       - name: make frontend-docs
         run: |
@@ -134,7 +134,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-llvm-none
+          key: x86-llvm-none
           save: false
       - name: make mason
         # Use a quickstart config to keep it from running to long
@@ -193,7 +193,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-default
+          key: x86-default
           save: false
       - name: set CHPL_HOME
         run: |
@@ -244,7 +244,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-llvm-none
+          key: x86-llvm-none
           save: false
       - name: set llvm_none make check
         run: |
@@ -563,7 +563,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-llvm-none
+          key: x86-llvm-none
           save: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
@@ -671,7 +671,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-llvm-none
+          key: x86-llvm-none
           save: false
       - name: run test-networking-packages.bash
         run: |

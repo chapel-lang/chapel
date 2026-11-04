@@ -452,7 +452,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-x86-default
+          key: x86-default
           save: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
@@ -596,7 +596,7 @@ jobs:
       - name: set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
-          key: ccache-x86-default
+          key: x86-default
           save: false
       - name: Build Chapel
         shell: bash
@@ -656,7 +656,7 @@ jobs:
     with:
       CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64
-      ccache-key: ccache-x86-default
+      ccache-key: x86-default
       ccache-save: false
       cron-script: util/cron/test-linux64.bash
       futures-mode: 1
@@ -670,4 +670,4 @@ jobs:
       cron-script: util/cron/test-gasnet-everything.bash
       futures-mode: 1
       make-targets: all test-venv mason-deps spectests
-      ccache-key: ccache-x86-default
+      ccache-key: x86-default
