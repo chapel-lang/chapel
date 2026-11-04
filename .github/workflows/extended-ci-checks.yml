@@ -451,7 +451,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
+          key: ccache-x86-default
+          save: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
         run: |
@@ -594,7 +595,8 @@ jobs:
       - name: set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
-          key: ccache-${{ github.job }}
+          key: ccache-x86-default
+          save: false
       - name: Build Chapel
         shell: bash
         run: |

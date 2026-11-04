@@ -356,6 +356,8 @@ jobs:
       configuration: asan
       cron-script: util/cron/test-asan.bash
       timeout-minutes: 360
+      ccache-key: ccache-x86-llvm-none
+      ccache-save: false
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
   paratest-fast:
@@ -367,6 +369,8 @@ jobs:
       cron-script: util/cron/test-fast.bash
       start-test-args: -compopts --fast -compopts --ccflags -compopts -Wno-invalid-feature-combination
       make-targets: all test-venv mason-deps spectests
+      ccache-key: ccache-x86-default
+      ccache-save: false
   paratest-gasnet-asan:
     name: Chapel paratest with GASNet and AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
@@ -378,6 +382,8 @@ jobs:
       max-jobs: 15
       timeout-minutes: 360
       make-targets: all test-venv mason-deps
+      ccache-key: ccache-x86-llvm-none
+      ccache-save: false
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
     uses: $/.github/workflows/ga-paratest.yml
@@ -389,6 +395,8 @@ jobs:
       start-test-args: -multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
+      ccache-key: ccache-x86-default
+      ccache-save: false
   # runners only have 2 real cores, and smp can't oversubscribe
   # so this won't work yet
   # paratest-gasnet-smp:
@@ -410,6 +418,8 @@ jobs:
       cron-script: util/cron/test-gpu-cpu.bash
       test-dirs: test/gpu/native test/users/engin/context test/release/examples
       make-targets: all test-venv mason-deps
+      ccache-key: ccache-x86-default
+      ccache-save: false
   paratest-memleaks:
     name: Chapel paratest with --memLeaks
     uses: $/.github/workflows/ga-paratest.yml
@@ -486,6 +496,8 @@ jobs:
       cron-script: util/cron/test-linux64-locks-atomics.bash
       make-targets: all test-venv mason-deps spectests
       test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+      ccache-key: ccache-x86-default
+      ccache-save: false
   paratest-intrinsics-atomics:
     name: Chapel paratest with CHPL_ATOMICS=intrinsics
     uses: $/.github/workflows/ga-paratest.yml
@@ -495,6 +507,8 @@ jobs:
       cron-script: util/cron/test-linux64-intrinsics-atomics.bash
       make-targets: all test-venv mason-deps spectests
       test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+      ccache-key: ccache-x86-default
+      ccache-save: false
   paratest-linux64-pic:
     name: Chapel paratest on linux64 with LIB_PIC=pic
     uses: $/.github/workflows/ga-paratest.yml
