@@ -244,7 +244,7 @@ jobs:
       CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
-      ccache-key: paratest-linux64-c-backend
+      ccache-key: linux64-c-backend
       ccache-save: false
   paratest-linux64-c-backend-gasnet:
     name: Chapel paratest on linux64 with C backend using GASNet
@@ -256,7 +256,7 @@ jobs:
       max-jobs: 15
       make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
-      ccache-key: paratest-linux64-c-backend
+      ccache-key: linux64-c-backend
   paratest-linux64-clang:
     name: Chapel paratest on linux64 using Clang as the host/target compiler
     uses: $/.github/workflows/ga-paratest.yml
@@ -272,7 +272,7 @@ jobs:
       runner: macos-latest
       use-container: false
       cron-script: util/cron/test-darwin.bash
-      ccache-key: paratest-darwin
+      ccache-key: darwin
       pre-build-steps: |
         brew install llvm@22
   test-quickstart-darwin:
@@ -315,7 +315,7 @@ jobs:
       cron-script: util/cron/test-gasnet.darwin.bash
       start-test-args: -multilocale-only
       max-jobs: 15
-      ccache-key: paratest-darwin
+      ccache-key: darwin
       ccache-save: false
       pre-build-steps: |
         brew install llvm@22
@@ -330,7 +330,7 @@ jobs:
       cron-script: util/cron/test-gasnet.fast.darwin.bash
       start-test-args: -multilocale-only
       max-jobs: 15
-      ccache-key: paratest-darwin
+      ccache-key: darwin
       ccache-save: false
       pre-build-steps: |
         brew install llvm@22
@@ -345,7 +345,7 @@ jobs:
       cron-script: util/cron/test-linux64.bash
       futures-mode: 1
       make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
-      ccache-key: aarch64-paratest
+      ccache-key: aarch64
       ccache-save: false
   paratest-linux64-gasnet-everything-aarch64:
     name: Chapel paratest on linux64 aarch64 with gasnet-everything
@@ -358,7 +358,7 @@ jobs:
       start-test-args: --multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
-      ccache-key: aarch64-paratest
+      ccache-key: aarch64
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
