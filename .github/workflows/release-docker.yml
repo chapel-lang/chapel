@@ -64,14 +64,11 @@ jobs:
       - name: set vars
         run: |
           IMAGE_NO_TAG="$EXTERNAL_REGISTRY/$NAMESPACE/$IMAGE_NAME"
-          SHA_TAGGED_IMAGE="$IMAGE_NO_TAG:$SHA_TAG"
-          RELEASE_TAGGED_IMAGE="$IMAGE_NO_TAG:$RELEASE_VERSION"
-          LATEST_TAGGED_IMAGE="$IMAGE_NO_TAG:latest"
           {
             echo "IMAGE_NO_TAG=$IMAGE_NO_TAG"
-            echo "SHA_TAGGED_IMAGE=$SHA_TAGGED_IMAGE"
-            echo "RELEASE_TAGGED_IMAGE=$RELEASE_TAGGED_IMAGE"
-            echo "LATEST_TAGGED_IMAGE=$LATEST_TAGGED_IMAGE"
+            echo "SHA_TAGGED_IMAGE=$IMAGE_NO_TAG:$SHA_TAG"
+            echo "RELEASE_TAGGED_IMAGE=$IMAGE_NO_TAG:$RELEASE_VERSION"
+            echo "LATEST_TAGGED_IMAGE=$IMAGE_NO_TAG:latest"
           } >> "$GITHUB_ENV"
       - name: check version reported by chpl in SHA tagged image
         run: |
