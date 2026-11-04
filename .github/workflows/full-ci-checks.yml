@@ -244,6 +244,8 @@ jobs:
       CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
+      ccache-key: paratest-linux64-c-backend
+      ccache-save: false
   paratest-linux64-c-backend-gasnet:
     name: Chapel paratest on linux64 with C backend using GASNet
     uses: $/.github/workflows/ga-paratest.yml
@@ -254,6 +256,7 @@ jobs:
       max-jobs: 15
       make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
+      ccache-key: paratest-linux64-c-backend
   paratest-linux64-clang:
     name: Chapel paratest on linux64 using Clang as the host/target compiler
     uses: $/.github/workflows/ga-paratest.yml
