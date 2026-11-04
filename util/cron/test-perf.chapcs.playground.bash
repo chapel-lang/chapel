@@ -35,9 +35,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
 
 GITHUB_USER=jabraham17
-GITHUB_BRANCH=rewrite-vmtable
-SHORT_NAME=rewrite-vmtable
-START_DATE=9/24/26
+GITHUB_BRANCH=better-isel
+SHORT_NAME=better-isel
+START_DATE=11/05/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
