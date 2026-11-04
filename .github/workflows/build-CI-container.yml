@@ -6,7 +6,6 @@ name: build-CI-container
 on:
   push:
     branches: [ main ]
-    # prevents CI updates throttling normal pushes to main
     # Keep in sync with the docker-sources filter below.
     paths:
       - util/packaging/docker/github-ci/Dockerfile
