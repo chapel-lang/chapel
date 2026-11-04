@@ -118,8 +118,8 @@ jobs:
           sudo apt-get update
           sudo apt-get clean
 
-          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
-          if sudo apt-get install -y --download-only --reinstall \
+          # Prefer the latest packages and fall back to the cached ones if the download fails or stalls
+          if sudo timeout -k 1m "${APT_INSTALL_TIMEOUT_MINS}m" apt-get install -y --download-only --reinstall \
               "cpp-$VERSION" \
               "g++-$VERSION" \
               "gcc-$VERSION" \
