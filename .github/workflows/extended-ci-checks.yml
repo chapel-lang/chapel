@@ -656,6 +656,7 @@ jobs:
       CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64
       ccache-key: ccache-x86-default
+      ccache-save: false
       cron-script: util/cron/test-linux64.bash
       futures-mode: 1
       make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
@@ -668,3 +669,4 @@ jobs:
       cron-script: util/cron/test-gasnet-everything.bash
       futures-mode: 1
       make-targets: all test-venv mason-deps spectests
+      ccache-key: ccache-x86-default

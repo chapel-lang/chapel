@@ -60,7 +60,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64 is the writer
+          save: false # paratest-linux64-gasnet-everything is the writer
       - name: make check
         run: |
           ./util/buildRelease/smokeTest chpl
@@ -81,7 +81,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64 is the writer
+          save: false # paratest-linux64-gasnet-everything is the writer
       - name: make chplvis
         run: |
           bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -194,7 +194,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64 is the writer
+          save: false # paratest-linux64-gasnet-everything is the writer
       - name: set CHPL_HOME
         run: |
           echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
