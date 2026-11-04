@@ -138,7 +138,7 @@ jobs:
           push: ${{ fromJSON(needs.should-build-ci-container.outputs.should-push) }}
           cache-from: type=gha,scope=${{ env.ARCH }}
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=gha,scope={0},mode=max', env.ARCH) || '' }}
-      - name: Run basic image checks
+      - name: check image LLVM version
         env:
           IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
         run: |
