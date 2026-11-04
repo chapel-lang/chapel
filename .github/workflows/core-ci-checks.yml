@@ -11,6 +11,10 @@ on:
       MIN_PYTHON_VERSION:
         type: string
         default: "3.5"
+      skip_publish:
+        description: Skip publishing the docs
+        type: boolean
+        default: false
     secrets:
       WEBSITE_KEY:
         required: false
@@ -398,7 +402,7 @@ jobs:
           ./util/buildRelease/check-release-files.bash
 
   publish-docs:
-    if: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+    if: ${{ !inputs.skip_publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
     concurrency:
       group: 'publish-docs'
       queue: single
