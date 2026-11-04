@@ -345,6 +345,8 @@ jobs:
       cron-script: util/cron/test-linux64.bash
       futures-mode: 1
       make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
+      ccache-key: aarch64-paratest
+      ccache-save: false
   paratest-linux64-gasnet-everything-aarch64:
     name: Chapel paratest on linux64 aarch64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
@@ -356,6 +358,7 @@ jobs:
       start-test-args: --multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
+      ccache-key: aarch64-paratest
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
