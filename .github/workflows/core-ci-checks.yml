@@ -60,7 +60,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64-gasnet-everything is the writer
+          save: false
       - name: make check
         run: |
           ./util/buildRelease/smokeTest chpl
@@ -81,7 +81,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64-gasnet-everything is the writer
+          save: false
       - name: make chplvis
         run: |
           bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -102,7 +102,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-llvm-none
-          save: false # paratest-quickstart is the writer
+          save: false
       - name: make frontend-docs
         run: |
           make frontend-docs
@@ -135,7 +135,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-llvm-none
-          save: false # paratest-quickstart is the writer
+          save: false
       - name: make mason
         # Use a quickstart config to keep it from running to long
         # While there, run a make check in that config for more coverage
@@ -194,7 +194,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-default
-          save: false # paratest-linux64-gasnet-everything is the writer
+          save: false
       - name: set CHPL_HOME
         run: |
           echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -245,7 +245,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-llvm-none
-          save: false # paratest-quickstart is the writer
+          save: false
       - name: set llvm_none make check
         run: |
          CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -564,7 +564,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-llvm-none
-          save: false # paratest-quickstart is the writer
+          save: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
         if: env.RUN_ALL != 'true'
@@ -672,7 +672,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-x86-llvm-none
-          save: false # paratest-quickstart is the writer
+          save: false
       - name: run test-networking-packages.bash
         run: |
           ./util/cron/test-networking-packages.bash
