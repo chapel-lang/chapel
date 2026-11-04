@@ -335,6 +335,41 @@ jobs:
           start_test --parallel "$num_procs" test/release/examples test/llvm
           echo "::endgroup::"
 
+  build-linuxbrew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install linuxbrew
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          sudo apt-get install -y build-essential gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config
+
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          brew install gcc cmake python gmp llvm@22
+      - name: Compile Chapel
+        run: |
+          echo "::group::Chapel Environment"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          source util/setchplenv.bash
+          export CHPL_LLVM=system
+          export CHPL_GMP=system
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
+
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
     container:
