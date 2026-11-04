@@ -992,9 +992,9 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
 }
 
 #ifdef HAVE_LLVM
-// Stores zero one scalar at a time; FastISel can't select aggregate stores.
+// Stores zero one scalar at a time
 static void storeZeroByField(llvm::Type* ty, llvm::Value* ptr) {
-  llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
+  auto irBuilder = gGenInfo->irBuilder;
   if (auto sTy = llvm::dyn_cast<llvm::StructType>(ty)) {
     for (unsigned i = 0; i < sTy->getNumElements(); i++) {
       llvm::Value* fieldPtr = irBuilder->CreateStructGEP(sTy, ptr, i);
@@ -1002,8 +1002,7 @@ static void storeZeroByField(llvm::Type* ty, llvm::Value* ptr) {
       storeZeroByField(sTy->getElementType(i), fieldPtr);
     }
   } else {
-    llvm::StoreInst* store =
-      irBuilder->CreateStore(llvm::Constant::getNullValue(ty), ptr);
+    auto store = irBuilder->CreateStore(llvm::Constant::getNullValue(ty), ptr);
     trackLLVMValue(store);
   }
 }
@@ -2122,8 +2121,7 @@ bool appendAggregateABIParamTypes(llvm::Type* ty,
     for (const auto& path : leafPaths)
       out.push_back(llvm::ExtractValueInst::getIndexedType(ty, path));
   } else {
-    unsigned stackSpace =
-      gGenInfo->module->getDataLayout().getAllocaAddrSpace();
+    auto stackSpace = gGenInfo->module->getDataLayout().getAllocaAddrSpace();
     out.push_back(getPointerType(ty, stackSpace));
     return true;
   }
@@ -3001,7 +2999,7 @@ static GenRet createTempVarForFormal(ArgSymbol* astArg, llvm::Value* llvmArg) {
   return createTempVarWith(gArg);
 }
 
-// Stores the next LLVM arguments to the leaves of the aggregate at 'ptr'.
+// Stores the next LLVM arguments to the leaves of the aggregate at 'ptr'
 static void storeLeavesFromArgs(llvm::Type* ty, llvm::Value* ptr,
                                 const std::vector<std::vector<unsigned>>& leafPaths,
                                 llvm::Function::arg_iterator& ai) {
@@ -3010,11 +3008,12 @@ static void storeLeavesFromArgs(llvm::Type* ty, llvm::Value* ptr,
   llvm::Align align = llvm::cast<llvm::AllocaInst>(ptr)->getAlign();
   for (const auto& path : leafPaths) {
     llvm::SmallVector<llvm::Value*, 4> idx = { irBuilder->getInt32(0) };
-    for (unsigned i : path) idx.push_back(irBuilder->getInt32(i));
+    for (unsigned i: path)
+      idx.push_back(irBuilder->getInt32(i));
     llvm::Value* gep = irBuilder->CreateInBoundsGEP(ty, ptr, idx);
     trackLLVMValue(gep);
     uint64_t offset = DL.getIndexedOffsetInType(ty, idx);
-    llvm::StoreInst* store =
+    auto store =
       irBuilder->CreateAlignedStore(&*ai++, gep,
                                     llvm::commonAlignment(align, offset));
     trackLLVMValue(store);

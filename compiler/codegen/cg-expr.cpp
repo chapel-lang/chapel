@@ -440,27 +440,23 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
   trackLLVMValue(gep);
   return gep;
 }
-
-// FastISel can't select aggregate loads, stores, extractvalue or insertvalue,
-// so wide pointers and locale IDs are accessed one scalar field at a time.
 static bool isWideOrLocaleIdType(Type* t) {
   return t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
          t == LOCALE_ID_TYPE;
 }
 
-// When not optimizing (FastISel), copy other aggregates with memcpy like clang.
+// When not optimizing (FastISel), copy other aggregates with memcpy like clang
 static bool shouldMemcpyAggregate(Type* t) {
   if (optimizeCCode || gCodegenGPU || isWideOrLocaleIdType(t)) return false;
   llvm::Type* ty = t->codegen().type;
   return ty && ty->isAggregateType();
 }
 
-// Fields already read from an aggregate load, keyed by (load, field index).
-static llvm::DenseMap<std::pair<llvm::Value*, unsigned>, llvm::Value*>
-  aggregateFieldCache;
-// Aggregate values that may become unused once their fields are read directly.
+// Fields already read from an aggregate load, keyed by (load, field index)
+static llvm::DenseMap<std::pair<llvm::Value*, unsigned>, llvm::Value*> aggregateFieldCache;
+// Aggregate values that may become unused once their fields are read directly
 static std::vector<llvm::WeakVH> aggregateValuesToErase;
-// Temporaries holding call results, which are never written after the call.
+// Temporaries holding call results, which are never written after the call
 static llvm::SmallPtrSet<llvm::Value*, 16> immutableAggregateTemps;
 
 static void noteAggregateValueToErase(llvm::Value* v) {
@@ -468,7 +464,7 @@ static void noteAggregateValueToErase(llvm::Value* v) {
     aggregateValuesToErase.push_back(v);
 }
 
-// If 'v' was loaded from an immutable temporary, returns that temporary.
+// If 'v' was loaded from an immutable temporary, returns that temporary
 static llvm::Value* getImmutableTempLoadedBy(llvm::Value* v) {
   auto ld = llvm::dyn_cast<llvm::LoadInst>(v);
   if (ld && ld->isSimple() &&
@@ -477,7 +473,6 @@ static llvm::Value* getImmutableTempLoadedBy(llvm::Value* v) {
   return nullptr;
 }
 
-// Code inserted here sees the same memory as 'inst'.
 static void setInsertPointAfter(llvm::Instruction* inst) {
   llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
   if (llvm::Instruction* next = inst->getNextNode())
@@ -487,7 +482,7 @@ static void setInsertPointAfter(llvm::Instruction* inst) {
   irBuilder->SetCurrentDebugLocation(inst->getDebugLoc());
 }
 
-// Can getAggregateField compute field 'idx' of 'agg' without an extractvalue?
+// can we avoid extractvalue and just compute the field directly with a GEP and load?
 static bool canGetAggregateField(llvm::Value* agg, unsigned idx) {
   if (auto c = llvm::dyn_cast<llvm::Constant>(agg))
     return c->getAggregateElement(idx) != nullptr;
@@ -511,8 +506,8 @@ static bool canGetAllAggregateFields(llvm::Value* agg) {
 }
 
 // Returns field 'idx' of the struct value 'agg'. Fields of a load are read
-// with a GEP and a scalar load placed right after it, so they see the same
-// memory. Only falls back to an extractvalue when there is no other way.
+// with a GEP and a scalar load placed right after it
+// Only falls back to an extractvalue when there is no other way.
 static llvm::Value* getAggregateField(llvm::Value* agg, unsigned idx) {
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
@@ -566,7 +561,7 @@ void eraseDeadAggregateValues(llvm::Function* fn) {
   bool changed = true;
   while (changed) {
     changed = false;
-    for (llvm::Value* v : aggregateValuesToErase) {
+    for (auto v: aggregateValuesToErase) {
       auto inst = llvm::dyn_cast_or_null<llvm::Instruction>(v);
       if (inst && inst->getFunction() == fn && inst->use_empty()) {
         inst->eraseFromParent();
@@ -639,8 +634,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   if (locale.chplType && locale.chplType->isRef()) {
     locale = codegenValue(codegenDeref(locale));
   }
-  if( !fLLVMWideOpt ) {
-    if( info->cfile ) {
+  if (!fLLVMWideOpt) {
+    if (info->cfile) {
       // Create a stack-local stored wide pointer
       // of the appropriate type.
       ret = createTempVar(wideRefType);
@@ -798,7 +793,7 @@ void codegenStoreLLVM(llvm::Value* val,
 {
   GenInfo *info = gGenInfo;
 
-  // Each field store gets the metadata the whole store would have had.
+  // store as individual fields rather than a full struct store
   if (valType && isWideOrLocaleIdType(valType) &&
       canGetAllAggregateFields(val)) {
     auto sTy = llvm::cast<llvm::StructType>(val->getType());
@@ -3185,7 +3180,7 @@ static void codegenCallExprInnerCoerceError(FnSymbol* fn,
 }
 
 // Passes the aggregate 'arg' to a formal of type 'formalTy' as its scalar
-// leaves or as a pointer to a copy (see useAggregateABI).
+// leaves or as a pointer to a copy (see useAggregateABI)
 static void codegenAggregateABIArg(GenRet arg, llvm::Type* formalTy,
                                    std::vector<llvm::Value*>& llArgs) {
   GenInfo* info = gGenInfo;
@@ -3310,8 +3305,6 @@ static GenRet codegenCallExprInner(GenRet function,
     unsigned int stackSpace = layout.getAllocaAddrSpace();
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
-    // Chapel functions (including ftable calls, with 'fnTyArg') are defined
-    // with this ABI; see codegenFunctionTypeLLVMImpl.
     bool aggABI = useAggregateABI() &&
                   (chplFnType ? !chplFnType->hasForeignLinkage()
                               : fnTyArg != nullptr);
@@ -4182,12 +4175,12 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
         eltTy = chplType->codegen().type;
       }
 
-      if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+      if (chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( chplType && shouldMemcpyAggregate(chplType) ) {
+      } else if (chplType && shouldMemcpyAggregate(chplType)) {
         useMemcpy = true;
-      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+      } else if (eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
                                        eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
@@ -4196,7 +4189,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       }
     }
 
-    if( !useMemcpy ) {
+    if (!useMemcpy) {
       // Do it with store(load(src_ptr), dst_ptr)
       src = codegenValue(src);
       codegenStoreLLVM(src, dest);

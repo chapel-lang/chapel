@@ -153,7 +153,6 @@ struct GenInfo {
   std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
-  // hidden return pointer of the current function (see useAggregateABI)
   llvm::Value* currentFunctionRetPtr = nullptr;
 
   // tbaa information
@@ -257,16 +256,15 @@ bool argRequiresCPtr(ArgSymbol* formal);
 bool argRequiresCPtr(const FunctionType::Formal* formal);
 
 #ifdef HAVE_LLVM
-// When not optimizing, non-foreign Chapel functions take aggregate formals
+// non-foreign Chapel functions take aggregate formals
 // as separate scalar leaves (or a pointer to a copy) and return aggregates
-// through a hidden first pointer argument, since FastISel can't select
-// aggregate arguments or returns.
+// through a hidden first pointer argument
 bool useAggregateABI();
 llvm::Type* codegenFormalTypeLLVM(const FunctionType::Formal* formal);
-// Returns false if 'ty' is passed as a pointer to a copy instead of leaves.
+// Returns false if 'ty' is passed as a pointer to a copy instead of leaves
 bool getAggregateArgLeaves(llvm::Type* ty,
                            std::vector<std::vector<unsigned>>& leafPaths);
-// Appends the parameter types for a formal of type 'ty'; true if indirect.
+// Appends the parameter types for a formal of type 'ty'; true if indirect
 bool appendAggregateABIParamTypes(llvm::Type* ty,
                                   std::vector<llvm::Type*>& out);
 #endif
