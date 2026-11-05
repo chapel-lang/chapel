@@ -390,6 +390,9 @@ private extern proc event_base_loop(base: c_ptr(event_base), flags: c_int):c_int
 private extern proc event_base_free(base: c_ptr(event_base));
 private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
 private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
+private extern proc event_base_once(base: c_ptr(event_base), fd: c_int, events: c_short,
+                                    callback: c_fn_ptr, callback_arg: c_ptr(void),
+                                    timeout: c_ptr(struct_timeval)): c_int;
 private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short,
                               callback: c_fn_ptr, callback_arg: c_ptr(void)): c_ptr(event);
 private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(struct_timeval)):c_int;
@@ -1605,9 +1608,6 @@ proc dispatchLoop():c_ptr(void) throws {
   if event_loop_base == nil {
     throw new Error("event loop wasn't initialized");
   }
-  if event_base_got_break(event_loop_base) == 1 {
-    return nil;
-  }
   var x = event_base_loop(event_loop_base, EVLOOP_NO_EXIT_ON_EMPTY);
   if x != 0 {
     throw new Error("event loop wasn't initialized");
@@ -1621,6 +1621,11 @@ pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(di
 proc syncRWTCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
   var syncVariablePtr = arg: c_ptr(sync c_short);
   syncVariablePtr.deref().writeEF(event);
+}
+
+@chpldoc.nodoc
+proc breakLoopCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
+  event_base_loopbreak(event_loop_base);
 }
 
 private extern proc sys_read(fd: c_int, buf: c_ptr(void), count: c_size_t,
@@ -1762,7 +1767,8 @@ private proc openSocketFile(fd: c_int): tcpConn throws {
 
 @chpldoc.nodoc
 proc deinit() {
-  event_base_loopbreak(event_loop_base);
+  event_base_once(event_loop_base, -1, EV_TIMEOUT,
+                  c_ptrTo(breakLoopCallback), nil, nil);
   pthread_join(event_loop_thread, nil:c_ptr(c_ptr(void)));
   event_base_free(event_loop_base);
   libevent_global_shutdown();
