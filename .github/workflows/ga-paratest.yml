@@ -668,11 +668,11 @@ jobs:
           BUILD_DIAGNOSTICS_URL: ${{ needs.build.outputs.build-diagnostics-url }}
         run: |
           links=()
-          if [[ -n "$AGGREGATED_RESULTS_URL" ]]; then
-            links+=("- [Aggregated test results]($AGGREGATED_RESULTS_URL)")
-          fi
           if [[ -n "$BUILD_DIAGNOSTICS_URL" ]]; then
-            links+=("- [Chapel build diagnostics]($BUILD_DIAGNOSTICS_URL)")
+            links+=("- [Chapel Build Log]($BUILD_DIAGNOSTICS_URL)")
+          fi
+          if [[ -n "$AGGREGATED_RESULTS_URL" ]]; then
+            links+=("- [Test Results]($AGGREGATED_RESULTS_URL)")
           fi
           if (( ${#links[@]} > 0 )); then
             if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
