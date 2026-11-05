@@ -150,7 +150,9 @@ jobs:
           BUILD_STEPS: ${{ inputs.build-steps }}
           MAKE_TARGETS_TO_BUILD: ${{ inputs.make-targets }}
         run: |
-          rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
+          diagnostics_dir="$RUNNER_TEMP/chapel-build-diagnostics"
+          rm -rf "$diagnostics_dir"
+          mkdir -p "$diagnostics_dir"
           {
             # put ccache executables at front of PATH
             export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -164,21 +166,19 @@ jobs:
             fi
 
             "$CHPL_HOME/util/printchplenv" --all --internal | \
-              tee "$RUNNER_TEMP/printchplenv.txt"
+              tee "$diagnostics_dir/printchplenv.txt"
 
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
             # shellcheck source=/dev/null
             source "$RUNNER_TEMP/build-steps.bash"
-          } 2>&1 | tee "$RUNNER_TEMP/chapel-build.log"
+          } 2>&1 | tee "$diagnostics_dir/chapel-build.log"
       - name: upload Chapel build diagnostics
         id: upload-build-diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: chapel-build-diagnostics-${{ inputs.configuration }}
-          path: |
-            ${{ runner.temp }}/chapel-build.log
-            ${{ runner.temp }}/printchplenv.txt
+          path: ${{ runner.temp }}/chapel-build-diagnostics
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: upload Chapel build
