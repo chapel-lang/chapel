@@ -134,6 +134,7 @@ jobs:
         password: ${{ github.token }}
     outputs:
       units: ${{ steps.test-directories.outputs.units }}
+      build-diagnostics-url: ${{ steps.upload-build-diagnostics.outputs.artifact-url }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -149,7 +150,9 @@ jobs:
           BUILD_STEPS: ${{ inputs.build-steps }}
           MAKE_TARGETS_TO_BUILD: ${{ inputs.make-targets }}
         run: |
-          rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
+          diagnostics_dir="$RUNNER_TEMP/chapel-build-diagnostics"
+          rm -rf "$diagnostics_dir"
+          mkdir -p "$diagnostics_dir"
           {
             # put ccache executables at front of PATH
             export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -163,20 +166,19 @@ jobs:
             fi
 
             "$CHPL_HOME/util/printchplenv" --all --internal | \
-              tee "$RUNNER_TEMP/printchplenv.txt"
+              tee "$diagnostics_dir/printchplenv.txt"
 
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
             # shellcheck source=/dev/null
             source "$RUNNER_TEMP/build-steps.bash"
-          } 2>&1 | tee "$RUNNER_TEMP/chapel-build.log"
+          } 2>&1 | tee "$diagnostics_dir/chapel-build.log"
       - name: upload Chapel build diagnostics
+        id: upload-build-diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: chapel-build-diagnostics-${{ inputs.configuration }}
-          path: |
-            ${{ runner.temp }}/chapel-build.log
-            ${{ runner.temp }}/printchplenv.txt
+          path: ${{ runner.temp }}/chapel-build-diagnostics
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: upload Chapel build
@@ -581,13 +583,9 @@ jobs:
             echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
           done
 
-          if [[ "$BUILD_RESULT" != "success" ]]; then
-            echo "Chapel build step failed, no test results to report"
-            exit 1
-          fi
-
           overall_status=0
-          if [[ "$MATRIX_RESULT" != "success" ||
+          if [[ "$BUILD_RESULT" != "success" ||
+                "$MATRIX_RESULT" != "success" ||
                 -z "$EXPECTED_JOBS" ||
                 -z "$EXPECTED_DIRS" ||
                 "$actual_jobs" != "$EXPECTED_JOBS" ||
@@ -599,6 +597,7 @@ jobs:
 
           {
             echo
+            echo "Chapel build: $BUILD_RESULT"
             echo "Expected test jobs: ${EXPECTED_JOBS:-unknown}"
             echo "Reported test jobs: $actual_jobs"
             echo "Expected test directories: ${EXPECTED_DIRS:-unknown}"
@@ -622,7 +621,10 @@ jobs:
 
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
 
-          if [[ "$overall_status" != "0" ]]; then
+          if [[ "$BUILD_RESULT" != "success" ]]; then
+            echo "Chapel build for $CONFIGURATION did not succeed (result: $BUILD_RESULT), so no tests were run." \
+              > "$FAILURE_EMAIL_ADDENDUM"
+          elif [[ "$overall_status" != "0" ]]; then
             mapfile -t failed_tests < <(
               grep -a '^\[Error' "$AGGREGATED_RESULTS_DIR/results.log.summary" 2>/dev/null || true
             )
@@ -658,6 +660,26 @@ jobs:
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
+      - name: add artifact links to failure email addendum
+        if: ${{ failure() }}
+        env:
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+          AGGREGATED_RESULTS_URL: ${{ steps.upload_aggregated.outputs.artifact-url }}
+          BUILD_DIAGNOSTICS_URL: ${{ needs.build.outputs.build-diagnostics-url }}
+        run: |
+          links=()
+          if [[ -n "$BUILD_DIAGNOSTICS_URL" ]]; then
+            links+=("- [Chapel Build Log]($BUILD_DIAGNOSTICS_URL)")
+          fi
+          if [[ -n "$AGGREGATED_RESULTS_URL" ]]; then
+            links+=("- [Test Results]($AGGREGATED_RESULTS_URL)")
+          fi
+          if (( ${#links[@]} > 0 )); then
+            if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+              echo >> "$FAILURE_EMAIL_ADDENDUM"
+            fi
+            printf '%s\n' "${links[@]}" >> "$FAILURE_EMAIL_ADDENDUM"
+          fi
       - name: upload failure email addendum
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
