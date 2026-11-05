@@ -59,8 +59,10 @@
 #define _DEFAULT_SOURCE
 #endif
 
-// define `___always_inline`, this should be used sparingly, prefer `inline`
-#if defined __has_attribute
+// define `___always_inline`, this should be used sparingly, prefer `inline`.
+// With gcc/clang, only force inlining when optimizing; it slows -O0 builds.
+#if defined __has_attribute && \
+    (!(defined __GNUC__ || defined __clang__) || defined __OPTIMIZE__)
   #if __has_attribute (always_inline)
     #define ___always_inline inline __attribute__ ((always_inline))
   #endif

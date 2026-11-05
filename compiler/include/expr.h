@@ -34,6 +34,7 @@
 namespace llvm
 {
   class AllocaInst;
+  class Function;
 }
 #endif
 
@@ -403,6 +404,9 @@ void setValueAlignment(llvm::Value* value, int alignment);
 
 // sets the alignment requested by 'astType' and 'astSymbol', if any
 void setValueAlignment(llvm::Value* value, Type* astType, Symbol* astSymbol);
+
+// erases wide pointer/locale ID aggregates in 'fn' left unused by codegen
+void eraseDeadAggregateValues(llvm::Function* fn);
 
 #endif
 

@@ -1,0 +1,2 @@
+# wide pointers have a different layout in other locale models
+CHPL_LOCALE_MODEL != flat

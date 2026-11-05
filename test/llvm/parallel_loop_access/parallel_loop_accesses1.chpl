@@ -4,10 +4,8 @@ config const n = 11;
 // CHECK: void @loop1
 proc loop1 (A, B) {
   foreach i in 0..n {
-    // CHECK: load i32,
-    // CHECK-SAME: !llvm.access.group ![[GROUP:[0-9]+]]
-    // CHECK: store i32 %
-    // CHECK-SAME: !llvm.access.group ![[GROUP]]
+    // CHECK: load i32, {{.*}}!llvm.access.group ![[GROUP:[0-9]+]]
+    // CHECK: store i32 %{{.*}}!llvm.access.group ![[GROUP]]
     A[i] = B[i]*3;
     // CHECK: br i1
     // CHECK-SAME: !llvm.loop ![[LOOP:[0-9]+]]
