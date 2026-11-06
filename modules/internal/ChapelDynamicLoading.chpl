@@ -31,9 +31,8 @@ module ChapelDynamicLoading {
   }
 
   private proc isRuntimeCompiledAsDynamicLibrary {
-    // TODO: Need to adjust the runtime build to inject a macro value or
-    // compile in a separate source file just into the '.so/.dylib'.
-    return true;
+    extern const chpl_rt_is_dynamic_library: c_int;
+    return chpl_rt_is_dynamic_library != 0;
   }
 
   param chpl_defaultProcBufferSize = 512;
