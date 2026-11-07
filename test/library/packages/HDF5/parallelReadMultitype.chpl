@@ -21,10 +21,11 @@ proc main {
 
   for param i in 0..<inputTypes.size {
     type inType = inputTypes(i);
-    param typeName = inType:string;
+    param typeName = if inType == c_ptrConst(c_char) then "c_ptrConst(c_char)"
+                                                     else inType:string;
     t.start();
     var files = readAllHDF5Files(Locales, pathPrefix+inputDir, "/dset",
-                                 inType:string, inType, rank=2);
+                                 typeName, inType, rank=2);
     t.stop();
 
     for (f, i) in zip (files, 1..) {
