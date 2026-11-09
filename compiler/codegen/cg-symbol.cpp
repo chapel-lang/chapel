@@ -2103,14 +2103,26 @@ collectAggregateLeaves(llvm::Type* ty, AggregateLeafPath& path,
   return true;
 }
 
+// Like C, larger aggregates are passed and returned through memory
+static bool isLargeAggregate(llvm::Type* ty) {
+  const uint64_t maxRegisterAggregateSize = 16;
+  return gGenInfo->module->getDataLayout().getTypeAllocSize(ty) >
+         maxRegisterAggregateSize;
+}
+
 bool
 getAggregateArgLeaves(llvm::Type* ty,
                       llvm::SmallVectorImpl<AggregateLeafPath>& leafPaths) {
   const size_t maxLeaves = 4;
   AggregateLeafPath path;
   leafPaths.clear();
-  return collectAggregateLeaves(ty, path, leafPaths) &&
+  return !isLargeAggregate(ty) &&
+         collectAggregateLeaves(ty, path, leafPaths) &&
          leafPaths.size() <= maxLeaves;
+}
+
+bool isAggregateReturnedIndirectly(llvm::Type* ty) {
+  return isLargeAggregate(ty);
 }
 
 bool getAggregateReturnLeaf(llvm::Type* ty, AggregateLeafPath& leafPath) {
@@ -2362,13 +2374,17 @@ codegenFunctionTypeLLVMImpl(
     }
   } else if (aggABI && returnTy->isAggregateType()) {
     AggregateLeafPath leafPath;
-    if (getAggregateReturnLeaf(returnTy, leafPath)) {
-      // like C, return the first leaf of the aggregate directly
-      returnTy = llvm::ExtractValueInst::getIndexedType(returnTy, leafPath);
-    } else {
+    if (isAggregateReturnedIndirectly(returnTy)) {
       argTys.push_back(getPointerType(returnTy, stackSpace));
       outArgNames.push_back("indirect_return");
+      auto b = llvmPrepareAttrBuilder(ctx);
+      llvmAttachStructRetAttr(b, returnTy);
+      b.addAttribute(llvm::Attribute::NoAlias);
+      llvmAddAttr(ctx, outAttrs, argTys.size(), b);
       returnTy = llvm::Type::getVoidTy(ctx);
+    } else if (getAggregateReturnLeaf(returnTy, leafPath)) {
+      // like C, return the first leaf of the aggregate directly
+      returnTy = llvm::ExtractValueInst::getIndexedType(returnTy, leafPath);
     }
   }
 

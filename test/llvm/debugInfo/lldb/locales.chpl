@@ -68,7 +68,7 @@ proc main() {
 
 // CHECK-LOCAL: p l.maxTaskPar()
 // CHECK-NOLOCAL: p l.addr.maxTaskPar()
-// CHECK-NEXT: (int(64)) {{[0-9]+}}
+// CHECK-NEXT: (int(64)) [[MAXTASKPAR:[1-9][0-9]*]]{{$}}
 
 // CHECK: p here().maxTaskPar()
-// CHECK-NEXT: (int(64)) {{[0-9]+}}
+// CHECK-NEXT: (int(64)) [[MAXTASKPAR]]{{$}}

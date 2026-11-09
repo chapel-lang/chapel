@@ -3379,7 +3379,7 @@ static GenRet codegenCallExprInner(GenRet function,
       }
     }
 
-   if (CGI == nullptr && fnType != nullptr &&
+   if (CGI == nullptr && !aggABI && fnType != nullptr &&
         fnType->getReturnType()->isVoidTy() &&
         fnType->getNumParams() >= 1 &&
         func && func->hasStructRetAttr())
@@ -3399,10 +3399,13 @@ static GenRet codegenCallExprInner(GenRet function,
         llArgs.push_back(sret);
       }
     } else if (aggABI && chapelRetTy && chapelRetTy->isAggregateType()) {
-      sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
-      returnsLeaf = getAggregateReturnLeaf(chapelRetTy, retLeafPath);
-      if (!returnsLeaf)
+      if (isAggregateReturnedIndirectly(chapelRetTy)) {
+        sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
         llArgs.push_back(sret);
+      } else if (getAggregateReturnLeaf(chapelRetTy, retLeafPath)) {
+        sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
+        returnsLeaf = true;
+      }
     }
 
     ArgSymbol* formal = NULL;

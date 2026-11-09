@@ -1,9 +1,9 @@
-//  * a by-value struct with at most 4 scalar fields is passed as scalars
-//  * a larger struct, or one containing an array, is passed as a pointer to a
-//    copy made by the caller
-//  * a struct result with a single scalar field is returned as that scalar
-//  * any other struct result is returned through a pointer passed as the
-//    first argument
+//  * a by-value struct of at most 16 bytes with at most 4 scalar fields is
+//    passed as scalars
+//  * any other struct is passed as a pointer to a copy made by the caller
+//  * a struct result over 16 bytes is returned through an sret pointer passed
+//    as the first argument
+//  * a smaller struct result is returned as its only scalar field, or by value
 //  * Chapel records are passed by pointer, and
 //    returned through a pointer passed as the last argument (REF) or, with
 //    --no-return-by-ref, like any other struct (VAL)
@@ -29,8 +29,8 @@ record Outer { var r: R; var c: int; }
 // CHECK-LABEL: define internal double @takesComplex_chpl(double %{{[^,]+}}, double %{{[^)]+}})
 proc takesComplex(z: complex) do return z.re + z.im;
 
-// CHECK-LABEL: define internal void @returnsComplex_chpl(ptr %{{[^,]+}}, double %{{[^)]+}})
-// CHECK: ret void
+// CHECK-LABEL: define internal { double, double } @returnsComplex_chpl(double %{{[^)]+}})
+// CHECK: ret { double, double }
 proc returnsComplex(x: real) do return x + 2.0i;
 
 // CHECK-LABEL: define internal i64 @takesRange_chpl(i64 %{{[^,]+}}, i64 %{{[^)]+}})
@@ -39,15 +39,15 @@ proc takesRange(r: range) do return r.low + r.high;
 // CHECK-LABEL: define internal i64 @takesClass_chpl(i32 %{{[^,]+}}, ptr %{{[^)]+}})
 proc takesClass(c: unmanaged C) do return c.x;
 
-// CHECK-LABEL: define internal void @returnsClass_chpl(ptr %{{[^,]+}}, i32 %{{[^,]+}}, ptr %{{[^)]+}})
-// CHECK: ret void
+// CHECK-LABEL: define internal %chpl____wide_C @returnsClass_chpl(i32 %{{[^,]+}}, ptr %{{[^)]+}})
+// CHECK: ret %chpl____wide_C
 proc returnsClass(c: unmanaged C) do return c.next!;
 
 // CHECK-LABEL: define internal double @takesSmall_chpl(i32 %{{[^,]+}}, double %{{[^)]+}})
 proc takesSmall(in s: small2) { s.a += 100; return s.a + s.b; }
 
-// CHECK-LABEL: define internal void @returnsSmall_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
-// CHECK: ret void
+// CHECK-LABEL: define internal %struct.small2 @returnsSmall_chpl(i64 %{{[^)]+}})
+// CHECK: ret %struct.small2
 proc returnsSmall(a: int) { var s: small2; s.a = a: c_int; s.b = 0.5; return s; }
 
 // CHECK-LABEL: define internal i32 @takesFour_chpl(i32 %{{[^,]+}}, i32 %{{[^,]+}}, i32 %{{[^,]+}}, i32 %{{[^)]+}})
@@ -56,20 +56,20 @@ proc takesFour(in f: four) do return f.a + f.b + f.c + f.d;
 // CHECK-LABEL: define internal i32 @takesBig_chpl(ptr %{{[^)]+}})
 proc takesBig(in b: big5) { b.a += 100; return b.a + b.b + b.c + b.d + b.e; }
 
-// CHECK-LABEL: define internal void @returnsBig_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
+// CHECK-LABEL: define internal void @returnsBig_chpl(ptr {{[a-z_ ]*}}sret(%struct.big5) %{{[^,]+}}, i64 %{{[^)]+}})
 // CHECK: ret void
 proc returnsBig(a: int) { var b: big5; b.a = a: c_int; b.e = 5; return b; }
 
 // CHECK-LABEL: define internal i32 @takesArr_chpl(ptr %{{[^)]+}})
 proc takesArr(in x: arr2) do return x.a[0] + x.a[1];
 
-// CHECK-LABEL: define internal double @takesNested4_chpl(i32 %{{[^,]+}}, double %{{[^,]+}}, i32 %{{[^,]+}}, double %{{[^)]+}})
+// CHECK-LABEL: define internal double @takesNested4_chpl(ptr %{{[^)]+}})
 proc takesNested4(in n: nested4) {
   n.s.a += 100;
   return n.s.a + n.s.b + n.t.a + n.t.b;
 }
 
-// CHECK-LABEL: define internal void @returnsNested4_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
+// CHECK-LABEL: define internal void @returnsNested4_chpl(ptr {{[a-z_ ]*}}sret(%struct.nested4) %{{[^,]+}}, i64 %{{[^)]+}})
 // CHECK: ret void
 proc returnsNested4(a: int) {
   var n: nested4; n.s.a = a: c_int; n.t.b = 0.25; return n;
@@ -85,15 +85,16 @@ proc takesRec(in r: R) { r.a += 100; return r.a + r.b; }
 proc takesRecConst(r: R) do return r.a + r.b;
 
 // REF-LABEL: define internal void @returnsRec_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-// VAL-LABEL: define internal void @returnsRec_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
-// CHECK: ret void
+// REF: ret void
+// VAL-LABEL: define internal %R_chpl @returnsRec_chpl(i64 %{{[^)]+}})
+// VAL: ret %R_chpl
 proc returnsRec(a: int) do return new R(a, 0.5);
 
 // CHECK-LABEL: define internal i64 @takesOuter_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
 proc takesOuter(in o: Outer) { o.r.a += 100; return o.r.a + o.c; }
 
 // REF-LABEL: define internal void @returnsOuter_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-// VAL-LABEL: define internal void @returnsOuter_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
+// VAL-LABEL: define internal void @returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%Outer_chpl) %{{[^,]+}}, i64 %{{[^)]+}})
 // CHECK: ret void
 proc returnsOuter(a: int) do return new Outer(new R(a, 0.5), 1);
 
@@ -110,8 +111,9 @@ proc returnsOwned(x: int) do return new C(x);
 proc takesShared(s: shared C) do return s.x;
 
 // REF-LABEL: define internal void @returnsShared_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-// VAL-LABEL: define internal void @returnsShared_chpl(ptr %{{[^,]+}}, i64 %{{[^)]+}})
-// CHECK: ret void
+// REF: ret void
+// VAL-LABEL: define internal %_shared_C_chpl @returnsShared_chpl(i64 %{{[^)]+}})
+// VAL: ret %_shared_C_chpl
 proc returnsShared(x: int) do return new shared C(x);
 
 // CHECK-LABEL: define internal double @returnsOne_chpl(double %{{[^)]+}})
@@ -122,7 +124,7 @@ proc returnsOneNested(x: real) { var n: oneNested; n.o.x = x; return n; }
 
 // CHECK-LABEL: define internal void @callAll_chpl()
 proc callAll() {
-  // CHECK: call void @returnsComplex_chpl(ptr %{{[^,]+}}, double 1.000000e+00)
+  // CHECK: call {{.*}}{ double, double } @returnsComplex_chpl(double 1.000000e+00)
   // CHECK: call {{.*}}double @takesComplex_chpl(double %{{[^,]+}}, double %{{[^)]+}})
   writeln(takesComplex(returnsComplex(1.0)));
 
@@ -130,13 +132,13 @@ proc callAll() {
   writeln(takesRange(1..4));
 
   var c = new unmanaged C(7, new unmanaged C(8));
-  // CHECK: call void @returnsClass_chpl(ptr %{{[^,]+}}, i32 %{{[^,]+}}, ptr %{{[^)]+}})
+  // CHECK: call %chpl____wide_C @returnsClass_chpl(i32 %{{[^,]+}}, ptr %{{[^)]+}})
   // CHECK: call i64 @takesClass_chpl(i32 %{{[^,]+}}, ptr %{{[^)]+}})
   writeln(takesClass(returnsClass(c)));
   on Locales[numLocales-1] do writeln(takesClass(returnsClass(c)));
   delete c.next, c;
 
-  // CHECK: call void @returnsSmall_chpl(ptr %{{[^,]+}}, i64 3)
+  // CHECK: call %struct.small2 @returnsSmall_chpl(i64 3)
   var s = returnsSmall(3);
   // CHECK: call {{.*}}double @takesSmall_chpl(i32 %{{[^,]+}}, double %{{[^)]+}})
   writeln(takesSmall(s), " ", s.a);
@@ -145,7 +147,7 @@ proc callAll() {
   // CHECK: call i32 @takesFour_chpl(i32 %{{[^,]+}}, i32 %{{[^,]+}}, i32 %{{[^,]+}}, i32 %{{[^)]+}})
   writeln(takesFour(f));
 
-  // CHECK: call void @returnsBig_chpl(ptr %{{[^,]+}}, i64 4)
+  // CHECK: call void @returnsBig_chpl(ptr {{[a-z_ ]*}}sret(%struct.big5) %{{[^,]+}}, i64 4)
   var b = returnsBig(4);
   // CHECK: call i32 @takesBig_chpl(ptr %{{[^)]+}})
   writeln(takesBig(b), " ", b.a);
@@ -154,9 +156,9 @@ proc callAll() {
   // CHECK: call i32 @takesArr_chpl(ptr %{{[^)]+}})
   writeln(takesArr(x));
 
-  // CHECK: call void @returnsNested4_chpl(ptr %{{[^,]+}}, i64 5)
+  // CHECK: call void @returnsNested4_chpl(ptr {{[a-z_ ]*}}sret(%struct.nested4) %{{[^,]+}}, i64 5)
   var n4 = returnsNested4(5);
-  // CHECK: call {{.*}}double @takesNested4_chpl(i32 %{{[^,]+}}, double %{{[^,]+}}, i32 %{{[^,]+}}, double %{{[^)]+}})
+  // CHECK: call {{.*}}double @takesNested4_chpl(ptr %{{[^)]+}})
   writeln(takesNested4(n4), " ", n4.s.a);
 
   var n5: nested5; n5.s.a = 6; n5.t.a = 7; n5.c = 8;
@@ -164,14 +166,14 @@ proc callAll() {
   writeln(takesNested5(n5), " ", n5.s.a);
 
   // REF: call void @returnsRec_chpl(i64 9, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call void @returnsRec_chpl(ptr %{{[^,]+}}, i64 9)
+  // VAL: call %R_chpl @returnsRec_chpl(i64 9)
   var r = returnsRec(9);
   // CHECK: call {{.*}}double @takesRec_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   // CHECK: call {{.*}}double @takesRecConst_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesRec(r), " ", takesRecConst(r), " ", r.a);
 
   // REF: call void @returnsOuter_chpl(i64 10, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call void @returnsOuter_chpl(ptr %{{[^,]+}}, i64 10)
+  // VAL: call void @returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%Outer_chpl) %{{[^,]+}}, i64 10)
   var o = returnsOuter(10);
   // CHECK: call i64 @takesOuter_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesOuter(o), " ", o.r.a);
@@ -183,7 +185,7 @@ proc callAll() {
   writeln(takesOwned(ow));
 
   // REF: call void @returnsShared_chpl(i64 12, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call void @returnsShared_chpl(ptr %{{[^,]+}}, i64 12)
+  // VAL: call %_shared_C_chpl @returnsShared_chpl(i64 12)
   var sh = returnsShared(12);
   // CHECK: call i64 @takesShared_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesShared(sh), " ", sh.x);
