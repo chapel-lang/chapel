@@ -367,7 +367,7 @@ jobs:
       configuration: asan
       cron-script: util/cron/test-asan.bash
       timeout-minutes: 360
-      ccache-key: x86-llvm-none
+      ccache-key: x86-asan
       ccache-save: false
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
@@ -393,8 +393,7 @@ jobs:
       max-jobs: 15
       timeout-minutes: 360
       make-targets: all test-venv mason-deps
-      ccache-key: x86-llvm-none
-      ccache-save: false
+      ccache-key: x86-asan
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
     uses: $/.github/workflows/ga-paratest.yml
@@ -527,7 +526,7 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64-pic
-      ccache-key: x86-default
+      ccache-key: x86-pic
       ccache-save: false
       cron-script: util/cron/test-linux64.bash
       pre-build-steps: |
@@ -538,8 +537,7 @@ jobs:
     uses: $/.github/workflows/ga-paratest.yml
     with:
       configuration: linux64-pic-gasnet-everything
-      ccache-key: x86-default
-      ccache-save: false
+      ccache-key: x86-pic
       cron-script: util/cron/test-gasnet-everything.bash
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
