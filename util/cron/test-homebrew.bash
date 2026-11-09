@@ -88,8 +88,19 @@ HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 
+core_tap=$(brew --repository homebrew/core)
+RETRIES=5
+until [[ -d "$core_tap/Formula/c" ]]; do
+  if [ $RETRIES -le 0 ]; then
+    log_error "Failed to tap homebrew/core after multiple attempts."
+    exit 1
+  fi
+  HOMEBREW_NO_AUTO_UPDATE=1 brew tap --force homebrew/core || sleep 10
+  RETRIES=$((RETRIES - 1))
+done
+
 # install chapel.rb to the core tap
-cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
+cp ./chapel.rb "$core_tap/Formula/c/chapel.rb"
 # install chapel
 # per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
 # https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
