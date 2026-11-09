@@ -448,7 +448,7 @@ jobs:
           # limit core files to 0 to avoid filling up /dev/shm
           ulimit -c 0
 
-          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          num_procs=$(eval echo "$TEST_PARALLELISM")
           base_cmd=("$CHPL_HOME/util/start_test" --futures-mode "$FUTURES_MODE")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
