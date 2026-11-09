@@ -41,7 +41,9 @@ jobs:
 
   send-failure-mail:
     if: github.event_name == 'schedule' && (cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure'))
-    runs-on: ubuntu-slim
+    # must run on ubuntu-latest so we get a longer timeout
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       - core-checks
       - extended-checks
@@ -71,67 +73,74 @@ jobs:
 
           Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
-      - name: generate email body (retrying)
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-        with:
-          max_attempts: 3
-          timeout_seconds: 180
-          retry_wait_seconds: 300
-          command: |
-            set -exuo pipefail
-
-            echo "::group::commit.json"
-            gh api /repos/${{ github.repository }}/commits/${{ github.sha }} | jq '.' | tee commit.json
-            echo "::endgroup::"
-            echo "::group::jobs_raw.json"
-            gh api --paginate /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs | jq '.' | tee jobs_raw.json
-            echo "::endgroup::"
-            # Combine pages of job results into one array
-            echo "::group::jobs_array.json"
-            jq '.jobs[]' jobs_raw.json | jq --slurp '.' | tee jobs_array.json
-            echo "::endgroup::"
-
-            message=$(jq -r '.commit.message' commit.json | head -n 1)
-            num_jobs=$(jq 'length' jobs_array.json)
-            readarray -t failed_job_ids < <(jq '.[] | select(.name != "${{ github.job }}" and (.status != "completed" or (.conclusion != "success" and .conclusion != "skipped"))) | .id' jobs_array.json)
-
-            failed_jobs_text=""
-            echo "failed jobs:"
-            for id in "${failed_job_ids[@]}"; do
-              echo "- $id"
-              echo "::group::job_$id.json"
-              gh api "/repos/${{ github.repository }}/actions/jobs/$id" | jq '.' | tee "job_$id.json"
-              echo "::endgroup::"
-              sleep 0.25
-              failed_jobs_text+="$(jq -r '{html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success" and .conclusion != "skipped")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' "job_$id.json")
-            "
-              addendum="$ADDENDA_DIR/failure-email-addendum-$id.md"
-              if [[ -s "$addendum" ]]; then
-                # indent so the addendum nests under the job's bullet point
-                failed_jobs_text+="
-            $(sed 's/^/  /' "$addendum")
-
-            "
+      - name: generate email body
+        timeout-minutes: 20
+        run: |
+          # Retry each call on its own so one transient error doesn't redo the others
+          gh_api() {
+            local out=$1
+            shift
+            for delay in 0 15 30 60 120; do
+              sleep "$delay"
+              if gh api "$@" > "$out"; then
+                return 0
               fi
+              echo "::warning::gh api $* failed"
             done
+            return 1
+          }
 
-            [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
+          echo "::group::commit.json"
+          gh_api commit.json "/repos/${{ github.repository }}/commits/${{ github.sha }}"
+          jq '.' commit.json
+          echo "::endgroup::"
+          echo "::group::jobs_raw.json"
+          gh_api jobs_raw.json --paginate "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100"
+          jq '.' jobs_raw.json
+          echo "::endgroup::"
+          # Combine pages of job results into one array
+          echo "::group::jobs_array.json"
+          jq '.jobs[]' jobs_raw.json | jq --slurp '.' | tee jobs_array.json
+          echo "::endgroup::"
 
-            cat << EOF > "$EMAIL_BODY_FILENAME"
-            ### The following GitHub Actions job$plural failed:
+          message=$(jq -r '.commit.message | split("\n")[0]' commit.json)
+          num_jobs=$(jq 'length' jobs_array.json)
+          jq '[.[] | select(.name != "${{ github.job }}" and (.status != "completed" or (.conclusion != "success" and .conclusion != "skipped")))]' jobs_array.json > failed_jobs.json
+          readarray -t failed_job_ids < <(jq '.[].id' failed_jobs.json)
 
-            $failed_jobs_text
+          failed_jobs_text=""
+          echo "failed jobs:"
+          for id in "${failed_job_ids[@]}"; do
+            echo "- $id"
+            failed_jobs_text+="$(jq -r --argjson id "$id" '.[] | select(.id == $id) | {html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success" and .conclusion != "skipped")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' failed_jobs.json)
+          "
+            addendum="$ADDENDA_DIR/failure-email-addendum-$id.md"
+            if [[ -s "$addendum" ]]; then
+              # indent so the addendum nests under the job's bullet point
+              failed_jobs_text+="
+          $(sed 's/^/  /' "$addendum")
+
+          "
+            fi
+          done
+
+          [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
+
+          cat << EOF > "$EMAIL_BODY_FILENAME"
+          ### The following GitHub Actions job$plural failed:
+
+          $failed_jobs_text
 
 
-            Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
+          Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
 
-            ##### GitHub Actions run info:
-            - SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            - Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - Run attempt: ${{ github.run_attempt }}
-            - Run number: ${{ github.run_number }}
-            - Triggering event name: ${{ github.event_name }}
-            EOF
+          ##### GitHub Actions run info:
+          - SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - Run attempt: ${{ github.run_attempt }}
+          - Run number: ${{ github.run_number }}
+          - Triggering event name: ${{ github.event_name }}
+          EOF
       - name: print email body
         if: always()
         run: |
