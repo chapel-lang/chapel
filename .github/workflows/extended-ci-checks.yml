@@ -418,12 +418,22 @@ jobs:
         with:
           persist-credentials: false
       - name: run homebrew testing
+        env:
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             ./util/cron/test-homebrew.bash
           else
             ./util/cron/test-homebrew-linux.bash
           fi
+      - name: upload failure email addendum
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-email-addendum-${{ job.check_run_id }}
+          path: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+          if-no-files-found: ignore
+          retention-days: 3
 
   test-c2chapel:
     runs-on: ubuntu-latest
