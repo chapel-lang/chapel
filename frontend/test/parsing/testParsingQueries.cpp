@@ -784,6 +784,43 @@ static void test12() {
   assert(cDeclAttr==nullptr);
 }
 
+static void test13() {
+  printf("test13\n");
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  ctx->advanceToNextRevision(false);
+  auto pathA = createEphemeralFile(ctx, "var a = 1;\n");
+  auto pathB = createEphemeralFile(ctx, "var b = 2;\n");
+  auto pathFoo = createEphemeralFile(ctx, "var c = 3;\n",
+                                     UniqueString::get(ctx, "Foo"));
+  assert(pathA != pathB);
+  assert(fileText(ctx, pathA).text() == "var a = 1;\n");
+  assert(fileText(ctx, pathB).text() == "var b = 2;\n");
+
+  auto modA = parseOneModule(ctx, pathA);
+  auto modB = parseOneModule(ctx, pathB);
+  auto modFoo = parseOneModule(ctx, pathFoo);
+  assert(modA->name() != modB->name());
+  assert(modFoo->name() == "Foo");
+  assert(modA->stmt(0)->toVariable()->name() == "a");
+  assert(modB->stmt(0)->toVariable()->name() == "b");
+  assert(!guard.realizeErrors());
+
+  // recreating the same file in a later revision reuses its parse
+  ctx->advanceToNextRevision(false);
+  auto pathA2 = createEphemeralFile(ctx, "var a = 1;\n");
+  assert(pathA2 == pathA);
+  assert(parseOneModule(ctx, pathA2) == modA);
+  assert(!guard.realizeErrors());
+
+  // files not recreated in this revision no longer exist
+  ctx->advanceToNextRevision(false);
+  assert(fileText(ctx, pathB).text().empty());
+  assert(guard.realizeErrors() == 1);
+}
+
 int main() {
   test0();
   test1();
@@ -798,6 +835,7 @@ int main() {
   test10();
   test11();
   test12();
+  test13();
 
   return 0;
 }

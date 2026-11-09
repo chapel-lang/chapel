@@ -77,11 +77,13 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
   // [1]: https://en.cppreference.com/w/cpp/language/fold
 
   int counter = 0;
-  auto printArg = [&](const std::string& arg) {
+  auto printArg = [&](const std::string& arg, bool isOptional) {
     ss << ", arg" << counter++ << ": " << arg;
+    if (isOptional) ss << " = None";
   };
 
-  (printArg(std::tuple_element<Indices, Tuple>::type::typeString()), ...);
+  (printArg(std::tuple_element<Indices, Tuple>::type::typeString(),
+            IsOptionalArg<std::tuple_element_t<Indices, Tuple>>::value), ...);
 }
 
 template <typename T>
