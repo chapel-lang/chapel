@@ -79,6 +79,8 @@ module ChapelDynamicLoading {
 
   class chpl_LocalPtrCache {
     var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
+    // Maps the LOCALE-0 address of a 'chpl_BinaryInfo' to this locale's handle.
+    var handles: chpl_lockGuard(chpl_localMap(c_ptr(void), c_ptr(void)));
   }
 
   // One cache of pointers guarded by a lock defined per locale. We use a
@@ -103,6 +105,15 @@ module ChapelDynamicLoading {
   }
 
   proc deinit() {
+    // Close binaries while the per-locale caches they evict from still exist.
+    ref binaries = chpl_binaryInfoStore.handleToInfo.unsafeAccess();
+    for slot in binaries.slots() {
+      if slot.val != nil {
+        delete slot.val;
+        slot.val = nil;
+      }
+    }
+
     on Locales[0] do delete chpl_localPtrCache;
 
     // Behind a 'local' check to avoid throwing off compiler optimizations.
@@ -599,7 +610,6 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    // TODO: Also need to evict pointer cache entries.
     proc _close() {
       assert(_refCount.read() == 0);
       if _closed then return;
@@ -608,19 +618,58 @@ module ChapelDynamicLoading {
         if !_closed {
           _closed = true;
 
+          const key = __primitive("_wide_get_addr", this);
+
+          // TODO: Refcount cache entries. Another binary that resolved a symbol
+          //       to the same address reuses this index, so evicting it here
+          //       leaves that binary's procedure pointer dangling.
+          for slot in _procPtrToDataLocale0.slots() {
+            const idx = slot.val[0];
+            coforall loc in Locales do on loc {
+              local do manage chpl_localPtrCache.guard.write() as m do
+                m.removeVal(idx);
+            }
+          }
+
           for i in 0..<_systemPtrs.size {
             const ptr = _systemPtrs[i];
 
             if ptr != nil then on Locales[i] {
+              local do manage chpl_localPtrCache.handles.write() as m {
+                var h: c_ptr(void);
+                m.remove(key, h);
+              }
+
               var err: owned DynLoadError?;
               localDynLoadClose(ptr, err);
 
               // TODO: Figure out how to propagate this instead of halting?
               if err != nil then halt(err!.message());
             }
+
+            _systemPtrs[i] = nil;
           }
         }
       }
+    }
+
+    // Returns this locale's 'dlopen' handle, fetching it from LOCALE-0 once.
+    proc _localHandle(): c_ptr(void) {
+      const key = __primitive("_wide_get_addr", this);
+      var ret: c_ptr(void);
+
+      local do manage chpl_localPtrCache.handles.read() as m do m.get(key, ret);
+      if ret != nil then return ret;
+
+      const origin = here.id;
+      on this do ret = _systemPtrs[origin];
+
+      if ret != nil {
+        local do manage chpl_localPtrCache.handles.write() as m do
+          m.add(key, ret);
+      }
+
+      return ret;
     }
 
     inline proc bumpRefCount() do _refCount.add(1);
@@ -672,8 +721,13 @@ module ChapelDynamicLoading {
       }
 
       if numErrs.read() > 0 {
+        // Evict the partially published index so no locale's fast path hits it.
+        coforall loc in Locales do on loc {
+          local do manage chpl_localPtrCache.guard.write() as m do
+            m.removeVal(ret);
+        }
+
         // If there were errors, then report the first error.
-        // TODO: Evict any pointers stored in the cache.
         // TODO: Consolidate the reported errors.
         for i in 0..<errBuf.size {
           if errBuf[i] {
@@ -701,11 +755,7 @@ module ChapelDynamicLoading {
 
       if checkForDynamicLoadingErrors(err) then return ret;
 
-      // Get the handle for the current locale.
-      // TODO: Re-implement to have NO comm!
-      const origin = here.id;
-      var handle: c_ptr(void);
-      on this do handle = _systemPtrs[origin];
+      const handle = _localHandle();
       assert(handle != nil);
 
       local do {
@@ -743,6 +793,18 @@ module ChapelDynamicLoading {
 
       if checkForDynamicLoadingErrors(err) {
         return __primitive("cast", P, 0);
+      }
+
+      // Fast path: the symbol is already in this locale's cache, so no comm.
+      const handleHere = _localHandle();
+      if handleHere != nil {
+        var errHere: owned DynLoadError?;
+        const ptrHere = localDynLoadSymbolLookup(sym, handleHere, errHere);
+        if ptrHere != nil {
+          local do manage chpl_localPtrCache.guard.read() as m do
+            m.get(ptrHere, idx);
+          if idx != 0 then return __primitive("cast", P, idx);
+        }
       }
 
       on Locales[0] {
@@ -1013,6 +1075,42 @@ module ChapelDynamicLoading {
       return false;
     }
 
+    // Returns 'true' if the key was removed. Uses backward-shift deletion
+    // because there are no tombstones.
+    proc ref remove(in key: K, out val: V): bool {
+      import MemMove;
+
+      if _isKeyZeroBits(key) || _size == 0 then return false;
+
+      var hole = 0;
+      if !_findSlotIdx(key, hole) || _slots[hole].key != key then return false;
+
+      val = MemMove.moveFrom(_slots[hole].val);
+
+      const n = _slots.size;
+      var j = hole;
+      while true {
+        j = (j + 1) % n;
+        ref s = _slots[j];
+        if _isKeyZeroBits(s.key) then break;
+
+        // Leave entries whose home slot is cyclically in '(hole, j]'.
+        const home = _hash(s.key) % n;
+        const stays = if hole <= j then hole < home && home <= j
+                                   else hole < home || home <= j;
+        if stays then continue;
+
+        _slots[hole].key = s.key;
+        MemMove.moveInitialize(_slots[hole].val, MemMove.moveFrom(s.val));
+        hole = j;
+      }
+
+      var zero: K;
+      _slots[hole].key = zero;
+      _size -= 1;
+      return true;
+    }
+
     // Returns 'true' if the key was found.
     proc get(in key: K, out val: V): bool {
       if _isKeyZeroBits(key) then return false;
@@ -1058,6 +1156,20 @@ module ChapelDynamicLoading {
     proc get(key: K, out val: V) {
       var ret = false;
       on this do ret = _keyToVal.get(key, val);
+      return ret;
+    }
+
+    proc ref removeVal(val: V): bool {
+      var ret = false;
+      on this do {
+        var key: K;
+        if _valToKey.remove(val, key) {
+          var got: V;
+          const ok = _keyToVal.remove(key, got);
+          assert(ok && got == val);
+          ret = true;
+        }
+      }
       return ret;
     }
 
