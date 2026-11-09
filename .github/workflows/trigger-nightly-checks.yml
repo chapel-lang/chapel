@@ -124,12 +124,40 @@ jobs:
             fi
           done
 
+          prs_text="(failed to determine PRs merged since the last nightly run)"
+          workflow_file=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+          if gh_api prev_runs.json "/repos/${{ github.repository }}/actions/workflows/$workflow_file/runs?event=schedule&branch=main&per_page=10" &&
+             prev_sha=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].head_sha' prev_runs.json) &&
+             gh_api compare_raw.json --paginate "/repos/${{ github.repository }}/compare/$prev_sha...${{ github.sha }}?per_page=100" &&
+             jq -rs --arg head "${{ github.sha }}" --arg repo "${{ github.repository }}" '
+               INDEX(.[].commits[]; .sha) as $m
+               | [$head | select($m[.]) | recurse($m[.].parents[0].sha; $m[.] != null)]
+               | reverse[]
+               | $m[.]
+               | (.commit.message | split("\n")[0]) as $subject
+               | if ($subject | test("\\(#[0-9]+\\)$"))
+                 then "- " + ($subject | sub("\\(#(?<n>[0-9]+)\\)$"; "([#\(.n)](https://github.com/\($repo)/pull/\(.n)))"))
+                 else "- \($subject) ([\(.sha[0:11])](\(.html_url)))"
+                 end
+             ' compare_raw.json > prs.md; then
+            [[ -s prs.md ]] || echo "- (none)" > prs.md
+            prs_text="Since [$prev_sha](https://github.com/${{ github.repository }}/commit/$prev_sha) ([compare](https://github.com/${{ github.repository }}/compare/$prev_sha...${{ github.sha }})):
+
+          $(cat prs.md)"
+          else
+            echo "::warning::failed to determine PRs merged since the last nightly run"
+          fi
+
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
           ### The following GitHub Actions job$plural failed:
 
           $failed_jobs_text
+
+          ##### PRs merged since the last nightly run:
+
+          $prs_text
 
 
           Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
