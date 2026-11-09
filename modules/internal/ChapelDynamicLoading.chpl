@@ -79,7 +79,6 @@ module ChapelDynamicLoading {
 
   class chpl_LocalPtrCache {
     var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
-    // Maps the LOCALE-0 address of a 'chpl_BinaryInfo' to this locale's handle.
     var handles: chpl_lockGuard(chpl_localMap(c_ptr(void), c_ptr(void)));
   }
 
@@ -105,7 +104,6 @@ module ChapelDynamicLoading {
   }
 
   proc deinit() {
-    // Close binaries while the per-locale caches they evict from still exist.
     ref binaries = chpl_binaryInfoStore.handleToInfo.unsafeAccess();
     for slot in binaries.slots() {
       if slot.val != nil {
@@ -653,7 +651,7 @@ module ChapelDynamicLoading {
       }
     }
 
-    // Returns this locale's 'dlopen' handle, fetching it from LOCALE-0 once.
+    // Returns this locale's 'dlopen' handle, fetching it from LOCALE-0 once
     proc _localHandle(): c_ptr(void) {
       const key = __primitive("_wide_get_addr", this);
       var ret: c_ptr(void);
@@ -721,7 +719,7 @@ module ChapelDynamicLoading {
       }
 
       if numErrs.read() > 0 {
-        // Evict the partially published index so no locale's fast path hits it.
+        // Evict the partially published index
         coforall loc in Locales do on loc {
           local do manage chpl_localPtrCache.guard.write() as m do
             m.removeVal(ret);
@@ -1075,8 +1073,7 @@ module ChapelDynamicLoading {
       return false;
     }
 
-    // Returns 'true' if the key was removed. Uses backward-shift deletion
-    // because there are no tombstones.
+    // Returns 'true' if the key was removed
     proc ref remove(in key: K, out val: V): bool {
       import MemMove;
 
