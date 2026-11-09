@@ -74,7 +74,7 @@ jobs:
 
           echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv
+          make -j"$num_procs" all test-venv spectests
           echo "::endgroup::"
 
           echo "::group::Run tests"
@@ -99,7 +99,7 @@ jobs:
 
           echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv
+          make -j"$num_procs" all test-venv spectests
           echo "::endgroup::"
 
           echo "::group::Run tests"
@@ -130,7 +130,7 @@ jobs:
 
           echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv
+          make -j"$num_procs" all test-venv spectests
           echo "::endgroup::"
 
           echo "::group::Run tests"
@@ -149,7 +149,7 @@ jobs:
 
           echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv
+          make -j"$num_procs" all test-venv spectests
           echo "::endgroup::"
 
           echo "::group::Run tests"
@@ -227,7 +227,7 @@ jobs:
           export CHPL_TEST_TIMEOUT=1200
 
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv chpldoc
+          make -j"$num_procs" all test-venv spectests chpldoc
 
           start_test --parallel "$num_procs" test/release/examples
           EOF
@@ -254,7 +254,7 @@ jobs:
       configuration: linux64-c-backend-gasnet
       start-test-args: -multilocale-only
       max-jobs: 15
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       cron-script: util/cron/test-gasnet.c-backend.bash
       ccache-key: linux64-c-backend
   paratest-linux64-clang:
@@ -278,8 +278,6 @@ jobs:
   test-quickstart-darwin:
     # written as a normal job, not a paratest, since its only one dir
     runs-on: macos-latest
-    env:
-      CHPL_NIGHTLY_DO_NOTHING: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -299,7 +297,7 @@ jobs:
 
           echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv
+          make -j"$num_procs" all test-venv spectests
           echo "::endgroup::"
 
           echo "::group::Run tests"
@@ -319,7 +317,7 @@ jobs:
       ccache-save: false
       pre-build-steps: |
         brew install llvm@22
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
   paratest-gasnet_fast_darwin:
     name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
     uses: $/.github/workflows/ga-paratest.yml
@@ -334,7 +332,7 @@ jobs:
       ccache-save: false
       pre-build-steps: |
         brew install llvm@22
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
   paratest-linux64-aarch64:
     name: Chapel paratest on linux64 aarch64
     uses: $/.github/workflows/ga-paratest.yml
@@ -357,7 +355,7 @@ jobs:
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --multilocale-only
       max-jobs: 15
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       ccache-key: aarch64-default
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
@@ -392,7 +390,7 @@ jobs:
       start-test-args: -multilocale-only
       max-jobs: 15
       timeout-minutes: 360
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       ccache-key: x86-asan
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
@@ -404,7 +402,7 @@ jobs:
       container-options: --shm-size=8g # required for SEGMENT=fast
       start-test-args: -multilocale-only
       max-jobs: 15
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       ccache-key: x86-default
       ccache-save: false
   # runners only have 2 real cores, and smp can't oversubscribe
@@ -418,7 +416,7 @@ jobs:
   #     cron-script: util/cron/test-gasnet-smp.bash
   #     container-options: --shm-size=8g # required for SEGMENT=fast
   #     test-dirs: test/release/examples
-  #     make-targets: all test-venv mason-deps
+  #     make-targets: all test-venv mason-deps spectests
   paratest-gpu-cpu:
     name: Chapel paratest with CHPL_GPU=cpu
     uses: $/.github/workflows/ga-paratest.yml
@@ -427,7 +425,7 @@ jobs:
       configuration: gpu-cpu
       cron-script: util/cron/test-gpu-cpu.bash
       test-dirs: test/gpu/native test/users/engin/context test/release/examples
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       ccache-key: x86-default
       ccache-save: false
   paratest-memleaks:
@@ -470,7 +468,7 @@ jobs:
       start-test-args: -multilocale-only
       max-jobs: 15
       cron-script: util/cron/test-gasnet.quickstart.bash
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
       ccache-key: x86-llvm-none
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
