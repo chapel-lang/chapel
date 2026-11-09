@@ -52,6 +52,12 @@ Atomics
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics
 ChapelLocks
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks
+ChapelSetProgramInfoDataEntries
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelRuntimeInterface.ChapelProgramRegistration.ChapelSetProgramInfoDataEntries
+ChapelProgramRegistration
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelRuntimeInterface.ChapelProgramRegistration
+ChapelRuntimeInterface
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelRuntimeInterface
 Errors
   from print-module-resolution.ChapelStandard.SharedObject.Errors
 WeakPointer
@@ -88,12 +94,6 @@ ChapelSyncvar
   from print-module-resolution.ChapelStandard.ChapelSyncvar
 ChapelTaskDataHelp
   from print-module-resolution.ChapelStandard.ChapelTaskDataHelp
-ChapelSetProgramInfoDataEntries
-  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface.ChapelProgramRegistration.ChapelSetProgramInfoDataEntries
-ChapelProgramRegistration
-  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface.ChapelProgramRegistration
-ChapelRuntimeInterface
-  from print-module-resolution.ChapelStandard.ChapelRuntimeInterface
 ChapelIOSerialize
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelIOSerialize
 ChapelNumLocales

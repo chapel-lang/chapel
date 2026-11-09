@@ -54,7 +54,7 @@ static chpl_rt_prginfo* chpl_prg_root;
 static void program_registration_common_setup(chpl_rt_prginfo* prg) {
   // The id is stored in the upper bits of every class id.
   if (prg->id >= CHPL_CID_MAX_PROGRAMS) {
-    chpl_error("too many Chapel programs loaded to encode class ids", 0, 0);
+    chpl_rt_error("too many Chapel programs loaded to encode class ids", 0, 0);
   }
 }
 
@@ -81,7 +81,7 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
 
   if (!requestingNewIdx && idxToUse != got) {
     // TODO: Propagate errors outwards from this function?
-    chpl_error("Failed to map index!\n", 0, 0);
+    chpl_rt_error("Failed to map index!\n", 0, 0);
   }
 
   ret = (chpl_rt_prg_id) got;
@@ -123,7 +123,7 @@ chpl_rt_prginfo* chpl_rt_prginfo_from_id_here(chpl_rt_prg_id id) {
   chpl_rt_prginfo* ret = chpl_getPtrForIdxHere(idx);
 
   if (ret == NULL) {
-    chpl_error("Failed to fetch program data for ID", 0, 0);
+    chpl_rt_error("Failed to fetch program data for ID", 0, 0);
   }
 
   // This should hold...

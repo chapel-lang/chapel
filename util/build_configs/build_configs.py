@@ -8,12 +8,12 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import argparse
 import contextlib
 import itertools
 import logging
 import multiprocessing
 import operator
-import optparse
 import os
 import platform
 import shlex
@@ -359,7 +359,7 @@ def main():
 def get_chpl_misc(opts, args, build_env):
     """Miscellaneous chplenv-related paths, settings, and options
 
-    :type opts: optparse.Values
+    :type opts: argparse.Namespace
     :arg opts: Options parsed from command line
 
     :type args: list
@@ -518,7 +518,7 @@ def get_chpl_misc(opts, args, build_env):
 def get_configs(opts):
     """Compile list of configurations to build based on command line options.
 
-    :type opts: optparse.Values
+    :type opts: argparse.Namespace
     :arg opts: options parsed from command line
 
     :rtype: list of Config instances
@@ -796,46 +796,56 @@ def print_configs():
                 print("\t\t{0}".format(value))
 
 
-def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
-    """OptionParser callback function for parsing the configuration value passed by user.
+class ParseConfigValueAction(argparse.Action):
+    """ArgumentParser action for parsing the configuration value passed by user.
 
     It takes values that have commas (e.g. the user specified
     --comm=none,gasnet), breaks them apart and adds the individual values to
     list of values.
 
-    :type option: optparse.Option
-    :arg option: Option instance that's calling the callback
-
-    :type opt_str: str
-    :arg opt_str: option string seen on the command line that's triggering the
-        callback
-
-    :type value: str
-    :arg value: value for this option passed by user
-
-    :type parser: optparse.OptionParser
-    :arg parser: instance of option parser that is doing work
-
-    :type choices: list
-    :arg choices: list of valid choices for this option
+    :type valid_choices: list
+    :arg valid_choices: list of valid choices for this option
     """
-    # Get the existing values the parser knows about for this particular
-    # option.
-    value_list = getattr(parser.values, option.dest, None) or []
 
-    # Split the value provided. Validate each value parsed here.
-    parsed_vals = value.split(",")
-    for v in parsed_vals:
-        if choices and v not in choices:
-            parser.error(
-                "option {0}: invalid choice: {1} (choose from {2})".format(
-                    opt, v, choices
+    def __init__(self, option_strings, dest, valid_choices=None, **kwargs):
+        super(ParseConfigValueAction, self).__init__(
+            option_strings, dest, **kwargs
+        )
+        self.valid_choices = valid_choices
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        """
+        :type parser: argparse.ArgumentParser
+        :arg parser: instance of argument parser that is doing work
+
+        :type namespace: argparse.Namespace
+        :arg namespace: namespace holding the values parsed so far
+
+        :type value: str
+        :arg value: value for this option passed by user
+
+        :type option_string: str
+        :arg option_string: option string that's triggering the action
+        """
+        choices = self.valid_choices
+
+        # Get the existing values the parser knows about for this particular
+        # option.
+        value_list = getattr(namespace, self.dest, None) or []
+
+        # Split the value provided. Validate each value parsed here.
+        parsed_vals = value.split(",")
+        for v in parsed_vals:
+            if choices and v not in choices:
+                parser.error(
+                    "option {0}: invalid choice: {1} (choose from {2})".format(
+                        option_string, v, choices
+                    )
                 )
-            )
 
-    # Add the new vals to the existing list of values, and set them on option.
-    value_list += parsed_vals
-    setattr(parser.values, option.dest, value_list)
+        # Add the new vals to the existing list of values, and set them on option.
+        value_list += parsed_vals
+        setattr(namespace, self.dest, value_list)
 
 
 def parse_args():
@@ -846,19 +856,13 @@ To select multiple values for a particular setting, use a comma separated list
 or pass the argument multiple times. For example, to build with comm=none and
 comm=gasnet either of these will work:
 
-  %prog --comm=none,gasnet
-  %prog --comm=none --comm=gasnet"""
+  %(prog)s --comm=none,gasnet
+  %(prog)s --comm=none --comm=gasnet"""
 
-    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
-        """Help formatter that does not wrap the description text."""
-
-        def _format_text(self, text):
-            return text
-
-    parser = optparse.OptionParser(
-        usage='usage: %prog [options] [extra options appended to Chapel "make" commands]',
+    parser = argparse.ArgumentParser(
+        usage='%(prog)s [options] [extra options appended to Chapel "make" commands]',
         description=usage_description,
-        formatter=NoWrapHelpFormatter(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.set_defaults(
@@ -873,61 +877,63 @@ comm=gasnet either of these will work:
         }
     )
 
-    parser.add_option(
-        "-v", "--verbose", action="store_true", help="Verbose output."
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=None,
+        help="Verbose output.",
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--dry-run",
         action="store_true",
+        default=None,
         help="Dry run only. Do not run Chapel make.",
     )
-    parser.add_option(
+    parser.add_argument(
         "-l",
         "--make-log",
         help="Output file to receive Chapel make output (default: output not saved)",
     )
-    parser.add_option(
+    parser.add_argument(
         "--show-configs",
         action="store_true",
         help="Print all possible values for all configurations.",
     )
-    parser.add_option(
-        "--chpl-home", help="CHPL_HOME setting. (default: %default)"
+    parser.add_argument(
+        "--chpl-home", help="CHPL_HOME setting. (default: %(default)s)"
     )
-    parser.add_option(
+    parser.add_argument(
         "-p",
         "--parallel",
         action="store_true",
         help="Enable parallel execution for build.",
     )
-    parser.add_option(
+    parser.add_argument(
         "-s",
         "--setenv",
         help="Input file with bash-compatible env setup commands (default: None).",
     )
+    parser.add_argument("args", nargs="*", help=argparse.SUPPRESS)
 
-    config_group = optparse.OptionGroup(
-        parser,
+    config_group = parser.add_argument_group(
         "Configuration Options",
         "Configuration options for building the Chapel compiler and runtime.",
     )
 
     for dim in Dimensions:
-        config_group.add_option(
+        config_group.add_argument(
             "--{0}".format(dim.name.replace("_", "-")),
             metavar=dim.var_name,
-            action="callback",
-            type="string",
-            callback=parse_config_value_callback,
-            callback_args=(dim.values,),
-            help=dim.help_text,
+            action=ParseConfigValueAction,
+            type=str,
+            valid_choices=dim.values,
+            help=dim.help_text.replace("%", "%%"),
         )
 
-    parser.add_option_group(config_group)
-
-    opts, args = parser.parse_args()
-    return opts, args
+    opts = parser.parse_args()
+    return opts, opts.args
 
 
 def setup_logging(verbose=False):

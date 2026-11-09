@@ -1,21 +1,8 @@
 #!/usr/bin/env python3
-
-import os
 import subprocess
 
-platform = os.getenv('CHPL_TARGET_PLATFORM')
-tasks = os.getenv('CHPL_TASKS')
-comp = os.getenv('CHPL_TARGET_COMPILER')
-
-skip = True
-
-if platform != 'linux64':
-    skip = True # only test on linux
-elif tasks == 'fifo' or comp == 'llvm':
-    skip = True # these configurations don't currently work
+sub = subprocess.run(['pkg-config', '--exists', 'libevent >= 2.1'])
+if sub.returncode == 0:
+    print(False) # libevent exists and is new enough
 else:
-    sub = subprocess.run(['pkg-config', '--exists', 'libevent >= 2.1'])
-    if sub.returncode == 0:
-      skip = False # libevent exists and is new enough
-
-print(skip)
+    print(True)

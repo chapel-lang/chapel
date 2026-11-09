@@ -35,7 +35,7 @@ void* chpl_debug_get(void* locale, void* addr, size_t size) {
   size_t numBytes = sizeof(uint8_t)*size;
   void* ret = sys_malloc(numBytes);
   if (ret == NULL) {
-    chpl_error("Out of memory in chpl_debug_get", 0, 0);
+    chpl_rt_error("Out of memory in chpl_debug_get", 0, 0);
   }
   chpl_gen_comm_get(ret, chpl_rt_nodeFromLocaleID(*localeID), addr,
                     numBytes, CHPL_COMM_UNKNOWN_ID, -1, 0);

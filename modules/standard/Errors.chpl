@@ -35,6 +35,7 @@ module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
   private use CTypes;
+  private use ChapelRuntimeInterface;
 
   @chpldoc.nodoc
   class ErrorStackNode {
@@ -120,7 +121,7 @@ module Errors {
       var node = stackTraceHead;
       while node {
         const l = node!.thrownLine;
-        const fC = __primitive("chpl_lookupFilename", node!.thrownFileId);
+        const fC = chpl_lookupFilename(node!.thrownFileId);
         var fS: string = try! string.createCopyingBuffer(fC:c_ptrConst(c_char));
         yield (fS, l);
         node = node!.next;
@@ -597,7 +598,7 @@ module Errors {
       var node = err.stackTraceHead;
       while node {
         const l = node!.thrownLine;
-        const fC = __primitive("chpl_lookupFilename", node!.thrownFileId);
+        const fC = chpl_lookupFilename(node!.thrownFileId);
         var fS: string = try! string.createCopyingBuffer(fC:c_ptrConst(c_char));
         node = node!.next;
 
@@ -611,12 +612,11 @@ module Errors {
         first = false;
       }
     } else {
-      const myFileC =
-        __primitive("chpl_lookupFilename", __primitive("_get_user_file"));
+      const myFileC = chpl_lookupFilename(__primitive("_get_user_file"));
       const myFileS = try! string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
       const myLine = __primitive("_get_user_line");
 
-      const thrownFileC = __primitive("chpl_lookupFilename", err.thrownFileId);
+      const thrownFileC = chpl_lookupFilename(err.thrownFileId);
       const thrownFileS =
         try! string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
       const thrownLine = err.thrownLine;

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+import os
+
+# match the thread count chosen in writeThis.execenv
+if os.getenv("CHPL_TARGET_PLATFORM") == "darwin":
+    print(" # writeThis.3threads.good")

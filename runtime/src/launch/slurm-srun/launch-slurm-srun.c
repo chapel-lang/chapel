@@ -77,7 +77,7 @@ static int checkSlurmVersion(void) {
     version = versionBuf;
     memset(version, 0, buflen);
     if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-      chpl_error("Error trying to determine slurm version", 0, 0);
+      chpl_rt_error("Error trying to determine slurm version", 0, 0);
     }
   }
   if (!strstr(version, "slurm")) {
@@ -163,9 +163,9 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
                "'sinfo' produced no output. Verify that partition "
                "'%s' exists.", partition);
 
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     } else if (rc <= 0) {
-        chpl_error("Error trying to determine number of cores per node", 0, 0);
+        chpl_rt_error("Error trying to determine number of cores per node", 0, 0);
     }
 
     if (strstr(buf, "Invalid node format specification: i")) {
@@ -206,7 +206,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
             "unable to determine number of cores per locale; "
              "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
              "Output of \"sinfo\" was:\n%s", orig);
-    chpl_error(msg, 0, 0);
+    chpl_rt_error(msg, 0, 0);
   }
 
   if (nomultithread) {

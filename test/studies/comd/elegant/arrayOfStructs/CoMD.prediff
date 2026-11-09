@@ -9,8 +9,8 @@ tmp_file  = out_file + ".prediff.tmp"
 EPSILON = 1e-6
 vals = {}
 vals['  Initial energy  :'] = -1.166063303458
-vals['  Final energy    :'] = -1.166049767266
-vals['  eFinal/eInitial :'] = 0.999988
+vals['  Final energy    :'] = -1.166059622057
+vals['  eFinal/eInitial :'] = 0.999997
 
 found = dict.fromkeys(vals.keys(), False)
 

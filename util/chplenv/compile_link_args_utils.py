@@ -1,5 +1,5 @@
 import os
-from chplenv import *
+from chplenv import *  # pylint: disable=unused-wildcard-import
 
 
 # Given two 2-tuples of lists, add 2nd lists to the first lists
@@ -72,7 +72,7 @@ def get_runtime_includes_and_defines(runtime_subdir):
 # Returns the runtime -L and -l args according
 # to the current configuration, for a target (not host) compile.
 # Returns tuple of (bundled_args, system_args)
-def get_runtime_link_args(runtime_subdir):
+def get_runtime_link_args():
     bundled = []
     system = []
 
@@ -192,7 +192,7 @@ def compute_internal_compile_link_args(runtime_subdir):
 
     # add runtime includes and defines
     extend2(tgt_compile, get_runtime_includes_and_defines(runtime_subdir))
-    extend2(tgt_runtime_link, get_runtime_link_args(runtime_subdir))
+    extend2(tgt_runtime_link, get_runtime_link_args())
 
     # For the program, add visibility into runtime lib folder for linker.
     # We do NOT link directly against '-lchpl', but we do let the linker

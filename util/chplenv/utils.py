@@ -4,21 +4,20 @@ import os
 import subprocess
 import sys
 import unittest
+from shutil import which  # pylint: disable=unused-import
 
 try:
-    # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
-    # Prefer `shutil.which` in Python 3.2+
-    from shutil import which
+    from typing import TYPE_CHECKING
 except ImportError:
-    # Backport for pre Python 3.2
-    from distutils.spawn import find_executable as which
-
+    # fallback shouldn't be needed, added in Python 3.5.2
+    # but prior point releases don't have it and we support Python 3.5
+    # just covering all our bases
+    TYPE_CHECKING = False
 
 _CHPL_DEVELOPER = False
 
 
 def CHPL_DEVELOPER():
-    global _CHPL_DEVELOPER
     return _CHPL_DEVELOPER
 
 
@@ -38,9 +37,9 @@ _buffer_warnings = False
 
 
 def flush_warnings():
-    for warning in _warning_buffer:
+    for w in _warning_buffer:
         sys.stderr.write("Warning: ")
-        sys.stderr.write(warning)
+        sys.stderr.write(w)
         sys.stderr.write("\n")
     _warning_buffer.clear()
 
@@ -127,6 +126,51 @@ def try_run_command(command, cmd_input=None, combine_output=False):
     my_stdout = output[0].decode("utf-8")
     my_sterr = output[1].decode("utf-8") if output[1] else None
     return (True, process.returncode, my_stdout, my_sterr)
+
+
+if TYPE_CHECKING:
+    from typing import Literal, Optional, Sequence, Tuple, Union, overload
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[True] = ...,
+        stderr: Literal[False] = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> str: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[True] = ...,
+        *,
+        stderr: Literal[True],
+        cmd_input: Optional[str] = ...
+    ) -> Tuple[str, Optional[str]]: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[False],
+        stderr: Literal[True],
+        cmd_input: Optional[str] = ...,
+    ) -> Optional[str]: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: Literal[False],
+        stderr: Literal[False] = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> None: ...
+
+    @overload
+    def run_command(
+        command: Sequence[str],
+        stdout: bool = ...,
+        stderr: bool = ...,
+        cmd_input: Optional[str] = ...,
+    ) -> Union[str, Tuple[str, Optional[str]], None]: ...
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):

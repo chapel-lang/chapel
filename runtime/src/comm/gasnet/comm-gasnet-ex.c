@@ -53,6 +53,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <sys/wait.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
@@ -1036,7 +1037,7 @@ void chpl_comm_post_mem_init(void) {}
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  chpl_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
+  chpl_rt_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1068,7 +1069,7 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
   if (lldb_server != NULL && access(lldb_server, X_OK) != 0) {
     char buf[1024];
     snprintf(buf, sizeof(buf), "Could not find '%s'", lldb_server);
-    chpl_error(buf, 0, 0);
+    chpl_rt_error(buf, 0, 0);
     return 1;
   }
   if (lldb_server == NULL) {
@@ -1095,7 +1096,14 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
     char pidStr[16];
     snprintf(pidStr, sizeof(pidStr), "%d", f);
 
+    // the child shares our GASNet state, so never run GASNet code here again
+    signal(SIGINT, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGTERM, SIG_DFL);
+    signal(SIGHUP, SIG_DFL);
+
     char* command;
+    const char* server_name;
 
   // this is somewhat fragile, as a user could provide a different
   // lldb_server path thats actually lldb-server on MacOS, but its unlikely
@@ -1106,16 +1114,24 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
       " 127.0.0.1:",
       portStr,
       " --attach=", pidStr);
-    *status = chpl_invoke_using_system(command, "running debugserver", 0);
+    server_name = "debugserver";
 #else
     command = chpl_glom_strings(5,
       lldb_server,
       " g :",
       portStr,
       " --attach ", pidStr);
-    *status = chpl_invoke_using_system(command, "running lldb-server", 0);
+    server_name = "lldb-server";
 #endif
-    return 1;
+    if (system(command) != 0) {
+      char buf[128];
+      snprintf(buf, sizeof(buf), "%s exited with an error", server_name);
+      chpl_warning(buf, 0, 0);
+    }
+
+    int child_status = 0;
+    while (waitpid(f, &child_status, 0) == -1 && errno == EINTR) { }
+    _exit(WIFEXITED(child_status) ? WEXITSTATUS(child_status) : 1);
   }
 }
 

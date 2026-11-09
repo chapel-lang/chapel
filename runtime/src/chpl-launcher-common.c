@@ -73,7 +73,7 @@ static void chpl_launch_sanity_checks(const char* argv0) {
     } else if ((size_t)wanted_to_write >= sizeof(errorMsg)) {
       strcpy(&errorMsg[sizeof(errorMsg) - 4], "...");
     }
-    chpl_error(errorMsg, 0, 0);
+    chpl_rt_error(errorMsg, 0, 0);
   }
 }
 
@@ -645,7 +645,7 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
     } else {
       char* message;
       message = chpl_glom_strings(3,"Unexpected flag:  \"",argv[argNum],"\"");
-      chpl_error(message, lineno, filename);
+      chpl_rt_error(message, lineno, filename);
     }
     return 0;
   }
@@ -888,5 +888,5 @@ void chpl_launcher_no_colocales_error(const char *name) {
     name = CHPL_LAUNCHER;
   }
   snprintf(msg, sizeof(msg), "'%s' launcher does not support co-locales.", name);
-  chpl_error(msg, 0, 0);
+  chpl_rt_error(msg, 0, 0);
 }

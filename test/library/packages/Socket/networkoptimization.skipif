@@ -1,0 +1,2 @@
+# uses macros that LLVM can't yet resolve
+CHPL_TARGET_COMPILER==llvm

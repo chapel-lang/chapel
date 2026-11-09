@@ -32,7 +32,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char baseCommand[256];
   char* command;
   if (numLocales != 1) {
-    chpl_error("dummy launcher only supports numLocales==1", 0, 0);
+    chpl_rt_error("dummy launcher only supports numLocales==1", 0, 0);
   }
 
   chpl_compute_real_binary_name(argv[0]);

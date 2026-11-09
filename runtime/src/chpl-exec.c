@@ -28,9 +28,9 @@
 
 #define CHECK_ERROR(status, description, ignore_status) do { \
   if (status == -1) { \
-    chpl_error("fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);\
+    chpl_rt_error("fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);\
   } else if (status != 0 && !ignore_status) { \
-    chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE); \
+    chpl_rt_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE); \
   } \
 } while(0)
 

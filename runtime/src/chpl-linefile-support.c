@@ -36,40 +36,46 @@ CHPL_TLS_DECL(fileBuff, unknownFileBuffer);
 // See note in chpl-linefile-support.h
 void chpl_saveFilename(const char *filename) { savedFilename = filename; }
 
-c_string chpl_lookupFilename(const int32_t idx) {
-  if (idx < 0) {
-    switch (idx) {
-    case CHPL_FILE_IDX_COMMAND_LINE:
-      return "(command-line)";
-    case CHPL_FILE_IDX_COMMAND_LINE_ARG:
-      return "<command-line arg>";
-    case CHPL_FILE_IDX_FORK_LARGE:
-      return "fork large";
-    case CHPL_FILE_IDX_MAIN_PROGRAM:
-      return "main program";
-    case CHPL_FILE_IDX_UNKNOWN:
-      return "<unknown>";
-    case CHPL_FILE_IDX_IDLE_TASK:
-      return "|idle|";
-    case CHPL_FILE_IDX_COMM_TASK:
-      return "<comm task>";
-    case CHPL_FILE_IDX_MAIN_TASK:
-      return "<main task>";
-    case CHPL_FILE_IDX_ON_BODY_TASK:
-      return "on-body task";
-    case CHPL_FILE_IDX_SAVED_FILENAME:
-      return savedFilename;
-    default: {
-      snprintf(CHPL_TLS_GET(unknownFileBuffer), 48,
-               "<unknown file idx %" PRId32 ">", idx);
-      // There is a possibility of unknownFileBuffer changing before it is
-      // used, not a very good one though.
-      return CHPL_TLS_GET(unknownFileBuffer);
-    }
-    }
-  } else {
-    chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+c_string chpl_rt_fname_case_lookup(const int32_t idx) {
+  if (idx >= 0) {
+    return NULL;
+  }
 
+  switch (idx) {
+  case CHPL_FILE_IDX_COMMAND_LINE:
+    return "(command-line)";
+  case CHPL_FILE_IDX_COMMAND_LINE_ARG:
+    return "<command-line arg>";
+  case CHPL_FILE_IDX_FORK_LARGE:
+    return "fork large";
+  case CHPL_FILE_IDX_MAIN_PROGRAM:
+    return "main program";
+  case CHPL_FILE_IDX_UNKNOWN:
+    return "<unknown>";
+  case CHPL_FILE_IDX_IDLE_TASK:
+    return "|idle|";
+  case CHPL_FILE_IDX_COMM_TASK:
+    return "<comm task>";
+  case CHPL_FILE_IDX_MAIN_TASK:
+    return "<main task>";
+  case CHPL_FILE_IDX_ON_BODY_TASK:
+    return "on-body task";
+  case CHPL_FILE_IDX_SAVED_FILENAME:
+    return savedFilename;
+  default: {
+    snprintf(CHPL_TLS_GET(unknownFileBuffer), 48,
+             "<unknown file idx %" PRId32 ">", idx);
+    // There is a possibility of unknownFileBuffer changing before it is
+    // used, not a very good one though.
+    return CHPL_TLS_GET(unknownFileBuffer);
+  }
+  }
+}
+
+c_string chpl_rt_lookup_filename(chpl_rt_prginfo* prg, const int32_t idx) {
+  if (idx < 0) {
+    return chpl_rt_fname_case_lookup(idx);
+  } else {
     if (idx < CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTableSize)) {
       return CHPL_RT_PRGINFO_DATA(prg, chpl_filenameTable)[idx];
     } else {
@@ -78,5 +84,10 @@ c_string chpl_lookupFilename(const int32_t idx) {
       return CHPL_TLS_GET(unknownFileBuffer);
     }
   }
+}
+
+c_string chpl_rt_lookup_filename_no_prg(const int32_t idx) {
+  chpl_rt_prginfo* prg = CHPL_RT_ROOT_PROGRAM_PLACEHOLDER;
+  return chpl_rt_lookup_filename(prg, idx);
 }
 

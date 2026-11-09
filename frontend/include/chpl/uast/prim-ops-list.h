@@ -385,8 +385,6 @@ PRIMITIVE_R(IMPLEMENTS_INTERFACE, "implements interface")
 PRIMITIVE_G(START_RMEM_FENCE, "chpl_rmem_consist_acquire")
 PRIMITIVE_G(FINISH_RMEM_FENCE, "chpl_rmem_consist_release")
 
-PRIMITIVE_G(LOOKUP_FILENAME, "chpl_lookupFilename")
-
 PRIMITIVE_R(GET_COMPILER_VAR, "get compiler variable")
 PRIMITIVE_R(GET_VISIBLE_SYMBOLS, "get visible symbols")
 

@@ -2512,7 +2512,7 @@ int cache_put_in_page(struct rdcache_s* cache,
 
   TRACE_PRINT(("%d: task %d in put_in_page %s:%d get %d bytes from "
                "%d:%p to %p\n",
-               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               chpl_nodeID, (int)chpl_task_getId(), chpl_rt_lookup_filename_no_prg(fn), ln,
                (int)size, node, (void*)raddr, addr));
 
   DEBUG_PRINT(("cache_put_in_page %i:%p from %p len %i\n",
@@ -2917,7 +2917,7 @@ int cache_get_in_page(struct rdcache_s* cache,
 
   TRACE_PRINT(("%d: task %d in get_in_page %s:%d get %d bytes from "
                "%d:%p to %p\n",
-               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               chpl_nodeID, (int)chpl_task_getId(), chpl_rt_lookup_filename_no_prg(fn), ln,
                (int)size, node, (void*)raddr, addr));
 
   INFO_PRINT(("%i cache_get_in_page addr %p from %i:%p len %i ra_len %i\n",
@@ -3788,12 +3788,12 @@ void chpl_cache_fence(int acquire, int release, int32_t ln, int32_t fn)
   if( acquire == 0 && release == 0 ) return;
 
   INFO_PRINT(("%i fence acquire %i release %i %s:%i\n",
-              chpl_nodeID, acquire, release, chpl_lookupFilename(fn), ln));
+              chpl_nodeID, acquire, release, chpl_rt_lookup_filename_no_prg(fn), ln));
 
   TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
                      " on cache %p from %s:%d\n",
                      chpl_nodeID, (int) chpl_task_getId(), acquire, release,
-                     cache, chpl_lookupFilename(fn), ln));
+                     cache, chpl_rt_lookup_filename_no_prg(fn), ln));
 
 #ifdef DUMP
   DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
@@ -3834,7 +3834,7 @@ void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
 
   TRACE_PRINT(("%d: task %d in chpl_cache_invalidate %s:%d %d bytes at %d:%p\n",
                chpl_nodeID, (int)chpl_task_getId(),
-               chpl_lookupFilename(fn), ln,
+               chpl_rt_lookup_filename_no_prg(fn), ln,
                (int)size, node, raddr));
 
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
@@ -3876,7 +3876,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
-               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               chpl_nodeID, (int)chpl_task_getId(), chpl_rt_lookup_filename_no_prg(fn), ln,
                (int)size, node, raddr, addr));
   chpl_comm_diags_verbose_rdma("cache-put", node, size, ln, fn, commID);
 
@@ -3924,7 +3924,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
-               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               chpl_nodeID, (int)chpl_task_getId(), chpl_rt_lookup_filename_no_prg(fn), ln,
                (int)size, node, raddr, addr));
   chpl_comm_diags_verbose_rdma("cache-get", node, size, ln, fn, commID);
 

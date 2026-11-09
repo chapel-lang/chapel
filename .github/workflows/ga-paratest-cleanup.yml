@@ -5,6 +5,7 @@ on:
     workflows:
       - "Run PR checks"
       - "Run nightly checks"
+      - "build-CI-container"
     types:
       - completed
 

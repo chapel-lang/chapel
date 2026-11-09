@@ -122,7 +122,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
           setConfigBuffer[stringLength] = '\0';
           message = chpl_glom_strings(2, "Found end of file while reading string: ",
                                       equalsSign + 1);
-          chpl_error(message, lineno, filename);
+          chpl_rt_error(message, lineno, filename);
           break;
         }
       case '\n':
@@ -131,7 +131,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
           setConfigBuffer[stringLength] = '\0';
           message = chpl_glom_strings(2, "Found newline while reading string: ",
                                       equalsSign + 1);
-          chpl_error(message, lineno, filename);
+          chpl_rt_error(message, lineno, filename);
           break;
         }
       default:
@@ -142,7 +142,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
             snprintf(dsl, sizeof(dsl), "%d", _default_string_length);
             message = chpl_glom_strings(2, "String exceeds the maximum string length of ",
                                         dsl);
-            chpl_error(message, lineno, filename);
+            chpl_rt_error(message, lineno, filename);
           }
           setConfigBuffer[stringLength] = nextChar;
           stringLength++;
@@ -318,7 +318,7 @@ void initSetValue(const char* varName, const char* value,
   configVarType* configVar;
   if  (*varName == '\0') {
     const char* message = "No variable name given";
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   }
   configVar = lookupConfigVar(moduleName, varName);
   if (configVar == NULL) {
@@ -329,7 +329,7 @@ void initSetValue(const char* varName, const char* value,
     const char* message = chpl_glom_strings(3, "attempt to set config named '",
                                             configName,
                                             "', but there is no such config");
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   } else if (configVar == ambiguousConfigVar) {
     const char* message = chpl_glom_strings(5,
                                             "Multiple modules define a config "
@@ -337,7 +337,7 @@ void initSetValue(const char* varName, const char* value,
                                             "'.  Use '--help' for a list and "
                                             "disambiguate using '<moduleName>.",
                                             varName, "'.");
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   } else if (configVar->deprecated) {
     #ifndef LAUNCHER
     if (chpl_nodeID == 0) {
@@ -432,7 +432,7 @@ static configVarType* breakIntoPiecesAndLookup(char* str, char** equalsSign,
                                             "of configuration variables and "
                                             "'-s<module>.",
                                             *varName, "' to disambiguate.");
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   }
   return configVar;
 }
@@ -451,7 +451,7 @@ static void handleUnexpectedConfigVar(const char* moduleName, char* varName,
   } else {
     message = "No configuration variable name specified";
   }
-  chpl_error(message, lineno, filename);
+  chpl_rt_error(message, lineno, filename);
 }
 
 
@@ -486,7 +486,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
       if (argnum + 1 >= *argc) {
         char* message = chpl_glom_strings(3, "Configuration variable '", varName,
                                           "' is missing its initialization value");
-        chpl_error(message, lineno, filename);
+        chpl_rt_error(message, lineno, filename);
       } else {
         initSetValue(varName, argv[argnum+1], moduleName, lineno, filename);
         retval = 1;
@@ -504,7 +504,7 @@ void parseConfigFile(const char* configFilename,
   FILE* argFile = fopen(configFilename, "r");
   if (!argFile) {
     char* message = chpl_glom_strings(2, "Unable to open ", configFilename);
-    chpl_error(message, lineno, filename);
+    chpl_rt_error(message, lineno, filename);
   }
   chpl_saveFilename(configFilename); // CHPL_FILE_IDX_SAVED_FILENAME will now
                                      // give us configFilename
@@ -545,7 +545,7 @@ void parseConfigFile(const char* configFilename,
               char *message =
                   chpl_glom_strings(3, "Configuration variable '", varName,
                                     "' is missing its initialization value");
-              chpl_error(message, 0, CHPL_FILE_IDX_SAVED_FILENAME);
+              chpl_rt_error(message, 0, CHPL_FILE_IDX_SAVED_FILENAME);
             } else {
               initSetValue(varName, configValBuffer, moduleName, 0,
                            CHPL_FILE_IDX_SAVED_FILENAME);

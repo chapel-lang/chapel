@@ -6653,8 +6653,6 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     ret = codegenCallExprInner(fngen, args, fn, call->astloc, nullptr, nullptr, true);
 }
 
-DEFINE_BASIC_PRIM(LOOKUP_FILENAME)
-
 DEFINE_PRIM(INVARIANT_START) {
 
   GenInfo* info = gGenInfo;

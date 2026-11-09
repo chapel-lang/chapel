@@ -116,12 +116,14 @@ int sys_set_sys_sockaddr_t(sys_sockaddr_t* addr, const char* host, u_int16_t por
     struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
     addr_inet->sin_family = AF_INET;
     addr_inet->sin_port = htons(port);
+    addr->len = sizeof(struct sockaddr_in);
     return inet_pton(AF_INET, host, &addr_inet->sin_addr);
   }
   else if(family == AF_INET6){
     struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
     addr_inet6->sin6_family = AF_INET6;
     addr_inet6->sin6_port = htons(port);
+    addr->len = sizeof(struct sockaddr_in6);
     return inet_pton(AF_INET6, host, &addr_inet6->sin6_addr);
   }
 
@@ -134,6 +136,7 @@ void sys_set_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16
   addr_inet->sin_family = AF_INET;
   addr_inet->sin_port = htons(port);
   addr_inet->sin_addr.s_addr = htonl(host);
+  addr->len = sizeof(struct sockaddr_in);
 }
 
 void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
@@ -142,6 +145,7 @@ void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int
   addr_inet6->sin6_family = AF_INET6;
   addr_inet6->sin6_port = htons(port);
   addr_inet6->sin6_addr = host;
+  addr->len = sizeof(struct sockaddr_in6);
 }
 
 int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length){

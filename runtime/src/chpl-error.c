@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifndef LAUNCHER
 #include "chpl-atomics.h"
@@ -47,7 +48,7 @@ void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx) {
     return;
   }
   if (filenameIdx != 0)
-    filename = chpl_lookupFilename(filenameIdx);
+    filename = chpl_rt_lookup_filename_no_prg(filenameIdx);
   chpl_warning_explicit(message, lineno, filename);
 }
 
@@ -75,11 +76,8 @@ void chpl_error_init(void) {
 
 static void spinhaltIfAlreadyExiting(void) {
 #ifndef LAUNCHER
-  volatile int temp;
   if (atomic_exchange_bool(&thisLocaleAlreadyExiting, true)) {
-    // spin forever if somebody else already set it to 1
-    temp = 1;
-    while (temp);
+    for (;;) pause();
   }
 #endif
 }
@@ -154,10 +152,14 @@ void chpl_error_preformatted(const char* message) {
   chpl_exit_any(1);
 }
 
-void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
+void chpl_rt_error(const char *message, int32_t lineno, int32_t filenameIdx) {
   const char *filename = NULL;
   if (filenameIdx != 0)
-    filename= chpl_lookupFilename(filenameIdx);
+    filename= chpl_rt_lookup_filename_no_prg(filenameIdx);
+  chpl_error_explicit(message, lineno, filename);
+}
+
+void chpl_prg_error(const char *message, int32_t lineno, const char *filename) {
   chpl_error_explicit(message, lineno, filename);
 }
 

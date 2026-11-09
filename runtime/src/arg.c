@@ -105,7 +105,7 @@ static void defineEnvVar(const char* currentArg,
   // do put the '=' back after we're done.)
   //
   if ((eqp = strchr(currentArg, '=')) == NULL) {
-    chpl_error("-E argument must be of the form name=value", lineno, filename);
+    chpl_rt_error("-E argument must be of the form name=value", lineno, filename);
   }
 
   *eqp = '\0';
@@ -128,7 +128,7 @@ static void parseDashEArgs(int* argc, char* argv[]) {
       if (currentArg[2] == '\0') {
         i++;
         if (i >= *argc) {
-          chpl_error("-E flag is missing <name=value> argument",
+          chpl_rt_error("-E flag is missing <name=value> argument",
                      lineno, filename);
         }
         currentArg = argv[i];
@@ -267,7 +267,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
           // locales per node must be specified if there is a suffix
           char *message = chpl_glom_strings(3, "\"", suffix,
                           "\" is not a valid number of co-locales.");
-          chpl_error(message, lineno, filename);
+          chpl_rt_error(message, lineno, filename);
         }
 
         if (!strcmp(suffix, "s") || !strcmp(suffix, "socket")) {
@@ -281,7 +281,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
         } else {
           char *message = chpl_glom_strings(3, "\"", suffix,
                           "\" is not a valid suffix.");
-          chpl_error(message, lineno, filename);
+          chpl_rt_error(message, lineno, filename);
         }
       }
       if (t) {
@@ -289,7 +289,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       }
 
       if (_argNumLocalesPerNode < 1) {
-        chpl_error("Number of locales per node must be > 0.",
+        chpl_rt_error("Number of locales per node must be > 0.",
                    lineno, filename);
       } else {
         chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE",
@@ -301,11 +301,11 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       // CHPL_RT_LOCALES_PER_NODE. It is an error if it is not set.
 
       if (!chpl_env_rt_get("LOCALES_PER_NODE", NULL)) {
-        chpl_error("CHPL_RT_LOCALES_PER_NODE must be set.", lineno, filename);
+        chpl_rt_error("CHPL_RT_LOCALES_PER_NODE must be set.", lineno, filename);
       }
       _argNumLocalesPerNode = (int32_t) chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
       if (_argNumLocalesPerNode < 1) {
-        chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
+        chpl_rt_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
       }
 
       // TODO: allow for a suffix w/out L
@@ -316,10 +316,10 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
     if (invalid) {
       char* message = chpl_glom_strings(3, "\"", expr,
                                         "\" is not a valid number of nodes.");
-      chpl_error(message, lineno, filename);
+      chpl_rt_error(message, lineno, filename);
     }
     if (numNodes < 1) {
-      chpl_error("Number of nodes must be > 0.",
+      chpl_rt_error("Number of nodes must be > 0.",
                  lineno, filename);
     }
     _argNumLocales = numNodes * _argNumLocalesPerNode;
@@ -329,14 +329,14 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
     if (invalid) {
       char* message = chpl_glom_strings(3, "\"", expr,
                                         "\" is not a valid number of locales.");
-      chpl_error(message, lineno, filename);
+      chpl_rt_error(message, lineno, filename);
     }
     if (_argNumLocales < 1) {
-      chpl_error("Number of locales must be > 0.", lineno, filename);
+      chpl_rt_error("Number of locales must be > 0.", lineno, filename);
     }
     _argNumLocalesPerNode = (int32_t) chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
     if (_argNumLocalesPerNode < 1) {
-      chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
+      chpl_rt_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
     }
   }
   chpl_mem_free(expr, lineno, filename);
@@ -411,7 +411,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
     if (argLength < 2) {
       const char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
-      chpl_error(message, lineno, filename);
+      chpl_rt_error(message, lineno, filename);
     }
 
     switch (currentArg[0]) {
@@ -451,18 +451,18 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           }
           if (strcmp(flag, "chpl-mli-socket-loc") == 0) {
             if (saw_socket_conn) {
-              chpl_error("multiple uses of --chpl-mli-socket-loc, this flag is "
+              chpl_rt_error("multiple uses of --chpl-mli-socket-loc, this flag is "
                          "intended for internal use only", lineno, filename);
             }
             i++;
             if (i >= *argc) {
-              chpl_error("--chpl-mli-socket-loc developer flag is missing"
+              chpl_rt_error("--chpl-mli-socket-loc developer flag is missing"
                          "<connection> argument",
                          lineno, filename);
             }
             currentArg = argv[i];
             if (strncmp(currentArg, "tcp://", 6) != 0) {
-              chpl_error("unexpected start of <connection> for "
+              chpl_rt_error("unexpected start of <connection> for "
                          "--chpl-mli-socket-loc developer flag, this flag is "
                          "intended for internal use only", lineno, filename);
             }
@@ -477,7 +477,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           if (argLength < 3) {
             char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
-            chpl_error(message, lineno, filename);
+            chpl_rt_error(message, lineno, filename);
           }
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
@@ -508,7 +508,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
         if (currentArg[2] == '\0') {
           i++;
           if (i >= *argc) {
-            chpl_error("-f flag is missing <filename> argument",
+            chpl_rt_error("-f flag is missing <filename> argument",
                        lineno, filename);
           }
           currentArg = argv[i];
@@ -534,7 +534,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           if (currentArg[3] == '\0') {
             i++;
             if (i >= *argc) {
-              chpl_error("-nl flag is missing <numLocales> argument",
+              chpl_rt_error("-nl flag is missing <numLocales> argument",
                          lineno, filename);
             }
             currentArg = argv[i];
@@ -561,7 +561,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
           if (argLength < 3) {
             char* message = chpl_glom_strings(3, "\"", currentArg,
                                               "\" is not a valid argument");
-            chpl_error(message, lineno, filename);
+            chpl_rt_error(message, lineno, filename);
           }
           i += handlePossibleConfigVar(argc, argv, i, lineno, filename);
           break;
@@ -604,6 +604,6 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
 
 int chpl_specify_locales_error(void) {
-  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
+  chpl_rt_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
 }

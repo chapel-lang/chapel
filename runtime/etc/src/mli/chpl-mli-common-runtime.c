@@ -82,7 +82,7 @@
 // Shim for terminate (exit with error).
 // TODO: Need to make sure this exits both the client and the server.
 #ifdef CHPL_MLI_IS_SERVER
-#   define chpl_mli_terminate() chpl_error("", 0, 0)
+#   define chpl_mli_terminate() chpl_rt_error("", 0, 0)
 # else
 #   define chpl_mli_terminate() chpl_mli_libc_exit(1)
 #endif

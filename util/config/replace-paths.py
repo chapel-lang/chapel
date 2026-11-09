@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import os
 import re
 import sys
@@ -13,10 +13,10 @@ we replace references to that absolute path with $CHPL_RUNTIME_LIB.
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser(usage="usage: %prog [--fixpath key path]")
-    parser.add_option("--fixpath", nargs=2, dest="fixpath", action="append")
+    parser = argparse.ArgumentParser(usage="%(prog)s [--fixpath key path]")
+    parser.add_argument("--fixpath", nargs=2, dest="fixpath", action="append")
 
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if options.fixpath:
 

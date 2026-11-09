@@ -2,7 +2,7 @@
 
 import sys
 
-from utils import error, memoize, try_run_command
+from utils import memoize, try_run_command
 
 
 @memoize

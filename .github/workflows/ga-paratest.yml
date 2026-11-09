@@ -24,7 +24,7 @@ on:
         description: Space separated make targets to build. If a custom 'build-steps' is provided, this is ignored.
         required: false
         type: string
-        default: "all test-venv chpldoc mason"
+        default: "all test-venv chpldoc mason spectests"
       build-steps:
         description: Commands to execute to build. By default, invokes the make command with the default make targets specified in `make-targets`
         required: false
@@ -42,6 +42,11 @@ on:
         required: false
         type: string
         default: ""
+      futures-mode:
+        description: Futures mode to pass to start_test (3 == test futures that have a .skipif, 2 == test futures only, 1 == test futures and non-futures, 0 == test non-futures only)
+        required: false
+        type: number
+        default: 3
       test-dirs:
         description: Space-separated test directories (for example test/types), defaults to all test directories
         required: false
@@ -86,6 +91,16 @@ on:
         required: false
         type: string
         default: ""
+      ccache-key:
+        description: ccache key to share with other jobs, defaults to a key unique to this configuration
+        required: false
+        type: string
+        default: ""
+      ccache-save:
+        description: Whether to save the ccache at the end of the build. Only one job per shared ccache-key should save.
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -124,6 +139,7 @@ jobs:
         password: ${{ github.token }}
     outputs:
       units: ${{ steps.test-directories.outputs.units }}
+      build-diagnostics-url: ${{ steps.upload-build-diagnostics.outputs.artifact-url }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -132,13 +148,16 @@ jobs:
       - name: set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
-          key: ccache-${{ github.job }}-${{ inputs.configuration }}
+          key: ${{ inputs.ccache-key || format('ccache-{0}-{1}', github.job, inputs.configuration) }}
+          save: ${{ inputs.ccache-save }}
       - name: build Chapel
         env:
           BUILD_STEPS: ${{ inputs.build-steps }}
           MAKE_TARGETS_TO_BUILD: ${{ inputs.make-targets }}
         run: |
-          rm -f "$RUNNER_TEMP/chapel-build.log" "$RUNNER_TEMP/printchplenv.txt"
+          diagnostics_dir="$RUNNER_TEMP/chapel-build-diagnostics"
+          rm -rf "$diagnostics_dir"
+          mkdir -p "$diagnostics_dir"
           {
             # put ccache executables at front of PATH
             export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -152,20 +171,19 @@ jobs:
             fi
 
             "$CHPL_HOME/util/printchplenv" --all --internal | \
-              tee "$RUNNER_TEMP/printchplenv.txt"
+              tee "$diagnostics_dir/printchplenv.txt"
 
             echo "$BUILD_STEPS" > "$RUNNER_TEMP/build-steps.bash"
             # shellcheck source=/dev/null
             source "$RUNNER_TEMP/build-steps.bash"
-          } 2>&1 | tee "$RUNNER_TEMP/chapel-build.log"
+          } 2>&1 | tee "$diagnostics_dir/chapel-build.log"
       - name: upload Chapel build diagnostics
+        id: upload-build-diagnostics
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: chapel-build-diagnostics-${{ inputs.configuration }}
-          path: |
-            ${{ runner.temp }}/chapel-build.log
-            ${{ runner.temp }}/printchplenv.txt
+          path: ${{ runner.temp }}/chapel-build-diagnostics
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
       - name: upload Chapel build
@@ -413,8 +431,12 @@ jobs:
         env:
           START_TEST_ARGS: ${{ inputs.start-test-args }}
           TEST_PARALLELISM: ${{ inputs.test-parallelism }}
+          FUTURES_MODE: ${{ inputs.futures-mode }}
           TEST_UNITS: ${{ matrix.units }}
         run: |
+          mkdir -p "$PARATEST_RESULTS_DIR"
+          touch "$PARATEST_RESULTS_DIR/job.txt"
+
           echo "$PRE_BUILD_STEPS" > "$RUNNER_TEMP/pre-build-steps.bash"
           # shellcheck source=/dev/null
           source "$RUNNER_TEMP/pre-build-steps.bash"
@@ -423,8 +445,11 @@ jobs:
             source "$CRON_SCRIPT"
           fi
 
-          num_procs=$(eval echo "$TEST_PARALLELISM")
-          base_cmd=("$CHPL_HOME/util/start_test")
+          # limit core files to 0 to avoid filling up /dev/shm
+          ulimit -c 0
+
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          base_cmd=("$CHPL_HOME/util/start_test" --futures-mode "$FUTURES_MODE")
           if [[ "$START_TEST_ARGS" =~ [^[:space:]] ]]; then
             read -ra start_test_args <<< "$START_TEST_ARGS"
             base_cmd+=("${start_test_args[@]}")
@@ -487,7 +512,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: util/test/merge_start_test_log_summary
+          sparse-checkout: |
+            util/chplenv/
+            util/test/convert_start_test_log_to_junit_xml.py
+            util/test/merge_start_test_log_summary
+            util/test/print_start_test_log_failures
           sparse-checkout-cone-mode: false
       - name: download test results
         id: download-results
@@ -503,6 +532,7 @@ jobs:
           EXPECTED_JOBS: ${{ needs.plan.outputs.job-count }}
           EXPECTED_DIRS: ${{ needs.plan.outputs.test-count }}
           MATRIX_RESULT: ${{ needs.run-tests.result }}
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
         run: |
           mkdir -p "$AGGREGATED_RESULTS_DIR" "$PARATEST_RESULTS_DIR"
           rm -f "$AGGREGATED_RESULTS_DIR/results.log"
@@ -528,9 +558,7 @@ jobs:
               "${summary_files[@]}"
           fi
 
-          # each test job's artifact is downloaded into its own directory
-          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d \
-            -name "paratest-$CONFIGURATION-dir-results-*" | wc -l)
+          actual_jobs=$(find "$PARATEST_RESULTS_DIR" -name job.txt | wc -l)
           actual_jobs=$((actual_jobs))
 
           mapfile -t status_files < <(
@@ -561,13 +589,9 @@ jobs:
             echo "| $test_dir | $result | $summary |" >> "$GITHUB_STEP_SUMMARY"
           done
 
-          if [[ "$BUILD_RESULT" != "success" ]]; then
-            echo "Chapel build step failed, no test results to report"
-            exit 1
-          fi
-
           overall_status=0
-          if [[ "$MATRIX_RESULT" != "success" ||
+          if [[ "$BUILD_RESULT" != "success" ||
+                "$MATRIX_RESULT" != "success" ||
                 -z "$EXPECTED_JOBS" ||
                 -z "$EXPECTED_DIRS" ||
                 "$actual_jobs" != "$EXPECTED_JOBS" ||
@@ -579,6 +603,7 @@ jobs:
 
           {
             echo
+            echo "Chapel build: $BUILD_RESULT"
             echo "Expected test jobs: ${EXPECTED_JOBS:-unknown}"
             echo "Reported test jobs: $actual_jobs"
             echo "Expected test directories: ${EXPECTED_DIRS:-unknown}"
@@ -595,14 +620,41 @@ jobs:
               echo
               echo "start_test log summary:"
               echo "-----------------------"
-              echo '```'
               cat "$AGGREGATED_RESULTS_DIR/results.log.summary"
-              echo '```'
             else
               echo "No results.log.summary file found"
             fi
 
           } | tee "$AGGREGATED_RESULTS_DIR/summary.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$BUILD_RESULT" != "success" ]]; then
+            echo "Chapel build for $CONFIGURATION did not succeed (result: $BUILD_RESULT), so no tests were run." \
+              > "$FAILURE_EMAIL_ADDENDUM"
+          elif [[ "$overall_status" != "0" ]]; then
+            mapfile -t failed_tests < <(
+              grep -a '^\[Error' "$AGGREGATED_RESULTS_DIR/results.log.summary" 2>/dev/null || true
+            )
+            num_failed_tests=${#failed_tests[@]}
+            if (( num_failed_tests > 0 )); then
+              echo
+              echo "Output of failed tests:"
+              echo "-----------------------"
+              "$CHPL_HOME/util/test/print_start_test_log_failures" --ga-groups \
+                "$AGGREGATED_RESULTS_DIR/results.log" ||
+                echo "::warning::Failed to extract output of failed tests"
+
+              max_listed=50
+              {
+                echo "$num_failed_tests failed test(s) in $CONFIGURATION:"
+                echo '```'
+                printf '%s\n' "${failed_tests[@]:0:max_listed}"
+                if (( num_failed_tests > max_listed )); then
+                  echo "... and $((num_failed_tests - max_listed)) more"
+                fi
+                echo '```'
+              } > "$FAILURE_EMAIL_ADDENDUM"
+            fi
+          fi
 
           exit "$overall_status"
       - name: upload aggregated results
@@ -614,6 +666,34 @@ jobs:
           path: ${{ env.AGGREGATED_RESULTS_DIR }}
           if-no-files-found: error
           retention-days: ${{ inputs.retention-days }}
+      - name: add artifact links to failure email addendum
+        if: ${{ failure() }}
+        env:
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+          AGGREGATED_RESULTS_URL: ${{ steps.upload_aggregated.outputs.artifact-url }}
+          BUILD_DIAGNOSTICS_URL: ${{ needs.build.outputs.build-diagnostics-url }}
+        run: |
+          links=()
+          if [[ -n "$BUILD_DIAGNOSTICS_URL" ]]; then
+            links+=("- [Chapel Build Log]($BUILD_DIAGNOSTICS_URL)")
+          fi
+          if [[ -n "$AGGREGATED_RESULTS_URL" ]]; then
+            links+=("- [Test Results]($AGGREGATED_RESULTS_URL)")
+          fi
+          if (( ${#links[@]} > 0 )); then
+            if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+              echo >> "$FAILURE_EMAIL_ADDENDUM"
+            fi
+            printf '%s\n' "${links[@]}" >> "$FAILURE_EMAIL_ADDENDUM"
+          fi
+      - name: upload failure email addendum
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-email-addendum-${{ job.check_run_id }}
+          path: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+          if-no-files-found: ignore
+          retention-days: 3
       - name: restore test directory durations
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

@@ -1,1 +1,16 @@
---memTrack --memStats
+#!/usr/bin/env bash
+
+# Use a smaller array on hosts with limited memory (e.g. GitHub macOS runners).
+lowMemGB=8
+
+if [[ -r /proc/meminfo ]]; then
+  memGB=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / 1024 / 1024 ))
+elif [[ $(uname -s) == Darwin ]]; then
+  memGB=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
+fi
+
+if [[ -n ${memGB:-} && $memGB -lt $lowMemGB ]]; then
+  echo "--memTrack --memStats --n=$(( 2**30 )) # commArrayMemStats.lowmem.good"
+else
+  echo "--memTrack --memStats"
+fi

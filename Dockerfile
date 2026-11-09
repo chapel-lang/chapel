@@ -75,15 +75,6 @@ RUN make -j$MAKE_THREADS cleanall
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .
 
-# Remove some unneeded files to reduce image size
-RUN rm -rf .git
-RUN for subdir in `ls test || true`; do \
-      if [ "$subdir" != "release" ]; then \
-        rm -rf "test/$subdir"; \
-      fi \
-    done
-RUN rm -rf third-party/llvm/llvm-src
-
 
 # Final stage: copy build results, but omit large files.
 # ======================================

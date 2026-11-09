@@ -14,6 +14,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
 
 defaults:
@@ -24,6 +25,7 @@ jobs:
   arkouda-main-smoke-test:
     uses: $/.github/workflows/arkouda-smoke-test.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       arkouda-version: "main"
 
   portability-tests:
@@ -40,38 +42,226 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run test-make-install-check.bash
         env:
           TMPDIR: ${{ runner.temp }}
         run: |
           ./util/cron/test-make-install-check.bash
 
+  test-mpicc:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with mpicc
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+      - name: Build and Test Chapel with mpicc (GASNet)
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-mpicc.gasnet.bash
+          export CHPL_RT_OVERSUBSCRIBED=1
+          export CHPL_TARGET_CPU=native
+          # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
+          # this is a hack to get oversubscription to work, if we ever
+          # need to support this for users we should do a proper fix
+          export MPIRUN_CMD='mpirun --oversubscribe --bind-to none -mca mpi_yield_when_idle 1 -np %M %P %A MPIRUN_CMD_OK'
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test test/release/examples/hello*.chpl test/library/packages/MPI test/users/npadmana/mpi
+          echo "::endgroup::"
+
+  test-incremental:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with --incremental
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-linux64.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+      - name: Build and Test Chapel with --incremental and --no-local
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          source util/setchplenv.bash
+          source util/cron/test-no-local.incr.bash
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+
   test-llvm-bundled:
     uses: $/.github/workflows/test-llvm-bundled.yml
 
+  test-examples-linux32:
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR_NAME: ".ccache"
+      CCACHE_MAXSIZE: "250MiB"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ./${{ env.CCACHE_DIR_NAME }}
+          key: ccache-${{ github.job }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: 386
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Check arch inside container
+        run: |
+          docker run --rm --platform linux/386 debian:latest bash -c '
+          test $(uname -m) == "i686"
+          '
+      - name: run examples tests in linux32 container
+        run: |
+          docker run -v "$(pwd)":/app -w /app --rm -i --platform linux/386 debian:latest bash << 'EOF'
+          set -exuo pipefail
+
+          apt-get update && apt-get install -y \
+            ccache \
+            cmake \
+            doxygen \
+            gcc \
+            g++ \
+            git \
+            locales \
+            m4 \
+            make \
+            pkg-config \
+            python3 \
+            python3-venv \
+            time
+
+          sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+          echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
+          dpkg-reconfigure --frontend=noninteractive locales && \
+          update-locale LANG=en_US.UTF-8
+
+          # Set up ccache
+          ln -s /usr/bin/ccache /usr/local/bin/gcc
+          ln -s /usr/bin/ccache /usr/local/bin/g++
+          export CCACHE_COMPILERCHECK=content
+          export CCACHE_DIR=$(pwd)/${{ env.CCACHE_DIR_NAME }}
+          export CCACHE_MAXSIZE=${{ env.CCACHE_MAXSIZE }}
+
+          git config --system --add safe.directory "*"
+
+          source util/quickstart/setchplenv.bash
+
+          # Build bundled LLVM support lib, to make sure we can on 32-bit
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+
+          # Set longer default test timeout, as emulation is slow.
+          export CHPL_TEST_TIMEOUT=1200
+
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv chpldoc
+
+          start_test --parallel "$num_procs" test/release/examples
+          EOF
+
   build-linux-packages:
     uses: $/.github/workflows/package-builds.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
 
   paratest-linux64-c-backend:
     name: Chapel paratest on linux64 with C backend
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-c-backend
       cron-script: util/cron/test-c-backend.bash
+      ccache-key: linux64-c-backend
+      ccache-save: false
   paratest-linux64-c-backend-gasnet:
     name: Chapel paratest on linux64 with C backend using GASNet
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-c-backend-gasnet
       start-test-args: -multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
       cron-script: util/cron/test-gasnet.c-backend.bash
+      ccache-key: linux64-c-backend
   paratest-linux64-clang:
     name: Chapel paratest on linux64 using Clang as the host/target compiler
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-clang
       cron-script: util/cron/test-linux64-clang.bash
   paratest-darwin:
@@ -82,70 +272,148 @@ jobs:
       runner: macos-latest
       use-container: false
       cron-script: util/cron/test-darwin.bash
+      ccache-key: darwin
       pre-build-steps: |
         brew install llvm@22
+  test-quickstart-darwin:
+    # written as a normal job, not a paratest, since its only one dir
+    runs-on: macos-latest
+    env:
+      CHPL_NIGHTLY_DO_NOTHING: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and Test Chapel with quickstart on darwin
+        shell: bash
+        run: |
+          echo "::group::set environment"
+          brew install llvm@22
+          source util/setchplenv.bash
+          source util/cron/test-quickstart.darwin.bash
+          echo "::endgroup::"
+
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
+  paratest-gasnet_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment everything)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      ccache-key: darwin
+      ccache-save: false
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
+  paratest-gasnet_fast_darwin:
+    name: Chapel paratest on darwin mulitilocale tests with gasnet (segment fast)
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: gasnet.fast.darwin
+      runner: macos-latest
+      use-container: false
+      cron-script: util/cron/test-gasnet.fast.darwin.bash
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      ccache-key: darwin
+      ccache-save: false
+      pre-build-steps: |
+        brew install llvm@22
+      make-targets: all test-venv mason-deps
   paratest-linux64-aarch64:
     name: Chapel paratest on linux64 aarch64
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-aarch64
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-linux64.bash
-      start-test-args: --futures
-      make-targets: all test-venv chpldoc mason protoc-gen-chpl
+      futures-mode: 1
+      make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
+      ccache-key: aarch64-default
+      ccache-save: false
   paratest-linux64-gasnet-everything-aarch64:
     name: Chapel paratest on linux64 aarch64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-aarch64-gasnet-everything
       runner: ubuntu-26.04-arm
       cron-script: util/cron/test-gasnet-everything.bash
       start-test-args: --multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
+      ccache-key: aarch64-default
   paratest-asan:
     name: Chapel paratest with AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: asan
       cron-script: util/cron/test-asan.bash
       timeout-minutes: 360
+      ccache-key: x86-asan
+      ccache-save: false
       pre-build-steps: |
         export CHPL_TEST_TIMEOUT=1200
   paratest-fast:
     name: Chapel paratest with --fast
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: fast
       cron-script: util/cron/test-fast.bash
       start-test-args: -compopts --fast -compopts --ccflags -compopts -Wno-invalid-feature-combination
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
+      ccache-key: x86-default
+      ccache-save: false
   paratest-gasnet-asan:
     name: Chapel paratest with GASNet and AddressSanitizer
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: gasnet-asan
       cron-script: util/cron/test-gasnet-asan.bash
       start-test-args: -multilocale-only
       max-jobs: 15
       timeout-minutes: 360
       make-targets: all test-venv mason-deps
+      ccache-key: x86-asan
   paratest-gasnet-fast:
     name: Chapel paratest with GASNet fast segment
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: gasnet-fast
       cron-script: util/cron/test-gasnet-fast.bash
       container-options: --shm-size=8g # required for SEGMENT=fast
       start-test-args: -multilocale-only
       max-jobs: 15
       make-targets: all test-venv mason-deps
+      ccache-key: x86-default
+      ccache-save: false
   # runners only have 2 real cores, and smp can't oversubscribe
   # so this won't work yet
   # paratest-gasnet-smp:
   #   name: Chapel paratest with GASNet SMP conduit
   #   uses: $/.github/workflows/ga-paratest.yml
   #   with:
+  #     CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
   #     configuration: gasnet-fast
   #     cron-script: util/cron/test-gasnet-smp.bash
   #     container-options: --shm-size=8g # required for SEGMENT=fast
@@ -155,51 +423,122 @@ jobs:
     name: Chapel paratest with CHPL_GPU=cpu
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: gpu-cpu
       cron-script: util/cron/test-gpu-cpu.bash
       test-dirs: test/gpu/native test/users/engin/context test/release/examples
       make-targets: all test-venv mason-deps
+      ccache-key: x86-default
+      ccache-save: false
   paratest-memleaks:
     name: Chapel paratest with --memLeaks
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: memleaks
+      ccache-key: x86-default
+      ccache-save: false
       cron-script: util/cron/test-memleaks.bash
       start-test-args: -memleaks
-      make-targets: all test-venv mason-deps
+      futures-mode: 0
+      make-targets: all test-venv mason-deps spectests
   paratest-no-local:
     name: Chapel paratest with --no-local
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: no-local
+      ccache-key: x86-default
+      ccache-save: false
       cron-script: util/cron/test-no-local.bash
       start-test-args: -compopts --no-local
   paratest-quickstart:
     name: Chapel paratest with quickstart configuration
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: quickstart
+      ccache-key: x86-llvm-none
+      ccache-save: false
       cron-script: util/cron/test-quickstart.bash
+      make-targets: all test-venv mason-deps spectests
+  paratest-quickstart-gasnet:
+    name: Chapel paratest with quickstart and GASNet
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: quickstart-gasnet
+      start-test-args: -multilocale-only
+      max-jobs: 15
+      cron-script: util/cron/test-gasnet.quickstart.bash
       make-targets: all test-venv mason-deps
+      ccache-key: x86-llvm-none
   paratest-ubsan-clang:
     name: Chapel paratest with UndefinedBehaviorSanitizer (clang)
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: ubsan.clang
       cron-script: util/cron/test-ubsan.clang.bash
-      make-targets: all test-venv mason
+      make-targets: all test-venv mason spectests
   paratest-ubsan-gnu:
     name: Chapel paratest with UndefinedBehaviorSanitizer (gnu)
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: ubsan.gnu
       cron-script: util/cron/test-ubsan.gnu.bash
-      make-targets: all test-venv mason
+      make-targets: all test-venv mason spectests
   paratest-verify:
     name: Chapel paratest with --verify
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: verify
+      ccache-key: x86-default
+      ccache-save: false
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
-      make-targets: all test-venv mason-deps
+      make-targets: all test-venv mason-deps spectests
+  paratest-locks-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=locks
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: locks-atomics
+      cron-script: util/cron/test-linux64-locks-atomics.bash
+      make-targets: all test-venv mason-deps spectests
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+      ccache-key: x86-default
+      ccache-save: false
+  paratest-intrinsics-atomics:
+    name: Chapel paratest with CHPL_ATOMICS=intrinsics
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: intrinsics-atomics
+      cron-script: util/cron/test-linux64-intrinsics-atomics.bash
+      make-targets: all test-venv mason-deps spectests
+      test-dirs: test/release/examples test/runtime/configMatters test/types/atomic
+      ccache-key: x86-default
+      ccache-save: false
+  paratest-linux64-pic:
+    name: Chapel paratest on linux64 with LIB_PIC=pic
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-pic
+      ccache-key: x86-pic
+      ccache-save: false
+      cron-script: util/cron/test-linux64.bash
+      pre-build-steps: |
+        export CHPL_LIB_PIC=pic
+      make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
+  paratest-linux64-pic-gasnet-everything:
+    name: Chapel paratest on linux64 with LIB_PIC=pic and gasnet-everything
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      configuration: linux64-pic-gasnet-everything
+      ccache-key: x86-pic
+      cron-script: util/cron/test-gasnet-everything.bash
+      pre-build-steps: |
+        export CHPL_LIB_PIC=pic
+      make-targets: all test-venv mason-deps spectests

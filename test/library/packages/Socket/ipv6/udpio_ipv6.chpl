@@ -97,7 +97,7 @@ proc test_recv_timeout(test: borrowed Test) throws {
     var received = receiver.recv(sent.size, new struct_timeval(2,0));
     test.assertEqual(-1,0);
   } catch e:TimeoutError {
-    test.assertEqual(e.message(), "Connection timed out (recv timed out)");
+    test.assertTrue(e.message().endsWith("(recv timed out)"));
   }
 }
 
@@ -111,7 +111,7 @@ proc test_recv_from_timeout(test: borrowed Test) throws {
     var (received, receivedAddress) = receiver.recvfrom(sent.size, new struct_timeval(2,0));
     test.assertEqual(-1,0);
   } catch e:TimeoutError {
-    test.assertEqual(e.message(), "Connection timed out (recv timed out)");
+    test.assertTrue(e.message().endsWith("(recv timed out)"));
   }
 }
 

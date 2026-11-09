@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+perl -pi -e 's/(x+)$/length($1) . " x chars"/e' $2

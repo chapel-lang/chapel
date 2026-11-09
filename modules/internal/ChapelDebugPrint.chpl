@@ -29,6 +29,7 @@
 module ChapelDebugPrint {
   private use ChapelStandard, CTypes;
   private use ChapelIOStringifyHelper;
+  private use ChapelRuntimeInterface;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
@@ -78,8 +79,7 @@ module ChapelDebugPrint {
       // from DefaultRectangular. This way of writing it works
       // around resolution ordering issues (such as stdout not
       // yet defined).
-      const file_cs  = __primitive("chpl_lookupFilename",
-                                        __primitive("_get_user_file"));
+      const file_cs  = chpl_lookupFilename(__primitive("_get_user_file"));
       var file: string;
       try! {
         file = string.createCopyingBuffer(file_cs:c_ptrConst(c_char));
@@ -92,8 +92,7 @@ module ChapelDebugPrint {
   }
   proc chpl__testParWriteln(args...) {
     if chpl__testParFlag && chpl__testParOn {
-      const file_cs  = __primitive("chpl_lookupFilename",
-                                        __primitive("_get_user_file"));
+      const file_cs  = chpl_lookupFilename(__primitive("_get_user_file"));
       var file: string;
       try! {
         file = string.createCopyingBuffer(file_cs:c_ptrConst(c_char));

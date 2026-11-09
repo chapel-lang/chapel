@@ -32,7 +32,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
   if (strcmp(CHPL_COMM_RT, "ofi") != 0) {
-    chpl_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
+    chpl_rt_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
   }
 
   char** largv = NULL;

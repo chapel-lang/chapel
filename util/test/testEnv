@@ -79,11 +79,11 @@ foreach my $envsetting (@envlist) {
                 $skiptest = 1;
             }
         } else {
-#            print "ERROR: badly formatted line: $envsetting\n";
+            print STDERR "ERROR: badly formatted line: $envsetting\n";
             exit(1);
         }
     } else {
-#        print "ERROR: badly formatted line: $envsetting\n";
+        print STDERR "ERROR: badly formatted line: $envsetting\n";
         exit(1);
     }
 }

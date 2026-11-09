@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
 import sys
-import os
 
-import optparse
-import chpl_locale_model, chpl_tasks, chpl_platform, overrides, third_party_utils
+import argparse
+import chpl_locale_model, chpl_tasks, overrides, third_party_utils
 import chpl_hwloc_pci
-from utils import (
-    error,
-    memoize,
-    warning,
-    try_run_command,
-    run_command,
-    check_valid_var,
-)
+from utils import error, memoize, try_run_command, run_command, check_valid_var
 
 
 @memoize
@@ -71,7 +63,7 @@ def get_link_args():
     elif hwloc_val == "system":
         if third_party_utils.has_pkgconfig():
             # Check that hwloc version is OK
-            exists, retcode, my_out, my_err = try_run_command(
+            exists, retcode, _, _ = try_run_command(
                 ["pkg-config", "--atleast-version=2.1", "hwloc"]
             )
             if exists and retcode != 0:
@@ -119,28 +111,28 @@ def get_prefix():
 def _main():
     hwloc_val = get()
 
-    parser = optparse.OptionParser(
-        usage="usage: %prog [--prefix] [--compile] [--link]"
+    parser = argparse.ArgumentParser(
+        usage="%(prog)s [--prefix] [--compile] [--link]"
     )
-    parser.add_option(
+    parser.add_argument(
         "--prefix",
         dest="action",
         action="store_const",
         const="prefix",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compile",
         dest="action",
         action="store_const",
         const="compile",
         default="",
     )
-    parser.add_option(
+    parser.add_argument(
         "--link", dest="action", action="store_const", const="link", default=""
     )
 
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     if options.action == "prefix":
         sys.stdout.write("{0}\n".format(get_prefix()))

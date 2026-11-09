@@ -28,12 +28,12 @@ int64_t chpl_comm_default_num_locales(void) {
 
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
   if (proposedNumLocales != 1) {
-    chpl_error("Only 1 locale may be used for CHPL_COMM layer 'none'\n"
+    chpl_rt_error("Only 1 locale may be used for CHPL_COMM layer 'none'\n"
                "To use multiple locales, see $CHPL_HOME/doc/rst/usingchapel/multilocale.rst",
                0, 0);
   }
 }
 
 void chpl_comm_verify_supports_colocales(int64_t numColocales) {
-  chpl_error("Co-locales are not supported by CHPL_COMM layer 'none'", 0, 0);
+  chpl_rt_error("Co-locales are not supported by CHPL_COMM layer 'none'", 0, 0);
 }

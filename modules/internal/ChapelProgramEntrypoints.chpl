@@ -44,9 +44,6 @@ module ChapelProgramEntrypoints {
   var chpl_isLibFinalized = false;
 
   private inline proc rtError(msg: c_ptrConst(c_char)) {
-    extern proc chpl_error(message: c_ptrConst(c_char),
-                           lineno: int(32),
-                           filenameIdx: int(32)): void;
     chpl_error(msg, 0, 0);
   }
 

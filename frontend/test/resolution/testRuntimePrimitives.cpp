@@ -188,11 +188,6 @@ static void test14() {
   primTypeHelper<CStringType>("ref to string", {});
 }
 
-// "chpl_lookupFilename", which should return a cString
-static void test15() {
-  primTypeHelper<CStringType>("chpl_lookupFilename", {});
-}
-
 // "_get_user_line", which should return a default int.
 static void test16() {
   intPrimTypeHelper(IntType::defaultBitwidth(), "_get_user_line", {});
@@ -286,7 +281,6 @@ int main() {
   test12();
   test13();
   test14();
-  test15();
   test16();
   test17();
   test18();

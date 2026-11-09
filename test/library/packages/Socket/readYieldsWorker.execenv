@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# 1 thread with fifo will result in deadlock
+if [[ "$CHPL_TASKS" == "fifo" ]]; then
+  echo "CHPL_RT_NUM_THREADS_PER_LOCALE=2"
+else
+  echo "CHPL_RT_NUM_THREADS_PER_LOCALE=1"
+fi
+echo "CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes"

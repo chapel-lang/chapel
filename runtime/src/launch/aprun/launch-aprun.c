@@ -63,7 +63,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
         strcmp(_ccArg, "cpu")) {
       char msg[256];
       snprintf(msg, 256, "'%s' is not a valid cpu assignment", _ccArg);
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
   }
   return numArgs;

@@ -8,6 +8,10 @@ on:
       CHAPEL_CI_IMAGE:
         type: string
         default: ghcr.io/chapel-lang/chapel-github-ci:latest
+      skip_publish:
+        description: Skip publishing the Docker images
+        type: boolean
+        default: false
     secrets:
       DOCKERHUB_USER:
         required: false
@@ -19,6 +23,7 @@ permissions:
   packages: read
 
 env:
+  CHPL_NIGHTLY_DO_NOTHING: 1
   NIGHTLY_TEST_SETTINGS: true
   APT_INSTALL_TIMEOUT_MINS: 20
   APT_NETWORK_CONF: |
@@ -35,6 +40,7 @@ jobs:
   arkouda-release-smoke-test:
     uses: $/.github/workflows/arkouda-smoke-test.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       arkouda-version: "release"
 
   check_blog:
@@ -57,7 +63,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.runner }}
-          append-timestamp: false
       - name: build chapel
         run: |
           ./util/buildRelease/smokeTest chpl mason
@@ -118,8 +123,8 @@ jobs:
           sudo apt-get update
           sudo apt-get clean
 
-          # Prefer the latest packages and fall back to the cached ones if the PPA is unavailable
-          if sudo apt-get install -y --download-only --reinstall \
+          # Prefer the latest packages and fall back to the cached ones if the download fails or stalls
+          if sudo timeout -k 1m "${APT_INSTALL_TIMEOUT_MINS}m" apt-get install -y --download-only --reinstall \
               "cpp-$VERSION" \
               "g++-$VERSION" \
               "gcc-$VERSION" \
@@ -154,8 +159,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}-${{ matrix.gcc_version }}
-          append-timestamp: false
+          key: ${{ github.job }}-${{ matrix.gcc_version }}
+          max-size: 150MB
       - name: Check desired GCC version is default
         run: |
           which gcc
@@ -184,25 +189,34 @@ jobs:
           CXX=$(which g++)
           export CXX
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples
+          echo "::endgroup::"
 
   python-version-tests:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-    runs-on: ${{ contains(fromJSON('["3.10","3.11","3.12"]'), matrix.python_version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+        comm: ["none", "gasnet"]
+        include:
+          - {python_version: "3.10", runner: ubuntu-24.04}
+          - {python_version: "3.11", runner: ubuntu-24.04}
+          - {python_version: "3.12", runner: ubuntu-24.04}
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Install Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python_version }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -212,8 +226,9 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}-${{ matrix.python_version }}
-          append-timestamp: false
+          # Only the first version on each image with gasnet saves.
+          key: python-version-tests-${{ matrix.runner || 'ubuntu-latest' }}
+          save: ${{ matrix.comm == 'gasnet' && contains(fromJSON('["3.10","3.13"]'), matrix.python_version) }}
       - name: Check desired Python version is default
         run: |
           which python || true
@@ -221,7 +236,10 @@ jobs:
 
           source util/cron/common-python.bash
           check_python_version "${{ matrix.python_version }}"
-      - name: Install LLVM dependency
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install numpy cython
+      - name: Install system dependencies
         run: |
           sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
 
@@ -232,19 +250,37 @@ jobs:
             libclang-cpp-dev \
             libedit-dev \
             llvm \
-            llvm-dev
-      - name: Compile Chapel and run example tests
+            llvm-dev \
+            libzmq3-dev
+      - name: Compile Chapel (comm=${{ matrix.comm }}) and run tests
+        env:
+          COMM: ${{ matrix.comm }}
         run: |
+          echo "::group::set environment"
           source util/setchplenv.bash
+          export CHPL_LIB_PIC=pic
+          if [[ "$COMM" == "gasnet" ]]; then
+            source util/cron/test-gasnet-everything.bash
+            source util/cron/common-python-interop.bash
+            source util/cron/common-zmq.bash
+          else
+            source util/cron/common-python-interop.bash
+          fi
+          export CHPL_TARGET_CPU=native
+          echo "::endgroup::"
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
+          echo "::endgroup::"
 
   llvm-version-tests:
     strategy:
@@ -274,7 +310,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.llvm_version }}
-          append-timestamp: false
       - name: Check desired LLVM version is default
         run: |
           which llvm-config-${{ matrix.llvm_version }}
@@ -293,14 +328,53 @@ jobs:
 
           export CHPL_LLVM=system
 
-          export CHPL_LAUNCHER=none
+          echo "::group::printchplenv"
+          printchplenv --all --internal
+          echo "::endgroup::"
 
+          echo "::group::Build Chapel"
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs"
-          make -j"$num_procs" test-venv
-          make -j"$num_procs" spectests
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
 
+          echo "::group::Run tests"
           start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
+
+  build-linuxbrew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install linuxbrew
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          sudo apt-get install -y build-essential gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config
+
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          brew install gcc cmake python gmp llvm@22
+      - name: Compile Chapel
+        run: |
+          echo "::group::Chapel Environment"
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          source util/setchplenv.bash
+          export CHPL_LLVM=system
+          export CHPL_GMP=system
+          printchplenv --all --internal
+          echo "::endgroup::"
+
+          echo "::group::Build Chapel"
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv spectests
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          start_test --parallel "$num_procs" test/release/examples test/llvm
+          echo "::endgroup::"
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
@@ -313,12 +387,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-        with:
-          create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: set vars to make tarball from correct branch
         run: |
           {
@@ -349,19 +417,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-        with:
-          create-symlink: true
-          key: ccache-${{ github.job }}-${{ matrix.os }}
-          append-timestamp: false
       - name: run homebrew testing
+        env:
+          FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
         run: |
           if [[ "$OS" == "macos"* ]] ; then
             ./util/cron/test-homebrew.bash
           else
             ./util/cron/test-homebrew-linux.bash
           fi
+      - name: upload failure email addendum
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-email-addendum-${{ job.check_run_id }}
+          path: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+          if-no-files-found: ignore
+          retention-days: 3
 
   test-c2chapel:
     runs-on: ubuntu-latest
@@ -376,12 +448,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-        with:
-          create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: find pycparser tarball
         id: find-pycparser-tarball
         run: |
@@ -494,7 +560,7 @@ jobs:
       - name: determine if we should push to Docker Hub
         id: should_push
         run: |
-          echo "should_push=${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}" >> "$GITHUB_OUTPUT"
+          echo "should_push=${{ !inputs.skip_publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}" >> "$GITHUB_OUTPUT"
       - name: log in to Docker Hub
         if: steps.should_push.outputs.should_push == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -512,7 +578,7 @@ jobs:
   build-distributions:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
@@ -524,7 +590,8 @@ jobs:
       - name: set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
-          key: ccache-${{ github.job }}
+          key: x86-default
+          save: false
       - name: Build Chapel
         shell: bash
         run: |
@@ -546,7 +613,7 @@ jobs:
     needs: build-distributions
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
       options: --user chpl-tester
       credentials:
         username: ${{ github.actor }}
@@ -581,18 +648,23 @@ jobs:
     name: Chapel paratest on linux64
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64
+      ccache-key: x86-default
+      ccache-save: false
       cron-script: util/cron/test-linux64.bash
-      start-test-args: --futures
-      make-targets: all test-venv chpldoc mason protoc-gen-chpl
+      futures-mode: 1
+      make-targets: all test-venv chpldoc mason spectests protoc-gen-chpl
   paratest-linux64-gasnet-everything:
     name: Chapel paratest on linux64 with gasnet-everything
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-gasnet-everything
       cron-script: util/cron/test-gasnet-everything.bash
-      start-test-args: --futures
-      make-targets: all test-venv mason-deps
+      futures-mode: 1
+      make-targets: all test-venv mason-deps spectests
+      ccache-key: x86-default
 
   paratest-linux64-ofi-mpi:
     name: Chapel paratest on linux64 with ofi
@@ -605,7 +677,7 @@ jobs:
         export CHPL_LAUNCHER=mpirun4ofi
         export CHPL_TARGET_CPU=none
         export CHPL_RT_OVERSUBSCRIBED=1
-      make-targets: all test-venv
+      make-targets: all test-venv spectests
       # TODO: ideally we would test everything, but that likely requires big
       # maintenance effort to get tests in a state to do that
       test-dirs: test/release/examples test/runtime/configMatters test/multilocale

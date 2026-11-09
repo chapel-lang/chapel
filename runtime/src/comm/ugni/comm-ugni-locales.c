@@ -36,6 +36,6 @@ void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
 }
 
 void chpl_comm_verify_supports_colocales(int64_t numColocales) {
-  chpl_error("Co-locales are not supported by CHPL_COMM layer 'ugni'", 0, 0);
+  chpl_rt_error("Co-locales are not supported by CHPL_COMM layer 'ugni'", 0, 0);
 }
 

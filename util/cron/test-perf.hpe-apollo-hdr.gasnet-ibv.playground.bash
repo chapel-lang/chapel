@@ -34,9 +34,9 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
 fi
 
 GITHUB_USER=jabraham17
-GITHUB_BRANCH=rewrite-vmtable
-SHORT_NAME=rewrite-vmtable
-START_DATE=9/24/26
+GITHUB_BRANCH=better-isel
+SHORT_NAME=better-isel
+START_DATE=11/05/26
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH

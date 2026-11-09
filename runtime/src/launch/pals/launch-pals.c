@@ -66,7 +66,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
         strcmp(ccArg, "depth")) {
       char msg[100];
       snprintf(msg, sizeof(msg), "'%s' is not a valid cpu assignment", ccArg);
-      chpl_error(msg, 0, 0);
+      chpl_rt_error(msg, 0, 0);
     }
   }
   return numArgs;

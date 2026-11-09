@@ -56,6 +56,30 @@ module ChapelRuntimeInterface {
     fn(ptrToPrgInfoHere);
   }
 
+  export /** So the compiler can see it. */
+  proc chpl_lookupFilename(idx: int(32)): c_ptrConst(c_char) {
+    if idx < 0 {
+      param cname = 'chpl_rt_fname_case_lookup';
+      extern cname proc fn(idx: int(32)): c_ptrConst(c_char);
+      return fn(idx);
+    } else {
+      extern const chpl_filenameTable: c_ptr(c_ptrConst(c_char));
+      return chpl_filenameTable[idx];
+    }
+  }
+
+  export /** So the compiler can see it. */
+  proc chpl_error(message: c_ptrConst(c_char), lineno: int(32),
+                  filenameIdx: int(32)): void {
+    extern 'chpl_prg_error' proc fn(message: c_ptrConst(c_char),
+                                    lineno: int(32),
+                                    filename: c_ptrConst(c_char)): void;
+    // Index 0 means "no filename".
+    const filename: c_ptrConst(c_char) =
+      if filenameIdx != 0 then chpl_lookupFilename(filenameIdx) else nil;
+    fn(message, lineno, filename);
+  }
+
   // These pragmas will be useful for debugging what is going on when a RT
   // shim is called. As well, some runtime functions need this information
   // to be passed.

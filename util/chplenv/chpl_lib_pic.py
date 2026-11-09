@@ -2,7 +2,6 @@
 import sys
 
 import overrides
-import chpl_platform
 from utils import memoize, check_valid_var
 
 

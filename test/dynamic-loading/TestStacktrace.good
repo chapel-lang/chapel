@@ -1,0 +1,9 @@
+TestStacktraceLib.chpl:3: error: halt reached - This is a test of the stack trace.
+Stacktrace
+
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn in libTestStacktraceLib.so
+halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn in libTestStacktraceLib.so
+shouldHalt() at TestStacktraceLib.chpl:2 in libTestStacktraceLib.so
+anotherLayer() at TestStacktraceLib.chpl:6 in libTestStacktraceLib.so
+callMe() at TestStacktraceLib.chpl:10 in libTestStacktraceLib.so
+main() at TestStacktrace.chpl:12

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import os
-from glob import glob
 
 import overrides
 from utils import memoize, check_valid_var

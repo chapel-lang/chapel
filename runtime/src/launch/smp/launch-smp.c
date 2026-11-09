@@ -33,7 +33,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
   int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
   if ((numLocalesPerNode > 1) && (numNodes != 1)) {
-    chpl_error("smp launcher does not support multiple nodes", 0, 0);
+    chpl_rt_error("smp launcher does not support multiple nodes", 0, 0);
   }
   // numLocales is the total number of locales (i.e. numNodes * numLocalesPerNode)
   // force CHPL_RT_LOCALES_PER_NODE to this value,
