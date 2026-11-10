@@ -46,9 +46,9 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   snprintf(nlbuf, sizeof(nlbuf), "%d", getArgNumLocales());
   ADD_LARGV("-np");
   ADD_LARGV(nlbuf);
-  ADD_LARGV("-map-by");
+  ADD_LARGV("--map-by");
   ADD_LARGV("node:oversubscribe");
-  ADD_LARGV("-bind-to");
+  ADD_LARGV("--bind-to");
   ADD_LARGV("none");
   if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
     ADD_LARGV("-mca");

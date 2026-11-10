@@ -1,9 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 uname=$(uname -n)
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
 target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
+comm=$($CHPL_HOME/util/chplenv/chpl_comm.py --comm)
 
 # Build a .good file; the lines are:
 # - either:
@@ -22,7 +23,7 @@ else
   sed -e "s# EXECOPTS#$EXECOPTS#" -e 's/ $//' \
       < $1.launcher-$launcher.goodstart > $1.good
 fi
-sed "s/UNAME/$uname/" < $1.comm-$CHPL_COMM.goodcont >> $1.good
+sed "s/UNAME/$uname/" < $1.comm-$comm.goodcont >> $1.good
 cat $1.goodprog >> $1.good
 if [[ -r $1.launcher-$launcher.goodstop ]] ; then
   cat $1.launcher-$launcher.goodstop >> $1.good
