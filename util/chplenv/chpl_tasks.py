@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-import chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import using_chapel_module
-from compiler_utils import CompVersion
+import chpl_platform, overrides
 from utils import memoize, check_valid_var
 
 
@@ -12,8 +10,6 @@ def get():
     tasks_val = overrides.get("CHPL_TASKS")
     if not tasks_val:
         platform_val = chpl_platform.get("target")
-        compiler_val = chpl_compiler.get("target")
-        arch_val = chpl_arch.get("target")
 
         cygwin = platform_val.startswith("cygwin")
         bsd = platform_val.startswith("netbsd") or platform_val.startswith(

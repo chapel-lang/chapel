@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys, os, shutil, time, math, re, stat
-from optparse import OptionParser
+import argparse
 
 import datetime
 import fileReadHelp
@@ -15,16 +15,16 @@ except ImportError:
     )
     annotate = None
 
-usage = "%prog [options] <graphfiles>"
-parser = OptionParser(usage=usage)
-parser.add_option(
+usage = "%(prog)s [options] <graphfiles>"
+parser = argparse.ArgumentParser(usage=usage)
+parser.add_argument(
     "-g",
     "--graphlist",
     dest="graphlist",
     help="file with list of graphfiles",
     metavar="FILE",
 )
-parser.add_option(
+parser.add_argument(
     "-t",
     "--testdir",
     dest="testdir",
@@ -32,7 +32,7 @@ parser.add_option(
     metavar="DIR",
     default=".",
 )
-parser.add_option(
+parser.add_argument(
     "-o",
     "--outdir",
     dest="outdir",
@@ -40,7 +40,7 @@ parser.add_option(
     metavar="DIR",
     default=None,
 )
-parser.add_option(
+parser.add_argument(
     "-p",
     "--perfdir",
     dest="perfdir",
@@ -48,7 +48,7 @@ parser.add_option(
     metavar="DIR",
     default=None,
 )
-parser.add_option(
+parser.add_argument(
     "-n",
     "--name",
     dest="name",
@@ -56,17 +56,17 @@ parser.add_option(
     metavar="NAME",
     default=None,
 )
-parser.add_option(
+parser.add_argument(
     "-s",
     "--startdate",
     dest="startdate",
     help="graph start date",
     metavar="DATE",
 )
-parser.add_option(
+parser.add_argument(
     "-e", "--enddate", dest="enddate", help="graph end date", metavar="DATE"
 )
-parser.add_option(
+parser.add_argument(
     "-a",
     "--alttitle",
     dest="alttitle",
@@ -74,29 +74,28 @@ parser.add_option(
     metavar="NAME",
     default=None,
 )
-parser.add_option(
+parser.add_argument(
     "-v", "--verbose", dest="verbose", action="store_true", default=False
 )
-parser.add_option(
+parser.add_argument(
     "-d", "--debug", dest="debug", action="store_true", default=False
 )
-parser.add_option(
+reduce_option = parser.add_argument(
     "-r",
     "--reduce",
     dest="g_reduce",
-    type="choice",
     metavar="STRATEGY",
     default="avg",
     choices=["avg", "med", "min", "max"],
 )
-parser.add_option(
+parser.add_argument(
     "-x",
     "--no-bounds",
     dest="g_display_bounds",
     action="store_false",
     default=True,
 )
-parser.add_option(
+parser.add_argument(
     "-u",
     "--numericX",
     dest="numericX",
@@ -104,7 +103,7 @@ parser.add_option(
     action="store_true",
     default=False,
 )
-parser.add_option(
+parser.add_argument(
     "-m",
     "--configs",
     dest="multiConf",
@@ -115,7 +114,7 @@ parser.add_option(
     "be visible by default on the web page.",
     default="",
 )
-parser.add_option(
+parser.add_argument(
     "-f",
     "--addfile",
     dest="addfile",
@@ -125,7 +124,10 @@ parser.add_option(
 )
 
 if annotate:
-    parser.add_option("-j", "--annotate", dest="annotation_file", default=None)
+    parser.add_argument(
+        "-j", "--annotate", dest="annotation_file", default=None
+    )
+parser.add_argument("graphfiles", nargs="*")
 
 debug = False
 verbose = False
@@ -668,7 +670,7 @@ class GraphStuff:
                     for s in re.sub(r"\s+", "", rest).split(",")
                 ]
                 for strat in graphs[currgraph].generate:
-                    if strat not in parser.get_option("-r").choices:
+                    if strat not in reduce_option.choices:
                         sys.stdout.write(
                             "WARNING: Invalid generate option {0} in {1}\n".format(
                                 strat, fullFname
@@ -1168,7 +1170,11 @@ class GraphClass:
 
 
 def main():
-    options, args = parser.parse_args()
+    options, extra = parser.parse_known_args()
+    for a in extra:
+        if a.startswith("-") and a != "-":
+            parser.error("no such option: %s" % a)
+    args = options.graphfiles + extra
     sys.stdout.write("Running genGraphs with %s\n" % (" ".join(sys.argv)))
     global debug
     debug = options.debug

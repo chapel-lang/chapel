@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import shutil
 
 import chpl_comm, overrides
 from utils import memoize, check_valid_var, error

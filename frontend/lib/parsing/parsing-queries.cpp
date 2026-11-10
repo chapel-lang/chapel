@@ -63,6 +63,7 @@ namespace parsing {
 using namespace uast;
 
 #define FALLBACK_INTERNAL_PREFIX "<chpl internal fallback>"
+#define EPHEMERAL_FILE_PREFIX "<ephemeral>/"
 
 static std::string getInternalFallbackFileContents(std::string fallbackName) {
   if (false) {
@@ -91,6 +92,11 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
     // this is an internal fallback file
     std::string fallbackName = path.substr(strlen(FALLBACK_INTERNAL_PREFIX));
     text = getInternalFallbackFileContents(fallbackName);
+  } else if (path.find(EPHEMERAL_FILE_PREFIX) == 0) {
+    // only reached if the ephemeral file wasn't created in this revision
+    context->error(Location(),
+                   "ephemeral file '%s' does not exist in this revision",
+                   path.c_str());
   } else if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
@@ -121,6 +127,18 @@ bool hasFileText(Context* context, const std::string& path) {
   auto tupleOfArgs = std::make_tuple(path);
 
   return context->hasCurrentResultForQuery(fileTextQuery, tupleOfArgs);
+}
+
+UniqueString createEphemeralFile(Context* context, std::string text,
+                                 UniqueString name) {
+  std::string base = EPHEMERAL_FILE_PREFIX;
+  base += name.isEmpty() ? "ephemeral" : name.c_str();
+  std::string path = base + ".chpl";
+  for (int i = 1; hasFileText(context, path); i++) {
+    path = base + std::to_string(i) + ".chpl";
+  }
+  setFileText(context, path, std::move(text));
+  return UniqueString::get(context, path);
 }
 
 static Parser helpMakeParser(Context* context,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import optparse
+import argparse
 import os
 import sys
 
@@ -42,22 +42,22 @@ def mysystem(cmd, arg=None):
 
 
 def parseArguments():
-    parser = optparse.OptionParser(usage="usage: %prog [ENVVAR=VALUE] [flags]")
-    parser.add_option(
+    parser = argparse.ArgumentParser(usage="%(prog)s [ENVVAR=VALUE] [flags]")
+    parser.add_argument(
         "--home",
         const="home",
         dest="actions",
         action="append_const",
         help="print out CHPL_HOME",
     )
-    parser.add_option(
+    parser.add_argument(
         "--make",
         const="make",
         dest="actions",
         action="append_const",
         help="print out the make command",
     )
-    parser.add_option(
+    parser.add_argument(
         "--llvm",
         const="llvm",
         dest="actions",
@@ -67,7 +67,7 @@ def parseArguments():
         "argument causes this script to set "
         "CHPL_TARGET_COMPILER=llvm",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compile",
         "--compile-cc",
         const="compilecc",
@@ -75,7 +75,7 @@ def parseArguments():
         action="append_const",
         help="print a C compiler invocation that can use " "the Chapel runtime",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compile-c++",
         const="compilecxx",
         dest="actions",
@@ -83,28 +83,28 @@ def parseArguments():
         help="print a C++ compiler invocation that can use "
         "the Chapel runtime",
     )
-    parser.add_option(
+    parser.add_argument(
         "--compiler",
         const="compiler",
         dest="actions",
         action="append_const",
         help="print the C compiler used",
     )
-    parser.add_option(
+    parser.add_argument(
         "--cflags",
         const="cflags",
         dest="actions",
         action="append_const",
         help="print C compilation flags that Chapel would use",
     )
-    parser.add_option(
+    parser.add_argument(
         "--c++flags",
         const="cxxflags",
         dest="actions",
         action="append_const",
         help="print C++ compilation flags that Chapel would use",
     )
-    parser.add_option(
+    parser.add_argument(
         "--includes-and-defines",
         const="includesanddefines",
         dest="actions",
@@ -112,81 +112,82 @@ def parseArguments():
         help="Print -D and -I compilation flags to include "
         "the Chapel runtime",
     )
-    parser.add_option(
+    parser.add_argument(
         "--linkershared",
         const="linkershared",
         dest="actions",
         action="append_const",
         help="print out the command for linking with shared",
     )
-    parser.add_option(
+    parser.add_argument(
         "--libraries",
         const="libraries",
         dest="actions",
         action="append_const",
         help="print out -L and -l options to link with " "the Chapel runtime",
     )
-    parser.add_option(
+    parser.add_argument(
         "--linker",
         const="linker",
         dest="actions",
         action="append_const",
         help="print the linker used",
     )
-    parser.add_option(
+    parser.add_argument(
         "--main.o",
         const="maino",
         dest="actions",
         action="append_const",
         help="print out the path to the main.o file",
     )
-    parser.add_option(
+    parser.add_argument(
         "--llvm-install-dir",
         const="llvminstalldir",
         dest="actions",
         action="append_const",
         help="print path to included LLVM installation",
     )
-    parser.add_option(
+    parser.add_argument(
         "--clang",
         const="clangcc",
         dest="actions",
         action="append_const",
         help="print which clang C compiler is configured",
     )
-    parser.add_option(
+    parser.add_argument(
         "--clang++",
         const="clangcxx",
         dest="actions",
         action="append_const",
         help="print which clang C++ compiler is configured",
     )
-    parser.add_option(
+    parser.add_argument(
         "--multilocale-lib-deps",
         const="multilocale-lib-deps",
         dest="actions",
         action="append_const",
         help="print out libraries required to link " "multi-locale libraries",
     )
-    parser.add_option(
+    parser.add_argument(
         "--host-c-compiler",
         const="host-c-compiler",
         dest="actions",
         action="append_const",
         help="print out the host C compiler",
     )
-    parser.add_option(
+    parser.add_argument(
         "--host-cxx-compiler",
         const="host-cxx-compiler",
         dest="actions",
         action="append_const",
         help="print out the host C++ compiler",
     )
+    parser.add_argument("args", nargs="*", metavar="ENVVAR=VALUE")
 
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     # Handle VAR=VAL environment variable setting
-    for arg in args:
+    for arg in options.args:
         kv = arg.split("=", 2)
         if len(kv) == 2:
             os.environ[kv[0]] = os.environ[kv[1]]

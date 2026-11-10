@@ -33,19 +33,19 @@ class FileUpdater:
         self.release = release
 
     # Get the version number in the form of "X.Y" no matter if Z is 0 or not
-    def short_version(self, type=VersionType.CURRENT):
-        if type == self.VersionType.CURRENT:
+    def short_version(self, type_=VersionType.CURRENT):
+        if type_ == self.VersionType.CURRENT:
             return "{}.{}".format(self.major_version, self.minor_version)
-        elif type == self.VersionType.PREVIOUS:
+        elif type_ == self.VersionType.PREVIOUS:
             return "{}.{}".format(
                 self.prev_major_version, self.prev_minor_version
             )
         else:
-            raise ValueError("Unrecognized VersionType: {}".format(type))
+            raise ValueError("Unrecognized VersionType: {}".format(type_))
 
     # Get the version number in the form of "X.Y.Z" or "X.Y" if Z is 0
-    def short_maybe_long_version(self, type=VersionType.CURRENT):
-        if type == self.VersionType.CURRENT:
+    def short_maybe_long_version(self, type_=VersionType.CURRENT):
+        if type_ == self.VersionType.CURRENT:
             return (
                 "{}.{}".format(self.major_version, self.minor_version)
                 if self.patch_version == 0
@@ -53,7 +53,7 @@ class FileUpdater:
                     self.major_version, self.minor_version, self.patch_version
                 )
             )
-        elif type == self.VersionType.PREVIOUS:
+        elif type_ == self.VersionType.PREVIOUS:
             return (
                 "{}.{}".format(self.prev_major_version, self.prev_minor_version)
                 if self.prev_patch_version == 0
@@ -64,22 +64,22 @@ class FileUpdater:
                 )
             )
         else:
-            raise ValueError("Unrecognized VersionType: {}".format(type))
+            raise ValueError("Unrecognized VersionType: {}".format(type_))
 
     # Get the version number in the form of "X.Y.Z"
-    def long_version(self, type=VersionType.CURRENT):
-        if type == self.VersionType.CURRENT:
+    def long_version(self, type_=VersionType.CURRENT):
+        if type_ == self.VersionType.CURRENT:
             return "{}.{}.{}".format(
                 self.major_version, self.minor_version, self.patch_version
             )
-        elif type == self.VersionType.PREVIOUS:
+        elif type_ == self.VersionType.PREVIOUS:
             return "{}.{}.{}".format(
                 self.prev_major_version,
                 self.prev_minor_version,
                 self.prev_patch_version,
             )
         else:
-            raise ValueError("Unrecognized VersionType: {}".format(type))
+            raise ValueError("Unrecognized VersionType: {}".format(type_))
 
     def read_file(self):
         with open(self.file_path, "r") as f:

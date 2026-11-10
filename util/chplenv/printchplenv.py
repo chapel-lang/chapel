@@ -1,69 +1,21 @@
 #!/usr/bin/env python3
 
-"""Usage: printchplenv [options]
-
-Print the current Chapel configuration. Arguments allow selection of
-what gets printed [content], how it gets printed [format], and what gets
-filtered [filter].
-
-The default [content] provides user-facing variables.
-
-Options:
-  -h, --help       Show this help message and exit
-
-  [shortcut]
-  --all            Shortcut for --compiler --runtime --launcher, includes defaults
-
-  [content]
-  --compiler       Select variables describing the configuration of the compiler
-  --runtime        Select variables describing the configuration of the runtime
-  --launcher       Select variables describing the configuration of the launcher
-  --internal       Select additional variables used during builds
-                    this flag is incompatible with [format]: --path
-
-  [filter]
-  --[no-]tidy      (default) [don't] Omit sub-variables irrelevant to the current
-                    configuration
-  --anonymize      Omit machine specific details, script location, and CHPL_HOME
-  --overrides      Omit variables that have not been user supplied via environment
-                    or chplconfig
-  --only-path      Omit variables that do not contibute to the build path
-  --only=VARS      Print only the variables listed in VARS, separated by commas.
-
-  [format]
-  --pretty         (default) Print variables in format: CHPL_KEY: VALUE
-                    indicating which options are set by environment variables (*)
-                    and which are set by configuration files (+)
-  --simple         Print variables in format: CHPL_KEY=VALUE
-                    output is compatible with chplconfig format
-  --cmake          Print variables in format: CHPL_KEY VALUE with quotes stripped
-                    from values. Output is compatible with cmake format
-  --make           Print variables in format: CHPL_MAKE_KEY=VALUE
-  --path           Print variables in format: VALUE1/VALUE2/...
-                    this flag always excludes CHPL_HOME and CHPL_MAKE
-  --bash           Print variables in format: export CHPL_KEY=VALUE
-  --csh            Print variables in format: setenv CHPL_KEY VALUE
-  --value          Print only the values of the variables
-
-  [misc]
-  --ignore-errors  Continue processing even if an error occurs
-   --verify        Run verification tests on the current Chapel configuration
-"""
+"""Print the current Chapel configuration."""
 
 from collections import namedtuple
 from functools import partial
-import optparse
+import argparse
 import os
 import re
 import unittest
-from sys import stdout, path
+from sys import stdout
 import textwrap
 
 import utils
 
 utils.set_buffer_warnings(True)
 
-from chplenv import *
+from chplenv import *  # pylint: disable=unused-wildcard-import
 import chplenv_verify
 
 ChapelEnv = namedtuple("ChapelEnv", ["name", "content", "shortname"])
@@ -190,8 +142,6 @@ ENV_VALS = {}
 
 
 def compute_all_values():
-    global ENV_VALS
-
     ENV_VALS["CHPL_HOME"] = chpl_home_utils.get_chpl_home()
     ENV_VALS["CHPL_HOST_PLATFORM"] = chpl_platform.get("host")
 
@@ -279,8 +229,6 @@ def compute_all_values():
 
     # error checking that would be hard to do in the .get functions
     # due to circular dependencies
-    chpl_arch.validate("host")
-    chpl_arch.validate("target")
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
     chpl_gpu.validate(ENV_VALS["CHPL_LOCALE_MODEL"])
@@ -290,8 +238,6 @@ def compute_all_values():
 
 
 def compute_internal_values():
-    global ENV_VALS
-
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
     backend_info = chpl_cpu.get("target", map_to_compiler=True)
@@ -454,7 +400,6 @@ def filter_overrides(chpl_env):
 
 def filter_tidy(chpl_env):
     comm = ENV_VALS["CHPL_COMM"]
-    llvm = ENV_VALS["CHPL_LLVM"]
     locale = ENV_VALS["CHPL_LOCALE_MODEL"]
     gpu = ENV_VALS["  CHPL_GPU"]
     host_mem = ENV_VALS["CHPL_HOST_MEM"]
@@ -586,8 +531,6 @@ def _print_var(key, value, print_format=None, shortname=None, raw=False):
 def printchplenv(
     contents, print_filters=None, print_format="pretty", only=None, raw=False
 ):
-    global CHPL_ENVS
-
     if print_filters is None:
         print_filters = set(["tidy"])
 
@@ -739,103 +682,216 @@ def diagnose_missing_library(lib_type):
 
 
 def parse_args():
-    parser = optparse.OptionParser(
-        usage="usage: %prog [options]",
+    parser = argparse.ArgumentParser(
+        prog="printchplenv",
+        usage="%(prog)s [options]",
         description="Print the current Chapel configuration. "
-        "[content] arguments determine what gets printed. "
-        "[filter] arguments determine what gets omitted. "
-        "[format] arguments determine how it gets printed. "
-        "[shortcut] arguments are for convenience.",
+        "Arguments allow selection of what gets printed [content], "
+        "how it gets printed [format], and what gets filtered [filter]. "
+        "The default [content] provides user-facing variables.",
     )
 
-    # [shortcut]
-    parser.add_option("--all", action="store_true", dest="all")
+    # untitled groups with a description avoid argparse's trailing ':'
+    shortcut = parser.add_argument_group(description="[shortcut]")
+    shortcut.add_argument(
+        "--all",
+        action="store_true",
+        dest="all",
+        help="Shortcut for --compiler --runtime --launcher, includes defaults",
+    )
 
-    # [content]
+    content = parser.add_argument_group(description="[content]")
     parser.set_defaults(content=[])
-    parser.add_option(
-        "--compiler", action="append_const", dest="content", const="compiler"
+    content.add_argument(
+        "--compiler",
+        action="append_const",
+        dest="content",
+        const="compiler",
+        help="Select variables describing the configuration of the compiler",
     )
-    parser.add_option(
-        "--runtime", action="append_const", dest="content", const="runtime"
+    content.add_argument(
+        "--runtime",
+        action="append_const",
+        dest="content",
+        const="runtime",
+        help="Select variables describing the configuration of the runtime",
     )
-    parser.add_option(
-        "--launcher", action="append_const", dest="content", const="launcher"
+    content.add_argument(
+        "--launcher",
+        action="append_const",
+        dest="content",
+        const="launcher",
+        help="Select variables describing the configuration of the launcher",
     )
-    parser.add_option(
-        "--internal", action="append_const", dest="content", const="internal"
+    content.add_argument(
+        "--internal",
+        action="append_const",
+        dest="content",
+        const="internal",
+        help="Select additional variables used during builds. "
+        "Incompatible with --path",
     )
 
-    # [filter]
+    filt = parser.add_argument_group(description="[filter]")
     parser.set_defaults(tidy=True)
     parser.set_defaults(filter=[])
-    parser.add_option("--tidy", action="store_true", dest="tidy")
-    parser.add_option("--no-tidy", action="store_false", dest="tidy")
-    parser.add_option(
-        "--anonymize", action="append_const", dest="filter", const="anonymize"
+    filt.add_argument(
+        "--tidy",
+        action="store_true",
+        dest="tidy",
+        help=argparse.SUPPRESS,
     )
-    parser.add_option(
-        "--overrides", action="append_const", dest="filter", const="overrides"
+    filt.add_argument(
+        "--no-tidy",
+        action="store_false",
+        dest="tidy",
+        help="Show all sub-variables, including those irrelevant to the "
+        "current configuration (by default they are omitted)",
     )
-    parser.add_option(
-        "--only-path", action="append_const", dest="filter", const="only-path"
+    filt.add_argument(
+        "--anonymize",
+        action="append_const",
+        dest="filter",
+        const="anonymize",
+        help="Omit machine specific details, script location, and CHPL_HOME",
     )
-    parser.add_option("--only", type=str, nargs=1, default=None, dest="only")
-
-    # [format]
-    parser.set_defaults(format="pretty")
-    parser.add_option(
-        "--pretty", action="store_const", dest="format", const="pretty"
+    filt.add_argument(
+        "--overrides",
+        action="append_const",
+        dest="filter",
+        const="overrides",
+        help="Omit variables that have not been user supplied via "
+        "environment or chplconfig",
     )
-    parser.add_option(
-        "--simple", action="store_const", dest="format", const="simple"
+    filt.add_argument(
+        "--only-path",
+        action="append_const",
+        dest="filter",
+        const="only-path",
+        help="Omit variables that do not contribute to the build path",
     )
-    parser.add_option(
-        "--make", action="store_const", dest="format", const="make"
-    )
-    parser.add_option(
-        "--cmake", action="store_const", dest="format", const="cmake"
-    )
-    parser.add_option(
-        "--path", action="store_const", dest="format", const="path"
-    )
-    parser.add_option(
-        "--bash", action="store_const", dest="format", const="bash"
-    )
-    parser.add_option("--csh", action="store_const", dest="format", const="csh")
-    parser.add_option(
-        "--value", action="store_const", dest="format", const="value"
-    )
-
-    # [misc]
-    parser.add_option(
-        "--ignore-errors", action="store_true", dest="ignore_errors"
-    )
-    parser.add_option("--verify", action="store_true", dest="verify")
-    parser.add_option(
-        "--diagnose-lib",
-        nargs=1,
+    filt.add_argument(
+        "--only",
         type=str,
-        dest="diagnose_lib",
         default=None,
+        dest="only",
+        metavar="VARS",
+        help="Print only the variables listed in VARS, separated by commas",
+    )
+
+    fmt = parser.add_argument_group(description="[format]")
+    parser.set_defaults(format="pretty")
+    fmt.add_argument(
+        "--pretty",
+        action="store_const",
+        dest="format",
+        const="pretty",
+        help="(default) Print variables in format: CHPL_KEY: VALUE, "
+        "indicating which options are set by environment variables (*) "
+        "and which are set by configuration files (+)",
+    )
+    fmt.add_argument(
+        "--simple",
+        action="store_const",
+        dest="format",
+        const="simple",
+        help="Print variables in format: CHPL_KEY=VALUE. "
+        "Output is compatible with chplconfig format",
+    )
+    fmt.add_argument(
+        "--make",
+        action="store_const",
+        dest="format",
+        const="make",
+        help="Print variables in format: CHPL_MAKE_KEY=VALUE",
+    )
+    fmt.add_argument(
+        "--cmake",
+        action="store_const",
+        dest="format",
+        const="cmake",
+        help="Print variables in format: CHPL_KEY VALUE with quotes "
+        "stripped from values. Output is compatible with cmake format",
+    )
+    fmt.add_argument(
+        "--path",
+        action="store_const",
+        dest="format",
+        const="path",
+        help="Print variables in format: VALUE1/VALUE2/... "
+        "Always excludes CHPL_HOME and CHPL_MAKE",
+    )
+    fmt.add_argument(
+        "--bash",
+        action="store_const",
+        dest="format",
+        const="bash",
+        help="Print variables in format: export CHPL_KEY=VALUE",
+    )
+    fmt.add_argument(
+        "--csh",
+        action="store_const",
+        dest="format",
+        const="csh",
+        help="Print variables in format: setenv CHPL_KEY VALUE",
+    )
+    fmt.add_argument(
+        "--value",
+        action="store_const",
+        dest="format",
+        const="value",
+        help="Print only the values of the variables",
+    )
+
+    misc = parser.add_argument_group(description="[misc]")
+    misc.add_argument(
+        "--ignore-errors",
+        action="store_true",
+        dest="ignore_errors",
+        help="Continue processing even if an error occurs",
+    )
+    misc.add_argument(
+        "--verify",
+        action="store_true",
+        dest="verify",
+        help="Run verification tests on the current Chapel configuration",
     )
 
     # [hidden]
-    parser.add_option("--devel", action="store_true", dest="devel")
-    parser.add_option("--no-devel", action="store_true", dest="nodevel")
-    parser.add_option(
-        "--verify-verbose", action="store_true", dest="verify_verbose"
+    parser.add_argument(
+        "--diagnose-lib",
+        type=str,
+        dest="diagnose_lib",
+        default=None,
+        help=argparse.SUPPRESS,
     )
-    parser.add_option("--unit-tests", action="store_true", dest="do_unit_tests")
-    # Hijack the help message to use the module docstring
-    # optparse is not robust enough to support help msg sections for args.
-    parser.print_help = lambda: stdout.write(__doc__)
+    parser.add_argument(
+        "--devel", action="store_true", dest="devel", help=argparse.SUPPRESS
+    )
+    parser.add_argument(
+        "--no-devel",
+        action="store_true",
+        dest="nodevel",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--verify-verbose",
+        action="store_true",
+        dest="verify_verbose",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--unit-tests",
+        action="store_true",
+        dest="do_unit_tests",
+        help=argparse.SUPPRESS,
+    )
 
     return parser.parse_args()
 
 
 def main():
-    options, args = parse_args()
+    options = parse_args()
 
     utils.init_CHPL_DEVELOPER()
     # let the command line override the environment variable
@@ -912,8 +968,6 @@ def main():
 
     # at this point, we should run the verification tests
     if options.verify or options.verify_verbose:
-        global ENV_VALS
-
         success, reason = chplenv_verify.verify(
             ENV_VALS, verbose=options.verify_verbose
         )

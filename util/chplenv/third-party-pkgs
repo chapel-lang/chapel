@@ -24,7 +24,7 @@ ASSUMPTIONS:
   and not by default (which gives dependencies for runtime).
 """
 
-import optparse
+import argparse
 import os
 import sys
 
@@ -104,14 +104,14 @@ def comp_only_pkg(pkg):
 
 
 def _main():
-    parser = optparse.OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "--compiler",
         dest="compiler",
         action="store_true",
         help="compute compiler packages",
     )
-    options, _ = parser.parse_args()
+    options = parser.parse_args()
 
     pkgs = compute_required_pkgs()
 

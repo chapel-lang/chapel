@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifndef LAUNCHER
 #include "chpl-atomics.h"
@@ -75,11 +76,8 @@ void chpl_error_init(void) {
 
 static void spinhaltIfAlreadyExiting(void) {
 #ifndef LAUNCHER
-  volatile int temp;
   if (atomic_exchange_bool(&thisLocaleAlreadyExiting, true)) {
-    // spin forever if somebody else already set it to 1
-    temp = 1;
-    while (temp);
+    for (;;) pause();
   }
 #endif
 }

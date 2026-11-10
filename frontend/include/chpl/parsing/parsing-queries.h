@@ -77,6 +77,17 @@ void setFileText(Context* context, UniqueString path, std::string text);
 bool hasFileText(Context* context, const std::string& path);
 
 /**
+ Creates an in-memory file containing 'text' that only exists for the
+ current revision, and returns its generated path. The path's base name is
+ 'name' (or "ephemeral" if empty) plus a numeric suffix if needed to make it
+ unique in this revision. Ephemeral files are not found by module search. In
+ later revisions, reading the path reports an error unless another ephemeral
+ file was created there.
+ */
+UniqueString createEphemeralFile(Context* context, std::string text,
+                                 UniqueString name = UniqueString());
+
+/**
   This query reads a file (with the fileText query) and then parses it.
 
   The 'parentSymbolPath' is relevant for submodules that are in separate files

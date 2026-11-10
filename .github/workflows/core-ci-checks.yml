@@ -7,6 +7,14 @@ on:
       CHAPEL_CI_IMAGE:
         type: string
         default: ghcr.io/chapel-lang/chapel-github-ci:latest
+      # keep in sync with the minimum Python version in doc/rst/usingchapel/prereqs.rst
+      MIN_PYTHON_VERSION:
+        type: string
+        default: "3.5"
+      skip_publish:
+        description: Skip publishing the docs
+        type: boolean
+        default: false
     secrets:
       WEBSITE_KEY:
         required: false
@@ -51,8 +59,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-default
+          save: false
       - name: make check
         run: |
           ./util/buildRelease/smokeTest chpl
@@ -68,12 +76,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-        with:
-          create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: make chplvis
         run: |
           bash -c 'source ./util/setchplenv.bash && make chplvis'
@@ -93,8 +95,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-default
+          save: false
       - name: make frontend-docs
         run: |
           make frontend-docs
@@ -126,8 +128,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-default
+          save: false
       - name: make mason
         # Use a quickstart config to keep it from running to long
         # While there, run a make check in that config for more coverage
@@ -185,8 +187,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-default
+          save: false
       - name: set CHPL_HOME
         run: |
           echo "CHPL_HOME=$PWD" >> "$GITHUB_ENV"
@@ -212,12 +214,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
-        with:
-          create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
       - name: run create_tarball.bash
         run: |
          ./util/cron/create_tarball.bash
@@ -237,8 +233,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-llvm-none
+          save: false
       - name: set llvm_none make check
         run: |
          CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -274,6 +270,42 @@ jobs:
       - name: smokeTest lint
         run: |
           ./util/buildRelease/smokeTest lint
+
+  check_min_python:
+    runs-on: ubuntu-latest
+    container: python:${{ inputs.MIN_PYTHON_VERSION }}-buster@sha256:42a37d6b8c00b186bdfb2b620fa8023eb775b3eb3a768fd3c2e421964eee9665
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: check python version
+        env:
+          MIN_PYTHON_VERSION: ${{ inputs.MIN_PYTHON_VERSION }}
+        run: |
+          python3 --version
+          python3 -c 'import os, sys; assert ("%d.%d" % sys.version_info[:2]) == os.environ["MIN_PYTHON_VERSION"]'
+      - name: printchplenv
+        run: |
+          ./util/printchplenv --all --internal
+
+  pylint_build_scripts:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: install pylint
+        run: |
+          pipx install pylint
+      - name: run pylint
+        env:
+          MIN_PYTHON_VERSION: ${{ inputs.MIN_PYTHON_VERSION }}
+        run: |
+          { find util/chplenv util/config -maxdepth 1 -type f -name '*.py'
+            grep -lsE '^#!.*python' util/chplenv/* util/config/*
+          } | sort -u | xargs pylint \
+            --py-version "$MIN_PYTHON_VERSION" \
+            --disable=R,C,broad-exception-raised,unspecified-encoding,global-statement,pointless-string-statement,logging-format-interpolation,unnecessary-pass,fixme,wildcard-import,bare-except
 
   check_large_files:
     if: github.event_name == 'pull_request'
@@ -362,7 +394,7 @@ jobs:
           ./util/buildRelease/check-release-files.bash
 
   publish-docs:
-    if: ${{ github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
+    if: ${{ !inputs.skip_publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}
     concurrency:
       group: 'publish-docs'
       queue: single
@@ -509,6 +541,9 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
+    env:
+      # always run on nightly builds
+      RUN_ALL: ${{ contains(fromJSON('["workflow_dispatch","schedule"]'), github.event_name) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -517,10 +552,11 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-default
+          save: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: changes
+        if: env.RUN_ALL != 'true'
         with:
           filters: |
             cls_sources:
@@ -531,21 +567,21 @@ jobs:
               - 'tools/chplcheck/**'
               - 'test/chplcheck/**'
       - name: build chapel-py
-        if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           make chapel-py-venv -j"$(./util/buildRelease/chpl-make-cpu_count)"
       - name: build chpl and test-venv
-        if: steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           # start_test requires both test-venv and a working chpl install
           ./util/buildRelease/smokeTest quickstart chpl
           make test-venv -j"$(util/buildRelease/chpl-make-cpu_count)"
       - name: test chpl-language-server
-        if: steps.changes.outputs.cls_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.cls_sources == 'true'
         run: |
           make test-chpl-language-server -j"$(util/buildRelease/chpl-make-cpu_count)"
       - name: test chplcheck
-        if: steps.changes.outputs.chplcheck_sources == 'true'
+        if: env.RUN_ALL == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
         run: |
           num_procs=$(./util/buildRelease/chpl-make-cpu_count)
           # chplcheck tests have a very flat directory structure,
@@ -575,7 +611,6 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.os }}-${{ matrix.config }}
-          append-timestamp: false
       - name: install deps
         run: |
           if [[ "$OS" == "macos"* ]] ; then
@@ -625,8 +660,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
-          key: ccache-${{ github.job }}
-          append-timestamp: false
+          key: x86-llvm-none
+          save: false
       - name: run test-networking-packages.bash
         run: |
           ./util/cron/test-networking-packages.bash

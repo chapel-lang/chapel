@@ -13,6 +13,17 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 # common-tarball sets CHPL_HOME
 source $UTIL_CRON_DIR/common-tarball.bash
 
+phase="creating the Chapel release tarball"
+function homebrew_exit_hook()
+{
+  local rc=$?
+  if [[ $rc -ne 0 && -n "${FAILURE_EMAIL_ADDENDUM:-}" ]]; then
+    echo "Failed while $phase." > "$FAILURE_EMAIL_ADDENDUM"
+  fi
+  exit_hook
+}
+trap homebrew_exit_hook EXIT
+
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
@@ -59,6 +70,7 @@ $sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sh
 # drop any revision
 $sed_command "/^[[:space:]]*revision [[:digit:]][[:digit:]]*[[:space:]]*$/d" chapel.rb
 
+phase="setting up Homebrew on the runner (likely a runner or Homebrew issue, not a Chapel or formula bug)"
 ${CHPL_HOME}/util/packaging/docker/test/brew_get_bogus_bottles.bash |
   ${CHPL_HOME}/util/packaging/docker/test/brew_replace_bottles.bash chapel.rb
 
@@ -88,14 +100,28 @@ HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm -f $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 
+core_tap=$(brew --repository homebrew/core)
+RETRIES=5
+until [[ -d "$core_tap/Formula/c" ]]; do
+  if [ $RETRIES -le 0 ]; then
+    log_error "Failed to tap homebrew/core after multiple attempts."
+    exit 1
+  fi
+  HOMEBREW_NO_AUTO_UPDATE=1 brew tap --force homebrew/core || sleep 10
+  RETRIES=$((RETRIES - 1))
+done
+
 # install chapel.rb to the core tap
-cp ./chapel.rb $(brew --repository homebrew/core)/Formula/c/chapel.rb
+cp ./chapel.rb "$core_tap/Formula/c/chapel.rb"
 # install chapel
 # per the docs, HOMEBREW_NO_INSTALL_FROM_API must be set
 # https://docs.brew.sh/FAQ#can-i-edit-formulae-myself
+phase="building Chapel from the formula"
 HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_FROM_API=1 \
   brew install -v --build-from-source --overwrite chapel \
     | awk 'tolower($0)~/failed steps? ignored/{r=1} 1; END{exit(r)}'
+
+phase="running the Homebrew-installed chpl"
 chpl --version
 
 # Run pidigits and see if it works

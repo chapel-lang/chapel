@@ -32,7 +32,8 @@
 # CHPL_TEST_VGRND_COMP: Use valgrind on the compiler
 # CHPL_TEST_VGRND_EXE: Use valgrind on the test program
 # CHPL_VALGRIND_OPTS: Options to valgrind
-# CHPL_TEST_FUTURES: 2 == test futures only
+# CHPL_TEST_FUTURES: 3 == test futures that have a .skipif
+#                    2 == test futures only
 #                    1 == test futures and non-futures
 #                    0 == test non-futures only
 # CHPL_TEST_NOTESTS: Test the tests that are marked "notest" (see below)
@@ -348,6 +349,19 @@ def WaitForFiles(
         while not os.path.exists(f) and waited < timeout:
             time.sleep(1)
             waited += 1
+
+
+def CatFiles(files):
+    output = b""
+    for f in files:
+        try:
+            with open(f, "rb") as fh:
+                output += fh.read()
+        except OSError as e:
+            output += ("cat: %s: %s\n" % (f, e.strerror)).encode(
+                errors="surrogateescape"
+            )
+    return str(output, encoding="utf-8", errors="surrogateescape")
 
 
 # If CHPL_TEST_LIMIT_RUNNING_EXECUTABLES is set, use a file lock to serialize
@@ -2292,12 +2306,7 @@ def run_test(test_args, testname, out=sys.stdout):
                 )
                 out.flush()
                 WaitForFiles(catfiles.split())
-                catoutput = run_process(
-                    ["cat"] + catfiles.split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                )[1]
-                output += catoutput
+                output += CatFiles(catfiles.split())
 
             # Sadly these scripts require an actual file
             with open(complog, "w") as complogfile:
@@ -3050,12 +3059,7 @@ def run_test(test_args, testname, out=sys.stdout):
                     )
                     out.flush()
                     WaitForFiles(catfiles.split())
-                    cat_output = run_process(
-                        ["cat"] + catfiles.split(),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                    )[1]
-                    output += cat_output
+                    output += CatFiles(catfiles.split())
 
                 # It's got surrogates, so encode it as bytes and write it as binary
                 mode = "w"

@@ -7,19 +7,19 @@
 # compilation stats.
 
 import sys, os, os.path
-from optparse import OptionParser
+import argparse
 from pprint import pprint
 import py3_compat
 
-parser = OptionParser()
-parser.add_option(
+parser = argparse.ArgumentParser()
+parser.add_argument(
     "-t",
     "--tempDatDir",
     dest="tempDatDir",
     help="the directory of temp files to combine",
     metavar="DIR",
 )
-parser.add_option(
+parser.add_argument(
     "-O",
     "--outDir",
     dest="outDir",
@@ -27,21 +27,21 @@ parser.add_option(
     metavar="DIR",
     default=None,
 )
-parser.add_option(
+parser.add_argument(
     "-e",
     "--elapsedTestTime",
     dest="elapsedTestTime",
     help="The number of seconds that all of testing took",
     default=1.0,
 )
-parser.add_option(
+parser.add_argument(
     "-d", "--debug", dest="debug", action="store_true", default=False
 )
 
 
 def main():
     # setup options and input/output directories
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     chpl_home = os.environ.get("CHPL_HOME", "")
     configName = os.environ.get(

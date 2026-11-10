@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-import optparse
+import argparse
 import os.path
 
 
@@ -114,9 +114,9 @@ class LicenseCommenter(object):
 
     def parse_args(self):
         """Parse arguments, which should be list of source files to update."""
-        parser = optparse.OptionParser("%prog [filename] ...")
-        _, args = parser.parse_args()
-        return args
+        parser = argparse.ArgumentParser(usage="%(prog)s [filename] ...")
+        parser.add_argument("filenames", nargs="*", help=argparse.SUPPRESS)
+        return parser.parse_args().filenames
 
 
 if __name__ == "__main__":
