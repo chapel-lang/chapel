@@ -15,7 +15,7 @@ BASE_CONFIGS = [
     ("single-node (CHPL_COMM=none)", common.default_config),
     ("multi-node (CHPL_COMM=gasnet over udp/smp)", common.gasnet_config),
     ("multi-node (CHPL_COMM=ofi over pmi2)", common.ofi_pmi2_config),
-    ("single-node emulated GPU", common.gpu_cpu_config),
+    ("single-node GPU", common.gpu_config),
 ]
 
 PACKAGING_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -61,7 +61,7 @@ def discover_os_names() -> List[str]:
 
 
 def collect_rows(os_names: List[str]) -> List[Dict[str, str]]:
-    """One row per unique config, with a column listing OSes where it is not built."""
+    """One row per unique config, with a column describing which OSes build it."""
     rows: Dict[tuple, Dict[str, str]] = {}
     for group, base in BASE_CONFIGS:
         for osname in os_names:
@@ -76,7 +76,11 @@ def collect_rows(os_names: List[str]) -> List[Dict[str, str]]:
     for row in rows.values():
         supported = row.pop("_os")
         unsupported = [pretty_os(o) for o in os_names if o not in supported]
-        if unsupported:
+        if len(supported) < len(unsupported):
+            row[OS_COL] = "only on " + join_and(
+                [pretty_os(o) for o in os_names if o in supported]
+            )
+        elif unsupported:
             row[OS_COL] = "unsupported on " + join_and(unsupported)
         result.append(row)
     result.sort(key=row_sort_key)
