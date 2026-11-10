@@ -1,0 +1,62 @@
+name: Build and test Chapel
+description: Set up the Chapel environment, build Chapel, and run start_test in a single shell
+
+inputs:
+  setup:
+    description: >-
+      Bash commands to run after sourcing util/setchplenv.bash, e.g. to source a
+      util/cron script or export CHPL_* variables. `$num_procs` is available.
+    required: false
+    default: ""
+  make-targets:
+    description: Space separated make targets (and variable assignments) to build
+    required: false
+    default: "all test-venv spectests"
+  test-paths:
+    description: Space separated test files/directories for start_test (globs are expanded)
+    required: false
+    default: "test/release/examples"
+  start-test-args:
+    description: Extra space separated arguments for start_test
+    required: false
+    default: ""
+  parallel:
+    description: Whether to pass `--parallel <num_procs>` to start_test
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: build and test Chapel
+      shell: bash -exuo pipefail {0}
+      env:
+        CI_SETUP: ${{ inputs.setup }}
+        CI_MAKE_TARGETS: ${{ inputs.make-targets }}
+        CI_TEST_PATHS: ${{ inputs.test-paths }}
+        CI_START_TEST_ARGS: ${{ inputs.start-test-args }}
+        CI_PARALLEL: ${{ inputs.parallel }}
+      run: |
+        echo "::group::set environment"
+        source util/setchplenv.bash
+        num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+        eval "$CI_SETUP"
+        echo "::endgroup::"
+
+        echo "::group::printchplenv"
+        printchplenv --all --internal
+        echo "::endgroup::"
+
+        echo "::group::Build Chapel"
+        # shellcheck disable=SC2086 # intentionally word split
+        make -j"$num_procs" $CI_MAKE_TARGETS
+        echo "::endgroup::"
+
+        echo "::group::Run tests"
+        parallel_args=""
+        if [[ "$CI_PARALLEL" == "true" ]]; then
+          parallel_args="--parallel $num_procs"
+        fi
+        # shellcheck disable=SC2086 # intentionally word split and glob expanded
+        start_test $parallel_args $CI_START_TEST_ARGS $CI_TEST_PATHS
+        echo "::endgroup::"

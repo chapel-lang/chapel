@@ -27,21 +27,9 @@ jobs:
           create-symlink: true
           key: ccache-${{ github.job }}
       - name: Compile Chapel and run example tests
-        run: |
-          source util/setchplenv.bash
-
-          export CHPL_LLVM=bundled
-          export CHPL_LAUNCHER=none
-
-          echo "::group::printchplenv"
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples test/llvm
-          echo "::endgroup::"
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          setup: |
+            export CHPL_LLVM=bundled
+            export CHPL_LAUNCHER=none
+          test-paths: test/release/examples test/llvm

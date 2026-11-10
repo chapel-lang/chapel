@@ -173,34 +173,21 @@ jobs:
             exit 2
           fi
       - name: Compile Chapel and run example tests
-        run: |
-          source util/setchplenv.bash
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          setup: |
+            # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+            # with a different and incompatible version of GCC
+            export CHPL_LLVM=none
+            export CHPL_LLVM_SUPPORT=bundled
+            unset CHPL_LLVM_CONFIG
 
-          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
-          # with a different and incompatible version of GCC
-          export CHPL_LLVM=none
-          export CHPL_LLVM_SUPPORT=bundled
-          unset CHPL_LLVM_CONFIG
-
-          # Set environment variables to nudge cmake towards desired GCC
-          export CHPL_CMAKE_USE_CC_CXX=1
-          CC=$(which gcc)
-          export CC
-          CXX=$(which g++)
-          export CXX
-
-          echo "::group::printchplenv"
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples
-          echo "::endgroup::"
+            # Set environment variables to nudge cmake towards desired GCC
+            export CHPL_CMAKE_USE_CC_CXX=1
+            CC=$(which gcc)
+            export CC
+            CXX=$(which g++)
+            export CXX
 
   python-version-tests:
     strategy:
@@ -253,34 +240,21 @@ jobs:
             llvm-dev \
             libzmq3-dev
       - name: Compile Chapel (comm=${{ matrix.comm }}) and run tests
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
         env:
           COMM: ${{ matrix.comm }}
-        run: |
-          echo "::group::set environment"
-          source util/setchplenv.bash
-          export CHPL_LIB_PIC=pic
-          if [[ "$COMM" == "gasnet" ]]; then
-            source util/cron/test-gasnet-everything.bash
-            source util/cron/common-python-interop.bash
-            source util/cron/common-zmq.bash
-          else
-            source util/cron/common-python-interop.bash
-          fi
-          export CHPL_TARGET_CPU=native
-          echo "::endgroup::"
-
-          echo "::group::printchplenv"
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples test/library/packages/Python test/interop/python
-          echo "::endgroup::"
+        with:
+          setup: |
+            export CHPL_LIB_PIC=pic
+            if [[ "$COMM" == "gasnet" ]]; then
+              source util/cron/test-gasnet-everything.bash
+              source util/cron/common-python-interop.bash
+              source util/cron/common-zmq.bash
+            else
+              source util/cron/common-python-interop.bash
+            fi
+            export CHPL_TARGET_CPU=native
+          test-paths: test/release/examples test/library/packages/Python test/interop/python
 
   llvm-version-tests:
     strategy:
@@ -323,23 +297,11 @@ jobs:
             exit 2
           fi
       - name: Compile Chapel and run example tests
-        run: |
-          source util/setchplenv.bash
-
-          export CHPL_LLVM=system
-
-          echo "::group::printchplenv"
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples test/llvm
-          echo "::endgroup::"
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          setup: |
+            export CHPL_LLVM=system
+          test-paths: test/release/examples test/llvm
 
   build-linuxbrew:
     runs-on: ubuntu-latest
@@ -358,23 +320,13 @@ jobs:
 
           brew install gcc cmake python gmp llvm@22
       - name: Compile Chapel
-        run: |
-          echo "::group::Chapel Environment"
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          source util/setchplenv.bash
-          export CHPL_LLVM=system
-          export CHPL_GMP=system
-          printchplenv --all --internal
-          echo "::endgroup::"
-
-          echo "::group::Build Chapel"
-          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          start_test --parallel "$num_procs" test/release/examples test/llvm
-          echo "::endgroup::"
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          setup: |
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+            export CHPL_LLVM=system
+            export CHPL_GMP=system
+          test-paths: test/release/examples test/llvm
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
