@@ -78,7 +78,7 @@ module ChapelDynamicLoading {
   var chpl_ptrCacheIdxCounter: atomic int = 2;
 
   class chpl_LocalPtrCache {
-    var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
+    var mapping: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
     var handles: chpl_lockGuard(chpl_localMap(c_ptr(void), c_ptr(void)));
   }
 
@@ -624,7 +624,7 @@ module ChapelDynamicLoading {
           for slot in _procPtrToDataLocale0.slots() {
             const idx = slot.val[0];
             coforall loc in Locales do on loc {
-              local do manage chpl_localPtrCache.guard.write() as m do
+              local do manage chpl_localPtrCache.mapping.write() as m do
                 m.removeVal(idx);
             }
           }
@@ -721,7 +721,7 @@ module ChapelDynamicLoading {
       if numErrs.read() > 0 {
         // Evict the partially published index
         coforall loc in Locales do on loc {
-          local do manage chpl_localPtrCache.guard.write() as m do
+          local do manage chpl_localPtrCache.mapping.write() as m do
             m.removeVal(ret);
         }
 
@@ -799,7 +799,7 @@ module ChapelDynamicLoading {
         var errHere: owned DynLoadError?;
         const ptrHere = localDynLoadSymbolLookup(sym, handleHere, errHere);
         if ptrHere != nil {
-          local do manage chpl_localPtrCache.guard.read() as m do
+          local do manage chpl_localPtrCache.mapping.read() as m do
             m.get(ptrHere, idx);
           if idx != 0 then return __primitive("cast", P, idx);
         }
@@ -1192,7 +1192,7 @@ module ChapelDynamicLoading {
     // cache because the local roots are emplaced when a function value is
     // created. So just halt if this is not the case.
     if idx != 0 {
-      local do manage chpl_localPtrCache.guard.read() as m {
+      local do manage chpl_localPtrCache.mapping.read() as m {
         const found = m.get(idx, ret);
         assert(found);
         assert(ret != nil);
@@ -1206,14 +1206,14 @@ module ChapelDynamicLoading {
     var ret: int = 0;
 
     // Return the local pointer for this locale if it's already set.
-    local do manage chpl_localPtrCache.guard.read() as m {
+    local do manage chpl_localPtrCache.mapping.read() as m {
       const ptr = lookupPtrFromLocalFtable(idx);
       if m.get(ptr, ret) then return ret;
     }
 
     // Otherwise, synchronize on LOCALE-0...
     on Locales[0] {
-      manage chpl_localPtrCache.guard.write() as m {
+      manage chpl_localPtrCache.mapping.write() as m {
         var requestedUniqueIdx = false;
 
         // Use the value of the pointer on LOCALE-0 as the map key.
@@ -1232,7 +1232,7 @@ module ChapelDynamicLoading {
         if requestedUniqueIdx && numLocales > 1 {
           coforall loc in Locales do on loc {
             if loc.id != 0 {
-              local do manage chpl_localPtrCache.guard.write() as m {
+              local do manage chpl_localPtrCache.mapping.write() as m {
                 const ptr = lookupPtrFromLocalFtable(idx);
                 m.add(ptr, ret);
               }
@@ -1261,7 +1261,7 @@ module ChapelDynamicLoading {
       then chpl_ptrCacheIdxCounter.fetchAdd(1)
       else idx;
 
-    local do manage chpl_localPtrCache.guard.write() as m {
+    local do manage chpl_localPtrCache.mapping.write() as m {
       // If 'set()' returns 'false' then the index was already in the map!
       // We just overwrote it, but it shouldn't have been set in the first
       // place so the only thing to do is halt.
@@ -1284,7 +1284,7 @@ module ChapelDynamicLoading {
   export proc chpl_getPtrForIdxHere(idx: int): c_ptr(void) {
     if idx <= 0 then return nil;
 
-    local do manage chpl_localPtrCache.guard.read() as m {
+    local do manage chpl_localPtrCache.mapping.read() as m {
       var ret: c_ptr(void);
       if m.get(idx, ret) then return ret;
     }
