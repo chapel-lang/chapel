@@ -3,7 +3,6 @@ import itertools
 from typing import List, Dict, Union
 import textwrap
 
-
 # every config must build against the same LLVM, so pick it once up front
 LLVM_CONFIG_FILE = "/home/user/llvm-config-path"
 COMPUTE_LLVM_CONFIG = (
