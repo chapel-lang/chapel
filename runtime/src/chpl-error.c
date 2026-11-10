@@ -87,12 +87,11 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
-    fprintf(stderr, "%s:%" PRId32 ": error: %s", filename, lineno, message);
+    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
   else if (filename)
-    fprintf(stderr, "%s: error: %s", filename, message);
+    fprintf(stderr, "%s: error: %s\n", filename, message);
   else
-    fprintf(stderr, "error: %s", message);
-  fprintf(stderr, "\n");
+    fprintf(stderr, "error: %s\n", message);
 
   chpl_stack_unwind(stderr, '\n');
 
