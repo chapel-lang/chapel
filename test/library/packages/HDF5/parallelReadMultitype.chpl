@@ -1,7 +1,7 @@
 use FileSystem, HDF5, CTypes;
 use Hdf5PathHelp;
 
-type inputTypes = (int, real, c_ptrConst(int(8)));
+type inputTypes = (int, real, c_ptrConst(c_char));
 
 config const inputDir = "HDF5files";
 
