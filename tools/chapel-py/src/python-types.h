@@ -93,7 +93,8 @@ namespace detail {
   template <typename Tuple, size_t idx>
   static void unwrapArgHelper(ContextObject* context, PyObject* argTup, Tuple& toModify) {
     using Unwrapper = PythonReturnTypeInfo<typename std::tuple_element<idx, Tuple>::type>;
-    std::get<idx>(toModify) = Unwrapper::unwrap(context, PyTuple_GetItem(argTup, idx));
+    PyObject* arg = (Py_ssize_t) idx < PyTuple_Size(argTup) ? PyTuple_GetItem(argTup, idx) : Py_None;
+    std::get<idx>(toModify) = Unwrapper::unwrap(context, arg);
   }
 
   template <typename Tuple, size_t ... Indices>
@@ -470,6 +471,10 @@ template <>
 struct PythonReturnTypeInfo<void> {
   static std::string typeString() { return "None"; }
 };
+
+template <typename T> struct IsOptionalArg : std::false_type {};
+template <typename T>
+struct IsOptionalArg<PythonReturnTypeInfo<std::optional<T>>> : std::true_type {};
 
 /* In the `method-tables.h` file, we encode a method signature using the C++
    function type in the form `R(Args...)`. This template, PythonFnHelper, is

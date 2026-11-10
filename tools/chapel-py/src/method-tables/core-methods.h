@@ -44,6 +44,19 @@ CLASS_BEGIN(Context)
            topLevelNodes.push_back(builderResult.topLevelExpression(i));
          }
          return topLevelNodes)
+  METHOD(Context, parse_text, "Parse a top-level AST node from the given text",
+         std::vector<const chpl::uast::AstNode*>(std::string, std::optional<chpl::UniqueString>),
+
+         auto& text = std::get<0>(args);
+         auto name = std::get<1>(args).value_or(chpl::UniqueString());
+         auto path = parsing::createEphemeralFile(node, text, name);
+         auto& builderResult =
+           parsing::parseFileToBuilderResultAndCheck(node, path, chpl::UniqueString());
+         std::vector<const chpl::uast::AstNode*> topLevelNodes;
+         for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
+           topLevelNodes.push_back(builderResult.topLevelExpression(i));
+         }
+         return topLevelNodes)
   METHOD(Context, set_module_paths, "Set the module path arguments to the given lists of module paths and filenames",
          void(std::vector<std::string>, std::vector<std::string>),
 
