@@ -77,25 +77,25 @@ jobs:
         timeout-minutes: 20
         run: |
           # Retry each call on its own so one transient error doesn't redo the others
-          gh_api() {
+          gh_retry() {
             local out=$1
             shift
             for delay in 0 15 30 60 120; do
               sleep "$delay"
-              if gh api "$@" > "$out"; then
+              if gh "$@" > "$out"; then
                 return 0
               fi
-              echo "::warning::gh api $* failed"
+              echo "::warning::gh $* failed"
             done
             return 1
           }
 
           echo "::group::commit.json"
-          gh_api commit.json "/repos/${{ github.repository }}/commits/${{ github.sha }}"
+          gh_retry commit.json api "/repos/${{ github.repository }}/commits/${{ github.sha }}"
           jq '.' commit.json
           echo "::endgroup::"
           echo "::group::jobs_raw.json"
-          gh_api jobs_raw.json --paginate "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100"
+          gh_retry jobs_raw.json api --paginate "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100"
           jq '.' jobs_raw.json
           echo "::endgroup::"
           # Combine pages of job results into one array
@@ -126,20 +126,27 @@ jobs:
 
           prs_text="(failed to determine PRs merged since the last nightly run)"
           workflow_file=$(basename "${GITHUB_WORKFLOW_REF%@*}")
-          if gh_api prev_runs.json "/repos/${{ github.repository }}/actions/workflows/$workflow_file/runs?event=schedule&branch=main&per_page=10" &&
-             prev_sha=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].head_sha' prev_runs.json) &&
-             gh_api compare_raw.json --paginate "/repos/${{ github.repository }}/compare/$prev_sha...${{ github.sha }}?per_page=100" &&
-             jq -rs --arg head "${{ github.sha }}" --arg repo "${{ github.repository }}" '
+          if gh_retry runs.json api "/repos/${{ github.repository }}/actions/workflows/$workflow_file/runs?event=schedule&branch=main&per_page=10" &&
+             prev_sha=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].head_sha' runs.json) &&
+             gh_retry compare_raw.json api --paginate "/repos/${{ github.repository }}/compare/$prev_sha...${{ github.sha }}?per_page=100" &&
+             jq -s --arg head "${{ github.sha }}" '
                INDEX(.[].commits[]; .sha) as $m
-               | [$head | select($m[.]) | recurse($m[.].parents[0].sha; $m[.] != null)]
-               | reverse[]
-               | $m[.]
-               | (.commit.message | split("\n")[0]) as $subject
-               | if ($subject | test("\\(#[0-9]+\\)$"))
-                 then "- " + ($subject | sub("\\(#(?<n>[0-9]+)\\)$"; "([#\(.n)](https://github.com/\($repo)/pull/\(.n)))"))
-                 else "- \($subject) ([\(.sha[0:11])](\(.html_url)))"
-                 end
-             ' compare_raw.json > prs.md; then
+               | [$head | select($m[.]) | recurse($m[.].parents[0].sha; $m[.] != null) | $m[.]]
+               | reverse
+             ' compare_raw.json > first_parents.json; then
+            echo '[]' > prs.json
+            since=$(jq -r 'map(.commit.committer.date) | min // empty' first_parents.json)
+            if [[ -n "$since" ]]; then
+              gh_retry prs.json pr list -R "${{ github.repository }}" --state merged --base main --limit 1000 --search "merged:>=$since" --json number,title,url,mergeCommit ||
+                echo '[]' > prs.json
+            fi
+            jq -r --slurpfile prs prs.json '
+              INDEX($prs[0][]; .mergeCommit.oid) as $p
+              | .[]
+              | if $p[.sha] then $p[.sha] | "- \(.title) ([#\(.number)](\(.url)))"
+                else "- \(.commit.message | split("\n")[0]) ([\(.sha[0:11])](\(.html_url)))"
+                end
+            ' first_parents.json > prs.md
             [[ -s prs.md ]] || echo "- (none)" > prs.md
             prs_text="Since [$prev_sha](https://github.com/${{ github.repository }}/commit/$prev_sha) ([compare](https://github.com/${{ github.repository }}/compare/$prev_sha...${{ github.sha }})):
 
