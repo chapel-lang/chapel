@@ -524,8 +524,11 @@ def sub_test_path(test_dir_path):
     return os.path.join(util_dir, "test", "sub_test")
 
 
-def sub_test_environment(test=None):
+def sub_test_environment(test_dir_path, test=None):
     env = os.environ.copy()
+    # Popen's cwd= does not update PWD, and the process-wide PWD can't be
+    # changed per-directory when running sub_tests concurrently.
+    env["PWD"] = os.path.abspath(test_dir_path)
     env["CHPL_TEST_UTIL_DIR"] = util_dir
 
     if test:
@@ -560,7 +563,7 @@ def invoke_sub_test(output, test_dir_path, test, for_files, path_for_log):
         p = subprocess.Popen(
             [sub_test, compiler],
             cwd=test_dir_path,
-            env=sub_test_environment(test),
+            env=sub_test_environment(test_dir_path, test),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
