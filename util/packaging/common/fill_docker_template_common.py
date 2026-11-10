@@ -4,6 +4,14 @@ from typing import List, Dict, Union
 import textwrap
 
 
+# every config must build against the same LLVM, so pick it once up front
+LLVM_CONFIG_FILE = "/home/user/llvm-config-path"
+COMPUTE_LLVM_CONFIG = (
+    "RUN CHPL_HOME=$PWD CHPL_LLVM=system "
+    f"./util/chplenv/chpl_llvm.py --llvm-config > {LLVM_CONFIG_FILE}"
+)
+
+
 def common_substitutions(osname: str):
     substitutions = dict()
 
@@ -37,10 +45,11 @@ def common_substitutions(osname: str):
     # necessary tools.
     substitutions["BUILD_DEFAULT"] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
+{COMPUTE_LLVM_CONFIG}
 {generate_run_command(default_config, osname)}
 {generate_run_command(gasnet_config, osname)}
 {generate_run_command(ofi_pmi2_config, osname)}
-{generate_run_command(gpu_cpu_config, osname)}
+{generate_run_command(gpu_config, osname)}
 {generate_run_command_default_config(osname)}
     """
 
@@ -50,10 +59,11 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
     # the default config is the default configuration, just don't build tools
     substitutions["BUILD_ONLY_COMPILER"] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
+{COMPUTE_LLVM_CONFIG}
 {generate_run_command(default_config, osname)}
 {generate_run_command(gasnet_config, osname)}
 {generate_run_command(ofi_pmi2_config, osname)}
-{generate_run_command(gpu_cpu_config, osname)}
+{generate_run_command(gpu_config, osname)}
 {generate_run_command_default_config(osname, include_tools=False)}
     """
 
@@ -147,14 +157,14 @@ ofi_pmi2_config = {
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
-gpu_cpu_config = {
+gpu_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
     "CHPL_TARGET_COMPILER": "llvm",
     "CHPL_RUNTIME_CPU": "none",
     "CHPL_TARGET_CPU": "native",
     "CHPL_LOCALE_MODEL": "gpu",
-    "CHPL_GPU": "cpu",
+    "CHPL_GPU": ["cpu", "nvidia"],
     "CHPL_COMM": "none",
     "CHPL_TASKS": "qthreads",
     "CHPL_UNWIND": "system",
@@ -188,6 +198,8 @@ def generate_configs(
         lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm"
         and cfg.get("CHPL_SANITIZE_EXE") != "none"
         and osname in ("amzn2023", "ubuntu22", "debian12"),
+        lambda cfg: cfg.get("CHPL_GPU") == "nvidia"
+        and osname not in ("ubuntu26",),
     ]
     keys = list(base_config.keys())
 
@@ -242,7 +254,7 @@ def generate_run_command(
 
         command_postfix = textwrap.indent(
             textwrap.dedent(f"""
-            echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >>$CHPL_HOME/chplconfig && \\
+            echo "CHPL_LLVM_CONFIG=$(cat {LLVM_CONFIG_FILE})" >>$CHPL_HOME/chplconfig && \\
             ./configure --prefix=/usr && \\
             {build_cmd} && \\
             unset CHPL_HOME""").strip(),
