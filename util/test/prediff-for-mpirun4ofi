@@ -59,11 +59,29 @@ You can avoid this message by specifying -quiet on the mpirun command line.
 
 --------------------------------------------------------------------------
 """,
+    r"""--------------------------------------------------------------------------
+
+prterun detected that one or more processes exited with non-zero status,
+thus causing the job to be terminated\. The first process to do so was:
+
+\s*Process name:\s+\[[^\]]+\]
+\s*Exit code:\s+\d+
+--------------------------------------------------------------------------
+""",
+    r"""--------------------------------------------------------------------------
+Sorry!  You were supposed to get help about:
+    prun:non-zero-exit
+But I couldn't open the help file:
+(?:    .*\n)+Sorry!
+--------------------------------------------------------------------------
+""",
 )
 
 outfname = sys.argv[2]
 with open(outfname, "r") as f:
     outText = f.read()
+# replace nul bytes
+outText = outText.replace("\0", "")
 for m in msgs:
     outText = re.sub(m, "", outText, flags=re.MULTILINE)
 with open(outfname, "w") as f:
