@@ -88,7 +88,7 @@ jobs:
           echo "pr_numbers=[$pr_numbers]" | tee "$GITHUB_OUTPUT"
       - name: Send mail for failed PR enumeration
         if: failure()
-        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
+        uses: dawidd6/action-send-mail@47af4a10b540781705f283a2cf1a9650713ac795 # v23
         with:
           server_address: ${{ secrets.SMTP_PROVIDER }}
           server_port: 465
@@ -179,7 +179,7 @@ jobs:
           cat "$EMAIL_BODY_FILENAME"
       - name: Send mail
         if: always()
-        uses: dawidd6/action-send-mail@67ce3558d613188179559c61d3565140cf389968 # v22
+        uses: dawidd6/action-send-mail@47af4a10b540781705f283a2cf1a9650713ac795 # v23
         with:
           server_address: ${{ secrets.SMTP_PROVIDER }}
           server_port: 465
