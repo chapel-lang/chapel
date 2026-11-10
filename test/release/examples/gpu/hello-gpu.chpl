@@ -4,6 +4,12 @@ use ChplConfig;
 config const N = 32;
 config const verbose = false;
 
+if CHPL_LOCALE_MODEL != "gpu" then
+  compilerError("Chapel was not compiled with support for GPUs - set CHPL_LOCALE_MODEL=gpu");
+
+if here.gpus.size == 0 then
+  halt("No GPUs available");
+
 var correct = true;
 const numGpusPerLocale = here.gpus.size;
 
