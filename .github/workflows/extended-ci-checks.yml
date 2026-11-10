@@ -670,6 +670,7 @@ jobs:
     name: Chapel paratest on linux64 with ofi
     uses: $/.github/workflows/ga-paratest.yml
     with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
       configuration: linux64-ofi-mpi
       pre-build-steps: |
         export CHPL_COMM=ofi
