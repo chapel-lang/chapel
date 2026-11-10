@@ -14,7 +14,7 @@ def title_comment(line):
 
 def metadata_comment(line):
     """Condition for a line to be a front matter comment"""
-    return line.startswith("//") and re.match(r"^\/\/ [a-zA-Z]+:.*$", line)
+    return line.startswith("//") and re.match(r"^\/\/ [a-zA-Z_]+:.*$", line)
 
 
 def to_pieces(handle, islearnChapelInYMinutes=False):
