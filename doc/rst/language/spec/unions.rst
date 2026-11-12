@@ -107,6 +107,11 @@ set.
 
       --checks
 
+   .. BLOCK-test-chapelsuppressif
+
+      # checks are always disabled with GPUs
+      CHPL_LOCALE_MODEL==gpu
+
 The currently active field of a union can be queried at runtime with
 the :proc:`~ChapelUnion.union.getActiveIndex` method. If the union is
 not yet explicitly initialized, then

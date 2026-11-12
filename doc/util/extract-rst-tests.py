@@ -30,6 +30,7 @@ match_output = re.compile(
 match_compopts = re.compile(r"\s*.. BLOCK-test-chapelcompopts\s*")
 match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
+match_suppressif = re.compile(r"\s*.. BLOCK-test-chapelsuppressif\s*")
 match_function = re.compile(r"\s*.. function::\s*")
 total_tests = 0
 
@@ -157,6 +158,7 @@ def extract_tests(rstfile, outdir):
             execopts = ""
             compopts = ""
             prediff = ""
+            suppressif = ""
 
             example_start = i - 1
             example_end = -1
@@ -232,6 +234,13 @@ def extract_tests(rstfile, outdir):
                         prediff += block
 
                 # Find lines like
+                #   .. BLOCK-test-chapelsuppressif
+                elif re.match(match_suppressif, line):
+                    i, block = read_block(lines, i)
+                    if block != "":
+                        suppressif += block
+
+                # Find lines like
                 #   .. code-block:: chapel
                 #   .. BLOCK-test-chapelnoprint
                 #   .. BLOCK-test-chapelpost
@@ -259,6 +268,8 @@ def extract_tests(rstfile, outdir):
             if prediff != "":
                 isexe = prediff.startswith("#!")
                 save_to(outdir, chapter, testname + ".prediff", prediff, isexe)
+            if suppressif != "":
+                save_to(outdir, chapter, testname + ".suppressif", suppressif)
 
             global total_tests
             total_tests += 1
