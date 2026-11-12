@@ -1,0 +1,1 @@
+subdir2/a.chpl --main-module=a
