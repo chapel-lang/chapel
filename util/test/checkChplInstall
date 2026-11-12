@@ -175,9 +175,19 @@ if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
     $CHPL_HOME/util/printchplenv --all --no-tidy
 fi
 
+GOODHINT=""
 if [[ -e ${TEST_DIR}/${TEST_JOB}.compopts ]]; then
-  COMP_FLAGS="$(cat ${TEST_DIR}/${TEST_JOB}.compopts)"
+  if [[ -x ${TEST_DIR}/${TEST_JOB}.compopts ]]; then
+    COMP_FLAGS="$(${TEST_DIR}/${TEST_JOB}.compopts)"
+  else
+    COMP_FLAGS="$(cat ${TEST_DIR}/${TEST_JOB}.compopts)"
+  fi
+  if [[ "${COMP_FLAGS}" == *"#"* ]]; then
+    read -r GOODHINT <<< "${COMP_FLAGS#*#}"
+    COMP_FLAGS="${COMP_FLAGS%%#*}"
+  fi
 fi
+
 
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
@@ -219,11 +229,15 @@ fi
 
 # Find number of locales and .good file
 NUMLOCALES=1
-GOOD=${TEST_DIR}/${TEST_JOB}.good
+GOODBASE=${TEST_DIR}/${TEST_JOB}
+if [ -n "${GOODHINT}" ]; then
+  GOODBASE=${TEST_DIR}/${GOODHINT}
+fi
+GOOD=${GOODBASE}.good
 if [ ${chpl_comm} == "none" ]; then
     # use comm-none specific good file if it exists
     if [ -f ${TEST_DIR}/${TEST_JOB}.comm-none.good ]; then
-        GOOD=${TEST_DIR}/${TEST_JOB}.comm-none.good
+        GOOD=${GOODBASE}.comm-none.good
     fi
 else
     # use specific NUMLOCALES if it exists
@@ -237,8 +251,8 @@ if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
     if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
         NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
         # if this is set, we probably need a locale specific good file
-        if [ -f ${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good ]; then
-            GOOD=${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good
+        if [ -f ${GOODBASE}.nl-${NUMLOCALES}.good ]; then
+            GOOD=${GOODBASE}.nl-${NUMLOCALES}.good
         fi
     fi
 fi

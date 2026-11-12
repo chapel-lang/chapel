@@ -1,0 +1,1 @@
+hello-gpu.chpl:8: error: Chapel was not compiled with support for GPUs - set CHPL_LOCALE_MODEL=gpu
