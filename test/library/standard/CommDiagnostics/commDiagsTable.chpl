@@ -10,7 +10,7 @@ proc runtrial(numtrials, printEmpty) {
       on loc do
         x = 1;
   stopCommDiagnostics();
-  printCommDiagnosticsTable(printEmpty);
+  printCommDiagnosticsTable(printEmptyColumns=printEmpty);
   writeln();
 }
 

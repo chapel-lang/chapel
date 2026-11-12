@@ -234,4 +234,50 @@ module GpuDiagnostics
   private inline proc resetGpuDiagnosticsHere() {
     chpl_gpu_resetDiagnosticsHere();
   }
+
+  record gpuDiagnosticsManager: contextManager {
+    var autoPrint: bool;
+    @chpldoc.nodoc
+    var diagnostics: [LocaleSpace] gpuDiagnostics;
+
+    proc init(autoPrint: bool = false) {
+      this.autoPrint = autoPrint;
+    }
+
+    proc get() {
+      return diagnostics;
+    }
+
+    proc enterContext() {
+      resetGpuDiagnostics();
+      startGpuDiagnostics();
+    }
+    proc ref exitContext(in e: owned Error?) {
+      stopGpuDiagnostics();
+      diagnostics = getGpuDiagnostics();
+
+      if autoPrint {
+        writeln(diagnostics);
+      }
+    }
+  }
+
+
+  /*
+    A context manager that turns on verbose GPU communication reporting for
+    the duration of the context.  See :proc:`startVerboseGpu` and
+    :proc:`stopVerboseGpu` for more information.
+  */
+  record verboseGpuManager: contextManager {
+    @chpldoc.nodoc
+    proc enterContext() {
+      startVerboseGpu();
+    }
+    @chpldoc.nodoc
+    proc exitContext(in e: owned Error?) {
+      stopVerboseGpu();
+    }
+  }
+
+
 }
