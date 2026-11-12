@@ -384,30 +384,14 @@ def test_directory(test, test_type, num_workers):
                 # don't run local 'sub_test's on --performance or --gen-graphs runs
                 run_local_sub_test = test_type == "run"
 
-            has_unsafe_par_pretest = (
-                "PRETEST" in files and "PRETEST_PARALLEL_SAFE" not in files
-            )
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
                 with cd(dir):
                     # clean dir
                     clean()
-
                     if not args.clean_only:
-                        # in parallel mode: defer running directories so they
-                        # can run concurrently. directories with PRETEST or
-                        # custom sub_test should not be defered (they may
-                        # generate new tests).
-                        if (
-                            parallel_mode
-                            and not has_unsafe_par_pretest
-                            and not run_local_sub_test
-                        ):
-                            parallel_dirs.append((dir, root))
-                        else:
-                            run_sub_tests([(dir, root)], num_workers)
-
+                        parallel_dirs.append((dir, root))
             # let user know no tests were found
             else:
                 logger.write("[No tests in directory {0}]".format(root))
@@ -417,9 +401,9 @@ def test_directory(test, test_type, num_workers):
                 # generate graphs for all tests in dir
                 generate_graphs()
 
-    # run any deferred directories concurrently
-    if parallel_mode and parallel_dirs:
-        run_sub_tests(parallel_dirs, num_workers)
+    # Run sub_test on gathered test directories, using the desired number of
+    # parallel workers.
+    run_sub_tests(parallel_dirs, num_workers)
 
 
 def summarize():
@@ -540,8 +524,11 @@ def sub_test_path(test_dir_path):
     return os.path.join(util_dir, "test", "sub_test")
 
 
-def sub_test_environment(test=None):
+def sub_test_environment(test_dir_path, test=None):
     env = os.environ.copy()
+    # Popen's cwd= does not update PWD, and the process-wide PWD can't be
+    # changed per-directory when running sub_tests concurrently.
+    env["PWD"] = os.path.abspath(test_dir_path)
     env["CHPL_TEST_UTIL_DIR"] = util_dir
 
     if test:
@@ -576,7 +563,7 @@ def invoke_sub_test(output, test_dir_path, test, for_files, path_for_log):
         p = subprocess.Popen(
             [sub_test, compiler],
             cwd=test_dir_path,
-            env=sub_test_environment(test),
+            env=sub_test_environment(test_dir_path, test),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
