@@ -2,7 +2,7 @@
 
 locale_model=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
 if [ "$locale_model" != "gpu" ]; then
-  echo "--no-checks # hello-gpu.nogpu.good"
+  echo "--no-checks # hello-gpu.nogpu"
 else
-  echo "--no-checks # hello-gpu.good"
+  echo "--no-checks # hello-gpu"
 fi
