@@ -181,50 +181,58 @@ proc pkgExists(pkgName: string) : bool {
   return status == 0;
 }
 
+record systemPkgInfo {
+  var name: string;
+  var version: string;
+  var libs: string;
+  var includes: string;
+
+  proc toToml() throws {
+    var t = new shared Toml(new map(string, shared Toml?));
+    t.set("name", name);
+    t.set("version", version);
+    t.set("libs", libs);
+    t.set("includes", includes);
+    return (name, t);
+  }
+}
+
 /* Retrieves build information for MasonUpdate */
 proc getPkgInfo(pkgName: string, version: string) throws {
 
-  var pkgDom: domain(string, parSafe=false);
-  var pkgToml: [pkgDom] shared Toml?;
-  var pkgInfo = new shared Toml(pkgToml);
+  var pkgInfo = new systemPkgInfo();
+  pkgInfo.name = pkgName;
+  pkgInfo.version = getPkgVariable(pkgName, "--modversion");
+  if pkgInfo.version != version && version != "*" then
+    throw new MasonError("Unable to locate " + pkgName +
+                          ": " +version + "\n Found " + pkgInfo.version);
+  pkgInfo.libs = getPkgVariable(pkgName, "--libs");
+  pkgInfo.includes = getPkgVariable(pkgName, "--cflags-only-I");
 
-  const pcVersion = getPkgVariable(pkgName, "--modversion");
-  const libs = getPkgVariable(pkgName, "--libs");
-  const includes = getPkgVariable(pkgName, "--cflags-only-I");
-
-  if pcVersion == "" && !pkgExists(pkgName) {
+  if pkgInfo.version == "" && !pkgExists(pkgName) {
     throw new MasonError("No pkg-config package by the name of: " + pkgName);
   }
 
-  pkgInfo.set("name", pkgName);
-  pkgInfo.set("version", pcVersion);
-  pkgInfo.set("libs", libs);
-  pkgInfo.set("includes", includes);
-
-  if pcVersion != version && version != "*" {
-    throw new MasonError("Unable to locate " + pkgName +
-                          ": " +version + "\n Found " + pcVersion);
-  }
   return pkgInfo;
 }
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
 proc getPCDeps(exDeps: Toml) throws {
-
-  if !pkgConfigExists() {
-    throw new MasonError("pkg-config is not installed");
-  }
-
   var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
     const pkgInfo = getPkgInfo(name, vers!.s);
     exDom += name;
-    exDepTree[name] = pkgInfo;
+    exDepTree[name] = pkgInfo.toToml()[1];
   }
   return exDepTree;
 }
-
+proc getPCDep(name: string, version: string) throws {
+  if !pkgConfigExists() {
+    throw new MasonError("pkg-config is not installed");
+  }
+  return getPkgInfo(name, version);
+}
 }
