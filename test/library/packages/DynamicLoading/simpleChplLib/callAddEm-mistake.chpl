@@ -15,4 +15,5 @@ try {
   writeln(e);
 }
 
-exit(0); // exit early to avoid fault during teardown on linux
+// Explicit 'exit' call is no longer needed - teardown happens properly.
+// exit(0);
