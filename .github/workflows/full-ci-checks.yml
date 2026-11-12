@@ -479,3 +479,37 @@ jobs:
       pre-build-steps: |
         export CHPL_LIB_PIC=pic
       make-targets: all test-venv mason-deps spectests
+  test_valgrind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ inputs.CHAPEL_CI_IMAGE }}
+      options: --user chpl-tester
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          key: x86-default
+          save: false
+      - name: Build and Test the compiler under valgrind
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        with:
+          setup: |
+            source util/cron/test-valgrind.bash
+  paratest-valgrindexe:
+    name: Chapel paratest with valgrind on executables
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: valgrindexe
+      cron-script: util/cron/test-valgrindexe.bash
+      start-test-args: -valgrindexe
+      ccache-key: x86-default
+      ccache-save: false
+      timeout-minutes: 360
