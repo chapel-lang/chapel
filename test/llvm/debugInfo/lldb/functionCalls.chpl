@@ -112,7 +112,16 @@ proc main() {
 // CHECK: p myFunc(10)
 // CHECK-NEXT: (int(64)) 11
 // CHECK: p getMyClass()
-// TODO: need struct returns to work properly for this with `--no-local`
+// TODO: the pretty printer shows a wide 'owned' returned by a call as nil
 // CHECK-LOCAL-NEXT: (owned MyClass) 0x{{[0-9a-f]+}} {
 // CHECK-LOCAL-NEXT: super
 // CHECK-LOCAL-NEXT: s = "This is MyClass"
+
+// CHECK: expr -R -- getMyClass()
+// CHECK-NEXT: ({{.*}}) ${{[0-9]+}} = {
+// CHECK-LOCAL-NEXT: chpl_p = 0x{{0*[1-9a-f][0-9a-f]*}}{{$}}
+// CHECK-NOLOCAL-NEXT: chpl_p = {
+// CHECK-NOLOCAL-NEXT: locale = {
+// CHECK-NOLOCAL-NEXT: node = 0
+// CHECK-NOLOCAL-NEXT: }
+// CHECK-NOLOCAL-NEXT: addr = 0x{{0*[1-9a-f][0-9a-f]*}}{{$}}

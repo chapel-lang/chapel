@@ -991,6 +991,23 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
   }
 }
 
+#ifdef HAVE_LLVM
+// Stores zero one scalar at a time
+static void storeZeroByField(llvm::Type* ty, llvm::Value* ptr) {
+  auto irBuilder = gGenInfo->irBuilder;
+  if (auto sTy = llvm::dyn_cast<llvm::StructType>(ty)) {
+    for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+      llvm::Value* fieldPtr = irBuilder->CreateStructGEP(sTy, ptr, i);
+      trackLLVMValue(fieldPtr);
+      storeZeroByField(sTy->getElementType(i), fieldPtr);
+    }
+  } else {
+    auto store = irBuilder->CreateStore(llvm::Constant::getNullValue(ty), ptr);
+    trackLLVMValue(store);
+  }
+}
+#endif
+
 void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
@@ -1062,9 +1079,7 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          llvm::StoreInst* store = info->irBuilder->CreateStore(
-              llvm::Constant::getNullValue(varType), varAlloca);
-          trackLLVMValue(store);
+          storeZeroByField(varType, varAlloca);
         }
       }
     }
@@ -2063,6 +2078,79 @@ GenRet TypeSymbol::codegen() {
 
 #ifdef HAVE_LLVM
 
+bool useAggregateABI() {
+  return !gCodegenGPU;
+}
+
+llvm::Type* codegenFormalTypeLLVM(const FunctionType::Formal* formal) {
+  return codegenFormalType(formal->qual(), formal->type()).type;
+}
+
+static bool
+collectAggregateLeaves(llvm::Type* ty, AggregateLeafPath& path,
+                       llvm::SmallVectorImpl<AggregateLeafPath>& out) {
+  if (auto sTy = llvm::dyn_cast<llvm::StructType>(ty)) {
+    for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+      path.push_back(i);
+      bool ok = collectAggregateLeaves(sTy->getElementType(i), path, out);
+      path.pop_back();
+      if (!ok) return false;
+    }
+    return true;
+  }
+  if (ty->isArrayTy()) return false;
+  out.push_back(path);
+  return true;
+}
+
+// Like C, larger aggregates are passed and returned through memory
+static bool isLargeAggregate(llvm::Type* ty) {
+  const uint64_t maxRegisterAggregateSize = 16;
+  return gGenInfo->module->getDataLayout().getTypeAllocSize(ty) >
+         maxRegisterAggregateSize;
+}
+
+bool
+getAggregateArgLeaves(llvm::Type* ty,
+                      llvm::SmallVectorImpl<AggregateLeafPath>& leafPaths) {
+  const size_t maxLeaves = 4;
+  AggregateLeafPath path;
+  leafPaths.clear();
+  return !isLargeAggregate(ty) &&
+         collectAggregateLeaves(ty, path, leafPaths) &&
+         leafPaths.size() <= maxLeaves;
+}
+
+bool isAggregateReturnedIndirectly(llvm::Type* ty) {
+  return isLargeAggregate(ty);
+}
+
+bool getAggregateReturnLeaf(llvm::Type* ty, AggregateLeafPath& leafPath) {
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
+  AggregateLeafPath path;
+  if (!ty->isStructTy() || !collectAggregateLeaves(ty, path, leafPaths) ||
+      leafPaths.size() != 1)
+    return false;
+  leafPath = leafPaths[0];
+  return true;
+}
+
+bool appendAggregateABIParamTypes(llvm::Type* ty,
+                                  std::vector<llvm::Type*>& out) {
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
+  if (!ty->isAggregateType()) {
+    out.push_back(ty);
+  } else if (getAggregateArgLeaves(ty, leafPaths)) {
+    for (const auto& path : leafPaths)
+      out.push_back(llvm::ExtractValueInst::getIndexedType(ty, path));
+  } else {
+    auto stackSpace = gGenInfo->module->getDataLayout().getAllocaAddrSpace();
+    out.push_back(getPointerType(ty, stackSpace));
+    return true;
+  }
+  return false;
+}
+
 static void
 pushAllFieldTypesRecursively(const char* name,
                              Type* t,
@@ -2236,6 +2324,7 @@ codegenFunctionTypeLLVMImpl(
   if (ft->hasForeignLinkage()) {
     CGI = &getClangABIInfo(ft);
   }
+  bool aggABI = CGI == nullptr && useAggregateABI();
 
   const unsigned int stackSpace = layout.getAllocaAddrSpace();
   llvm::Type* chapelReturnTy = nullptr; // Chapel return type as an llvm type
@@ -2283,6 +2372,20 @@ codegenFunctionTypeLLVMImpl(
       b.addAttribute(llvm::Attribute::InAlloca);
       llvmAddAttr(ctx, outAttrs, argTys.size(), b);
     }
+  } else if (aggABI && returnTy->isAggregateType()) {
+    AggregateLeafPath leafPath;
+    if (isAggregateReturnedIndirectly(returnTy)) {
+      argTys.push_back(getPointerType(returnTy, stackSpace));
+      outArgNames.push_back("indirect_return");
+      auto b = llvmPrepareAttrBuilder(ctx);
+      llvmAttachStructRetAttr(b, returnTy);
+      b.addAttribute(llvm::Attribute::NoAlias);
+      llvmAddAttr(ctx, outAttrs, argTys.size(), b);
+      returnTy = llvm::Type::getVoidTy(ctx);
+    } else if (getAggregateReturnLeaf(returnTy, leafPath)) {
+      // like C, return the first leaf of the aggregate directly
+      returnTy = llvm::ExtractValueInst::getIndexedType(returnTy, leafPath);
+    }
   }
 
   for (int i = 0; i < ft->numFormals(); i++) {
@@ -2296,20 +2399,34 @@ codegenFunctionTypeLLVMImpl(
     if (CGI) {
       FnSymbol* fn = nullptr;
       argInfo = getCGArgInfo(CGI, clangArgNum, fn);
-    } else if (useDarwinArmFix(formalInfo->type())) {
-      argInfo = getSingleCGArgInfo(formalInfo->type());
     }
 
     // do not print locale argument, end count, dummy class
     if (!addedInfo.isGenerated) continue;
+
+    auto argTy = codegenFormalType(formalInfo->qual(),
+                                   formalInfo->type()).type;
+
+    if (aggABI && argTy->isAggregateType()) {
+      size_t first = argTys.size();
+      bool indirect = appendAggregateABIParamTypes(argTy, argTys);
+      for (size_t k = first; k < argTys.size(); k++) {
+        outArgNames.push_back(indirect ? astr(cname, ".indirect")
+                                       : astr(cname, ".", istr(k - first)));
+      }
+      clangArgNum++;
+      continue;
+    }
+
+    if (!CGI && useDarwinArmFix(formalInfo->type())) {
+      argInfo = getSingleCGArgInfo(formalInfo->type());
+    }
 
     if (argInfo) {
       if (argInfo->isIgnore() || argInfo->isInAlloca())
         continue; // ignore - inalloca handled separately
     }
 
-    auto argTy = codegenFormalType(formalInfo->qual(),
-                                   formalInfo->type()).type;
     if (argInfo) {
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
         argTys.push_back(paddingTy);
@@ -2915,6 +3032,27 @@ static GenRet createTempVarForFormal(ArgSymbol* astArg, llvm::Value* llvmArg) {
   return createTempVarWith(gArg);
 }
 
+// Stores the next LLVM arguments to the leaves of the aggregate at 'ptr'
+static void storeLeavesFromArgs(llvm::Type* ty, llvm::Value* ptr,
+                                llvm::ArrayRef<AggregateLeafPath> leafPaths,
+                                llvm::Function::arg_iterator& ai) {
+  llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
+  const llvm::DataLayout& DL = gGenInfo->module->getDataLayout();
+  llvm::Align align = llvm::cast<llvm::AllocaInst>(ptr)->getAlign();
+  for (const auto& path : leafPaths) {
+    llvm::SmallVector<llvm::Value*, 4> idx = { irBuilder->getInt32(0) };
+    for (unsigned i: path)
+      idx.push_back(irBuilder->getInt32(i));
+    llvm::Value* gep = irBuilder->CreateInBoundsGEP(ty, ptr, idx);
+    trackLLVMValue(gep);
+    uint64_t offset = DL.getIndexedOffsetInType(ty, idx);
+    auto store =
+      irBuilder->CreateAlignedStore(&*ai++, gep,
+                                    llvm::commonAlignment(align, offset));
+    trackLLVMValue(store);
+  }
+}
+
 #endif
 
 void FnSymbol::codegenDef() {
@@ -3064,8 +3202,43 @@ void FnSymbol::codegenDef() {
         INT_FATAL("TODO");
     }
 
+    FunctionType* ft = computeAndSetType();
+    bool aggABI = useAggregateABI() && !ft->hasForeignLinkage();
+    if (aggABI && ft->returnType() != dtVoid &&
+        ft->returnType() != dtNothing &&
+        func->getReturnType()->isVoidTy() &&
+        ft->returnType()->codegen().type->isAggregateType()) {
+      info->currentFunctionRetPtr = &*ai++;
+    }
+
+    int formalIdx = -1;
     for_formals(arg, this) {
+      formalIdx++;
       if (arg->id == breakOnCodegenID) debuggerBreakHere();
+
+      if (aggABI && !arg->hasFlag(FLAG_NO_CODEGEN)) {
+        llvm::Type* formalTy = codegenFormalTypeLLVM(ft->formal(formalIdx));
+        if (formalTy->isAggregateType()) {
+          Type* argType = arg->typeInfo();
+          llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
+          if (getAggregateArgLeaves(formalTy, leafPaths)) {
+            GenRet tmp = createTempVar(argType);
+            storeLeavesFromArgs(formalTy, tmp.val, leafPaths, ai);
+            info->lvt->addValue(arg->cname, tmp.val, GEN_PTR,
+                                !isSignedType(argType));
+          } else {
+            // the caller passes a copy, so it can be used directly
+            llvm::Argument& llArg = *ai++;
+            info->lvt->addValue(arg->cname, &llArg, GEN_PTR,
+                                !isSignedType(argType));
+          }
+          if (debugInfo && debugInfo->shouldAddDebugInfoFor(arg)) {
+            debugInfo->getFormalArg(arg, clangArgNum+1);
+          }
+          clangArgNum++;
+          continue;
+        }
+      }
 
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
@@ -3279,8 +3452,10 @@ void FnSymbol::codegenDef() {
   body->codegen();
   flushStatements();
 #ifdef HAVE_LLVM
+  if (!outfile) eraseDeadAggregateValues(func);
   info->currentStackVariables.clear();
   info->currentFunctionABI = NULL;
+  info->currentFunctionRetPtr = nullptr;
 #endif
 
   if( outfile ) {

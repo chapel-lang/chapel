@@ -42,8 +42,11 @@
 #include "wellknown.h"
 
 #ifdef HAVE_LLVM
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/ValueHandle.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
@@ -437,6 +440,139 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
   trackLLVMValue(gep);
   return gep;
 }
+static bool isWideOrLocaleIdType(Type* t) {
+  return t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+         t == LOCALE_ID_TYPE;
+}
+
+// When not optimizing (FastISel), copy other aggregates with memcpy like clang
+static bool shouldMemcpyAggregate(Type* t) {
+  if (optimizeCCode || gCodegenGPU || isWideOrLocaleIdType(t)) return false;
+  llvm::Type* ty = t->codegen().type;
+  return ty && ty->isAggregateType();
+}
+
+// Fields already read from an aggregate load, keyed by (load, field index)
+static llvm::DenseMap<std::pair<llvm::Value*, unsigned>, llvm::Value*> aggregateFieldCache;
+// Aggregate values that may become unused once their fields are read directly
+static std::vector<llvm::WeakVH> aggregateValuesToErase;
+// Temporaries holding call results, which are never written after the call
+static llvm::SmallPtrSet<llvm::Value*, 16> immutableAggregateTemps;
+
+static void noteAggregateValueToErase(llvm::Value* v) {
+  if (llvm::isa<llvm::Instruction>(v))
+    aggregateValuesToErase.push_back(v);
+}
+
+// If 'v' was loaded from an immutable temporary, returns that temporary
+static llvm::Value* getImmutableTempLoadedBy(llvm::Value* v) {
+  auto ld = llvm::dyn_cast<llvm::LoadInst>(v);
+  if (ld && ld->isSimple() &&
+      immutableAggregateTemps.count(ld->getPointerOperand()))
+    return ld->getPointerOperand();
+  return nullptr;
+}
+
+static void setInsertPointAfter(llvm::Instruction* inst) {
+  llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
+  if (llvm::Instruction* next = inst->getNextNode())
+    irBuilder->SetInsertPoint(next);
+  else
+    irBuilder->SetInsertPoint(inst->getParent());
+  irBuilder->SetCurrentDebugLocation(inst->getDebugLoc());
+}
+
+// can we avoid extractvalue and just compute the field directly with a GEP and load?
+static bool canGetAggregateField(llvm::Value* agg, unsigned idx) {
+  if (auto c = llvm::dyn_cast<llvm::Constant>(agg))
+    return c->getAggregateElement(idx) != nullptr;
+  if (auto iv = llvm::dyn_cast<llvm::InsertValueInst>(agg)) {
+    if (iv->getIndices()[0] != idx)
+      return canGetAggregateField(iv->getAggregateOperand(), idx);
+    return iv->getNumIndices() == 1;
+  }
+  if (auto ld = llvm::dyn_cast<llvm::LoadInst>(agg))
+    return ld->isSimple() && ld->getType()->isStructTy();
+  return false;
+}
+
+static bool canGetAllAggregateFields(llvm::Value* agg) {
+  auto sTy = llvm::dyn_cast<llvm::StructType>(agg->getType());
+  if (!sTy) return false;
+  for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+    if (!canGetAggregateField(agg, i)) return false;
+  }
+  return true;
+}
+
+// Returns field 'idx' of the struct value 'agg'. Fields of a load are read
+// with a GEP and a scalar load placed right after it
+// Only falls back to an extractvalue when there is no other way.
+static llvm::Value* getAggregateField(llvm::Value* agg, unsigned idx) {
+  GenInfo* info = gGenInfo;
+  llvm::IRBuilder<>* irBuilder = info->irBuilder;
+
+  if (auto c = llvm::dyn_cast<llvm::Constant>(agg)) {
+    if (llvm::Constant* elt = c->getAggregateElement(idx))
+      return elt;
+  } else if (auto iv = llvm::dyn_cast<llvm::InsertValueInst>(agg)) {
+    if (iv->getIndices()[0] != idx)
+      return getAggregateField(iv->getAggregateOperand(), idx);
+    if (iv->getNumIndices() == 1)
+      return iv->getInsertedValueOperand();
+  } else if (canGetAggregateField(agg, idx)) {
+    auto ld = llvm::cast<llvm::LoadInst>(agg);
+    auto key = std::make_pair(agg, idx);
+    auto it = aggregateFieldCache.find(key);
+    if (it != aggregateFieldCache.end())
+      return it->second;
+
+    auto sTy = llvm::cast<llvm::StructType>(ld->getType());
+    const llvm::DataLayout& DL = info->module->getDataLayout();
+    uint64_t offset = DL.getStructLayout(sTy)->getElementOffset(idx);
+
+    llvm::IRBuilderBase::InsertPointGuard guard(*irBuilder);
+    setInsertPointAfter(ld);
+
+    llvm::Value* gep =
+      irBuilder->CreateStructGEP(sTy, ld->getPointerOperand(), idx);
+    trackLLVMValue(gep);
+    llvm::LoadInst* field =
+      irBuilder->CreateAlignedLoad(sTy->getElementType(idx), gep,
+                                   llvm::commonAlignment(ld->getAlign(),
+                                                         offset));
+    trackLLVMValue(field);
+    field->copyMetadata(*ld, {llvm::LLVMContext::MD_tbaa,
+                              llvm::LLVMContext::MD_alias_scope,
+                              llvm::LLVMContext::MD_noalias,
+                              llvm::LLVMContext::MD_access_group});
+
+    aggregateFieldCache[key] = field;
+    noteAggregateValueToErase(ld);
+    return field;
+  }
+
+  llvm::Value* ret = irBuilder->CreateExtractValue(agg, idx);
+  trackLLVMValue(ret);
+  return ret;
+}
+
+void eraseDeadAggregateValues(llvm::Function* fn) {
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (auto v: aggregateValuesToErase) {
+      auto inst = llvm::dyn_cast_or_null<llvm::Instruction>(v);
+      if (inst && inst->getFunction() == fn && inst->use_empty()) {
+        inst->eraseFromParent();
+        changed = true;
+      }
+    }
+  }
+  aggregateValuesToErase.clear();
+  aggregateFieldCache.clear();
+  immutableAggregateTemps.clear();
+}
 
 #endif
 
@@ -498,11 +634,11 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   if (locale.chplType && locale.chplType->isRef()) {
     locale = codegenValue(codegenDeref(locale));
   }
-  if( !fLLVMWideOpt ) {
-    // Create a stack-local stored wide pointer
-    // of the appropriate type.
-    ret = createTempVar(wideRefType);
-    if( info->cfile ) {
+  if (!fLLVMWideOpt) {
+    if (info->cfile) {
+      // Create a stack-local stored wide pointer
+      // of the appropriate type.
+      ret = createTempVar(wideRefType);
       std::string localeAssign;
       std::string addrAssign;
       ret = codegenValue(ret); // remove the & part.
@@ -513,26 +649,31 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     } else {
 #ifdef HAVE_LLVM
       GenRet genWideRefType = wideRefType;
-      llvm::Type* gepTy = genWideRefType.type;
-      INT_ASSERT(gepTy);
+      auto wideTy = llvm::cast<llvm::StructType>(genWideRefType.type);
 
-      llvm::Value* adr = info->irBuilder->CreateStructGEP(
-          gepTy, ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->irBuilder->CreateStructGEP(
-          gepTy, ret.val, WIDE_GEP_LOC);
-      trackLLVMValue(adr);
-      trackLLVMValue(loc);
+      llvm::Value* loc = locale.val;
+      llvm::Type* locTy = wideTy->getElementType(WIDE_GEP_LOC);
+      if (loc->getType() != locTy)
+        loc = convertValueToType(loc, locTy, false, true);
+      llvm::Value* addr = raddr.val;
+      llvm::Type* addrTy = wideTy->getElementType(WIDE_GEP_ADDR);
+      if (addr->getType() != addrTy)
+        addr = convertValueToType(addr, addrTy, false, true);
+      INT_ASSERT(loc && addr);
 
-      llvm::Value* addrVal = raddr.val;
+      // Erased at the end of the function if only its fields end up used.
+      llvm::Value* wide = llvm::PoisonValue::get(wideTy);
+      wide = info->irBuilder->CreateInsertValue(wide, loc, WIDE_GEP_LOC);
+      trackLLVMValue(wide);
+      noteAggregateValueToErase(wide);
+      wide = info->irBuilder->CreateInsertValue(wide, addr, WIDE_GEP_ADDR);
+      trackLLVMValue(wide);
+      noteAggregateValueToErase(wide);
 
-      llvm::StoreInst* st1 = info->irBuilder->CreateStore(addrVal, adr);
-      llvm::StoreInst* st2 = info->irBuilder->CreateStore(locale.val, loc);
-      trackLLVMValue(st1);
-      trackLLVMValue(st2);
+      ret.val = wide;
+      ret.isUnsigned = !isSignedType(wideRefType);
 #endif
     }
-    // Load whatever we stored...
-    ret = codegenValue(ret);
   } else {
 #ifdef HAVE_LLVM
     GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
@@ -640,17 +781,32 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
 // appropriate metadata based upon the Chapel type of val.
 //
 static
-llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
-                                  llvm::Value* ptr,
-                                  Type* valType = NULL,
-                                  Type* surroundingStruct = NULL,
-                                  uint64_t fieldOffset = 0,
-                                  llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
-                                  llvm::MDNode* aliasScope = NULL,
-                                  llvm::MDNode* noalias = NULL,
-                                  bool isStoreOfLocalVar = true)
+void codegenStoreLLVM(llvm::Value* val,
+                      llvm::Value* ptr,
+                      Type* valType = NULL,
+                      Type* surroundingStruct = NULL,
+                      uint64_t fieldOffset = 0,
+                      llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                      llvm::MDNode* aliasScope = NULL,
+                      llvm::MDNode* noalias = NULL,
+                      bool isStoreOfLocalVar = true)
 {
   GenInfo *info = gGenInfo;
+
+  // store as individual fields rather than a full struct store
+  if (valType && isWideOrLocaleIdType(valType) &&
+      canGetAllAggregateFields(val)) {
+    auto sTy = llvm::cast<llvm::StructType>(val->getType());
+    for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+      llvm::Value* fieldPtr = info->irBuilder->CreateStructGEP(sTy, ptr, i);
+      trackLLVMValue(fieldPtr);
+      codegenStoreLLVM(getAggregateField(val, i), fieldPtr, valType,
+                       surroundingStruct, fieldOffset, fieldTbaaTypeDescriptor,
+                       aliasScope, noalias, isStoreOfLocalVar);
+    }
+    return;
+  }
+
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   trackLLVMValue(ret);
   llvm::MDNode* tbaa = NULL;
@@ -678,16 +834,14 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
     if (loopData.markMemoryOps)
       ret->setMetadata("llvm.access.group", loopData.accessGroup);
   }
-
-  return ret;
 }
 
 
 
 static
-llvm::StoreInst* codegenStoreLLVM(GenRet val,
-                                  GenRet ptr,
-                                  Type* valType = NULL)
+void codegenStoreLLVM(GenRet val,
+                      GenRet ptr,
+                      Type* valType = NULL)
 {
   if( val.chplType && !valType ) valType = val.chplType;
   if( ptr.chplType && !valType ) {
@@ -709,11 +863,11 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
-                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
-                          ptr.aliasScope,
-                          ptr.noalias,
-                          !ptr.mustPointOutsideOrderIndependentLoop);
+  codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
+                   ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                   ptr.aliasScope,
+                   ptr.noalias,
+                   !ptr.mustPointOutsideOrderIndependentLoop);
 }
 
 // in some cases, we really really want pointers to stay flat pointers and not
@@ -1036,8 +1190,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
         trackLLVMValue(ret.val);
       } else {
         ret.isLVPtr = GEN_VAL;
-        ret.val = info->irBuilder->CreateExtractValue(ws.val, field, fname);
-        trackLLVMValue(ret.val);
+        ret.val = getAggregateField(ws.val, field);
       }
       assert(ret.val);
     } else {
@@ -1146,10 +1299,22 @@ static GenRet codegenRnode(GenRet wide){
   Type* type = NODE_ID_TYPE;
 
   if( !fLLVMWideOpt ) {
-    ret = codegenCallExpr("chpl_nodeFromLocaleID",
-                          codegenValue(
-                              codegenWideThingField(wide, WIDE_GEP_LOC)),
-                          /*ln*/codegenZero(), /*fn*/codegenZero32());
+    GenRet loc = codegenValue(codegenWideThingField(wide, WIDE_GEP_LOC));
+    if (gGenInfo->cfile) {
+      ret = codegenCallExpr("chpl_nodeFromLocaleID", loc,
+                            /*ln*/codegenZero(), /*fn*/codegenZero32());
+    } else {
+#ifdef HAVE_LLVM
+      // Same as chpl_nodeFromLocaleID, without passing the struct by value.
+      static int nodeField = -1;
+      if (nodeField < 0) {
+        bool isCArrayField = false;
+        nodeField = getCRecordMemberGEP("chpl_localeID_t", "node",
+                                        isCArrayField);
+      }
+      ret.val = getAggregateField(loc.val, nodeField);
+#endif
+    }
   } else {
 #ifdef HAVE_LLVM
     Type* wideRefType = NULL;
@@ -3013,6 +3178,70 @@ static void codegenCallExprInnerCoerceError(FnSymbol* fn,
   if (isExternOrExport) USR_PRINT("check that the argument types match the C function signature");
   USR_STOP();
 }
+
+// Passes the aggregate 'arg' to a formal of type 'formalTy' as its scalar
+// leaves or as a pointer to a copy (see useAggregateABI)
+static void codegenAggregateABIArg(GenRet arg, llvm::Type* formalTy,
+                                   std::vector<llvm::Value*>& llArgs) {
+  GenInfo* info = gGenInfo;
+  llvm::Value* val = arg.val;
+  if (val->getType() != formalTy)
+    val = convertValueToType(val, formalTy, !arg.isUnsigned, true);
+  INT_ASSERT(val);
+
+  llvm::SmallVector<AggregateLeafPath, 4> leafPaths;
+  if (getAggregateArgLeaves(formalTy, leafPaths)) {
+    for (const auto& path : leafPaths) {
+      llvm::Value* leaf = val;
+      for (unsigned idx : path) leaf = getAggregateField(leaf, idx);
+      llArgs.push_back(leaf);
+    }
+    return;
+  }
+
+  // at the start of the entry block so it dominates 'val'
+  llvm::BasicBlock& entry =
+    info->irBuilder->GetInsertBlock()->getParent()->getEntryBlock();
+  llvm::IRBuilder<> entryBuilder(&entry, entry.begin());
+  llvm::AllocaInst* copy = entryBuilder.CreateAlloca(formalTy, nullptr,
+                                                     "chpl_arg_copy");
+  trackLLVMValue(copy);
+  setValueAlignment(copy, arg.chplType, nullptr);
+
+  auto ld = llvm::dyn_cast<llvm::LoadInst>(val);
+  if (ld && ld->isSimple()) {
+    llvm::IRBuilderBase::InsertPointGuard guard(*info->irBuilder);
+    setInsertPointAfter(ld);
+    const llvm::DataLayout& DL = info->module->getDataLayout();
+    llvm::CallInst* memcpy =
+      info->irBuilder->CreateMemCpy(copy, copy->getAlign(),
+                                    ld->getPointerOperand(), ld->getAlign(),
+                                    DL.getTypeAllocSize(formalTy));
+    trackLLVMValue(memcpy);
+    noteAggregateValueToErase(ld);
+  } else {
+    codegenStoreLLVM(val, copy, arg.chplType);
+  }
+  llArgs.push_back(copy);
+}
+
+// Like convertValueToType, but stores the fields of 'arg' one at a time.
+static llvm::Value* coerceAggregateThroughMemory(GenRet arg,
+                                                 llvm::Type* toTy) {
+  GenInfo* info = gGenInfo;
+  const llvm::DataLayout& DL = info->module->getDataLayout();
+  llvm::Type* fromTy = arg.val->getType();
+  llvm::Type* allocTy =
+    DL.getTypeStoreSize(toTy) >= DL.getTypeStoreSize(fromTy) ? toTy : fromTy;
+  llvm::AllocaInst* tmp =
+    createAllocaInFunctionEntry(info->irBuilder, allocTy, "coerce");
+  tmp->setAlignment(std::max(DL.getABITypeAlign(fromTy),
+                             DL.getABITypeAlign(toTy)));
+  codegenStoreLLVM(arg.val, tmp, arg.chplType);
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(toTy, tmp);
+  trackLLVMValue(ret);
+  return ret;
+}
 #endif
 
 // if fn is non-NULL, we use that to decide what to dereference.
@@ -3076,6 +3305,10 @@ static GenRet codegenCallExprInner(GenRet function,
     unsigned int stackSpace = layout.getAllocaAddrSpace();
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
+    bool aggABI = useAggregateABI() &&
+                  (chplFnType ? !chplFnType->hasForeignLinkage()
+                              : fnTyArg != nullptr);
+
     // Get the clang ABI info.
     if (isExternOrExport) {
       if (fn) {
@@ -3084,7 +3317,7 @@ static GenRet codegenCallExprInner(GenRet function,
         CGI = &getClangABIInfo(chplFnType);
       }
       INT_ASSERT(CGI != NULL);
-    } else if (FD != NULL) {
+    } else if (FD != NULL && !aggABI) {
       CGI = &getClangABIInfoFD(FD);
     }
 
@@ -3120,6 +3353,8 @@ static GenRet codegenCallExprInner(GenRet function,
 
     std::vector<llvm::Value *> llArgs;
     llvm::AllocaInst* sret = NULL;
+    AggregateLeafPath retLeafPath;
+    bool returnsLeaf = false;
     llvm::Type* chapelRetTy = NULL;
     bool chplRetTySigned = false;
     int retAlignment = ALIGNMENT_DEFER;
@@ -3144,7 +3379,7 @@ static GenRet codegenCallExprInner(GenRet function,
       }
     }
 
-   if (CGI == nullptr && fnType != nullptr &&
+   if (CGI == nullptr && !aggABI && fnType != nullptr &&
         fnType->getReturnType()->isVoidTy() &&
         fnType->getNumParams() >= 1 &&
         func && func->hasStructRetAttr())
@@ -3163,6 +3398,14 @@ static GenRet codegenCallExprInner(GenRet function,
         sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
         llArgs.push_back(sret);
       }
+    } else if (aggABI && chapelRetTy && chapelRetTy->isAggregateType()) {
+      if (isAggregateReturnedIndirectly(chapelRetTy)) {
+        sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
+        llArgs.push_back(sret);
+      } else if (getAggregateReturnLeaf(chapelRetTy, retLeafPath)) {
+        sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
+        returnsLeaf = true;
+      }
     }
 
     ArgSymbol* formal = NULL;
@@ -3170,6 +3413,21 @@ static GenRet codegenCallExprInner(GenRet function,
       formal = fn->getFormal(1);
 
     for (size_t i = 0; i < args.size(); i++) {
+      if (aggABI) {
+        llvm::Type* formalTy = nullptr;
+        if (!chplFnType)
+          formalTy = args[i].val->getType();
+        else if ((int) i < chplFnType->numFormals())
+          formalTy = codegenFormalTypeLLVM(chplFnType->formal(i));
+
+        if (formalTy && formalTy->isAggregateType()) {
+          codegenAggregateABIArg(args[i], formalTy, llArgs);
+          if (formal)
+            formal = next_formal(formal);
+          continue;
+        }
+      }
+
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
         argInfo = getCGArgInfo(CGI, i, fn);
@@ -3269,8 +3527,15 @@ static GenRet codegenCallExprInner(GenRet function,
                 GenRet tmp = args[i];
                 llvm::Value* val = tmp.val;
 
-                val = convertValueToType(val, argInfo->getCoerceToType(),
-                                         !tmp.isUnsigned, true);
+                if (useAggregateABI() && tmp.chplType &&
+                    isWideOrLocaleIdType(tmp.chplType) &&
+                    canGetAllAggregateFields(val)) {
+                  val = coerceAggregateThroughMemory(tmp,
+                                                     argInfo->getCoerceToType());
+                } else {
+                  val = convertValueToType(val, argInfo->getCoerceToType(),
+                                           !tmp.isUnsigned, true);
+                }
                 if (val == nullptr)
                   codegenCallExprInnerCoerceError(fn, callLoc, func, formal, isExternOrExport);
                 llArgs.push_back(val);
@@ -3391,8 +3656,19 @@ static GenRet codegenCallExprInner(GenRet function,
 
     ret.val = c;
 
-    if( sret ) {
+    if (sret) {
+      if (returnsLeaf) {
+        llvm::SmallVector<llvm::Value*, 4> idxs = {irBuilder->getInt32(0)};
+        for (unsigned idx : retLeafPath)
+          idxs.push_back(irBuilder->getInt32(idx));
+        llvm::Value* leafPtr =
+          irBuilder->CreateInBoundsGEP(chapelRetTy, sret, idxs);
+        trackLLVMValue(leafPtr);
+        trackLLVMValue(irBuilder->CreateStore(c, leafPtr));
+      }
       ret.val = codegenLoadLLVM(sret, fn?(fn->retType):(NULL));
+      immutableAggregateTemps.insert(sret);
+      noteAggregateValueToErase(ret.val);
     }
 
     if (chapelRetTy && ret.val->getType() != chapelRetTy) {
@@ -3915,10 +4191,12 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
         eltTy = chplType->codegen().type;
       }
 
-      if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+      if (chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+      } else if (chplType && shouldMemcpyAggregate(chplType)) {
+        useMemcpy = true;
+      } else if (eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
                                        eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
@@ -3927,7 +4205,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       }
     }
 
-    if( !useMemcpy ) {
+    if (!useMemcpy) {
       // Do it with store(load(src_ptr), dst_ptr)
       src = codegenValue(src);
       codegenStoreLLVM(src, dest);
@@ -4210,10 +4488,24 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 #ifdef HAVE_LLVM
         // LLVM codegen assignment (non-wide, non-tuple)
         assert(from.val);
-        GenRet value = codegenValue(from);
-        assert(value.val);
+        if (from.isLVPtr == GEN_VAL && shouldMemcpyAggregate(type)) {
+          llvm::Value* temp = getImmutableTempLoadedBy(from.val);
+          if (temp && from.val->getType() == type->codegen().type) {
+            from.val = temp;
+            from.isLVPtr = GEN_PTR;
+            from.chplType = type;
+          }
+        }
+        if (from.isLVPtr == GEN_PTR && from.chplType &&
+            shouldMemcpyAggregate(type) &&
+            from.chplType->codegen().type == type->codegen().type) {
+          codegenCopy(to_ptr, from, type);
+        } else {
+          GenRet value = codegenValue(from);
+          assert(value.val);
 
-        codegenStoreLLVM(value, to_ptr, type);
+          codegenStoreLLVM(value, to_ptr, type);
+        }
 #endif
       }
     }
@@ -4789,12 +5081,17 @@ DEFINE_PRIM(CLASS_NAME_BY_ID) {
 
 DEFINE_PRIM(RETURN) {
   bool returnVoid = call->typeInfo() == dtVoid || call->typeInfo() == dtNothing;
+  bool returnThroughPtr = false;
+#ifdef HAVE_LLVM
+  returnThroughPtr = gGenInfo->currentFunctionRetPtr != nullptr;
+#endif
+  GenRet retExpr;
   if (!returnVoid) {
-    GenRet retExpr = call->get(1);
+    retExpr = call->get(1);
     if (!call->typeInfo()->symbol->isRefOrWideRef() && call->get(1)->isRefOrWideRef()) {
       retExpr = codegenDeref(retExpr);
     }
-    ret = codegenValue(retExpr);
+    if (!returnThroughPtr) ret = codegenValue(retExpr);
   }
 
   if (gGenInfo->cfile) {
@@ -4818,6 +5115,14 @@ DEFINE_PRIM(RETURN) {
     if (call->parentSymbol->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) &&
         !gCodegenGPU /* can't immediately halt on GPU */) {
       returnInst = irBuilder->CreateUnreachable();
+      trackLLVMValue(returnInst);
+    } else if (returnThroughPtr) {
+      GenRet ptr;
+      ptr.val = info->currentFunctionRetPtr;
+      ptr.isLVPtr = GEN_PTR;
+      ptr.chplType = call->typeInfo();
+      codegenAssign(ptr, retExpr);
+      returnInst = irBuilder->CreateRetVoid();
       trackLLVMValue(returnInst);
     } else if (returnInfo) {
       // See CodeGenFunction::EmitFunctionEpilog
@@ -4964,7 +5269,15 @@ DEFINE_PRIM(RETURN) {
         trackLLVMValue(returnInst);
       } else {
         ret = codegenCast(ret.chplType, ret);
-        returnInst = irBuilder->CreateRet(ret.val);
+        llvm::Value* retVal = ret.val;
+        AggregateLeafPath leafPath;
+        if (useAggregateABI() &&
+            retVal->getType() != curFn->getReturnType() &&
+            getAggregateReturnLeaf(retVal->getType(), leafPath)) {
+          for (unsigned idx : leafPath)
+            retVal = getAggregateField(retVal, idx);
+        }
+        returnInst = irBuilder->CreateRet(retVal);
         trackLLVMValue(returnInst);
       }
     }
@@ -6571,14 +6884,20 @@ DEFINE_PRIM(FTABLE_CALL) {
       if (argMustUseCPtr(call->get(2)->typeInfo()))
         argt = getPointerType(argt);
 
-      argumentTypes.push_back(argt);
+      if (useAggregateABI())
+        appendAggregateABIParamTypes(argt, argumentTypes);
+      else
+        argumentTypes.push_back(argt);
 
       argt = call->get(3)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(3)->typeInfo()))
         argt = getPointerType(argt);
 
-      argumentTypes.push_back(argt);
+      if (useAggregateABI())
+        appendAggregateABIParamTypes(argt, argumentTypes);
+      else
+        argumentTypes.push_back(argt);
 
       fnTy = llvm::FunctionType::get(returnType,
                                      argumentTypes,

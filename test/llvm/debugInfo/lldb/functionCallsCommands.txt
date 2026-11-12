@@ -35,4 +35,5 @@ p myFunc(10)
 # p getMyRec(10, 11.5)
 # p getMyRec2(1, 2.3, true)
 p getMyClass()
+expr -R -- getMyClass()
 q
