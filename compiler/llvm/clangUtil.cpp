@@ -2424,6 +2424,10 @@ void finishCodegenLLVM() {
     bool brokenDebugInfo = true;
     problems = verifyModule(*info->module, &errs(), &brokenDebugInfo);
     if (problems) {
+      for (auto& function : info->module->functions()) {
+        if (verifyFunction(function))
+          function.print(errs());
+      }
       INT_FATAL("LLVM module verification failed");
     }
     if (brokenDebugInfo) {

@@ -1930,16 +1930,32 @@ void TypeSymbol::codegenAggMetadata() {
         TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
 
         llvm::Constant *sz = llvm::ConstantInt::get(int64Ty, store_size);
-        CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
-        CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-        CopyOps.push_back(is_super ?
-                          field->type->symbol->llvmTbaaAggAccessTag :
-                          field->type->symbol->llvmTbaaAccessTag);
-        ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
-        ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-        ConstCopyOps.push_back(is_super ?
-                               field->type->symbol->llvmConstTbaaAggAccessTag :
-                               field->type->symbol->llvmConstTbaaAccessTag);
+        auto appendCopyOps = [&](llvm::SmallVectorImpl<llvm::Metadata*>& ops,
+                                 llvm::MDNode* nested, llvm::MDNode* tag) {
+          if (nested) {
+            for (unsigned i = 0; i < nested->getNumOperands(); i += 3) {
+              auto nestedOff = llvm::cast<llvm::ConstantInt>(
+                llvm::cast<llvm::ConstantAsMetadata>(
+                  nested->getOperand(i).get())->getValue())->getZExtValue();
+              auto offset = llvm::ConstantInt::get(int64Ty,
+                                                    byte_offset + nestedOff);
+              ops.push_back(llvm::ConstantAsMetadata::get(offset));
+              ops.push_back(nested->getOperand(i + 1).get());
+              ops.push_back(nested->getOperand(i + 2).get());
+            }
+          } else {
+            ops.push_back(llvm::ConstantAsMetadata::get(off));
+            ops.push_back(llvm::ConstantAsMetadata::get(sz));
+            ops.push_back(tag);
+          }
+        };
+        appendCopyOps(CopyOps, field->type->symbol->llvmTbaaStructCopyNode,
+                      is_super ? field->type->symbol->llvmTbaaAggAccessTag :
+                                 field->type->symbol->llvmTbaaAccessTag);
+        appendCopyOps(ConstCopyOps,
+                      field->type->symbol->llvmConstTbaaStructCopyNode,
+                      is_super ? field->type->symbol->llvmConstTbaaAggAccessTag :
+                                 field->type->symbol->llvmConstTbaaAccessTag);
       }
     }
   }
