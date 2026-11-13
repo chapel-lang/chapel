@@ -129,7 +129,8 @@ jobs:
           if gh_retry runs.json api "/repos/${{ github.repository }}/actions/workflows/$workflow_file/runs?event=schedule&branch=main&per_page=10" &&
              prev_sha=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].head_sha' runs.json) &&
              prev_time=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].created_at' runs.json) &&
-             cur_time=$(jq -er --argjson id "${{ github.run_id }}" '.workflow_runs[] | select(.id == $id) | .created_at' runs.json) &&
+             gh_retry current_run.json api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" &&
+             cur_time=$(jq -er '.created_at' current_run.json) &&
              gh_retry prs.json pr list -R "${{ github.repository }}" --state merged --base main --limit 1000 --search "merged:$prev_time..$cur_time" --json number,title,url,mergedAt; then
             prs_md=$(jq -r 'sort_by(.mergedAt)[] | "- \(.title) ([#\(.number)](\(.url)))"' prs.json)
             prs_text="Since [$prev_sha](https://github.com/${{ github.repository }}/commit/$prev_sha) ([compare](https://github.com/${{ github.repository }}/compare/$prev_sha...${{ github.sha }})):
