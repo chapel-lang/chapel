@@ -150,6 +150,13 @@ set_target_properties(chapel_core PROPERTIES
   CXX_STANDARD_REQUIRED ON
 )
 
+# workaround for https://github.com/scikit-build/scikit-build-core/issues/1525
+# python 3.15 defaults to a suffix of .abs3-TARGET.so, which breaks support
+# for using the ABI3 compatibility mode with older Python versions
+if(SKBUILD_SABI_VERSION)
+  set_target_properties(chapel_core PROPERTIES SUFFIX ".abi3.so")
+endif()
+
 # Add compile options
 target_compile_options(chapel_core PRIVATE
   -Wno-c99-designator
