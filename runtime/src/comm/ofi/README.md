@@ -238,6 +238,11 @@ operation is visible.  However, to minimize delays we put off waiting
 for the corresponding 'done' indicator until the task performs some
 other action that has MCM implications.
 
+An executeOn handler must retire any such delayed atomic 'done' indicator
+after its body returns and before sending the executeOn 'done' response.
+Forcing native PUT/AMO visibility alone does not wait for an AM-mediated
+atomic operation to finish on its target.
+
 ##### Dangling Regular Stores
 
 The comm layer assumes that with delivery-complete, the effects of
