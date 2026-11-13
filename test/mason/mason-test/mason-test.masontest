@@ -1,5 +1,5 @@
 mkdir -p tempHome
-cp -R dependency tempHome/dependency
+cp -R test-project/dependency tempHome/dependency
 dependency="$PWD/tempHome/dependency"
 registry="$PWD/tempHome/registry"
 export GIT_ALLOW_PROTOCOL=file
@@ -19,6 +19,7 @@ git -C "$registry" add Bricks
 git -C "$registry" -c user.name='Mason Test' -c user.email='mason@example.com' \
   -c commit.gpgsign=false commit -q -m 'Test registry'
 
+cd test-project
 exit_status=0
 mason test 2>&1 || exit_status=$?
 [[ "$exit_status" -eq 1 ]]

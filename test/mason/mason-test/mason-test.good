@@ -1,3 +1,4 @@
+compilation failed for compileerror.chpl
 Updating registry
 Downloading dependency: _MasonTest1-0.2.0
 
@@ -14,4 +15,3 @@ shallnotpass returned exitCode = 255
 Ran 9 tests in n seconds
 
 FAILED (passed = 7 failures = 1 errors = 1 )
-compilation failed for compileerror.chpl
