@@ -1,0 +1,5 @@
+[brick]
+name = "_MasonTest1"
+version = "0.2.0"
+chplVersion = "1.17.0"
+type = "library"

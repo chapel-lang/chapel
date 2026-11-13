@@ -1,0 +1,24 @@
+mkdir -p tempHome
+cp -R dependency tempHome/dependency
+dependency="$PWD/tempHome/dependency"
+registry="$PWD/tempHome/registry"
+export GIT_ALLOW_PROTOCOL=file
+export MASON_REGISTRY="registry|$registry"
+
+git init -q -b main "$dependency"
+git -C "$dependency" add Mason.toml src
+git -C "$dependency" -c user.name='Mason Test' -c user.email='mason@example.com' \
+  -c commit.gpgsign=false commit -q -m 'Test dependency'
+git -C "$dependency" -c tag.gpgsign=false tag v0.2.0
+
+mkdir -p "$registry/Bricks/_MasonTest1"
+cp "$dependency/Mason.toml" "$registry/Bricks/_MasonTest1/0.2.0.toml"
+printf 'source = "%s"\n' "$dependency" >> "$registry/Bricks/_MasonTest1/0.2.0.toml"
+git init -q -b main "$registry"
+git -C "$registry" add Bricks
+git -C "$registry" -c user.name='Mason Test' -c user.email='mason@example.com' \
+  -c commit.gpgsign=false commit -q -m 'Test registry'
+
+exit_status=0
+mason test 2>&1 || exit_status=$?
+[[ "$exit_status" -eq 1 ]]
