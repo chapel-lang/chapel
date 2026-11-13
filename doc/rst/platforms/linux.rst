@@ -41,6 +41,9 @@ The following lists all the configurations that exist in the package builds:
 
 .. include:: linux-pkg-table.rst
 
+Configurations that target a vendor GPU (e.g. ``CHPL_GPU=nvidia``) also need
+the vendor's SDK, which is listed in the package's suggested dependencies.
+
 ---------
 Linuxbrew
 ---------

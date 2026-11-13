@@ -35,4 +35,20 @@ chpl helloWorld.chpl --target-compiler=clang --comm=gasnet --comm-substrate=smp 
 chpl helloWorld.chpl --locale-model=gpu --gpu=cpu -o helloWorld
 ./helloWorld -nl 1
 
+chpl_home=$(chpl --print-chpl-home)
+runtime_lib=$(CHPL_HOME=$chpl_home python3 "$chpl_home/util/chplenv/chpl_home_utils.py" --runtime-lib)
+if [ -n "$(find "$runtime_lib" -type d -name gpu-nvidia -print -quit)" ]; then
+  # no GPU available, so only check that a GPU program compiles and links
+  cat > gpuReduce.chpl <<'EOF'
+on here.gpus[0] {
+  var A: [1..10] int;
+  A = 1;
+  foreach (a, i) in zip(A, A.domain) do a += i;
+  var sum = + reduce A;
+  writeln(sum);
+}
+EOF
+  chpl gpuReduce.chpl --locale-model=gpu --gpu=nvidia -o gpuReduce
+fi
+
 # TODO: shallow clone start_test and some tests to run in a few configs
