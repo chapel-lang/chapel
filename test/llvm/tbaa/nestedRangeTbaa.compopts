@@ -1,0 +1,1 @@
+--ccflags=-O3 --verify --llvm-print-ir makePair --llvm-print-ir-stage none
