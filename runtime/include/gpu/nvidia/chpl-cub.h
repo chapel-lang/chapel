@@ -22,6 +22,9 @@
 #define _CHPL_CUB_H
 
 // CCCL 3.0-3.3 has __host__-only deduction guides clang rejects (NVIDIA/cccl#7896)
+// without this workaround, fails to compile with errors about deduction guides
+// on basic_string_view. this hacky fix temporarily undefines _CCCL_HOST
+// (removing the deduction guide)
 #if defined(__clang__) && __has_include(<cuda/std/__cccl/version.h>)
 #include <cuda/std/__cccl/version.h>
 #if CCCL_VERSION >= 3000000 && CCCL_VERSION < 3004000
