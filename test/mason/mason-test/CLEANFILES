@@ -1,3 +1,7 @@
 tempHome
 mason_home
 .mason
+test-project/target
+test-project/Mason.lock
+exit-code-project/target
+exit-code-project/Mason.lock
