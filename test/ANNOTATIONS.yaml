@@ -2746,7 +2746,9 @@ arkouda: &arkouda-base
   06/30/26:
     - Updated Arkouda release to Chapel 2.9 permitting the use of CHPL_LLVM=system again now using LLVM 22 (#29033)
   10/07/26:
-    - Support for floating point values in sparse matrices (#5531)
+    - Support for floating point values in sparse matrices (Bears-R-Us/arkouda#5531)
+  11/13/26:
+    - Further improvements to sparse matrix performance (Bears-R-Us/arkouda#5555)
 
 arkouda-string:
   <<: *arkouda-base
