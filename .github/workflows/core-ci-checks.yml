@@ -693,3 +693,14 @@ jobs:
       - name: comparing ${{ env.PACKAGING_TABLE_FILE }} against checked-in file
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
+  paratest-baseline:
+    name: Chapel paratest with --baseline
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: baseline
+      ccache-key: x86-default
+      ccache-save: false
+      cron-script: util/cron/test-baseline.bash
+      start-test-args: -compopts --baseline
+      make-targets: all test-venv mason-deps spectests
