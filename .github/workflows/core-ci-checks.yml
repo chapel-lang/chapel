@@ -694,7 +694,7 @@ jobs:
         run: |
           git diff --exit-code "$PACKAGING_TABLE_FILE"
 
-test-mimalloc:
+  test-mimalloc:
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.CHAPEL_CI_IMAGE }}
