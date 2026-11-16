@@ -1,3 +1,4 @@
+use ChplConfig;
 use Subprocess;
 use Time;
 
@@ -35,12 +36,16 @@ proc main(args: [] string) throws {
     return;
   }
 
+  var executable = args[0];
+  if CHPL_LAUNCHER != "none" && executable.endsWith("_real") then
+    executable = executable[..<(executable.numCodepoints - 5)];
+
   var elapsed: stopwatch;
   const cpuStart = parentCpuSeconds();
   elapsed.start();
   coforall waiter in 1..concurrentWaits do
   for trial in 1..trials {
-    const command = [args[0], "--child=true",
+    const command = [executable, "-nl", "1", "--child=true",
                      "--quietSeconds=" + quietSeconds:string,
                      "--usePipes=" + usePipes:string];
     if usePipes {
