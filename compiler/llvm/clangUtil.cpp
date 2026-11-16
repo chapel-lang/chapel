@@ -4121,18 +4121,18 @@ static bool clangTypeIsNoUndef(clang::QualType type,
   if (type->isNullPtrType() || type->isMemberPointerType())
     return false;
   if (type->isScalarType()) {
-    if (const auto* complex = llvm::dyn_cast<clang::ComplexType>(type))
+    if (auto complex = llvm::dyn_cast<clang::ComplexType>(type))
       return clangTypeIsNoUndef(complex->getElementType(), CGM, layout,
                                argInfo, false);
     return true;
   }
-  if (const auto* vector = llvm::dyn_cast<clang::VectorType>(type))
+  if (auto vector = llvm::dyn_cast<clang::VectorType>(type))
     return clangTypeIsNoUndef(vector->getElementType(), CGM, layout,
                              argInfo, false);
-  if (const auto* matrix = llvm::dyn_cast<clang::MatrixType>(type))
+  if (auto matrix = llvm::dyn_cast<clang::MatrixType>(type))
     return clangTypeIsNoUndef(matrix->getElementType(), CGM, layout,
                              argInfo, false);
-  if (const auto* array = llvm::dyn_cast<clang::ArrayType>(type))
+  if (auto array = llvm::dyn_cast<clang::ArrayType>(type))
     return clangTypeIsNoUndef(array->getElementType(), CGM, layout,
                              argInfo, false);
   return false;
