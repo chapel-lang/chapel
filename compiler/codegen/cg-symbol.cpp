@@ -2444,6 +2444,7 @@ codegenFunctionTypeLLVMImpl(
     }
 
     if (argInfo) {
+      bool noUndef = CGI && clangABIArgIsNoUndef(ft, i, *argInfo);
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
         argTys.push_back(paddingTy);
         // TODO: Need to figure out how 'name' is mangled?
@@ -2455,6 +2456,7 @@ codegenFunctionTypeLLVMImpl(
         }
       }
 
+      size_t firstArg = argTys.size();
       switch (argInfo->getKind()) {
 
         case clang::CodeGen::ABIArgInfo::Kind::Ignore:
@@ -2590,6 +2592,14 @@ codegenFunctionTypeLLVMImpl(
           INT_FATAL("TargetSpecific ABI argument not implemented");
           break;
 #endif
+      }
+
+      if (noUndef) {
+        for (size_t j = firstArg; j < argTys.size(); j++) {
+          auto b = llvmPrepareAttrBuilder(ctx);
+          b.addAttribute(llvm::Attribute::NoUndef);
+          llvmAddAttr(ctx, outAttrs, j + 1, b);
+        }
       }
 
     } else {

@@ -9,5 +9,5 @@
 # relevant for the purpose of this test & currently a trivial
 # difference between the C and Chapel functions.
 
-cat $2 | grep '^[ ]*define\|^OUTPUT' | sed 's/#[0-9]*//g' | sed 's/) *{ */)/g' | sed 's/ %[0-9]//g' | sed 's/dso_local //g' | sort > $2.tmp
+cat $2 | grep '^[ ]*define\|^OUTPUT' | sed 's/#[0-9]*//g' | sed 's/) *{ */)/g' | sed 's/ %[0-9][0-9]*//g' | sed 's/dso_local //g' | sort > $2.tmp
 mv $2.tmp $2
