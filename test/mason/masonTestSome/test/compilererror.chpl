@@ -1,1 +1,1 @@
-../../mason-test/test/compileerror.chpl
+../../mason-test/test-project/test/compileerror.chpl
