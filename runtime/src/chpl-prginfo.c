@@ -400,3 +400,60 @@ const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val) {
   if (out_val) *out_val = lookup_table[idx][1];
   return lookup_table[idx][0];
 }
+
+int chpl_rt_num_program_only_constants(void) {
+  enum size_enum {
+    #define E_CONSTANT(name__, type__) size_enum_##name__,
+    #include "chpl-prginfo-data-macro-adapter.h"
+    ENUM_SIZE
+  };
+  return ENUM_SIZE;
+}
+
+static const char* program_only_constant_name_table[] = {
+  #define E_CONSTANT(name__, type__) #name__,
+  #include "chpl-prginfo-data-macro-adapter.h"
+  NULL
+};
+
+const char* chpl_rt_program_only_constant_by_idx(int idx) {
+  int num_program_only_constants = chpl_rt_num_program_only_constants();
+  assert(0 <= idx && idx < num_program_only_constants);
+  return program_only_constant_name_table[idx];
+}
+
+static bool compare_c_string(const char* s1, const char* s2) {
+  return !strcmp(s1, s2);
+}
+
+bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
+                                                const char* constant,
+                                                char** out_error_msg) {
+  chpl_rt_prginfo* p1 = CHPL_RT_PRGINFO_ROOT;
+  chpl_rt_prginfo* p2 = prg;
+  bool matches = false;
+  char* buffer = NULL;
+  int buffer_size = 0;
+
+  #define E_CONSTANT(name__, type__) do {                                     \
+    if (!strcmp(name__, constant)) {                                          \
+      type__ v1 = CHPL_RT_PRGINFO_DATA(p1, constant);                         \
+      type__ v2 = CHPL_RT_PRGINFO_DATA(p2, constant);                         \
+      if (!strcmp(type__, "const char*") || !strcmp(type__, "c_string")) {    \
+        matches = compare_c_string(v1, v2);                                   \
+      } else if (NULL != strchar(type__, '*')) {                              \
+        chpl_internal_error("Unhandled pointer type!");                       \
+      } else {                                                                \
+        matches = (v1 == v2);                                                 \
+      }                                                                       \
+    }                                                                         \
+    if (!matches) {
+      chpl_append_to_cmd(&buffer, &buffer_size,
+                         "the value of the field %s does not match"
+    }
+  } while (0)
+
+  #include "chpl-prginfo-data-macro-adapter.h"
+
+  return false;
+}

@@ -56,7 +56,6 @@ extern "C" {
 chpl_rt_prg_id
 chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg);
 
-// TODO: Just pass the root program into 'chpl_rt_init'.
 /** Call to register the root program here. Returns '1' if registered. */
 int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg);
 
@@ -69,6 +68,25 @@ int chpl_rt_num_build_constants(void);
 
 /** Get the name of the i'th runtime build constant in alphabetical order. */
 const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val);
+
+/** Get the number of program-only constants supplied to the runtime.
+    The full list can be seen in 'chpl-prginfo-data-macro.h'. */
+int chpl_rt_num_program_only_constants(void);
+
+/** Get the name and type of the i'th program-only constant. */
+const char* chpl_rt_program_only_constant_by_idx(int idx);
+
+/** Compare the value of a program-only constant from 'prg' against the
+    value contained in 'CHPL_RT_PRGINFO_ROOT'. Returns 'true' if the
+    constant matches.
+
+    If the pointer 'out_error_msg' is non-null, it will be set with an
+    allocated string containing an error message if the constants did
+    not match.
+*/
+bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
+                                                const char* constant,
+                                                char** out_error_msg);
 
 #ifdef __cplusplus
 }
