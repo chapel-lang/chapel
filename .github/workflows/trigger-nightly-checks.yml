@@ -77,25 +77,25 @@ jobs:
         timeout-minutes: 20
         run: |
           # Retry each call on its own so one transient error doesn't redo the others
-          gh_api() {
+          gh_retry() {
             local out=$1
             shift
             for delay in 0 15 30 60 120; do
               sleep "$delay"
-              if gh api "$@" > "$out"; then
+              if gh "$@" > "$out"; then
                 return 0
               fi
-              echo "::warning::gh api $* failed"
+              echo "::warning::gh $* failed"
             done
             return 1
           }
 
           echo "::group::commit.json"
-          gh_api commit.json "/repos/${{ github.repository }}/commits/${{ github.sha }}"
+          gh_retry commit.json api "/repos/${{ github.repository }}/commits/${{ github.sha }}"
           jq '.' commit.json
           echo "::endgroup::"
           echo "::group::jobs_raw.json"
-          gh_api jobs_raw.json --paginate "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100"
+          gh_retry jobs_raw.json api --paginate "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100"
           jq '.' jobs_raw.json
           echo "::endgroup::"
           # Combine pages of job results into one array
@@ -124,12 +124,32 @@ jobs:
             fi
           done
 
+          prs_text="(failed to determine PRs merged since the last nightly run)"
+          workflow_file=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+          if gh_retry runs.json api "/repos/${{ github.repository }}/actions/workflows/$workflow_file/runs?event=schedule&branch=main&per_page=10" &&
+             prev_sha=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].head_sha' runs.json) &&
+             prev_time=$(jq -er --argjson n "${{ github.run_number }}" '[.workflow_runs[] | select(.run_number < $n)][0].created_at' runs.json) &&
+             gh_retry current_run.json api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" &&
+             cur_time=$(jq -er '.created_at' current_run.json) &&
+             gh_retry prs.json pr list -R "${{ github.repository }}" --state merged --base main --limit 100 --search "merged:$prev_time..$cur_time" --json number,title,url,mergedAt; then
+            prs_md=$(jq -r 'sort_by(.mergedAt)[] | "- \(.title) ([#\(.number)](\(.url)))"' prs.json)
+            prs_text="Since [$prev_sha](https://github.com/${{ github.repository }}/commit/$prev_sha) ([compare](https://github.com/${{ github.repository }}/compare/$prev_sha...${{ github.sha }})):
+
+          ${prs_md:-- (none)}"
+          else
+            echo "::warning::failed to determine PRs merged since the last nightly run"
+          fi
+
           [[ $num_jobs -eq 1 ]] && plural="" || plural="s"
 
           cat << EOF > "$EMAIL_BODY_FILENAME"
           ### The following GitHub Actions job$plural failed:
 
           $failed_jobs_text
+
+          ##### PRs merged since the last nightly run:
+
+          $prs_text
 
 
           Ran $num_jobs total jobs at commit ${{ github.sha }} "$message".
