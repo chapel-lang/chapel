@@ -34,9 +34,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 # E.g., 'CHPL_COMM' is replaced with 'program->data.CHPL_COMM'.
 
-GITHUB_USER=jabraham17
-GITHUB_BRANCH=better-isel
-SHORT_NAME=better-isel
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=chapel
+SHORT_NAME=main
 START_DATE=11/05/26
 
 set -e
