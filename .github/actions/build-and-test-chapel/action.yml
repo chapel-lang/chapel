@@ -36,6 +36,7 @@ runs:
         CI_TEST_PATHS: ${{ inputs.test-paths }}
         CI_START_TEST_ARGS: ${{ inputs.start-test-args }}
         CI_PARALLEL: ${{ inputs.parallel }}
+        CHPL_NIGHTLY_DO_NOTHING: 1
       run: |
         echo "::group::set environment"
         source util/setchplenv.bash
