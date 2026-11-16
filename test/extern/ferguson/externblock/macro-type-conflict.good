@@ -1,0 +1,1 @@
+macro-type-conflict.chpl:8: error: type conflict for extern macro 'MACRO_WRONG_TYPE'

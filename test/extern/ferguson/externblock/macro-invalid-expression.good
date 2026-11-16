@@ -1,0 +1,20 @@
+chpl_macro_get_0:1:24: error: expected expression
+    1 | static __typeof__(0 ? (MACRO_INVALID) : (MACRO_INVALID)) chpl_macro_get_0(void) { return MACRO_INVALID; }
+      |                        ^
+macro-invalid-expression.chpl:2:30: note: expanded from macro 'MACRO_INVALID'
+    2 |   #define MACRO_INVALID (1 + )
+      |                              ^
+chpl_macro_get_0:1:42: error: expected expression
+    1 | static __typeof__(0 ? (MACRO_INVALID) : (MACRO_INVALID)) chpl_macro_get_0(void) { return MACRO_INVALID; }
+      |                                          ^
+macro-invalid-expression.chpl:2:30: note: expanded from macro 'MACRO_INVALID'
+    2 |   #define MACRO_INVALID (1 + )
+      |                              ^
+chpl_macro_get_0:1:90: error: expected expression
+    1 | static __typeof__(0 ? (MACRO_INVALID) : (MACRO_INVALID)) chpl_macro_get_0(void) { return MACRO_INVALID; }
+      |                                                                                          ^
+macro-invalid-expression.chpl:2:30: note: expanded from macro 'MACRO_INVALID'
+    2 |   #define MACRO_INVALID (1 + )
+      |                              ^
+macro-invalid-expression.chpl:5: error: cannot use C macro 'MACRO_INVALID' as a value expression
+Note: This source location is a guess.

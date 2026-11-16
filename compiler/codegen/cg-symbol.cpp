@@ -727,6 +727,19 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     if(!isImmediate()) {
       // check LVT for value
       GenRet got = info->lvt->getValue(cname);
+      if (!got.val && hasFlag(FLAG_EXTERN)) {
+        if (auto* getter = resolveMacroGetter(info, cname)) {
+          llvm::Type* cType = codegenCType(getter->getReturnType());
+          llvm::Type* chapelType = typeInfo()->codegen().type;
+          if (cType != chapelType)
+            USR_FATAL(this, "type conflict for extern macro '%s'", name);
+          std::vector<GenRet> args;
+          std::string getterName = getter->getNameAsString();
+          got = codegenCallExprWithArgs(getterName.c_str(), args, nullptr,
+                                        currentAstLoc, getter);
+          got.isUnsigned = getter->getReturnType()->isUnsignedIntegerType();
+        }
+      }
       got.chplType = typeInfo();
       Type* valType = getValType();
       if (got.val && hasFlag(FLAG_EXTERN)) {

@@ -1,7 +1,8 @@
 use CTypes;
-extern var ComplexVar:c_int;
+extern const ComplexVar:c_int;
 
-proc main() {
-  var i = ComplexVar;
-  writeln(i);
-}
+proc readMacro() { return ComplexVar; }
+
+writeln(ComplexVar);
+writeln(readMacro());
+writeln(ComplexVar);

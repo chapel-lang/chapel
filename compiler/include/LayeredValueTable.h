@@ -41,6 +41,7 @@ namespace clang {
   class TypeDecl;
   class ValueDecl;
   class MacroInfo;
+  class FunctionDecl;
 }
 
 #include "llvm/ADT/StringMap.h"
@@ -90,6 +91,7 @@ class LayeredValueTable
         // refer to invalid memory.
         const char* forwardToName;
         const clang::MacroInfo* macro;
+        clang::FunctionDecl* macroGetter;
       } u;
       int8_t isLVPtr;
       bool isUnsigned;
@@ -113,6 +115,7 @@ class LayeredValueTable
         u.castChplVarTo = NULL;
         u.forwardToName = NULL;
         u.macro = NULL;
+        u.macroGetter = NULL;
         isLVPtr = GEN_VAL;
         isUnsigned = false;
         addedToChapelAST = false;
@@ -140,6 +143,7 @@ class LayeredValueTable
     void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=NULL);
     void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
     void addMacro(llvm::StringRef name, const clang::MacroInfo *macro);
+    void addMacroGetter(llvm::StringRef name, clang::FunctionDecl* getter);
     void addForwardName(llvm::StringRef name, const char* forwardName);
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
@@ -150,6 +154,7 @@ class LayeredValueTable
     bool isCArray(llvm::StringRef name);
     VarSymbol* getVarSymbol(llvm::StringRef name);
     const clang::MacroInfo* getMacro(llvm::StringRef name);
+    clang::FunctionDecl* getMacroGetter(llvm::StringRef name);
     bool isAlreadyInChapelAST(llvm::StringRef name);
     bool markAddedToChapelAST(llvm::StringRef name);
 

@@ -12,8 +12,12 @@
 #define ComplexType \
   MAKE_UNSIGNED(int)
 
-#define ComplexVar \
-  getchar()
+static int next_macro_value(void) {
+  static int value = 0;
+  return ++value;
+}
+
+#define ComplexVar next_macro_value()
 
 #define SHIFT_CONSTANT (1U << 6)
 

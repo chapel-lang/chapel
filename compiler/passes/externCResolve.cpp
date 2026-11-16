@@ -473,7 +473,11 @@ void convertDeclToChpl(ModuleSymbol* module,
   // Now, if we have no cdecl, it may be a macro.
   if( (!cType) && (!cValue) ) {
     Expr* chplTypeExpr = NULL;
-    if (cCastedToType) {
+    if (auto* getter = getMacroGetterInExternBlock(module, cname)) {
+      chplType = NULL;
+      chplTypeExpr =
+          convertToChplType(module, getter->getReturnType().getTypePtr());
+    } else if (cCastedToType) {
       // If the macro contained a cast, replace the Chapel type
       // with a type expression.
       chplType = NULL;

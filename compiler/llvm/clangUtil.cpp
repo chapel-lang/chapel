@@ -36,7 +36,9 @@
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
 
+#include "clang/Basic/CharInfo.h"
 #include "clang/Basic/CodeGenOptions.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.h"
 #include "clang/CodeGen/BackendUtil.h"
@@ -50,6 +52,7 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/Parser.h"
 
 #include "llvm/ADT/APFloat.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -569,7 +572,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   if (debugPrint) printf("Working on macro %s\n", name.c_str());
 
   //Handling only simple string or integer defines
-  if (macro->getNumParams() > 0)
+  if (macro->isFunctionLike())
   {
     if( debugPrint) {
       printf("the macro takes arguments\n");
@@ -586,9 +589,13 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ValueDecl* cValueRet = NULL;
   const char* cCastToTypeRet = NULL;
 
+  static std::set<const MacroInfo*> activeMacros;
+  if (!activeMacros.insert(macro).second)
+    return;
   handleMacroExpr(macro, id,
                   macro->tokens_begin(), macro->tokens_end(),
                   varRet, cTypeRet, cValueRet, cCastToTypeRet);
+  activeMacros.erase(macro);
 
   if( debugPrint ) {
     std::string s = std::string(id->getName());
@@ -1606,6 +1613,8 @@ class CCodeGenConsumer final : public ASTConsumer {
 class CCodeGenAction final : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
+  // Keep the original Sema and preprocessor alive for requested macro probes.
+  void EndSourceFile() override { }
  protected:
   std::unique_ptr<ASTConsumer>
   CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override;
@@ -2792,8 +2801,17 @@ bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                                                astlocOut);
   VarSymbol* var = module->extern_info->gen_info->lvt->getVarSymbol(name);
   if( var ) *chplTypeOut = var->typeInfo();
-  return ( (*cTypeOut) || (*cValueOut) || (*chplTypeOut) );
+  if (!*cTypeOut && !*cValueOut && !*chplTypeOut)
+    resolveMacroGetter(module->extern_info->gen_info, name);
+  return ( (*cTypeOut) || (*cValueOut) || (*chplTypeOut) ||
+           module->extern_info->gen_info->lvt->getMacroGetter(name) );
 }
+
+clang::FunctionDecl* getMacroGetterInExternBlock(ModuleSymbol* module,
+                                                  const char* name) {
+  return module->extern_info->gen_info->lvt->getMacroGetter(name);
+}
+
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name)
 {
   return module->extern_info->gen_info->lvt->isAlreadyInChapelAST(name);
@@ -3435,6 +3453,98 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name)
   return FD;
 }
 
+static bool usesCallerContext(const clang::MacroInfo* macro,
+                              clang::Preprocessor& pp,
+                              std::set<const clang::MacroInfo*>& visited)
+{
+  if (!visited.insert(macro).second)
+    return false;
+  for (const clang::Token& token : macro->tokens()) {
+    if (!token.is(clang::tok::identifier))
+      continue;
+    const clang::IdentifierInfo* id = token.getIdentifierInfo();
+    llvm::StringRef name = id->getName();
+    if (name == "__LINE__" || name == "__FILE__" ||
+        name == "__BASE_FILE__" || name == "__COUNTER__" ||
+        name == "__func__" || name == "__FUNCTION__" ||
+        name == "__PRETTY_FUNCTION__")
+      return true;
+    if (const clang::MacroInfo* nested = pp.getMacroInfo(id))
+      if (usesCallerContext(nested, pp, visited))
+        return true;
+  }
+  return false;
+}
+
+clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name)
+{
+  if (auto* getter = info->lvt->getMacroGetter(name))
+    return getter;
+
+  ClangInfo* clangInfo = info->clangInfo;
+  clang::CompilerInstance& ci = *clangInfo->Clang;
+  clang::Preprocessor& pp = ci.getPreprocessor();
+  clang::IdentifierInfo* id = pp.getIdentifierInfo(name);
+  clang::MacroInfo* macro = pp.getMacroInfo(id);
+  if (!macro || macro->isFunctionLike())
+    return nullptr;
+
+  std::set<const clang::MacroInfo*> visited;
+  if (usesCallerContext(macro, pp, visited))
+    USR_FATAL("C macro '%s' depends on the caller's context", name);
+
+  if (!clang::isValidAsciiIdentifier(name, ci.getLangOpts().DollarIdents))
+    USR_FATAL("invalid C macro name '%s'", name);
+
+  static unsigned nextGetter = 0;
+  std::string getterName = "chpl_macro_get_" + std::to_string(nextGetter++);
+  // use '0 ? name : name' to force ptr decay
+  std::string source = std::string("static __typeof__(0 ? (") + name +
+                       ") : (" + name + ")) " + getterName +
+                       "(void) { return " + name + "; }\n";
+
+  if (!ci.hasSema() || !ci.hasASTConsumer())
+    INT_FATAL("Clang parsing context unavailable for macro '%s'", name);
+
+  auto buffer = llvm::MemoryBuffer::getMemBufferCopy(source, getterName);
+  clang::FileID file = ci.getSourceManager().createFileID(
+      std::move(buffer), clang::SrcMgr::C_User);
+  if (pp.EnterSourceFile(file, nullptr, clang::SourceLocation()))
+    USR_FATAL("could not parse C macro '%s'", name);
+
+  clang::Parser parser(pp, ci.getSema(), false);
+  parser.Initialize();
+  GenInfo* savedInfo = gGenInfo;
+  gGenInfo = info;
+  while (true) {
+    clang::Parser::DeclGroupPtrTy group;
+    auto importState = clang::Sema::ModuleImportState::NotACXX20Module;
+    bool done = parser.ParseTopLevelDecl(group, importState);
+    if (group)
+      ci.getASTConsumer().HandleTopLevelDecl(group.get());
+    if (done)
+      break;
+  }
+  gGenInfo = savedInfo;
+
+  if (ci.getDiagnostics().hasErrorOccurred())
+    USR_FATAL("cannot use C macro '%s' as a value expression", name);
+
+  clang::TypeDecl* ignoredType = nullptr;
+  clang::ValueDecl* value = nullptr;
+  info->lvt->getCDecl(getterName, &ignoredType, &value);
+  auto* getter = llvm::dyn_cast_or_null<clang::FunctionDecl>(value);
+  if (!getter)
+    USR_FATAL("could not generate getter for C macro '%s'", name);
+  clang::QualType result = getter->getReturnType();
+  if (result->isVoidType() || result->isFunctionType() ||
+      result->isArrayType() || result->isIncompleteType())
+    USR_FATAL("C macro '%s' has an unsupported result type", name);
+
+  info->lvt->addMacroGetter(name, getter);
+  return getter;
+}
+
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
@@ -3688,6 +3798,11 @@ void LayeredValueTable::addMacro(StringRef name,
   (layers.back())[name] = store;
 }
 
+void LayeredValueTable::addMacroGetter(StringRef name,
+                                      clang::FunctionDecl* getter) {
+  (layers.back())[name].u.macroGetter = getter;
+}
+
 void LayeredValueTable::addForwardName(llvm::StringRef name, const char* forwardName) {
   Storage store;
   store.u.forwardToName = astr(forwardName);
@@ -3845,6 +3960,12 @@ const clang::MacroInfo* LayeredValueTable::getMacro(StringRef name) {
     }
   }
   return NULL;
+}
+
+clang::FunctionDecl* LayeredValueTable::getMacroGetter(StringRef name) {
+  if (Storage* store = get(name))
+    return store->u.macroGetter;
+  return nullptr;
 }
 
 LayeredValueTable::Storage* LayeredValueTable::get(StringRef name) {
