@@ -103,6 +103,9 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
 const clang::CodeGen::ABIArgInfo*
 getSingleCGArgInfo(Type* type);
 
+bool clangABIArgIsNoUndef(FunctionType* ft, int argNum,
+                          const clang::CodeGen::ABIArgInfo& argInfo);
+
 bool useDarwinArmFix(Type* type);
 
 void makeBinaryLLVM();

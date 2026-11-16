@@ -4093,6 +4093,65 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
   return ret;
 }
 
+// Keep in sync with Clang's DetermineNoUndef in lib/CodeGen/CGCall.cpp.
+static bool clangTypeIsNoUndef(clang::QualType type,
+                              clang::CodeGen::CodeGenModule& CGM,
+                              const llvm::DataLayout& layout,
+                              const clang::CodeGen::ABIArgInfo& argInfo,
+                              bool checkCoerce = true) {
+  llvm::Type* memType = clang::CodeGen::convertTypeForMemory(CGM, type);
+  if (argInfo.getKind() == clang::CodeGen::ABIArgInfo::Indirect ||
+      argInfo.getKind() == clang::CodeGen::ABIArgInfo::IndirectAliased)
+    return true;
+  if (argInfo.getKind() == clang::CodeGen::ABIArgInfo::Extend) {
+#if HAVE_LLVM_VER >= 200
+    if (!argInfo.isNoExt())
+#endif
+      return true;
+  }
+  if (!layout.typeSizeEqualsStoreSize(memType))
+    return false;
+  if (checkCoerce && argInfo.canHaveCoerceToType() &&
+      llvm::TypeSize::isKnownGT(
+          layout.getTypeSizeInBits(argInfo.getCoerceToType()),
+          layout.getTypeSizeInBits(memType)))
+    return false;
+  if (type->isBitIntType() || type->isReferenceType())
+    return true;
+  if (type->isNullPtrType() || type->isMemberPointerType())
+    return false;
+  if (type->isScalarType()) {
+    if (const auto* complex = llvm::dyn_cast<clang::ComplexType>(type))
+      return clangTypeIsNoUndef(complex->getElementType(), CGM, layout,
+                               argInfo, false);
+    return true;
+  }
+  if (const auto* vector = llvm::dyn_cast<clang::VectorType>(type))
+    return clangTypeIsNoUndef(vector->getElementType(), CGM, layout,
+                             argInfo, false);
+  if (const auto* matrix = llvm::dyn_cast<clang::MatrixType>(type))
+    return clangTypeIsNoUndef(matrix->getElementType(), CGM, layout,
+                             argInfo, false);
+  if (const auto* array = llvm::dyn_cast<clang::ArrayType>(type))
+    return clangTypeIsNoUndef(array->getElementType(), CGM, layout,
+                             argInfo, false);
+  return false;
+}
+
+bool clangABIArgIsNoUndef(::FunctionType* ft, int argNum,
+                          const clang::CodeGen::ABIArgInfo& argInfo) {
+  auto clangInfo = gGenInfo->clangInfo;
+  if (!clangInfo->codegenOptions.EnableNoundefAttrs)
+    return false;
+
+  auto formal = ft->formal(argNum);
+  bool isReceiver = !strcmp(formal->name(), "this");
+  auto type = getClangFormalType(formal->intent(), formal->type(), isReceiver);
+  auto& CGM = clangInfo->getCodeGenerator()->CGM();
+  return clangTypeIsNoUndef(type, CGM, gGenInfo->module->getDataLayout(),
+                            argInfo);
+}
+
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
