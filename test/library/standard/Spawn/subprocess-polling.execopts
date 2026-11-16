@@ -1,0 +1,4 @@
+--usePipes=true
+--usePipes=false
+--concurrentWaits=4 --usePipes=true
+--concurrentWaits=4 --usePipes=false
