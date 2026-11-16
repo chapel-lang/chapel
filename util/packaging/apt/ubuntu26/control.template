@@ -3,4 +3,5 @@ Version: @@{CHAPEL_VERSION}
 Maintainer: chapel-lang
 Architecture: @@{TARGETARCH}
 Description: Chapel Programming Language
-Depends: git,gcc,llvm-dev,llvm,clang,libclang-dev,libclang-cpp-dev,python3,python3-dev,python3-venv,make,libpmi2-0-dev,libslurm-dev,pkgconf,libgmp-dev,libhwloc-dev,libunwind-dev
+Depends: git,gcc,llvm-22-dev,llvm-22,clang-22,libclang-22-dev,libclang-cpp22-dev,python3,python3-dev,python3-venv,make,libpmi2-0-dev,libslurm-dev,pkgconf,libgmp-dev,libhwloc-dev,libunwind-dev
+Suggests: cuda-minimal-build-13-1,libcurand-dev-13-1

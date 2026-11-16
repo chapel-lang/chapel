@@ -23,7 +23,7 @@
 #define _CHPL_GPU_DEV_REDUCE_H
 
 #include "chpltypes.h"
-#include <cub/cub.cuh>
+#include "chpl-cub.h"
 //
 // TODO use chpl-gpu-reduce-util instead, or add these there
 #define GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, data_type) \

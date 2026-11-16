@@ -91,6 +91,8 @@ def _find_cuda_variable(compiler: str, variable_name: str):
 
 
 def _find_cuda_sdk_path(compiler: str):
+    if not which(compiler):
+        compiler = os.path.join("/usr/local/cuda/bin", compiler)
     return _find_cuda_variable(compiler, "TOP")
 
 
@@ -435,11 +437,11 @@ def get_runtime_compile_args():
         system.append("-D__STRICT_ANSI__=1")
 
         # add includes and system includes from nvcc
-        gpu = GPU_TYPES[gpu_type]
-        includes = _find_cuda_variable(gpu.compiler, "INCLUDES")
+        compiler = get_gpu_compiler()
+        includes = _find_cuda_variable(compiler, "INCLUDES")
         if includes:
             system.extend(shlex.split(includes))
-        system_includes = _find_cuda_variable(gpu.compiler, "SYSTEM_INCLUDES")
+        system_includes = _find_cuda_variable(compiler, "SYSTEM_INCLUDES")
         if system_includes:
             system.extend(shlex.split(system_includes))
 
@@ -471,7 +473,11 @@ def get_runtime_link_args():
     sdk_path = get_sdk_path(gpu_type)
 
     if gpu_type == "nvidia":
-        system.append("-L" + os.path.join(sdk_path, "lib64"))
+        libdir = os.path.join(sdk_path, "lib64")
+        system.append("-L" + libdir)
+        stubs = os.path.join(libdir, "stubs")
+        if os.path.isdir(stubs):
+            system.append("-L" + stubs)
         system.append("-lcudart")
         if chpl_platform.is_wsl():
             # WSL needs to link with libcuda that belongs to the driver hosted in Windows

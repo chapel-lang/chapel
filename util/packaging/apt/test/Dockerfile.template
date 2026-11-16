@@ -15,6 +15,9 @@ COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_N
 USER root
 @@{PRE_INSTALL}
 RUN apt-get update && apt-get install -y ./@@{PACKAGE_NAME}
+# install optional deps (e.g. GPU SDKs) so the configs using them get tested
+RUN suggests=$(dpkg-deb -f ./@@{PACKAGE_NAME} Suggests) && \
+    if [ -n "$suggests" ]; then apt-get satisfy -y "$suggests"; fi
 USER user
 WORKDIR /home/user
 

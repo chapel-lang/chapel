@@ -264,11 +264,20 @@ Common settings:
      - slurm-srun
 
 
-single-node emulated GPU
-------------------------
+single-node GPU
+---------------
 
 Common settings:
 
 * ``CHPL_LOCALE_MODEL=gpu``
-* ``CHPL_GPU=cpu``
+
+.. list-table::
+   :header-rows: 1
+
+   * - CHPL_GPU
+     - OS compatibility
+   * - cpu
+     -
+   * - nvidia
+     - only on Ubuntu 26
 
