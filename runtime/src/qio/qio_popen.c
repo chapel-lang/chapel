@@ -586,7 +586,7 @@ qioerr qio_proc_communicate(
         error_ready = error_fd != -1 && FD_ISSET(error_fd, &rfds);
       }
       // Ignore EAGAIN and EINTR
-      if (rc == EAGAIN || rc == EINTR) rc = 0;
+      if (rc == -1 && (errno == EAGAIN || errno == EINTR)) rc = 0;
     }
 
     if( rc == -1 ) {
