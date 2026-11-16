@@ -44,6 +44,10 @@ jobs:
     # must run on ubuntu-latest so we get a longer timeout
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      actions: read
+      checks: read
+      contents: read
     needs:
       - core-checks
       - extended-checks
@@ -114,6 +118,15 @@ jobs:
             echo "- $id"
             failed_jobs_text+="$(jq -r --argjson id "$id" '.[] | select(.id == $id) | {html_url, name, first_bad_step: ([.steps[] | select(.conclusion != "success" and .conclusion != "skipped")] | first).name} | "- [\(.name)](\(.html_url)), step: \"\(.first_bad_step)\""' failed_jobs.json)
           "
+            if gh_retry annotations.json api --paginate "/repos/${{ github.repository }}/check-runs/$id/annotations?per_page=100" &&
+               annotations=$(jq -s -r 'add // [] | .[] | "  - **\(.annotation_level)**: \(.message | gsub("[\\r\\n]+"; " "))"' annotations.json); then
+              if [[ -n "$annotations" ]]; then
+                failed_jobs_text+="$annotations
+          "
+              fi
+            else
+              echo "::warning::Could not retrieve annotations for job $id"
+            fi
             addendum="$ADDENDA_DIR/failure-email-addendum-$id.md"
             if [[ -s "$addendum" ]]; then
               # indent so the addendum nests under the job's bullet point
