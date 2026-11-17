@@ -33,6 +33,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include <spawn.h>
 
@@ -397,6 +398,8 @@ qioerr qio_waitpid(int64_t pid,
   int status = 0;
   int flags = 0;
   pid_t got;
+  int timeout_us = 10;
+  const int max_timeout_us = 1000;
 
   flags |= WNOHANG;
 
@@ -406,10 +409,15 @@ qioerr qio_waitpid(int64_t pid,
       // Try again is a non-blocking wait was interrupted
       got = 0;
     }
-    if ( ! blocking ) {
+    if ( ! blocking || got != 0 ) {
       break;
     }
     chpl_task_yield();
+    struct timespec timeout = {0, timeout_us * 1000};
+    if (nanosleep(&timeout, NULL) == -1 && errno != EINTR)
+      return qio_int_to_err(errno);
+    timeout_us *= 2;
+    if (timeout_us > max_timeout_us) timeout_us = max_timeout_us;
   } while (got == 0);
 
   // Check for error
@@ -453,6 +461,9 @@ qioerr qio_proc_communicate(
   bool error_ready;
   fd_set rfds, wfds, efds;
   int nfds = 1;
+  const int min_timeout_us = 10;
+  const int max_timeout_us = 1000;
+  int timeout_us = min_timeout_us;
 
   int input_fd = -1;
   int output_fd = -1;
@@ -577,16 +588,20 @@ qioerr qio_proc_communicate(
       // TODO -- use sys_select so threading can interact
       struct timeval t;
       t.tv_sec = 0;
-      t.tv_usec = 10;
+      t.tv_usec = timeout_us;
       rc = select(nfds, &rfds, &wfds, &efds, &t);
       if (rc > 0) {
+        timeout_us = min_timeout_us;
         // read ready file descriptors
         input_ready = input_fd != -1 && FD_ISSET(input_fd, &wfds);
         output_ready = output_fd != -1 && FD_ISSET(output_fd, &rfds);
         error_ready = error_fd != -1 && FD_ISSET(error_fd, &rfds);
+      } else if (rc == 0) {
+        timeout_us *= 2;
+        if (timeout_us > max_timeout_us) timeout_us = max_timeout_us;
       }
       // Ignore EAGAIN and EINTR
-      if (rc == EAGAIN || rc == EINTR) rc = 0;
+      if (rc == -1 && (errno == EAGAIN || errno == EINTR)) rc = 0;
     }
 
     if( rc == -1 ) {
