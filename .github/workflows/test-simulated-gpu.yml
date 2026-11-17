@@ -23,32 +23,50 @@ jobs:
   test-nvidia:
     name: Test CUDA ${{ matrix.cuda }}
     runs-on: ubuntu-24.04
+    container:
+      # The simulator's CUDA major must match the toolkit, not its minor.
+      image: ghcr.io/pantheongpu/pantheonsim:0.2.1-cuda${{ startsWith(matrix.cuda, '12.') && '12.8' || '13.0' }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      VGPU_GPU: nvidia/h100
+      VGPU_DEVICE_COUNT: '1'
     strategy:
       fail-fast: false
       matrix:
         cuda: ["12.8", "13.0", "13.1", "13.4"]
     steps:
+      - name: Install CUDA, LLVM and Chapel build dependencies
+        env:
+          CUDA_VERSION: ${{ matrix.cuda }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ccache cmake g++ git make sudo wget \
+            libedit-dev libzstd-dev m4 python3-dev python3-venv
+          wget -nv -O "$RUNNER_TEMP/cuda-keyring.deb" \
+            https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          dpkg -i "$RUNNER_TEMP/cuda-keyring.deb"
+          mkdir -p /etc/apt/keyrings
+          wget -nv -O "$RUNNER_TEMP/llvm.asc" https://apt.llvm.org/llvm-snapshot.gpg.key
+          install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-22 main" \
+            > /etc/apt/sources.list.d/llvm.list
+          apt-get update
+          cuda_package_version=${CUDA_VERSION//./-}
+          apt-get install -y --no-install-recommends \
+            "cuda-nvcc-$cuda_package_version" "cuda-cudart-dev-$cuda_package_version" \
+            "cuda-driver-dev-$cuda_package_version" "cuda-cccl-$cuda_package_version" \
+            clang-22 libclang-22-dev libclang-cpp22-dev llvm-22-dev
+          # Keep the simulator's nvcc wrapper ahead of the real compiler.
+          {
+            echo "/usr/local/cuda-$CUDA_VERSION/bin"
+            echo "/opt/pantheonsim/bin"
+          } >> "$GITHUB_PATH"
+          "/usr/local/cuda-$CUDA_VERSION/bin/nvcc" --version
+          vgpu demo vectoradd --gpu nvidia/h100
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Set up PantheonSim and CUDA
-        uses: pantheongpu/setup-pantheonsim@deff5781e8adfd83dec98dd5242dcbc96a564773 # v0
-        with:
-          gpu: nvidia/h100
-          count: '1'
-          cuda-toolkit: ${{ matrix.cuda }}
-          library-path: 'false'
-      - name: Install LLVM and Chapel build dependencies
-        run: |
-          sudo mkdir -p /etc/apt/keyrings
-          wget -nv -O "$RUNNER_TEMP/llvm.asc" https://apt.llvm.org/llvm-snapshot.gpg.key
-          sudo install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
-          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-22 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            clang-22 libclang-22-dev libclang-cpp22-dev llvm-22-dev \
-            libedit-dev libzstd-dev m4 python3-dev python3-venv
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
