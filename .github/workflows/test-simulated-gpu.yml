@@ -29,7 +29,7 @@ jobs:
     env:
       DEBIAN_FRONTEND: noninteractive
       VGPU_GPU: nvidia/h100
-      VGPU_DEVICE_COUNT: '1'
+      VGPU_DEVICE_COUNT: '2'
     strategy:
       fail-fast: false
       matrix:
