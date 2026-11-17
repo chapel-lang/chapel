@@ -24,6 +24,7 @@
 #ifdef HAVE_LLVM
 
 class BaseAST;
+class FnSymbol;
 class ModuleSymbol;
 class Symbol;
 
@@ -35,6 +36,9 @@ class Symbol;
 //
 Symbol* tryCResolve(ModuleSymbol* mod, const char* cname);
 Symbol* tryCResolveLocally(ModuleSymbol* mod, const char* cname);
+void prepareExternMacroTypes();
+void cleanupExternMacroTypes();
+void resolveExternMacroReturnType(FnSymbol* fn);
 
 #endif
 

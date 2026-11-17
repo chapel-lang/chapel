@@ -733,10 +733,20 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           llvm::Type* chapelType = typeInfo()->codegen().type;
           if (cType != chapelType)
             USR_FATAL(this, "type conflict for extern macro '%s'", name);
+          auto* accessor = getter;
+          if (!hasFlag(FLAG_CONST)) {
+            accessor = info->lvt->getMacroAddress(cname);
+            if (!accessor)
+              USR_FATAL(this, "C macro '%s' is not a supported writable lvalue, "
+                             "declare it as extern const to read its value",
+                        name);
+          }
           std::vector<GenRet> args;
-          std::string getterName = getter->getNameAsString();
-          got = codegenCallExprWithArgs(getterName.c_str(), args, nullptr,
-                                        currentAstLoc, getter);
+          std::string accessorName = accessor->getNameAsString();
+          got = codegenCallExprWithArgs(accessorName.c_str(), args, nullptr,
+                                        currentAstLoc, accessor);
+          if (accessor != getter)
+            got.isLVPtr = GEN_PTR;
           got.isUnsigned = getter->getReturnType()->isUnsignedIntegerType();
         }
       }

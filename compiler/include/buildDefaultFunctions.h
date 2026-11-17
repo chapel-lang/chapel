@@ -23,6 +23,9 @@
 
 #include "symbol.h"
 #include "type.h"
+#include <vector>
+
+void buildDefaultFunctionsForTypes(const std::vector<TypeSymbol*>& types);
 
 // build a hollow `writeThis` FunctionSymbol* for the given class type
 // 'ct', returning its file (channel) argument in 'filearg'.  The

@@ -34,7 +34,9 @@
 #include <regex>
 
 #ifdef HAVE_LLVM
+#include "clang/AST/Expr.h"
 #include "clang/AST/GlobalDecl.h"
+#include "clang/AST/Stmt.h"
 
 #include "clang/Basic/CharInfo.h"
 #include "clang/Basic/CodeGenOptions.h"
@@ -152,6 +154,9 @@ void readExternC(void) {
 
 void cleanupExternC(void) {
   // Do nothing if we don't have LLVM support.
+}
+
+void cleanupUnusedExternC(void) {
 }
 
 #else
@@ -580,7 +585,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     if (name == "LAPACK_GLOBAL") {
       info->lvt->addMacro(name, macro);
     } else {
-      return; // TODO -- handle macro functions.
+      return; // Resolve callable macros on demand with concrete argument types.
     }
   }
 
@@ -1329,17 +1334,6 @@ void readMacrosClang(void) {
 
   //printf("Running ReadMacrosAction\n");
   Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
-  // Identify macro-functions and macro-values.
-  // Later, if we see a use of a macro-function, we can
-  //  compile it to a static/inline function with args types based an use
-  // how will we know the return type?
-  //   expr->getType() stmt->getRetValue()->getType....
-  //     ... add function wrapping macro with wrong type
-  //         parse/analyze squelching errors; get the macro expression type;
-  //         correct the type and recompile to LLVM
-  //         See ClangExpressionParser.cpp in lldb which parses
-  //          a C expression from a command line... we need to
-  //          do something similar.
   for(Preprocessor::macro_iterator i = preproc.macro_begin();
       i != preproc.macro_end();
       i++) {
@@ -2812,6 +2806,23 @@ clang::FunctionDecl* getMacroGetterInExternBlock(ModuleSymbol* module,
   return module->extern_info->gen_info->lvt->getMacroGetter(name);
 }
 
+bool isMacroLvalueInExternBlock(ModuleSymbol* module, const char* name) {
+  return module->extern_info->gen_info->lvt->getMacroAddress(name) != nullptr;
+}
+
+const clang::MacroInfo* getFunctionMacroInExternBlock(ModuleSymbol* module,
+                                                     const char* name) {
+  auto pp = module->extern_info->gen_info->clangInfo->Clang->getPreprocessor();
+  auto macro = pp.getMacroInfo(pp.getIdentifierInfo(name));
+  return macro && macro->isFunctionLike() ? macro : nullptr;
+}
+
+clang::FunctionDecl* resolveMacroFunctionInExternBlock(FnSymbol* fn) {
+  auto module = fn->getModule();
+  INT_ASSERT(module->extern_info);
+  return resolveMacroFunction(module->extern_info->gen_info, fn, true);
+}
+
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name)
 {
   return module->extern_info->gen_info->lvt->isAlreadyInChapelAST(name);
@@ -3406,24 +3417,38 @@ void readExternC(void) {
   }
 }
 
-void cleanupExternC(void) {
-  module_set_iterator_t it;
-  for( it = gModulesWithExternBlocks.begin();
-       it != gModulesWithExternBlocks.end();
-       ++it ) {
+static void cleanupExternCImpl(bool unusedOnly) {
+  for (auto it = gModulesWithExternBlocks.begin();
+       it != gModulesWithExternBlocks.end(); ) {
     ModuleSymbol* module = *it;
+    bool needsInference = false;
+    if (unusedOnly && module->inTree()) {
+      for_alist(expr, module->block->body) {
+        if (auto def = toDefExpr(expr))
+          if (def->sym->hasFlag(FLAG_EXTERN_MACRO))
+            needsInference = true;
+      }
+    }
+    if (needsInference) {
+      ++it;
+      continue;
+    }
     INT_ASSERT(module->extern_info);
     cleanupClang(module->extern_info->gen_info->clangInfo);
     delete module->extern_info->gen_info->clangInfo;
     delete module->extern_info->gen_info;
     delete module->extern_info;
     module->extern_info = nullptr;
-    // Remove all ExternBlockStmts from this module.
-    forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
-      eb->remove();
-    }
-    gExternBlockStmts.clear();
+    it = gModulesWithExternBlocks.erase(it);
   }
+}
+
+void cleanupExternC(void) {
+  cleanupExternCImpl(false);
+}
+
+void cleanupUnusedExternC(void) {
+  cleanupExternCImpl(true);
 }
 
 llvm::Function* getFunctionLLVM(const char* name) {
@@ -3459,14 +3484,21 @@ static bool usesCallerContext(const clang::MacroInfo* macro,
   if (!visited.insert(macro).second)
     return false;
   for (const clang::Token& token : macro->tokens()) {
-    if (!token.is(clang::tok::identifier))
+    if (token.is(clang::tok::raw_identifier) || token.isAnnotation())
       continue;
     const clang::IdentifierInfo* id = token.getIdentifierInfo();
+    if (!id)
+      continue;
     llvm::StringRef name = id->getName();
     if (name == "__LINE__" || name == "__FILE__" ||
         name == "__BASE_FILE__" || name == "__COUNTER__" ||
         name == "__func__" || name == "__FUNCTION__" ||
-        name == "__PRETTY_FUNCTION__")
+        name == "__PRETTY_FUNCTION__" || name == "__FILE_NAME__" ||
+        name == "__INCLUDE_LEVEL__" || name == "__TIMESTAMP__" ||
+        name == "__builtin_FUNCTION" || name == "__builtin_FILE" ||
+        name == "__builtin_LINE" || name == "__builtin_COLUMN" ||
+        name == "__builtin_frame_address" ||
+        name == "__builtin_return_address")
       return true;
     if (const clang::MacroInfo* nested = pp.getMacroInfo(id))
       if (usesCallerContext(nested, pp, visited))
@@ -3479,13 +3511,15 @@ static clang::FunctionDecl* parseMacroWrapper(GenInfo* info,
                                                const char* macroName,
                                                const std::string& wrapperName,
                                                const std::string& source,
-                                               const char* use) {
+                                               const char* use,
+                                               const std::string& diagnosticName = "") {
   clang::CompilerInstance& ci = *info->clangInfo->Clang;
   clang::Preprocessor& pp = ci.getPreprocessor();
   if (!ci.hasSema() || !ci.hasASTConsumer())
     INT_FATAL("Clang parsing context unavailable for macro '%s'", macroName);
 
-  auto buffer = llvm::MemoryBuffer::getMemBufferCopy(source, wrapperName);
+  auto buffer = llvm::MemoryBuffer::getMemBufferCopy(
+      source, diagnosticName.empty() ? wrapperName : diagnosticName);
   clang::FileID file = ci.getSourceManager().createFileID(
       std::move(buffer), clang::SrcMgr::C_User);
   if (pp.EnterSourceFile(file, nullptr, clang::SourceLocation()))
@@ -3512,14 +3546,26 @@ static clang::FunctionDecl* parseMacroWrapper(GenInfo* info,
   clang::TypeDecl* ignoredType = nullptr;
   clang::ValueDecl* value = nullptr;
   info->lvt->getCDecl(wrapperName, &ignoredType, &value);
-  auto* wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value);
+  auto wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value);
   if (!wrapper)
     USR_FATAL("could not generate wrapper for C macro '%s'", macroName);
   return wrapper;
 }
 
+static bool usesMacroLocalStorage(const clang::Stmt* stmt) {
+  if (!stmt)
+    return false;
+  if (auto literal = llvm::dyn_cast<clang::CompoundLiteralExpr>(stmt))
+    if (!literal->isFileScope())
+      return true;
+  for (auto child: stmt->children())
+    if (usesMacroLocalStorage(child))
+      return true;
+  return false;
+}
+
 clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
-  if (auto* getter = info->lvt->getMacroGetter(name))
+  if (auto getter = info->lvt->getMacroGetter(name))
     return getter;
 
   ClangInfo* clangInfo = info->clangInfo;
@@ -3539,18 +3585,48 @@ clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
 
   static unsigned nextGetter = 0;
   std::string getterName = "chpl_macro_get_" + std::to_string(nextGetter++);
-  // use '0 ? name : name' to force ptr decay
-  std::string source = std::string("static __typeof__(0 ? (") + name +
-                       ") : (" + name + ")) " + getterName +
-                       "(void) { return " + name + "; }\n";
-  auto* getter = parseMacroWrapper(info, name, getterName, source,
-                                   "as a value expression");
-  clang::QualType result = getter->getReturnType();
+  std::string probeName = getterName + "_probe";
+  std::string source = "static void " + probeName + "(void) { (void)(" +
+                       name + "); }\n";
+  auto probe = parseMacroWrapper(info, name, probeName, source,
+                                  "as a value expression", getterName);
+  auto body = llvm::cast<clang::CompoundStmt>(probe->getBody());
+  auto cast = llvm::cast<clang::CStyleCastExpr>(*body->body_begin());
+  auto expr = cast->getSubExpr()->IgnoreParenImpCasts();
+  auto ctx = ci.getASTContext();
+  clang::QualType result = expr->getType();
+  if (result->isArrayType() || result->isFunctionType())
+    result = ctx.getDecayedType(result);
+  result = result.getUnqualifiedType();
   if (result->isVoidType() || result->isFunctionType() ||
       result->isArrayType() || result->isIncompleteType())
     USR_FATAL("C macro '%s' has an unsupported result type", name);
+  if (result->isPointerType() && usesMacroLocalStorage(expr))
+    USR_FATAL("C macro '%s' depends on the caller's storage", name);
 
+  std::string typeExpression = std::string("(void)0, (") + name + ")";
+  if (expr->getType()->isArrayType() || expr->getType()->isFunctionType())
+    typeExpression = std::string("0 ? (") + name + ") : (" + name + ")";
+  // The comma operator applies C's lvalue conversion without promoting short
+  // integers. typeof also preserves anonymous C types without printing them
+  source = "static __typeof__(" + typeExpression + ") " + getterName +
+           "(void) { return " + name + "; }\n";
+  auto getter = parseMacroWrapper(info, name, getterName, source,
+                                   "as a value expression");
   info->lvt->addMacroGetter(name, getter);
+
+  // Keep the address accessor separate from the value getter. Neither call's
+  // result may be cached
+  if (expr->isModifiableLvalue(ctx) == clang::Expr::MLV_Valid &&
+      !expr->refersToBitField() && !expr->getType().isVolatileQualified() &&
+      !expr->getType()->isAtomicType() && !usesMacroLocalStorage(expr)) {
+    std::string addressName = getterName + "_address";
+    source = std::string("static __typeof__(&(") + name + ")) " +
+             addressName + "(void) { return &(" + name + "); }\n";
+    auto address = parseMacroWrapper(info, name, addressName, source,
+                                      "as a writable lvalue");
+    info->lvt->addMacroAddress(name, address);
+  }
   return getter;
 }
 
@@ -3812,6 +3888,11 @@ void LayeredValueTable::addMacroGetter(StringRef name,
   (layers.back())[name].u.macroGetter = getter;
 }
 
+void LayeredValueTable::addMacroAddress(StringRef name,
+                                       clang::FunctionDecl* address) {
+  (layers.back())[name].u.macroAddress = address;
+}
+
 void LayeredValueTable::addForwardName(llvm::StringRef name, const char* forwardName) {
   Storage store;
   store.u.forwardToName = astr(forwardName);
@@ -3977,6 +4058,12 @@ clang::FunctionDecl* LayeredValueTable::getMacroGetter(StringRef name) {
   return nullptr;
 }
 
+clang::FunctionDecl* LayeredValueTable::getMacroAddress(StringRef name) {
+  if (Storage* store = get(name))
+    return store->u.macroAddress;
+  return nullptr;
+}
+
 LayeredValueTable::Storage* LayeredValueTable::get(StringRef name) {
   for(layer_iterator i = layers.begin(); i != layers.end(); ++i) {
     value_iterator j = i->find(name);
@@ -4075,8 +4162,8 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
   return ret;
 }
 
-static clang::CanQualType getClangType(::Type* t, bool makeRef) {
-  GenInfo* info = gGenInfo;
+static clang::CanQualType getClangType(::Type* t, bool makeRef,
+                                      GenInfo* info = gGenInfo) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
@@ -4087,7 +4174,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   if (makeRef || t->isRef()) {
     ::Type* eltType = t->getValType();
-    clang::CanQualType cTy = getClangType(eltType, false);
+    clang::CanQualType cTy = getClangType(eltType, false, info);
     // TODO: const qualify const refs
     cTy = Ctx->getPointerType(cTy);
     return cTy;
@@ -4095,8 +4182,9 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   TypeSymbol* ts = t->symbol;
   if (ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_DATA_CLASS)) {
     ::Type* eltType = getDataClassType(ts)->type;
-    clang::CanQualType cTy = getClangType(eltType, false);
-    // TODO: const qualify const C pointers
+    clang::CanQualType cTy = getClangType(eltType, false, info);
+    if (ts->hasFlag(FLAG_C_PTRCONST_CLASS))
+      cTy = Ctx->getCanonicalType(Ctx->getConstType(cTy));
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -4104,20 +4192,30 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
     AggregateType* at = toAggregateType(t);
     Symbol* field = at->getField("x0");
     ::Type* eltType = field->type;
-    clang::CanQualType cTy = getClangType(eltType, false);
+    clang::CanQualType cTy = getClangType(eltType, false, info);
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
 
   if (t == dtVoid || t == dtNothing)
     return Ctx->VoidTy;
-  // could match other builtin types like c_int here
+  if (t == dtBool)
+    return Ctx->BoolTy;
+  if (t == dtCVoidPtr)
+    return Ctx->VoidPtrTy;
 
   clang::TypeDecl* cTypeDecl = NULL;
   clang::ValueDecl* cValueDecl = NULL;
   const char* cCastedToType = NULL;
   const char* cname = t->symbol->cname;
   info->lvt->getCDecl(cname, &cTypeDecl, &cValueDecl, &cCastedToType);
+  if (!cTypeDecl && t->symbol->hasFlag(FLAG_EXTERN) &&
+      (isRecord(t) || isUnion(t))) {
+    llvm::StringRef tag(cname);
+    if (!tag.consume_front("struct "))
+      tag.consume_front("union ");
+    info->lvt->getCDecl(tag, &cTypeDecl, &cValueDecl, &cCastedToType);
+  }
 
   if (cCastedToType)
     USR_FATAL(t, "Cannot use macro with type cast in export function argument");
@@ -4130,7 +4228,17 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   } else if (t->symbol->hasFlag(FLAG_OPAQUE_C_TYPE_ALIAS)) {
     if (::Type* t = chapelTypeForPrimitiveCTypeName(cname)) {
-      ret = getClangType(t, makeRef);
+      ret = getClangType(t, makeRef, info);
+    } else if (isIntType(t) || isUIntType(t)) {
+      auto ty = Ctx->getIntTypeForBitwidth(getWidthOfType(t), isSignedType(t));
+      if (ty.isNull())
+        USR_FATAL(t, "no matching C integer type for '%s'", toString(t));
+      ret = Ctx->getCanonicalType(ty);
+    } else if (isRealType(t)) {
+      ret = t == dtReal[FLOAT_SIZE_32] ? Ctx->FloatTy : Ctx->DoubleTy;
+    } else if (isComplexType(t)) {
+      auto elt = t == dtComplex[COMPLEX_SIZE_64] ? Ctx->FloatTy : Ctx->DoubleTy;
+      ret = Ctx->getComplexType(elt);
     } else {
       INT_FATAL(t->symbol, "Unhandled type alias when fetching Clang type");
     }
@@ -4145,7 +4253,8 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 }
 
 static clang::CanQualType
-getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
+getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver,
+                   GenInfo* info = gGenInfo) {
   bool ref = (intent & INTENT_FLAG_REF) ||
              (argRequiresCPtr(intent, t, isReceiver) &&
               t->getValType()->symbol->hasFlag(FLAG_TUPLE));
@@ -4153,12 +4262,13 @@ getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
     USR_FATAL(t->symbol, "cannot convert wide reference type to Clang type");
   }
 
-  return getClangType(t, ref);
+  return getClangType(t, ref, info);
 }
 
-static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
+static clang::CanQualType getClangFormalType(ArgSymbol* formal,
+                                            GenInfo* info = gGenInfo) {
   bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
-  return getClangFormalType(formal->intent, formal->type, isReceiver);
+  return getClangFormalType(formal->intent, formal->type, isReceiver, info);
 }
 
 static const char* unsupportedMacroArgumentUse(
@@ -4171,23 +4281,6 @@ static const char* unsupportedMacroArgumentUse(
     const clang::Token& token = tokens[i];
     if (token.isOneOf(clang::tok::hash, clang::tok::hashhash))
       return "requires caller argument tokens";
-    if (macro->getNumParams() &&
-        token.isOneOf(clang::tok::plusplus, clang::tok::minusminus,
-                      clang::tok::equal, clang::tok::plusequal,
-                      clang::tok::minusequal, clang::tok::starequal,
-                      clang::tok::slashequal, clang::tok::percentequal,
-                      clang::tok::ampequal, clang::tok::pipeequal,
-                      clang::tok::caretequal, clang::tok::lesslessequal,
-                      clang::tok::greatergreaterequal))
-      return "may mutate a by-value argument";
-    if (macro->getNumParams() && token.is(clang::tok::amp)) {
-      size_t j = i + 1;
-      while (j < tokens.size() && tokens[j].is(clang::tok::l_paren))
-        j++;
-      if (j < tokens.size() && tokens[j].is(clang::tok::identifier) &&
-          macro->getParameterNum(tokens[j].getIdentifierInfo()) >= 0)
-        return "takes the address of a by-value argument";
-    }
     if (token.is(clang::tok::identifier)) {
       if (const clang::MacroInfo* nested =
               pp.getMacroInfo(token.getIdentifierInfo()))
@@ -4199,7 +4292,51 @@ static const char* unsupportedMacroArgumentUse(
   return nullptr;
 }
 
-clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn) {
+static bool isWrapperParameter(const clang::Expr* expr,
+                                const clang::FunctionDecl* wrapper) {
+  expr = expr->IgnoreParenImpCasts();
+  if (auto ref = llvm::dyn_cast<clang::DeclRefExpr>(expr)) {
+    for (auto param : wrapper->parameters())
+      if (ref->getDecl() == param)
+        return true;
+  } else if (auto member = llvm::dyn_cast<clang::MemberExpr>(expr)) {
+    return !member->isArrow() && isWrapperParameter(member->getBase(), wrapper);
+  } else if (auto sub = llvm::dyn_cast<clang::ArraySubscriptExpr>(expr)) {
+    auto base = sub->getBase()->IgnoreParenImpCasts();
+    return base->getType()->isArrayType() && isWrapperParameter(base, wrapper);
+  }
+  return false;
+}
+
+static const char* unsupportedMacroStatementUse(
+    const clang::Stmt* stmt, const clang::FunctionDecl* wrapper) {
+  if (!stmt)
+    return nullptr;
+  if (llvm::isa<clang::ReturnStmt>(stmt) ||
+      llvm::isa<clang::IndirectGotoStmt>(stmt))
+    return "depends on the caller's control flow";
+  if (auto binary = llvm::dyn_cast<clang::BinaryOperator>(stmt)) {
+    if (binary->isAssignmentOp() &&
+        isWrapperParameter(binary->getLHS(), wrapper))
+      return "may mutate a by-value argument";
+  }
+  if (auto unary = llvm::dyn_cast<clang::UnaryOperator>(stmt)) {
+    if (isWrapperParameter(unary->getSubExpr(), wrapper)) {
+      if (unary->isIncrementDecrementOp())
+        return "may mutate a by-value argument";
+      if (unary->getOpcode() == clang::UO_AddrOf)
+        return "takes the address of a by-value argument";
+    }
+  }
+  for (auto child : stmt->children())
+    if (const char* reason = unsupportedMacroStatementUse(child, wrapper))
+      return reason;
+  return nullptr;
+}
+
+clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
+                                         bool inferReturnType) {
+  inferReturnType |= fn->hasFlag(FLAG_EXTERN_MACRO);
   clang::CompilerInstance& ci = *info->clangInfo->Clang;
   clang::Preprocessor& pp = ci.getPreprocessor();
   const char* name = fn->cname;
@@ -4214,7 +4351,7 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn) {
   clang::TypeDecl* ignoredType = nullptr;
   clang::ValueDecl* value = nullptr;
   info->lvt->getCDecl(wrapperName, &ignoredType, &value);
-  if (auto* wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value))
+  if (auto wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value))
     return wrapper;
 
   if (macro->isVariadic())
@@ -4234,35 +4371,90 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn) {
 
   auto& ctx = *info->clangInfo->Ctx;
   auto policy = ctx.getPrintingPolicy();
-  std::string formals, arguments;
+  std::string formals, arguments, typeArguments;
   unsigned i = 0;
   for_formals(formal, fn) {
     std::string formalName = "chpl_formal_" + std::to_string(i++);
     if (!formals.empty()) {
       formals += ", ";
       arguments += ", ";
+      if (inferReturnType)
+        typeArguments += ", ";
     }
-    clang::CanQualType ty = getClangFormalType(formal);
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+      USR_FATAL(fn, "C macro '%s' does not support type arguments", name);
+    clang::CanQualType ty = getClangFormalType(formal, info);
     llvm::raw_string_ostream out(formals);
     clang::QualType(ty).print(out, policy, formalName);
     out.flush();
     arguments += formalName;
+    if (inferReturnType) {
+      std::string pointerType;
+      llvm::raw_string_ostream typeOut(pointerType);
+      clang::QualType(ctx.getPointerType(ty)).print(typeOut, policy);
+      typeOut.flush();
+      typeArguments += "*((" + pointerType + ")0)";
+    }
   }
   if (formals.empty())
     formals = "void";
 
-  bool returnsVoid = fn->retType == dtVoid;
-  bool returnsRef = fn->retTag == RET_REF || fn->retTag == RET_CONST_REF;
-  clang::CanQualType returnType = getClangType(fn->retType, returnsRef);
+  std::string invocation = std::string(name) + "(" + arguments + ")";
+  std::string probeName = wrapperName + "_probe";
+  std::string probeSource =
+      "#pragma clang diagnostic push\n"
+      "#pragma clang diagnostic ignored \"-Wunused-value\"\n"
+      "#pragma clang diagnostic ignored \"-Wunused-result\"\n"
+      "static void " + probeName + "(" + formals +
+      ") { " + invocation + "; }\n"
+      "#pragma clang diagnostic pop\n";
+  auto probe = parseMacroWrapper(info, name, probeName, probeSource,
+                                  "with this extern signature", wrapperName);
+  if (const char* reason = unsupportedMacroStatementUse(probe->getBody(), probe))
+    USR_FATAL(fn, "C macro '%s' %s", name, reason);
+
+  auto body = llvm::cast<clang::CompoundStmt>(probe->getBody());
+  auto expression = body->size() == 1
+      ? llvm::dyn_cast<clang::Expr>(*body->body_begin()) : nullptr;
+  clang::QualType returnType;
+  if (inferReturnType) {
+    returnType = ctx.VoidTy;
+    if (expression) {
+      returnType = expression->getType().getUnqualifiedType();
+      if (returnType->isArrayType() || returnType->isFunctionType())
+        returnType = ctx.getDecayedType(returnType);
+    }
+    if (!returnType->isVoidType() && returnType->isIncompleteType())
+      USR_FATAL(fn, "C macro '%s' has an unsupported result type", name);
+  } else {
+    bool returnsRef = fn->retTag == RET_REF || fn->retTag == RET_CONST_REF;
+    returnType = getClangType(fn->retType, returnsRef, info);
+  }
+  if (returnType->isPointerType() && usesMacroLocalStorage(expression))
+    USR_FATAL(fn, "C macro '%s' depends on the caller's storage", name);
+  bool returnsVoid = returnType->isVoidType();
   std::string source = "static ";
-  llvm::raw_string_ostream out(source);
-  clang::QualType(returnType).print(
-      out, policy, wrapperName + "(" + formals + ")");
-  out.flush();
+  if (inferReturnType && !returnsVoid) {
+    std::string typeInvocation = std::string(name) + "(" + typeArguments + ")";
+    std::string typeExpression = "(void)0, (" + typeInvocation + ")";
+    if (expression->getType()->isArrayType() ||
+        expression->getType()->isFunctionType())
+      typeExpression = "0 ? (" + typeInvocation + ") : (" + typeInvocation + ")";
+    source += "__typeof__(" + typeExpression + ") " +
+              wrapperName + "(" + formals + ")";
+  } else {
+    llvm::raw_string_ostream out(source);
+    returnType.print(out, policy, wrapperName + "(" + formals + ")");
+    out.flush();
+  }
   source += " { ";
   if (!returnsVoid)
     source += "return ";
-  source += std::string(name) + "(" + arguments + "); }\n";
+  if (returnsVoid && expression)
+    source += "(void)(" + invocation + ")";
+  else
+    source += invocation;
+  source += "; }\n";
 
   return parseMacroWrapper(info, name, wrapperName, source,
                            "with this extern signature");
@@ -4357,6 +4549,10 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 
     return getClangABIInfoFD(FD);
   }
+
+  if (fn->hasFlag(FLAG_EXTERN))
+    if (auto wrapper = resolveMacroFunction(info, fn))
+      return getClangABIInfoFD(wrapper);
 
   // Otherwise, we should call arrangeFreeFunctionCall
   // with the various types, which must be extern types.

@@ -1,0 +1,1 @@
+macro-local-pointer.chpl:4: error: C macro 'MACRO_LOCAL_POINTER' depends on the caller's storage
