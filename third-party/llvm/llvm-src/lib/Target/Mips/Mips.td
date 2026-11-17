@@ -81,9 +81,9 @@ def FeatureNoOddSPReg  : SubtargetFeature<"nooddspreg", "UseOddSPReg", "false",
 def FeatureVFPU        : SubtargetFeature<"vfpu", "HasVFPU",
                                 "true", "Enable vector FPU instructions">;
 def FeatureMips1       : SubtargetFeature<"mips1", "MipsArchVersion", "Mips1",
-                                "Mips I ISA Support [highly experimental]">;
+                                "Mips I ISA Support">;
 def FeatureMips2       : SubtargetFeature<"mips2", "MipsArchVersion", "Mips2",
-                                "Mips II ISA Support [highly experimental]",
+                                "Mips II ISA Support",
                                 [FeatureMips1]>;
 def FeatureMips3_32    : SubtargetFeature<"mips3_32", "HasMips3_32", "true",
                                 "Subset of MIPS-III that is also in MIPS32 "
@@ -92,7 +92,7 @@ def FeatureMips3_32r2  : SubtargetFeature<"mips3_32r2", "HasMips3_32r2", "true",
                                 "Subset of MIPS-III that is also in MIPS32r2 "
                                 "[highly experimental]">;
 def FeatureMips3       : SubtargetFeature<"mips3", "MipsArchVersion", "Mips3",
-                                "MIPS III ISA Support [highly experimental]",
+                                "MIPS III ISA Support",
                                 [FeatureMips2, FeatureMips3_32,
                                  FeatureMips3_32r2, FeatureGP64Bit,
                                  FeatureFP64Bit]>;
@@ -186,6 +186,14 @@ def FeatureCnMipsP : SubtargetFeature<"cnmipsp", "HasCnMipsP",
                                       "true", "Octeon+ cnMIPS Support",
                                       [FeatureCnMips]>;
 
+def FeatureFixR5900 : SubtargetFeature<"fix-r5900", "FixR5900", "true",
+                                       "Enable R5900 short loop erratum fix">;
+
+def FeatureR5900 : SubtargetFeature<"r5900", "IsR5900", "true",
+                                    "R5900 (PS2 Emotion Engine) Support",
+                                    [FeatureMips3, FeatureSingleFloat,
+                                     FeatureFixR5900]>;
+
 def FeatureUseTCCInDIV : SubtargetFeature<
                                "use-tcc-in-div",
                                "UseTCCInDIV", "false",
@@ -239,7 +247,6 @@ def MIPS64 : HwMode<[IsPTR64bit]>;
 //===----------------------------------------------------------------------===//
 
 include "MipsRegisterInfo.td"
-include "MipsSchedule.td"
 include "MipsInstrInfo.td"
 include "MipsCallingConv.td"
 include "MipsRegisterBanks.td"
@@ -296,6 +303,7 @@ def : Proc<"mips64r6", [FeatureMips64r6]>;
 def : Proc<"octeon", [FeatureMips64r2, FeatureCnMips]>;
 def : Proc<"octeon+", [FeatureMips64r2, FeatureCnMips, FeatureCnMipsP]>;
 def : ProcessorModel<"p5600", MipsP5600Model, [ImplP5600]>;
+def : Proc<"r5900", [FeatureR5900]>;
 def : ProcessorModel<"i6400", MipsI6400Model, [ImplI6400]>;
 def : ProcessorModel<"i6500", MipsI6400Model, [ImplI6500]>;
 

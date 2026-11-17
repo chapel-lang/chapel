@@ -74,7 +74,6 @@ bool MipsSubtarget::MSAWarningPrinted = false;
 bool MipsSubtarget::VirtWarningPrinted = false;
 bool MipsSubtarget::CRCWarningPrinted = false;
 bool MipsSubtarget::GINVWarningPrinted = false;
-bool MipsSubtarget::MIPS1WarningPrinted = false;
 
 void MipsSubtarget::anchor() {}
 
@@ -86,10 +85,10 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
       IsSingleFloat(false), IsFPXX(false), NoABICalls(false), Abs2008(false),
       IsFP64bit(false), UseOddSPReg(true), IsNaN2008bit(false),
       IsGP64bit(false), HasVFPU(false), HasCnMips(false), HasCnMipsP(false),
-      HasMips3_32(false), HasMips3_32r2(false), HasMips4_32(false),
-      HasMips4_32r2(false), HasMips5_32r2(false), InMips16Mode(false),
-      InMips16HardFloat(Mips16HardFloat), InMicroMipsMode(false), HasDSP(false),
-      HasDSPR2(false), HasDSPR3(false),
+      IsR5900(false), FixR5900(false), HasMips3_32(false), HasMips3_32r2(false),
+      HasMips4_32(false), HasMips4_32r2(false), HasMips5_32r2(false),
+      InMips16Mode(false), InMips16HardFloat(Mips16HardFloat),
+      InMicroMipsMode(false), HasDSP(false), HasDSPR2(false), HasDSPR3(false),
       AllowMixed16_32(Mixed16_32 || Mips_Os16), Os16(Mips_Os16), HasMSA(false),
       UseTCCInDIV(false), HasSym32(false), HasEVA(false), DisableMadd4(false),
       HasMT(false), HasCRC(false), HasVirt(false), HasGINV(false),
@@ -103,12 +102,6 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
 
   if (MipsArchVersion == MipsDefault)
     MipsArchVersion = Mips32;
-
-  // MIPS-I has not been tested.
-  if (MipsArchVersion == Mips1 && !MIPS1WarningPrinted) {
-    errs() << "warning: MIPS-I support is experimental\n";
-    MIPS1WarningPrinted = true;
-  }
 
   // Don't even attempt to generate code for MIPS-V. It has not
   // been tested and currently exists for the integrated assembler only.
@@ -260,8 +253,10 @@ MipsSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS,
 
   // Parse features string.
   ParseSubtargetFeatures(CPUName, /*TuneCPU*/ CPUName, FS);
-  // Initialize scheduling itinerary for the specified CPU.
-  InstrItins = getInstrItineraryForCPU(CPUName);
+
+  // O32 uses 32-bit GPRs even when the selected CPU supports a 64-bit ISA.
+  if (isABI_O32())
+    IsGP64bit = false;
 
   if (InMips16Mode && !IsSoftFloat)
     InMips16HardFloat = true;

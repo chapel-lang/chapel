@@ -29,6 +29,9 @@ MachineFunctionInfo *RISCVMachineFunctionInfo::clone(
 
 RISCVMachineFunctionInfo::RISCVMachineFunctionInfo(const Function &F,
                                                    const RISCVSubtarget *STI) {
+  if (const auto *CFB = mdconst::extract_or_null<ConstantInt>(
+          F.getParent()->getModuleFlag("cf-protection-branch")))
+    CFProtectionBranch = CFB->getZExtValue() != 0;
 
   // The default stack probe size is 4096 if the function has no
   // stack-probe-size attribute. This is a safe default because it is the
@@ -82,6 +85,24 @@ RISCVMachineFunctionInfo::getInterruptStackKind(
 
 void yaml::RISCVMachineFunctionInfo::mappingImpl(yaml::IO &YamlIO) {
   MappingTraits<RISCVMachineFunctionInfo>::mapping(YamlIO, *this);
+}
+
+RISCVMachineFunctionInfo::ShadowStackKind
+RISCVMachineFunctionInfo::getShadowStackKind(const MachineFunction &MF) const {
+  // Prefer HW Shadow Stack
+  //
+  // Zicfiss is encoded using a Zimop, so that's the only extension we have to
+  // check here. MOPs will be compressed if they have the right structure to.
+  if (MF.getSubtarget<RISCVSubtarget>().hasStdExtZimop() &&
+      MF.getFunction().hasFnAttribute("hw-shadow-stack"))
+    return ShadowStackKind::Hardware;
+
+  // ShadowCallStack attribute is used for software shadow call stack
+  if (MF.getFunction().hasFnAttribute(Attribute::ShadowCallStack))
+    return ShadowStackKind::Software;
+
+  // Otherwise, none
+  return ShadowStackKind::None;
 }
 
 RISCVMachineFunctionInfo::PushPopKind

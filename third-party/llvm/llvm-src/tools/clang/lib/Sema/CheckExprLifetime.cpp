@@ -345,7 +345,7 @@ shouldTrackFirstArgumentForConstructor(const CXXConstructExpr *Ctor) {
   // patterns.
   auto RHSArgType = Ctor->getArg(0)->getType();
   const auto *RHSRD = RHSArgType->getAsRecordDecl();
-  // LHS is constructed from an intializer_list.
+  // LHS is constructed from an initializer_list.
   //
   // std::initializer_list is a proxy object that provides access to the backing
   // array. We perform analysis on it to determine if there are any dangling
@@ -482,7 +482,8 @@ static void visitFunctionCallArguments(IndirectLocalPath &Path, Expr *Call,
       VisitLifetimeBoundArg(Callee, ObjectArg);
     else if (EnableGSLAnalysis) {
       if (auto *CME = dyn_cast<CXXMethodDecl>(Callee);
-          CME && lifetimes::shouldTrackImplicitObjectArg(CME))
+          CME && lifetimes::shouldTrackImplicitObjectArg(
+                     *ObjectArg, CME, /*RunningUnderLifetimeSafety=*/false))
         VisitGSLPointerArg(Callee, ObjectArg);
     }
   }
@@ -501,12 +502,14 @@ static void visitFunctionCallArguments(IndirectLocalPath &Path, Expr *Call,
     if (CheckCoroCall ||
         CanonCallee->getParamDecl(I)->hasAttr<LifetimeBoundAttr>())
       VisitLifetimeBoundArg(CanonCallee->getParamDecl(I), Arg);
-    else if (const auto *CaptureAttr =
-                 CanonCallee->getParamDecl(I)->getAttr<LifetimeCaptureByAttr>();
-             CaptureAttr && isa<CXXConstructorDecl>(CanonCallee) &&
-             llvm::any_of(CaptureAttr->params(), [](int ArgIdx) {
-               return ArgIdx == LifetimeCaptureByAttr::This;
-             }))
+    else if (isa<CXXConstructorDecl>(CanonCallee) &&
+             llvm::any_of(CanonCallee->getParamDecl(I)
+                              ->specific_attrs<LifetimeCaptureByAttr>(),
+                          [](const LifetimeCaptureByAttr *CaptureAttr) {
+                            return llvm::is_contained(
+                                CaptureAttr->params(),
+                                LifetimeCaptureByAttr::This);
+                          }))
       // `lifetime_capture_by(this)` in a class constructor has the same
       // semantics as `lifetimebound`:
       //
@@ -1336,6 +1339,9 @@ checkExprLifetimeImpl(Sema &SemaRef, const InitializedEntity *InitEntity,
         // expression.
         if (LK == LK_StmtExprResult)
           return false;
+        if (auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
+          if (VD->getType().getAddressSpace() == LangAS::opencl_local)
+            return false;
         SemaRef.Diag(DiagLoc, diag::warn_ret_stack_addr_ref)
             << InitEntity->getType()->isReferenceType() << DRE->getDecl()
             << isa<ParmVarDecl>(DRE->getDecl()) << (LK == LK_MustTail)
@@ -1464,7 +1470,7 @@ checkExprLifetimeImpl(Sema &SemaRef, const InitializedEntity *InitEntity,
   else
     visitLocalsRetainedByInitializer(
         Path, Init, TemporaryVisitor,
-        // Don't revisit the sub inits for the intialization case.
+        // Don't revisit the sub inits for the initialization case.
         /*RevisitSubinits=*/!InitEntity);
 }
 
