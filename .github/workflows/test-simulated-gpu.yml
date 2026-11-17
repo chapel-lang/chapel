@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/test-simulated-gpu.yml'
+      - 'util/test/prediff-for-pantheonsim'
 
 permissions:
   contents: read
@@ -59,6 +60,7 @@ jobs:
             export CHPL_GPU=nvidia
             export CHPL_LAUNCHER=none
             export CHPL_TEST_LAUNCHCMD="vgpu run"
+            export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
           # TODO: add all of  gpu/native and release/examples
           test-paths: examples/gpu/hello-gpu.chpl
           parallel: false
