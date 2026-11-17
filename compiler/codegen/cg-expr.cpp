@@ -1682,14 +1682,14 @@ void codegenErrorIf(GenRet cond, const char* msg, Expr* ctx) {
         info->module->getContext(), "ifFalse");
     trackLLVMValue(contBlock);
 
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
+    auto condBr = info->irBuilder->CreateCondBr(
         condVal.val, haltBlock, contBlock);
     trackLLVMValue(condBr);
 
     insertBasicBlockAtEnd(func, haltBlock);
     info->irBuilder->SetInsertPoint(haltBlock);
     codegenCallExpr("chpl_error", new_CStringSymbol(msg), ln, fn);
-    llvm::BranchInst* toCont = info->irBuilder->CreateBr(contBlock);
+    auto toCont = info->irBuilder->CreateBr(contBlock);
     trackLLVMValue(toCont);
 
     insertBasicBlockAtEnd(func, contBlock);
