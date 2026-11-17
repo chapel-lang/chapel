@@ -80,6 +80,7 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 llvm::Function* getFunctionLLVM(const char* name);
 clang::FunctionDecl* getFunctionDeclClang(const char* name);
 clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name);
+clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn);
 clang::FunctionDecl* getMacroGetterInExternBlock(ModuleSymbol* module,
                                                   const char* name);
 

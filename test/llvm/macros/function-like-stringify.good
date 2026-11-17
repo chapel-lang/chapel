@@ -1,0 +1,1 @@
+function-like-stringify.chpl:3: error: C macro 'MACRO_STRINGIFY' requires caller argument tokens

@@ -1,0 +1,1 @@
+function-like-variadic.chpl:3: error: variadic C macro 'MACRO_VARIADIC' is not supported

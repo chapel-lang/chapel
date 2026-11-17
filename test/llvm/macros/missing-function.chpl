@@ -1,0 +1,3 @@
+extern proc missingFunction();
+
+missingFunction();

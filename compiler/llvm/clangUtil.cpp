@@ -3426,19 +3426,18 @@ void cleanupExternC(void) {
   }
 }
 
-llvm::Function* getFunctionLLVM(const char* name)
-{
+llvm::Function* getFunctionLLVM(const char* name) {
   GenInfo* info = gGenInfo;
   Function* fn = info->module->getFunction(name);
-  if( fn ) return fn;
+  if (fn) return fn;
 
   GenRet got = info->lvt->getValue(name);
-  if( got.val ) {
-    fn = cast<Function>(got.val);
+  if (got.val && isa<llvm::Function>(got.val)) {
+    fn = cast<llvm::Function>(got.val);
     return fn;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 clang::FunctionDecl* getFunctionDeclClang(const char* name)
@@ -3476,8 +3475,50 @@ static bool usesCallerContext(const clang::MacroInfo* macro,
   return false;
 }
 
-clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name)
-{
+static clang::FunctionDecl* parseMacroWrapper(GenInfo* info,
+                                               const char* macroName,
+                                               const std::string& wrapperName,
+                                               const std::string& source,
+                                               const char* use) {
+  clang::CompilerInstance& ci = *info->clangInfo->Clang;
+  clang::Preprocessor& pp = ci.getPreprocessor();
+  if (!ci.hasSema() || !ci.hasASTConsumer())
+    INT_FATAL("Clang parsing context unavailable for macro '%s'", macroName);
+
+  auto buffer = llvm::MemoryBuffer::getMemBufferCopy(source, wrapperName);
+  clang::FileID file = ci.getSourceManager().createFileID(
+      std::move(buffer), clang::SrcMgr::C_User);
+  if (pp.EnterSourceFile(file, nullptr, clang::SourceLocation()))
+    USR_FATAL("could not parse C macro '%s'", macroName);
+
+  clang::Parser parser(pp, ci.getSema(), false);
+  parser.Initialize();
+  GenInfo* savedInfo = gGenInfo;
+  gGenInfo = info;
+  while (true) {
+    clang::Parser::DeclGroupPtrTy group;
+    auto importState = clang::Sema::ModuleImportState::NotACXX20Module;
+    bool done = parser.ParseTopLevelDecl(group, importState);
+    if (group)
+      ci.getASTConsumer().HandleTopLevelDecl(group.get());
+    if (done)
+      break;
+  }
+  gGenInfo = savedInfo;
+
+  if (ci.getDiagnostics().hasErrorOccurred())
+    USR_FATAL("cannot use C macro '%s' %s", macroName, use);
+
+  clang::TypeDecl* ignoredType = nullptr;
+  clang::ValueDecl* value = nullptr;
+  info->lvt->getCDecl(wrapperName, &ignoredType, &value);
+  auto* wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value);
+  if (!wrapper)
+    USR_FATAL("could not generate wrapper for C macro '%s'", macroName);
+  return wrapper;
+}
+
+clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
   if (auto* getter = info->lvt->getMacroGetter(name))
     return getter;
 
@@ -3502,40 +3543,8 @@ clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name)
   std::string source = std::string("static __typeof__(0 ? (") + name +
                        ") : (" + name + ")) " + getterName +
                        "(void) { return " + name + "; }\n";
-
-  if (!ci.hasSema() || !ci.hasASTConsumer())
-    INT_FATAL("Clang parsing context unavailable for macro '%s'", name);
-
-  auto buffer = llvm::MemoryBuffer::getMemBufferCopy(source, getterName);
-  clang::FileID file = ci.getSourceManager().createFileID(
-      std::move(buffer), clang::SrcMgr::C_User);
-  if (pp.EnterSourceFile(file, nullptr, clang::SourceLocation()))
-    USR_FATAL("could not parse C macro '%s'", name);
-
-  clang::Parser parser(pp, ci.getSema(), false);
-  parser.Initialize();
-  GenInfo* savedInfo = gGenInfo;
-  gGenInfo = info;
-  while (true) {
-    clang::Parser::DeclGroupPtrTy group;
-    auto importState = clang::Sema::ModuleImportState::NotACXX20Module;
-    bool done = parser.ParseTopLevelDecl(group, importState);
-    if (group)
-      ci.getASTConsumer().HandleTopLevelDecl(group.get());
-    if (done)
-      break;
-  }
-  gGenInfo = savedInfo;
-
-  if (ci.getDiagnostics().hasErrorOccurred())
-    USR_FATAL("cannot use C macro '%s' as a value expression", name);
-
-  clang::TypeDecl* ignoredType = nullptr;
-  clang::ValueDecl* value = nullptr;
-  info->lvt->getCDecl(getterName, &ignoredType, &value);
-  auto* getter = llvm::dyn_cast_or_null<clang::FunctionDecl>(value);
-  if (!getter)
-    USR_FATAL("could not generate getter for C macro '%s'", name);
+  auto* getter = parseMacroWrapper(info, name, getterName, source,
+                                   "as a value expression");
   clang::QualType result = getter->getReturnType();
   if (result->isVoidType() || result->isFunctionType() ||
       result->isArrayType() || result->isIncompleteType())
@@ -4150,6 +4159,113 @@ getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
 static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
   bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
   return getClangFormalType(formal->intent, formal->type, isReceiver);
+}
+
+static const char* unsupportedMacroArgumentUse(
+    const clang::MacroInfo* macro, clang::Preprocessor& pp,
+    std::set<const clang::MacroInfo*>& visited) {
+  if (!visited.insert(macro).second)
+    return nullptr;
+  auto tokens = macro->tokens();
+  for (size_t i = 0; i < tokens.size(); i++) {
+    const clang::Token& token = tokens[i];
+    if (token.isOneOf(clang::tok::hash, clang::tok::hashhash))
+      return "requires caller argument tokens";
+    if (macro->getNumParams() &&
+        token.isOneOf(clang::tok::plusplus, clang::tok::minusminus,
+                      clang::tok::equal, clang::tok::plusequal,
+                      clang::tok::minusequal, clang::tok::starequal,
+                      clang::tok::slashequal, clang::tok::percentequal,
+                      clang::tok::ampequal, clang::tok::pipeequal,
+                      clang::tok::caretequal, clang::tok::lesslessequal,
+                      clang::tok::greatergreaterequal))
+      return "may mutate a by-value argument";
+    if (macro->getNumParams() && token.is(clang::tok::amp)) {
+      size_t j = i + 1;
+      while (j < tokens.size() && tokens[j].is(clang::tok::l_paren))
+        j++;
+      if (j < tokens.size() && tokens[j].is(clang::tok::identifier) &&
+          macro->getParameterNum(tokens[j].getIdentifierInfo()) >= 0)
+        return "takes the address of a by-value argument";
+    }
+    if (token.is(clang::tok::identifier)) {
+      if (const clang::MacroInfo* nested =
+              pp.getMacroInfo(token.getIdentifierInfo()))
+        if (const char* reason =
+                unsupportedMacroArgumentUse(nested, pp, visited))
+          return reason;
+    }
+  }
+  return nullptr;
+}
+
+clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn) {
+  clang::CompilerInstance& ci = *info->clangInfo->Clang;
+  clang::Preprocessor& pp = ci.getPreprocessor();
+  const char* name = fn->cname;
+  clang::MacroInfo* macro = pp.getMacroInfo(pp.getIdentifierInfo(name));
+  if (!macro)
+    return nullptr;
+  if (!macro->isFunctionLike())
+    USR_FATAL(fn, "object-like C macro '%s' is not supported as an extern proc",
+              name);
+
+  std::string wrapperName = "chpl_macro_call_" + std::to_string(fn->id);
+  clang::TypeDecl* ignoredType = nullptr;
+  clang::ValueDecl* value = nullptr;
+  info->lvt->getCDecl(wrapperName, &ignoredType, &value);
+  if (auto* wrapper = llvm::dyn_cast_or_null<clang::FunctionDecl>(value))
+    return wrapper;
+
+  if (macro->isVariadic())
+    USR_FATAL(fn, "variadic C macro '%s' is not supported", name);
+  if (macro->getNumParams() != (unsigned) fn->numFormals())
+    USR_FATAL(fn, "C macro '%s' expects %u arguments, but extern proc has %d",
+              name, macro->getNumParams(), fn->numFormals());
+  if (!clang::isValidAsciiIdentifier(name, ci.getLangOpts().DollarIdents))
+    USR_FATAL(fn, "invalid C macro name '%s'", name);
+  std::set<const clang::MacroInfo*> visited;
+  if (usesCallerContext(macro, pp, visited))
+    USR_FATAL(fn, "C macro '%s' depends on the caller's context", name);
+
+  visited.clear();
+  if (const char* reason = unsupportedMacroArgumentUse(macro, pp, visited))
+    USR_FATAL(fn, "C macro '%s' %s", name, reason);
+
+  auto& ctx = *info->clangInfo->Ctx;
+  auto policy = ctx.getPrintingPolicy();
+  std::string formals, arguments;
+  unsigned i = 0;
+  for_formals(formal, fn) {
+    std::string formalName = "chpl_formal_" + std::to_string(i++);
+    if (!formals.empty()) {
+      formals += ", ";
+      arguments += ", ";
+    }
+    clang::CanQualType ty = getClangFormalType(formal);
+    llvm::raw_string_ostream out(formals);
+    clang::QualType(ty).print(out, policy, formalName);
+    out.flush();
+    arguments += formalName;
+  }
+  if (formals.empty())
+    formals = "void";
+
+  bool returnsVoid = fn->retType == dtVoid;
+  bool returnsRef = fn->retTag == RET_REF || fn->retTag == RET_CONST_REF;
+  clang::CanQualType returnType = getClangType(fn->retType, returnsRef);
+  std::string source = "static ";
+  llvm::raw_string_ostream out(source);
+  clang::QualType(returnType).print(
+      out, policy, wrapperName + "(" + formals + ")");
+  out.flush();
+  source += " { ";
+  if (!returnsVoid)
+    source += "return ";
+  source += std::string(name) + "(" + arguments + "); }\n";
+
+  return parseMacroWrapper(info, name, wrapperName, source,
+                           "with this extern signature");
 }
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD) {

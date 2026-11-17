@@ -3628,12 +3628,13 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       ret.val = getFunctionLLVM(cname);
       if( ! ret.val ) {
         if( hasFlag(FLAG_EXTERN) ) {
-          if( isBuiltinExternCFunction(cname) ) {
+          if (auto* wrapper = resolveMacroFunction(info, this)) {
+            ret.val = codegenCValue(wrapper).val;
+          } else if (isBuiltinExternCFunction(cname)) {
             // it's OK.
           } else {
             USR_FATAL(this->defPoint,
-                      "Could not find C function for %s; "
-                      " perhaps it is missing or is a macro?", cname);
+                      "Could not find C function or supported macro for '%s', make sure its declaration is available", cname);
           }
         } else {
           INT_FATAL("Missing LLVM function for %s", cname);
