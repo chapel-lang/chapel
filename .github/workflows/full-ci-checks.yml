@@ -436,6 +436,17 @@ jobs:
       cron-script: util/cron/test-verify.bash
       start-test-args: -compopts --verify
       make-targets: all test-venv mason-deps spectests
+  paratest-baseline:
+    name: Chapel paratest with --baseline
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: baseline
+      ccache-key: x86-default
+      ccache-save: false
+      cron-script: util/cron/test-baseline.bash
+      start-test-args: -compopts --baseline
+      make-targets: all test-venv mason-deps spectests
   paratest-locks-atomics:
     name: Chapel paratest with CHPL_ATOMICS=locks
     uses: $/.github/workflows/ga-paratest.yml
