@@ -39,7 +39,7 @@ rm -rf llvm-src/tools/clang/test llvm-src/tools/clang/unittests llvm-src/tools/c
 rm -rf libc/test libc/examples libc/docs
 
 # git add and commit
-git add --force llvm-src cmake third-party
+git add --force llvm-src cmake third-party libc
 git commit -sm "Update bundled LLVM to version $LLVM_VERSION"
 
 # cleanup
