@@ -54,6 +54,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-cuda-${{ matrix.cuda }}
+          save: ${{ github.ref == 'refs/heads/main' }}
       - name: Compile Chapel and run the GPU tests
         uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
         with:
