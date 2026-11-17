@@ -33,6 +33,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include <spawn.h>
 
@@ -412,8 +413,9 @@ qioerr qio_waitpid(int64_t pid,
       break;
     }
     chpl_task_yield();
-    struct timeval timeout = {0, timeout_us};
-    select(0, NULL, NULL, NULL, &timeout);
+    struct timespec timeout = {0, timeout_us * 1000};
+    if (nanosleep(&timeout, NULL) == -1 && errno != EINTR)
+      return qio_int_to_err(errno);
     timeout_us *= 2;
     if (timeout_us > max_timeout_us) timeout_us = max_timeout_us;
   } while (got == 0);
