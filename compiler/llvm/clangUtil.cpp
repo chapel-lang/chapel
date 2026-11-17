@@ -173,10 +173,6 @@ void cleanupUnusedExternC(void) {
 #include "llvmAggregateGlobalOps.h"
 #include "llvmDumpIR.h"
 
-using namespace clang;
-using namespace llvm;
-using namespace CodeGen;
-
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
 static void setupModule();
@@ -364,7 +360,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 }
 
 static
-void addMinMax(ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
+void addMinMax(clang::ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
 {
   const clang::Type* ct = qt.getTypePtr();
   int nbits = Ctx->getTypeSize(ct);
@@ -403,7 +399,7 @@ void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
 }
 
 static
-void setupClangContext(GenInfo* info, ASTContext* Ctx)
+void setupClangContext(GenInfo* info, clang::ASTContext* Ctx)
 {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
@@ -458,9 +454,9 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
 static astlocT getClangDeclLocation(clang::Decl* d) {
   INT_ASSERT(gGenInfo->clangInfo->Ctx);
-  SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
-  SourceLocation loc = d->getLocation();
-  PresumedLoc ploc = srcm.getPresumedLoc(loc, true);
+  clang::SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
+  clang::SourceLocation loc = d->getLocation();
+  clang::PresumedLoc ploc = srcm.getPresumedLoc(loc, true);
   const char* filename = astr(ploc.getFilename());
   unsigned lineno = ploc.getLine();
   astlocT ret(lineno, filename);
@@ -469,22 +465,22 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 
 
 
-typedef MacroInfo::const_tokens_iterator tokens_iterator;
+typedef clang::MacroInfo::const_tokens_iterator tokens_iterator;
 
 static const bool debugPrintMacros = false;
 
-static void handleMacroExpr(const MacroInfo* inMacro,
-                            const IdentifierInfo* origID,
+static void handleMacroExpr(const clang::MacroInfo* inMacro,
+                            const clang::IdentifierInfo* origID,
                             tokens_iterator start,
                             tokens_iterator end,
                             VarSymbol*& varRet,
-                            TypeDecl*& cTypeRet,
-                            ValueDecl*& cValueRet,
+                            clang::TypeDecl*& cTypeRet,
+                            clang::ValueDecl*& cValueRet,
                             const char*& cCastToTypeRet);
 
-static void handleCallMacro(const IdentifierInfo* origID,
-                            const MacroInfo* inMacro,
-                            const MacroInfo* calledMacro) {
+static void handleCallMacro(const clang::IdentifierInfo* origID,
+                            const clang::MacroInfo* inMacro,
+                            const clang::MacroInfo* calledMacro) {
   if (inMacro->getNumTokens() != 6)
     return;
   if (calledMacro->getNumParams() != 2)
@@ -493,7 +489,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
     return;
 
   // expect 'LAPACK_GLOBAL' '(' 'actual1' ',' 'actual2' ')'
-  Token actual1, actual2;
+  clang::Token actual1, actual2;
   int count = 0;
   for (tokens_iterator tok = inMacro->tokens_begin();
        tok != inMacro->tokens_end(); ++tok) {
@@ -504,10 +500,10 @@ static void handleCallMacro(const IdentifierInfo* origID,
       actual2 = *tok;
   }
 
-  IdentifierInfo* formal1 = nullptr;
-  IdentifierInfo* formal2 = nullptr;
+  clang::IdentifierInfo* formal1 = nullptr;
+  clang::IdentifierInfo* formal2 = nullptr;
   count = 0;
-  for (MacroInfo::param_iterator param = calledMacro->param_begin();
+  for (clang::MacroInfo::param_iterator param = calledMacro->param_begin();
        param != calledMacro->param_end(); ++param) {
     count++;
     if (count == 1)
@@ -518,22 +514,22 @@ static void handleCallMacro(const IdentifierInfo* origID,
 
   // expecting 'identifier' ## '_'
   count = 0;
-  Token body1, body2, body3;
+  clang::Token body1, body2, body3;
   for (tokens_iterator tok = calledMacro->tokens_begin();
        tok != calledMacro->tokens_end(); ++tok) {
     count++;
     if (count == 1) {
-      if (tok->getKind() != tok::identifier)
+      if (tok->getKind() != clang::tok::identifier)
         return;
       body1 = *tok;
     }
     if (count == 2) {
-      if (tok->getKind() != tok::hashhash)
+      if (tok->getKind() != clang::tok::hashhash)
         return;
       body2 = *tok;
     }
     if (count == 3) {
-      if (tok->getKind() != tok::identifier)
+      if (tok->getKind() != clang::tok::identifier)
         return;
       body3 = *tok;
     }
@@ -564,7 +560,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
 
 // Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
-void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
+void handleMacro(const clang::IdentifierInfo* id, const clang::MacroInfo* macro)
 {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -590,11 +586,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   }
 
   VarSymbol* varRet = NULL;
-  TypeDecl* cTypeRet = NULL;
-  ValueDecl* cValueRet = NULL;
+  clang::TypeDecl* cTypeRet = NULL;
+  clang::ValueDecl* cValueRet = NULL;
   const char* cCastToTypeRet = NULL;
 
-  static std::set<const MacroInfo*> activeMacros;
+  static std::set<const clang::MacroInfo*> activeMacros;
   if (!activeMacros.insert(macro).second)
     return;
   handleMacroExpr(macro, id,
@@ -623,7 +619,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
 }
 
-static void removeMacroOuterParens(const MacroInfo* inMacro,
+static void removeMacroOuterParens(const clang::MacroInfo* inMacro,
                                    tokens_iterator &start,
                                    tokens_iterator &end) {
 
@@ -636,14 +632,14 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
   for (tokens_iterator cur = end - 1;
        cur != start;
        --cur) {
-    if(cur->getKind() == tok::r_paren) right_parens++;
+    if(cur->getKind() == clang::tok::r_paren) right_parens++;
     else break;
   }
 
   for (tokens_iterator cur = start;
        cur != end;
        ++cur) {
-    if(cur->getKind() == tok::l_paren) left_parens++;
+    if(cur->getKind() == clang::tok::l_paren) left_parens++;
     else break;
   }
 
@@ -660,7 +656,7 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 
 // finds a parenthesized expression at the start of start..end
 // the expression does not necessarily cover the entire expression.
-static bool findParenthesizedExpr(const MacroInfo* inMacro,
+static bool findParenthesizedExpr(const clang::MacroInfo* inMacro,
                                   tokens_iterator start,
                                   tokens_iterator end,
                                   tokens_iterator &pStart,
@@ -668,15 +664,15 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
   int inparens = 0;
   for (tokens_iterator cur = start; cur != end; ++cur) {
 
-    if (cur->getKind() == tok::l_paren) inparens++;
-    if (cur->getKind() == tok::r_paren) inparens--;
+    if (cur->getKind() == clang::tok::l_paren) inparens++;
+    if (cur->getKind() == clang::tok::r_paren) inparens--;
 
-    if (inparens==1 && cur->getKind() == tok::l_paren) {
+    if (inparens==1 && cur->getKind() == clang::tok::l_paren) {
       // just found the outermost (
       pStart = cur;
     } else if (inparens > 0) {
       // pass a parenthesized expression
-    } else if (inparens==0 && cur->getKind() == tok::r_paren) {
+    } else if (inparens==0 && cur->getKind() == clang::tok::r_paren) {
       // just found the outermost )
       pEnd = cur+1;
       return true;
@@ -693,11 +689,11 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 
 
 // Returns a type/identifier/macro name or NULL if it was not handled
-static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
-                                              const IdentifierInfo* origID,
+static const char* handleTypeOrIdentifierExpr(const clang::MacroInfo* inMacro,
+                                              const clang::IdentifierInfo* origID,
                                               tokens_iterator start,
                                               tokens_iterator end,
-                                              IdentifierInfo*& ii) {
+                                              clang::IdentifierInfo*& ii) {
   GenInfo* info = gGenInfo;
   ii = NULL;
 
@@ -714,32 +710,32 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
   removeMacroOuterParens(inMacro, start, end);
 
   while (start != end) {
-    if (start->getKind() == tok::kw_unsigned) {
+    if (start->getKind() == clang::tok::kw_unsigned) {
       _unsigned++;
       _signed = 0;
       ++start;
-    } else if (start->getKind() == tok::kw_signed) {
+    } else if (start->getKind() == clang::tok::kw_signed) {
       _signed++;
       _unsigned = 0;
       ++start;
-    } else if (start->getKind() == tok::kw_long) {
+    } else if (start->getKind() == clang::tok::kw_long) {
       _long++;
       _short = 0;
       ++start;
-    } else if (start->getKind() == tok::kw_short) {
+    } else if (start->getKind() == clang::tok::kw_short) {
       _short++;
       _long = 0;
       ++start;
-    } else if (start->getKind() == tok::kw_int) {
+    } else if (start->getKind() == clang::tok::kw_int) {
       _int++;
       ++start;
-    } else if (start->getKind() == tok::kw_char) {
+    } else if (start->getKind() == clang::tok::kw_char) {
       _char++;
       ++start;
-    } else if (start->getKind() == tok::kw_float) {
+    } else if (start->getKind() == clang::tok::kw_float) {
       _float++;
       ++start;
-    } else if (start->getKind() == tok::kw_double) {
+    } else if (start->getKind() == clang::tok::kw_double) {
       _double++;
       ++start;
     } else {
@@ -751,14 +747,14 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
       _long == 0 && _short == 0 &&
       _int == 0 && _char == 0 && _float == 0 && _double == 0) {
 
-    Token tok = *start; // the main token
+    clang::Token tok = *start; // the main token
     ++start;
 
     if (start != end) {
       /* return NULL unless it's a specific pattern we know how to handle */
       bool canHandle = false;
-      if (tok.getKind() == tok::identifier) {
-        IdentifierInfo* tokId = tok.getIdentifierInfo();
+      if (tok.getKind() == clang::tok::identifier) {
+        clang::IdentifierInfo* tokId = tok.getIdentifierInfo();
         if (info->lvt->getMacro(tokId->getName()))
           canHandle = true;
       }
@@ -766,8 +762,8 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
         return NULL;
     }
 
-    if (tok.getKind() == tok::identifier) {
-      IdentifierInfo* tokId = tok.getIdentifierInfo();
+    if (tok.getKind() == clang::tok::identifier) {
+      clang::IdentifierInfo* tokId = tok.getIdentifierInfo();
       ii = tokId;
       if (const clang::MacroInfo* macro =
             info->lvt->getMacro(tokId->getName())) {
@@ -837,19 +833,19 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
   return NULL;
 }
 
-static const char* handleStringExpr(const MacroInfo* inMacro,
+static const char* handleStringExpr(const clang::MacroInfo* inMacro,
                                     tokens_iterator start,
                                     tokens_iterator end) {
   removeMacroOuterParens(inMacro, start, end);
 
-  Token tok = *start; // the main token
+  clang::Token tok = *start; // the main token
   ++start;
 
   // Give up if there are any tokens beyond the main token
   if (start != end)
     return NULL;
 
-  if (tok.getKind() == tok::string_literal) {
+  if (tok.getKind() == clang::tok::string_literal) {
     std::string body = std::string(tok.getLiteralData(), tok.getLength());
     return astr(body.c_str());
   }
@@ -863,25 +859,25 @@ static ::Type* getTypeForMacro(const char* name) {
   return t;
 }
 
-static bool handleNumericCastExpr(const MacroInfo* inMacro,
+static bool handleNumericCastExpr(const clang::MacroInfo* inMacro,
                                   tokens_iterator start,
                                   tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet);
-static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+static bool handleNumericUnaryPrefixExpr(const clang::MacroInfo* inMacro,
                                          tokens_iterator start,
                                          tokens_iterator end,
                                          Immediate* imm);
-static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+static bool handleNumericLiteralExpr(const clang::MacroInfo* inMacro,
                                      tokens_iterator start,
                                      tokens_iterator end,
                                      Immediate* imm);
-static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+static bool handleNumericBinOpExpr(const clang::MacroInfo* inMacro,
                                    tokens_iterator start,
                                    tokens_iterator end,
                                    Immediate* imm);
 
-static bool handleNumericExpr(const MacroInfo* inMacro,
+static bool handleNumericExpr(const clang::MacroInfo* inMacro,
                               tokens_iterator start,
                               tokens_iterator end,
                               Immediate* imm,
@@ -909,7 +905,7 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
   return false;
 }
 
-static bool handleNumericCastExpr(const MacroInfo* inMacro,
+static bool handleNumericCastExpr(const clang::MacroInfo* inMacro,
                                   tokens_iterator start,
                                   tokens_iterator end,
                                   Immediate* imm,
@@ -936,8 +932,8 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     // Find the type to cast to
     // (handles things like macros, nested parens)
     VarSymbol* tmpVar = NULL;
-    TypeDecl* tmpType = NULL;
-    ValueDecl* tmpVal = NULL;
+    clang::TypeDecl* tmpType = NULL;
+    clang::ValueDecl* tmpVal = NULL;
     const char* tmpCastToType = NULL;
 
     handleMacroExpr(inMacro, NULL, castStart, castEnd,
@@ -989,7 +985,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 }
 
 
-static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+static bool handleNumericUnaryPrefixExpr(const clang::MacroInfo* inMacro,
                                          tokens_iterator start,
                                          tokens_iterator end,
                                          Immediate* imm) {
@@ -997,8 +993,8 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
     return false;
 
   // handle prefix unary operators + and -
-  if (start->getKind() == tok::plus ||
-      start->getKind() == tok::minus) {
+  if (start->getKind() == clang::tok::plus ||
+      start->getKind() == clang::tok::minus) {
 
     if (start+1 == end)
       return false;
@@ -1011,8 +1007,8 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
 
     int p = 0;
     switch (start->getKind()) {
-      case tok::plus:   p = P_prim_plus;    break;
-      case tok::minus:  p = P_prim_minus;   break;
+      case clang::tok::plus:   p = P_prim_plus;    break;
+      case clang::tok::minus:  p = P_prim_minus;   break;
       default:
         INT_FATAL("unhandled case");
     }
@@ -1024,7 +1020,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
   return false;
 }
 
-static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+static bool handleNumericLiteralExpr(const clang::MacroInfo* inMacro,
                                      tokens_iterator start,
                                      tokens_iterator end,
                                      Immediate* imm) {
@@ -1032,8 +1028,8 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
     return false;
 
   // handle a single numeric literal
-  if (start->getKind() == tok::numeric_constant && start+1 == end) {
-    Token tok = *start; // the main token
+  if (start->getKind() == clang::tok::numeric_constant && start+1 == end) {
+    clang::Token tok = *start; // the main token
     VarSymbol* varRet = NULL;
     std::string numString;
     int hex;
@@ -1136,7 +1132,7 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
   return false;
 }
 
-static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+static bool handleNumericBinOpExpr(const clang::MacroInfo* inMacro,
                                    tokens_iterator start,
                                    tokens_iterator end,
                                    Immediate* imm) {
@@ -1149,7 +1145,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   tokens_iterator lhsEnd = start;
 
   // find a LHS constant or parenthesized-expression
-  if (start->getKind() == tok::numeric_constant) {
+  if (start->getKind() == clang::tok::numeric_constant) {
     lhsOk = true;
     lhsStart = start;
     lhsEnd = start+1;
@@ -1166,7 +1162,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   tokens_iterator rhsEnd = rhsStart;
 
   // find a RHS constant or parenthesized-expression
-  if (rhsStart->getKind() == tok::numeric_constant) {
+  if (rhsStart->getKind() == clang::tok::numeric_constant) {
     rhsOk = true;
     rhsEnd = rhsStart+1;
   } else {
@@ -1196,7 +1192,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   // Apply the binary operator to the immediate
   int p = 0;
   switch (op->getKind()) {
-    case tok::lessless:   p = P_prim_lsh;    break;
+    case clang::tok::lessless:   p = P_prim_lsh;    break;
     default:
       return false; // this operator not handled
   }
@@ -1205,20 +1201,20 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   return true;
 }
 
-static void handleMacroExpr(const MacroInfo* inMacro,
-                            const IdentifierInfo* origID,
+static void handleMacroExpr(const clang::MacroInfo* inMacro,
+                            const clang::IdentifierInfo* origID,
                             tokens_iterator start,
                             tokens_iterator end,
                             VarSymbol*& varRet,
-                            TypeDecl*& cTypeRet,
-                            ValueDecl*& cValueRet,
+                            clang::TypeDecl*& cTypeRet,
+                            clang::ValueDecl*& cValueRet,
                             const char*& cCastToTypeRet)
 {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
+  clang::Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
 
   const bool debugPrint = debugPrintMacros;
 
@@ -1237,7 +1233,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
     for (tokens_iterator cur = start;
          cur != end;
          ++cur) {
-      Token t = *cur;
+      clang::Token t = *cur;
       printf("Found token type %i name %s\n", t.getKind(), t.getName());
     }
   }
@@ -1258,7 +1254,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
     }
     if( !varRet && !cTypeRet && !cValueRet && ii != NULL) {
       // Check to see if it's another macro.
-      MacroInfo* otherMacro = preproc.getMacroInfo(ii);
+      clang::MacroInfo* otherMacro = preproc.getMacroInfo(ii);
       if( otherMacro && otherMacro != inMacro ) {
         // Handle the other macro to add it to the LVT under the new name
         // The recursive call will add it to the LVT
@@ -1333,8 +1329,8 @@ void readMacrosClang(void) {
   addMinMax("UINT64", 64, false);
 
   //printf("Running ReadMacrosAction\n");
-  Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
-  for(Preprocessor::macro_iterator i = preproc.macro_begin();
+  clang::Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
+  for(clang::Preprocessor::macro_iterator i = preproc.macro_begin();
       i != preproc.macro_end();
       i++) {
 
@@ -1349,33 +1345,34 @@ void readMacrosClang(void) {
 // 3: keep the code generator open until we finish generating Chapel code,
 //    since we might need to code generate called functions.
 // 4: get LLVM values for code generated C things (e.g. types, function ptrs)
-class CCodeGenConsumer final : public ASTConsumer {
+class CCodeGenConsumer final : public clang::ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
     clang::CodeGenerator* Builder;
     bool parseOnly;
-    ASTContext* savedCtx;
+    clang::ASTContext* savedCtx;
 
-    bool shouldHandleDecl(Decl* d) {
+    bool shouldHandleDecl(clang::Decl* d) {
       if (gCodegenGPU) {
         // this decl must have __device__ and it must be explicit (for some
         // reason odd reason, with AMD code generation we see am implicit use of
         // __device__ on some math functions in the C stdlib that really aren't
         // supposed to have them and this causes linker issues later on).
-        return d->hasAttr<CUDADeviceAttr>() &&
-          !d->getAttr<CUDADeviceAttr>()->isImplicit();
+        return d->hasAttr<clang::CUDADeviceAttr>() &&
+          !d->getAttr<clang::CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a
         // __host__
-        return !d->hasAttr<CUDADeviceAttr>() || d->hasAttr<CUDAHostAttr>();
+        return !d->hasAttr<clang::CUDADeviceAttr>() ||
+               d->hasAttr<clang::CUDAHostAttr>();
       }
     }
 
   public:
     CCodeGenConsumer()
-      : ASTConsumer(),
+      : clang::ASTConsumer(),
         info(gGenInfo),
         Diags(&info->clangInfo->Clang->getDiagnostics()),
         Builder(nullptr),
@@ -1384,7 +1381,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     {
 
       if (!parseOnly) {
-        info->clangInfo->cCodeGen = CreateLLVMCodeGen(
+        info->clangInfo->cCodeGen = clang::CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
           &info->clangInfo->Clang->getVirtualFileSystem(),
@@ -1414,7 +1411,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     ~CCodeGenConsumer() override = default;
 
     // Start ASTVisitor Overrides
-    void Initialize(ASTContext &Context) override {
+    void Initialize(clang::ASTContext &Context) override {
 
       setupClangContext(info, &Context);
 
@@ -1428,33 +1425,35 @@ class CCodeGenConsumer final : public ASTConsumer {
       adjustLayoutForGlobalToWide();
     }
 
-    void doHandleDecl(Decl* d) {
-      if (TypedefDecl *td = dyn_cast<TypedefDecl>(d)) {
+    void doHandleDecl(clang::Decl* d) {
+      if (clang::TypedefDecl *td = llvm::dyn_cast<clang::TypedefDecl>(d)) {
         const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
         if(ctype != NULL) {
           info->lvt->addGlobalCDecl(td);
         }
-      } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
+      } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(d)) {
         if (shouldHandleDecl(d)) {
           info->lvt->addGlobalCDecl(fd);
         }
-      } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
+      } else if (clang::VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(d)) {
         if (shouldHandleDecl(d)) {
           info->lvt->addGlobalCDecl(vd);
         }
-      } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
+      } else if (clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(d)) {
         info->lvt->addGlobalCDecl(rd);
-      } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
+      } else if (clang::UsingDecl* ud = llvm::dyn_cast<clang::UsingDecl>(d)) {
         for (auto shadow : ud->shadows()) {
-          NamedDecl* nd = shadow->getTargetDecl();
+          clang::NamedDecl* nd = shadow->getTargetDecl();
           doHandleDecl(nd);
         }
-      } else if (LinkageSpecDecl* ld = dyn_cast<LinkageSpecDecl>(d)) {
+      } else if (clang::LinkageSpecDecl* ld =
+                     llvm::dyn_cast<clang::LinkageSpecDecl>(d)) {
         // Handles extern "C" { }
         for (auto sub : ld->decls()) {
           doHandleDecl(sub);
         }
-      } else if (ExternCContextDecl *ed = dyn_cast<ExternCContextDecl>(d)) {
+      } else if (clang::ExternCContextDecl *ed =
+                     llvm::dyn_cast<clang::ExternCContextDecl>(d)) {
         // TODO: is this an alternative extern "C"?
         // do we need to handle it?
         for (auto sub : ed->decls()) {
@@ -1467,7 +1466,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     // This is called by the parser to process every top-level Decl*.
     //
     // \returns true to continue parsing, or false to abort parsing.
-    bool HandleTopLevelDecl(DeclGroupRef DG) override {
+    bool HandleTopLevelDecl(clang::DeclGroupRef DG) override {
 
       if (Diags->hasErrorOccurred()) return true;
 
@@ -1482,39 +1481,39 @@ class CCodeGenConsumer final : public ASTConsumer {
 
    // \brief This callback is invoked each time an inline (method or friend)
    // function definition in a class is completed.
-    void HandleInlineFunctionDefinition(FunctionDecl *D) override {
+    void HandleInlineFunctionDefinition(clang::FunctionDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleInlineFunctionDefinition(D);
     }
 
-   void HandleInterestingDecl(DeclGroupRef D) override {
+   void HandleInterestingDecl(clang::DeclGroupRef D) override {
      if (Diags->hasErrorOccurred()) return;
      if (parseOnly) return;
      Builder->HandleInterestingDecl(D);
    }
 
-   void HandleTranslationUnit(ASTContext &Context) override {
+   void HandleTranslationUnit(clang::ASTContext &Context) override {
      // Don't call Builder->HandleTranslationUnit yet, so that we
      // can keep it open to codegen more later.
      savedCtx = &Context;
      INT_ASSERT(savedCtx == info->clangInfo->Ctx);
    }
 
-   void HandleTagDeclDefinition(TagDecl *D) override {
+   void HandleTagDeclDefinition(clang::TagDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
 
       // make a note of C globals
-      if(EnumDecl *ed = dyn_cast<EnumDecl>(D)) {
+      if(clang::EnumDecl *ed = llvm::dyn_cast<clang::EnumDecl>(D)) {
          // Add the enum type
          info->lvt->addGlobalCDecl(ed);
          // Add the enum values
-         for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
+         for(clang::EnumDecl::enumerator_iterator e = ed->enumerator_begin();
              e != ed->enumerator_end();
              e++) {
            info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
          }
-      } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
+      } else if(clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(D)) {
          const clang::Type *ctype = getClangASTType(rd->getASTContext(), rd);
 
          if(ctype != NULL && rd->getDefinition() != NULL) {
@@ -1525,60 +1524,60 @@ class CCodeGenConsumer final : public ASTConsumer {
       Builder->HandleTagDeclDefinition(D);
     }
 
-    void HandleTagDeclRequiredDefinition(const TagDecl *D) override {
+    void HandleTagDeclRequiredDefinition(const clang::TagDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleTagDeclRequiredDefinition(D);
     }
 
-    void HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) override {
+    void HandleCXXImplicitFunctionInstantiation(clang::FunctionDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleCXXImplicitFunctionInstantiation(D);
     }
 
-    void HandleTopLevelDeclInObjCContainer(DeclGroupRef D) override {
+    void HandleTopLevelDeclInObjCContainer(clang::DeclGroupRef D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleTopLevelDeclInObjCContainer(D);
     }
 
-    void HandleImplicitImportDecl(ImportDecl *D) override {
+    void HandleImplicitImportDecl(clang::ImportDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleImplicitImportDecl(D);
     }
 
-    void CompleteTentativeDefinition(VarDecl *D) override {
+    void CompleteTentativeDefinition(clang::VarDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->CompleteTentativeDefinition(D);
     }
 
-    void AssignInheritanceModel(CXXRecordDecl *RD) override {
+    void AssignInheritanceModel(clang::CXXRecordDecl *RD) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->AssignInheritanceModel(RD);
     }
 
-    void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) override {
+    void HandleCXXStaticMemberVarInstantiation(clang::VarDecl *VD) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
        Builder->HandleCXXStaticMemberVarInstantiation(VD);
     }
 
-    void HandleVTable(CXXRecordDecl *RD) override {
+    void HandleVTable(clang::CXXRecordDecl *RD) override {
        if (Diags->hasErrorOccurred()) return;
        if (parseOnly) return;
        Builder->HandleVTable(RD);
      }
 
-    ASTMutationListener *GetASTMutationListener() override {
+    clang::ASTMutationListener *GetASTMutationListener() override {
       if (Builder) return Builder->GetASTMutationListener();
       return nullptr;
     }
 
-    ASTDeserializationListener *GetASTDeserializationListener() override {
+    clang::ASTDeserializationListener *GetASTDeserializationListener() override {
       if (Builder) return Builder->GetASTDeserializationListener();
       return nullptr;
     }
@@ -1587,37 +1586,38 @@ class CCodeGenConsumer final : public ASTConsumer {
       if (Builder) Builder->PrintStats();
     }
 
-    bool shouldSkipFunctionBody(Decl *D) override {
+    bool shouldSkipFunctionBody(clang::Decl *D) override {
       if (Builder) return Builder->shouldSkipFunctionBody(D);
       return true;
     }
 
     // End ASTVisitor overrides
 
-    const Decl *GetDeclForMangledName(llvm::StringRef MangledName) {
+    const clang::Decl *GetDeclForMangledName(llvm::StringRef MangledName) {
       return Builder->GetDeclForMangledName(MangledName);
     }
 
-    llvm::Constant *GetAddrOfGlobal(GlobalDecl decl) {
+    llvm::Constant *GetAddrOfGlobal(clang::GlobalDecl decl) {
       return Builder->GetAddrOfGlobal(decl, false);
     }
 };
 
 
-class CCodeGenAction final : public ASTFrontendAction {
+class CCodeGenAction final : public clang::ASTFrontendAction {
  public:
   CCodeGenAction() { }
   // Keep the original Sema and preprocessor alive for requested macro probes.
   void EndSourceFile() override { }
  protected:
-  std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override;
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance &CI, llvm::StringRef InFile) override;
 };
 
-std::unique_ptr<ASTConsumer>
-CCodeGenAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
+std::unique_ptr<clang::ASTConsumer>
+CCodeGenAction::CreateASTConsumer(clang::CompilerInstance &CI,
+                                 llvm::StringRef InFile) {
   CCodeGenConsumer* c = new CCodeGenConsumer();
-  return std::unique_ptr<ASTConsumer>(c);
+  return std::unique_ptr<clang::ASTConsumer>(c);
 };
 
 static void finishClang(ClangInfo* clangInfo){
@@ -1730,7 +1730,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
   // Create a compiler instance to handle the actual work.
-  CompilerInstance* Clang = new CompilerInstance();
+  clang::CompilerInstance* Clang = new clang::CompilerInstance();
   auto diagOptions = clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
 #if LLVM_VERSION_MAJOR >= 21
@@ -1758,9 +1758,9 @@ void setupClang(GenInfo* info, std::string mainFile)
   Clang->setDiagnostics(&*clangDiags);
 
   if (usingGpuLocaleModel()) {
-    clangDiags->setSeverityForGroup(diag::Flavor::WarningOrError,
+    clangDiags->setSeverityForGroup(clang::diag::Flavor::WarningOrError,
                                     "unknown-cuda-version",
-                                    diag::Severity::Ignored);
+                                    clang::diag::Severity::Ignored);
   }
   clangInfo->Clang = Clang;
 
@@ -1823,12 +1823,12 @@ void setupClang(GenInfo* info, std::string mainFile)
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
 
-  bool success = CompilerInvocation::CreateFromArgs(
+  bool success = clang::CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             job->getArguments(),
             *clangDiags);
 
-  CompilerInvocation* CI = &Clang->getInvocation();
+  clang::CompilerInvocation* CI = &Clang->getInvocation();
 
   INT_ASSERT(success);
 
@@ -1842,25 +1842,25 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   {
     // Make sure we include clang's internal header dir
-    SmallString<128> P;
-    SmallString<128> P2; // avoids a valgrind overlapping memcpy
+    llvm::SmallString<128> P;
+    llvm::SmallString<128> P2; // avoids a valgrind overlapping memcpy
 
     P = clangInfo->clangexe;
     // Remove /clang from foo/bin/clang
-    P2 = sys::path::parent_path(P);
+    P2 = llvm::sys::path::parent_path(P);
     // Remove /bin   from foo/bin
-    P = sys::path::parent_path(P2);
+    P = llvm::sys::path::parent_path(P2);
 
     if( ! P.equals("") ) {
       // Get foo/lib/clang/<version>/
-      sys::path::append(P, "lib");
-      sys::path::append(P, "clang");
-      sys::path::append(P, CLANG_VERSION_STRING);
+      llvm::sys::path::append(P, "lib");
+      llvm::sys::path::append(P, "clang");
+      llvm::sys::path::append(P, CLANG_VERSION_STRING);
     }
     CI->getHeaderSearchOpts().ResourceDir = std::string(P.str());
-    sys::path::append(P, "include");
+    llvm::sys::path::append(P, "include");
     CI->getHeaderSearchOpts().AddPath(
-        P.str(), frontend::System,false, false);
+        P.str(), clang::frontend::System,false, false);
   }
 
   // Create the compilers actual diagnostics engine.
@@ -1917,7 +1917,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
 // copied from clang's BackendUtil.cpp
 static chpl::optional<llvm::CodeModel::Model>
-getCodeModel(const CodeGenOptions &CodeGenOpts) {
+getCodeModel(const clang::CodeGenOptions &CodeGenOpts) {
   unsigned CodeModel = llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
                            .Case("tiny", llvm::CodeModel::Tiny)
                            .Case("small", llvm::CodeModel::Small)
@@ -1934,20 +1934,20 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
 
 #if HAVE_LLVM_VER >= 200
 // copied from clang/lib/CodeGen/BackendUtil.cpp
-static std::string flattenClangCommandLine(ArrayRef<std::string> Args,
-                                           StringRef MainFilename) {
+static std::string flattenClangCommandLine(llvm::ArrayRef<std::string> Args,
+                                           llvm::StringRef MainFilename) {
   if (Args.empty())
     return std::string{};
 
   std::string FlatCmdLine;
-  raw_string_ostream OS(FlatCmdLine);
+  llvm::raw_string_ostream OS(FlatCmdLine);
   bool PrintedOneArg = false;
-  if (!StringRef(Args[0]).contains("-cc1")) {
+  if (!llvm::StringRef(Args[0]).contains("-cc1")) {
     llvm::sys::printArg(OS, "-cc1", /*Quote=*/true);
     PrintedOneArg = true;
   }
   for (unsigned i = 0; i < Args.size(); i++) {
-    StringRef Arg = Args[i];
+    llvm::StringRef Arg = Args[i];
     if (Arg.empty())
       continue;
     if (Arg == "-main-file-name" || Arg == "-o") {
@@ -2139,7 +2139,7 @@ static void loadModuleFromBitcode() {
   std::string bitcodeFilename =
       (fLLVMWideOpt ? info->llvmGenFilenames.opt2Filename
                     : info->llvmGenFilenames.opt1Filename);
-  auto fileResult = MemoryBuffer::getFile(bitcodeFilename);
+  auto fileResult = llvm::MemoryBuffer::getFile(bitcodeFilename);
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
@@ -2183,9 +2183,9 @@ static void setupModule()
   // Set the TargetMachine
   std::string Err;
 #if LLVM_VERSION_MAJOR >= 22
-  const llvm::Target* Target = TargetRegistry::lookupTarget(Triple, Err);
+  const llvm::Target* Target = llvm::TargetRegistry::lookupTarget(Triple, Err);
 #else
-  const llvm::Target* Target = TargetRegistry::lookupTarget(Triple.str(), Err);
+  const llvm::Target* Target = llvm::TargetRegistry::lookupTarget(Triple.str(), Err);
 #endif
   if (!Target)
     USR_FATAL("Could not find LLVM target for %s: %s",
@@ -2233,7 +2233,7 @@ static void setupModule()
   }
 
   // Choose the code model
-  chpl::optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
+  chpl::optional<llvm::CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
   auto optLevel =
 #if HAVE_LLVM_VER >= 180
@@ -2425,11 +2425,11 @@ void finishCodegenLLVM() {
   if (developer || fVerify) {
     bool problems;
     bool brokenDebugInfo = true;
-    problems = verifyModule(*info->module, &errs(), &brokenDebugInfo);
+    problems = llvm::verifyModule(*info->module, &llvm::errs(), &brokenDebugInfo);
     if (problems) {
       for (auto& function : info->module->functions()) {
-        if (verifyFunction(function))
-          function.print(errs());
+        if (llvm::verifyFunction(function))
+          function.print(llvm::errs());
       }
       INT_FATAL("LLVM module verification failed");
     }
@@ -2492,7 +2492,7 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
   clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
 
   // Based on clang's EmitAssemblyHelper::RunOptimizationPipeline
-  PipelineTuningOptions PTO;
+  llvm::PipelineTuningOptions PTO;
   PTO.LoopUnrolling = CodeGenOpts.UnrollLoops;
   // For historical reasons, loop interleaving is set to mirror setting for loop
   // unrolling.
@@ -2508,16 +2508,16 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 }
 
 
-static void registerDumpIrExtensions(PassBuilder& PB);
+static void registerDumpIrExtensions(llvm::PassBuilder& PB);
 
 // expose a command line option from LLVM
 // we set it via a chpl command line option
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
-static PassBuilder constructPassBuilder(
+static llvm::PassBuilder constructPassBuilder(
   llvm::TargetMachine* targetMachine,
-  PassInstrumentationCallbacks* PIC,
+  llvm::PassInstrumentationCallbacks* PIC,
   bool forFunction) {
   // this is required to be set, or LLVM will not properly populate the pass
   // names. technically this flag enables extra printing to the dbg() output,
@@ -2525,8 +2525,8 @@ static PassBuilder constructPassBuilder(
   // this must always be set so that `--print-before` (and similar commands) will
   // still work with their nice pass name
   llvm::PrintPipelinePasses = true;
-  chpl::optional<PGOOptions> PGOOpt;
-  PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+  chpl::optional<llvm::PGOOptions> PGOOpt;
+  llvm::PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
   llvm::PrintPipelinePasses = false;
   return PB;
 }
@@ -2543,23 +2543,24 @@ static PassBuilder constructPassBuilder(
 // First of all, there is no point if -fdata-sections is off (expect for MachO,
 // where this is not a factor). Also, on ELF this feature requires an assembler
 // extension that only works with -integrated-as at the moment.
-static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
+static bool asanUseGlobalsGC(const llvm::Triple &T,
+                            const clang::CodeGenOptions &CGOpts) {
   if (!CGOpts.SanitizeAddressGlobalsDeadStripping)
     return false;
   switch (T.getObjectFormat()) {
-  case Triple::MachO:
-  case Triple::COFF:
+  case llvm::Triple::MachO:
+  case llvm::Triple::COFF:
     return true;
-  case Triple::ELF:
+  case llvm::Triple::ELF:
     return !CGOpts.DisableIntegratedAS;
-  case Triple::GOFF:
+  case llvm::Triple::GOFF:
     llvm::report_fatal_error("ASan not implemented for GOFF");
-  case Triple::XCOFF:
+  case llvm::Triple::XCOFF:
     llvm::report_fatal_error("ASan not implemented for XCOFF.");
-  case Triple::Wasm:
-  case Triple::DXContainer:
-  case Triple::SPIRV:
-  case Triple::UnknownObjectFormat:
+  case llvm::Triple::Wasm:
+  case llvm::Triple::DXContainer:
+  case llvm::Triple::SPIRV:
+  case llvm::Triple::UnknownObjectFormat:
     break;
   }
   return false;
@@ -2570,13 +2571,13 @@ static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
 
-  LoopAnalysisManager LAM;
-  FunctionAnalysisManager FAM;
-  CGSCCAnalysisManager CGAM;
-  ModuleAnalysisManager MAM;
+  llvm::LoopAnalysisManager LAM;
+  llvm::FunctionAnalysisManager FAM;
+  llvm::CGSCCAnalysisManager CGAM;
+  llvm::ModuleAnalysisManager MAM;
 
-  PassInstrumentationCallbacks PIC;
-  StandardInstrumentations SI(
+  llvm::PassInstrumentationCallbacks PIC;
+  llvm::StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
                               gContext->llvmContext(),
 #endif
@@ -2587,17 +2588,17 @@ static void runModuleOptPipeline(bool addWideOpts) {
   SI.registerCallbacks(PIC, &FAM);
 #endif
 
-  PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
+  llvm::PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
 
   // some FAM add-ins
-  std::unique_ptr<TargetLibraryInfoImpl> TLII(
-      new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
+  std::unique_ptr<llvm::TargetLibraryInfoImpl> TLII(
+      new llvm::TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
 
   // not sure if this one is needed
   FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
 
   // clang does this one
-  FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
+  FAM.registerPass([&] { return llvm::TargetLibraryAnalysis(*TLII); });
 
   PB.registerModuleAnalyses(MAM);
   PB.registerCGSCCAnalyses(CGAM);
@@ -2614,7 +2615,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
 
   // Build the pipeline
   auto optLvl = translateOptLevel();
-  ModulePassManager MPM;
+  llvm::ModulePassManager MPM;
   if (optLvl == LlvmOptimizationLevel::O0) {
     MPM = PB.buildO0DefaultPipeline(optLvl);
   } else {
@@ -2632,24 +2633,24 @@ static void runModuleOptPipeline(bool addWideOpts) {
       //
       // Much of this logic comes from clang in clang/lib/CodeGen/BackendUtil.cpp
       //
-      auto AsanCallback = [&](ModulePassManager &MPM, LlvmOptimizationLevel Level
+      auto AsanCallback = [&](llvm::ModulePassManager &MPM, LlvmOptimizationLevel Level
 #if LLVM_VERSION_MAJOR >= 20
                               , llvm::ThinOrFullLTOPhase Phase
 #endif
       ) {
         auto& clangInfo = gGenInfo->clangInfo;
         auto& codegenOptions = clangInfo->codegenOptions;
-        Triple TargetTriple(info->module->getTargetTriple());
+        llvm::Triple TargetTriple(info->module->getTargetTriple());
 
         bool UseGlobalGC = asanUseGlobalsGC(TargetTriple, codegenOptions);
         bool UseOdrIndicator = codegenOptions.SanitizeAddressUseOdrIndicator;
         llvm::AsanDtorKind DestructorKind = codegenOptions.getSanitizeAddressDtor();
         llvm::AddressSanitizerOptions Opts;
         Opts.CompileKernel = false;
-        Opts.Recover = codegenOptions.SanitizeRecover.has(SanitizerKind::Address);
+        Opts.Recover = codegenOptions.SanitizeRecover.has(clang::SanitizerKind::Address);
         Opts.UseAfterScope = codegenOptions.SanitizeAddressUseAfterScope;
         Opts.UseAfterReturn = codegenOptions.getSanitizeAddressUseAfterReturn();
-        MPM.addPass(AddressSanitizerPass(Opts, UseGlobalGC, UseOdrIndicator,
+        MPM.addPass(llvm::AddressSanitizerPass(Opts, UseGlobalGC, UseOdrIndicator,
                                         DestructorKind));
       };
       PB.registerOptimizerLastEPCallback(AsanCallback);
@@ -2674,7 +2675,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   if (fLlvmPrintPasses) {
     std::string Pipeline;
     llvm::raw_string_ostream SOS(Pipeline);
-    MPM.printPipeline(SOS, [&PIC](StringRef ClassName) {
+    MPM.printPipeline(SOS, [&PIC](llvm::StringRef ClassName) {
       auto PassName = PIC.getPassNameForClassName(ClassName);
       return PassName.empty() ? ClassName : PassName;
     });
@@ -2713,20 +2714,20 @@ void prepareCodegenLLVM()
 
   // if using the new optimization pipeline, set up the various
   // AnalysisManagers
-  info->LAM = new LoopAnalysisManager();
-  info->FAM = new FunctionAnalysisManager();
-  info->CGAM = new CGSCCAnalysisManager();
-  info->MAM = new ModuleAnalysisManager();
+  info->LAM = new llvm::LoopAnalysisManager();
+  info->FAM = new llvm::FunctionAnalysisManager();
+  info->CGAM = new llvm::CGSCCAnalysisManager();
+  info->MAM = new llvm::ModuleAnalysisManager();
 
   info->FAM->registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
 
   // Add the TargetLibraryInfo pass
-  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::Triple TargetTriple(info->module->getTargetTriple());
   llvm::TargetLibraryInfoImpl TLII(TargetTriple);
-  info->FAM->registerPass([&TLII] { return TargetLibraryAnalysis(TLII); });
+  info->FAM->registerPass([&TLII] { return llvm::TargetLibraryAnalysis(TLII); });
 
-  info->PIC = new PassInstrumentationCallbacks();
-  info->SI = new StandardInstrumentations(
+  info->PIC = new llvm::PassInstrumentationCallbacks();
+  info->SI = new llvm::StandardInstrumentations(
 #if HAVE_LLVM_VER >= 160
                               gContext->llvmContext(),
 #endif
@@ -2738,7 +2739,7 @@ void prepareCodegenLLVM()
 #endif
 
   // Construct a function simplification pass manager
-  PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
+  llvm::PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(*info->MAM);
@@ -2749,13 +2750,13 @@ void prepareCodegenLLVM()
 
   auto lvl = translateOptLevel();
   if (lvl != LlvmOptimizationLevel::O0) {
-    info->FunctionSimplificationPM = new FunctionPassManager(
-        PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+    info->FunctionSimplificationPM = new llvm::FunctionPassManager(
+        PB.buildFunctionSimplificationPipeline(lvl, llvm::ThinOrFullLTOPhase::None));
 
     if (fLlvmPrintPasses) {
       std::string Pipeline;
       llvm::raw_string_ostream SOS(Pipeline);
-      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+      info->FunctionSimplificationPM->printPipeline(SOS, [&info](llvm::StringRef ClassName) {
         auto PassName = info->PIC->getPassNameForClassName(ClassName);
         return PassName.empty() ? ClassName : PassName;
       });
@@ -2812,7 +2813,7 @@ bool isMacroLvalueInExternBlock(ModuleSymbol* module, const char* name) {
 
 const clang::MacroInfo* getFunctionMacroInExternBlock(ModuleSymbol* module,
                                                      const char* name) {
-  auto pp = module->extern_info->gen_info->clangInfo->Clang->getPreprocessor();
+  auto& pp = module->extern_info->gen_info->clangInfo->Clang->getPreprocessor();
   auto macro = pp.getMacroInfo(pp.getIdentifierInfo(name));
   return macro && macro->isFunctionLike() ? macro : nullptr;
 }
@@ -2943,11 +2944,11 @@ static void helpComputeClangArgs(std::string& clangCC,
     "-Wno-strict-aliasing",
     NULL};
 
-  BumpPtrAllocator A;
-  StringSaver Saver(A);
+  llvm::BumpPtrAllocator A;
+  llvm::StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  SmallVector<const char *, 2> split;
+  llvm::SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -3301,7 +3302,7 @@ void runClang(const char* just_parse_filename) {
     // Install an LLVM Fatal Error Handler.
     if (!is_installed_fatal_error_handler) {
       is_installed_fatal_error_handler = true;
-      install_fatal_error_handler(handleErrorLLVM);
+      llvm::install_fatal_error_handler(handleErrorLLVM);
     }
 
     // Run the Start Generation action
@@ -3334,8 +3335,8 @@ void runClang(const char* just_parse_filename) {
       llvm::Type * voidTy =  llvm::Type::getVoidTy(info->module->getContext());
       std::vector<llvm::Type*> args;
       llvm::FunctionType * FT = llvm::FunctionType::get(voidTy, args, false);
-      Function * F =
-        Function::Create(FT, Function::InternalLinkage,
+      llvm::Function * F =
+        llvm::Function::Create(FT, llvm::Function::InternalLinkage,
                          "chplDummyFunction", info->module);
       trackLLVMValue(F);
       llvm::BasicBlock *block =
@@ -3453,12 +3454,12 @@ void cleanupUnusedExternC(void) {
 
 llvm::Function* getFunctionLLVM(const char* name) {
   GenInfo* info = gGenInfo;
-  Function* fn = info->module->getFunction(name);
+  llvm::Function* fn = info->module->getFunction(name);
   if (fn) return fn;
 
   GenRet got = info->lvt->getValue(name);
-  if (got.val && isa<llvm::Function>(got.val)) {
-    fn = cast<llvm::Function>(got.val);
+  if (got.val && llvm::isa<llvm::Function>(got.val)) {
+    fn = llvm::cast<llvm::Function>(got.val);
     return fn;
   }
 
@@ -3593,7 +3594,7 @@ clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
   auto body = llvm::cast<clang::CompoundStmt>(probe->getBody());
   auto cast = llvm::cast<clang::CStyleCastExpr>(*body->body_begin());
   auto expr = cast->getSubExpr()->IgnoreParenImpCasts();
-  auto ctx = ci.getASTContext();
+  auto& ctx = ci.getASTContext();
   clang::QualType result = expr->getType();
   if (result->isArrayType() || result->isFunctionType())
     result = ctx.getDecayedType(result);
@@ -3644,22 +3645,23 @@ llvm::Type* getTypeLLVM(const char* name)
   return NULL;
 }
 // should support TypedefDecl,EnumDecl,RecordDecl
-llvm::Type* codegenCType(const TypeDecl* td) {
+llvm::Type* codegenCType(const clang::TypeDecl* td) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
   clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
-  QualType qType;
+  clang::QualType qType;
 
   // handle TypedefDecl
-  if( const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td) ) {
+  if( const clang::TypedefNameDecl* tnd =
+          llvm::dyn_cast<clang::TypedefNameDecl>(td) ) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
-  } else if( const EnumDecl* ed = dyn_cast<EnumDecl>(td) ) {
+  } else if( const clang::EnumDecl* ed = llvm::dyn_cast<clang::EnumDecl>(td) ) {
     qType = ed->getCanonicalDecl()->getIntegerType();
-  } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
-    RecordDecl *def = rd->getDefinition();
+  } else if( const clang::RecordDecl* rd = llvm::dyn_cast<clang::RecordDecl>(td) ) {
+    clang::RecordDecl *def = rd->getDefinition();
     if (def == nullptr) {
       // it's an opaque type - definition of fields not available
       qType
@@ -3687,7 +3689,7 @@ llvm::Type* codegenCType(const clang::QualType& qType) {
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
-GenRet codegenCValue(const ValueDecl *vd) {
+GenRet codegenCValue(const clang::ValueDecl *vd) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
@@ -3701,24 +3703,25 @@ GenRet codegenCValue(const ValueDecl *vd) {
     return ret;
   }
 
-  if(const FunctionDecl *fd = dyn_cast<FunctionDecl>(vd)) {
+  if(const clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(vd)) {
     // It's a function decl.
-    ret.val = cCodeGen->GetAddrOfGlobal(GlobalDecl(fd), false);
+    ret.val = cCodeGen->GetAddrOfGlobal(clang::GlobalDecl(fd), false);
     ret.isLVPtr = GEN_VAL;
-  } else if(const VarDecl *vard = dyn_cast<VarDecl>(vd)) {
+  } else if(const clang::VarDecl *vard = llvm::dyn_cast<clang::VarDecl>(vd)) {
     // It's a (global) variable decl
-    ret.val = cCodeGen->GetAddrOfGlobal(GlobalDecl(vard), false);
+    ret.val = cCodeGen->GetAddrOfGlobal(clang::GlobalDecl(vard), false);
     ret.isLVPtr = GEN_PTR;
-  } else if(const EnumConstantDecl *ed = dyn_cast<EnumConstantDecl>(vd)) {
+  } else if(const clang::EnumConstantDecl *ed =
+                llvm::dyn_cast<clang::EnumConstantDecl>(vd)) {
     // It's a constant enum value
-    APInt v = ed->getInitVal();
+    llvm::APInt v = ed->getInitVal();
 
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
     llvm::Type* type = NULL;
     type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
 
-    ret.val = ConstantInt::get(type, v);
+    ret.val = llvm::ConstantInt::get(type, v);
     ret.isLVPtr = GEN_VAL;
   } else {
     INT_FATAL("Unknown clang value declaration");
@@ -3732,7 +3735,7 @@ static
 const char* makeNameForAnonDecl(const clang::Decl* decl)
 {
   // This has to return the same value when applied to the same union
-  SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
+  clang::SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
   clang::SourceLocation loc = decl->getLocation();
   std::string filename = srcm.getFilename(loc).str();
   unsigned offset = srcm.getFileOffset(loc);
@@ -3765,7 +3768,7 @@ void LayeredValueTable::removeLayer(){
 
 
 void LayeredValueTable::addValue(
-    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+    llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -3774,7 +3777,7 @@ void LayeredValueTable::addValue(
 }
 
 void LayeredValueTable::addGlobalValue(
-    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned, ::Type* type) {
+    llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned, ::Type* type) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -3783,11 +3786,11 @@ void LayeredValueTable::addGlobalValue(
   (layers.back())[name] = store;
 }
 
-void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
+void LayeredValueTable::addGlobalValue(llvm::StringRef name, GenRet gend) {
   addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned, gend.chplType);
 }
 
-void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
+void LayeredValueTable::addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned) {
   Storage store;
   store.u.type = type;
   store.isUnsigned = isUnsigned;
@@ -3797,7 +3800,7 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isU
   (layers.back())[name] = store;
 }
 
-void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
+void LayeredValueTable::addGlobalCDecl(clang::NamedDecl* cdecl) {
   llvm::StringRef name = "";
 
   // Certain C++ things such as constructors can have
@@ -3815,7 +3818,7 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   addGlobalCDecl(name, cdecl);
 
   // Also file structs under 'struct struct_name'
-  if(RecordDecl* rd = dyn_cast<RecordDecl>(cdecl)) {
+  if(clang::RecordDecl* rd = llvm::dyn_cast<clang::RecordDecl>(cdecl)) {
     if(rd->isUnion()) {
       std::string sname = "union ";
       sname += name;
@@ -3828,16 +3831,16 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   }
 }
 
-void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl, const char* castToType) {
+void LayeredValueTable::addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType) {
 
-  if(RecordDecl *rd = dyn_cast<RecordDecl>(cdecl)) {
+  if(clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(cdecl)) {
     // For record decls, always use the completed definition
     // if it is available.
     // E.g., we might visit decls in this order:
     //   struct stat { ... }
     //   struct stat;
 
-    RecordDecl* completed = rd->getDefinition();
+    clang::RecordDecl* completed = rd->getDefinition();
     if (completed) {
       // Use the completed version below.
       cdecl = completed;
@@ -3847,9 +3850,10 @@ void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl, const c
   // Add to an existing Storage record, so that it can store
   // both a type and a value (e.g. struct stat and function stat).
   Storage & store = (layers.back())[name];
-  if (isa<TypeDecl>(cdecl)) store.u.cTypeDecl = cast<TypeDecl>(cdecl);
-  if (isa<ValueDecl>(cdecl)) {
-    store.u.cValueDecl = cast<ValueDecl>(cdecl);
+  if (llvm::isa<clang::TypeDecl>(cdecl))
+    store.u.cTypeDecl = llvm::cast<clang::TypeDecl>(cdecl);
+  if (llvm::isa<clang::ValueDecl>(cdecl)) {
+    store.u.cValueDecl = llvm::cast<clang::ValueDecl>(cdecl);
     store.u.castChplVarTo = castToType;
   }
 
@@ -3865,7 +3869,7 @@ void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var,
   (layers.back())[name] = store;
 }
 
-void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
+void LayeredValueTable::addBlock(llvm::StringRef name, llvm::BasicBlock *block) {
   Storage store;
   store.u.block = block;
 
@@ -3876,19 +3880,19 @@ void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
   (*blockLayer)[name] = store;
 }
 
-void LayeredValueTable::addMacro(StringRef name,
+void LayeredValueTable::addMacro(llvm::StringRef name,
                                  const clang::MacroInfo *macro) {
   Storage store;
   store.u.macro = macro;
   (layers.back())[name] = store;
 }
 
-void LayeredValueTable::addMacroGetter(StringRef name,
+void LayeredValueTable::addMacroGetter(llvm::StringRef name,
                                       clang::FunctionDecl* getter) {
   (layers.back())[name].u.macroGetter = getter;
 }
 
-void LayeredValueTable::addMacroAddress(StringRef name,
+void LayeredValueTable::addMacroAddress(llvm::StringRef name,
                                        clang::FunctionDecl* address) {
   (layers.back())[name].u.macroAddress = address;
 }
@@ -3899,14 +3903,14 @@ void LayeredValueTable::addForwardName(llvm::StringRef name, const char* forward
   (layers.back())[name] = store;
 }
 
-GenRet LayeredValueTable::getValue(StringRef name) {
+GenRet LayeredValueTable::getValue(llvm::StringRef name) {
   if(Storage *store = get(name)) {
     if (store->u.forwardToName) {
       store = get(store->u.forwardToName);
     }
 
     if( store->u.value ) {
-      INT_ASSERT(isa<Value>(store->u.value));
+      INT_ASSERT(llvm::isa<llvm::Value>(store->u.value));
       GenRet ret;
       ret.val = store->u.value;
       ret.isLVPtr = store->isLVPtr;
@@ -3915,7 +3919,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       return ret;
     }
     if( store->u.cValueDecl ) {
-      INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
+      INT_ASSERT(llvm::isa<clang::ValueDecl>(store->u.cValueDecl));
       // we have a clang value decl.
       // maybe FunctionDecl,VarDecl,EnumConstantDecl
 
@@ -3947,26 +3951,26 @@ GenRet LayeredValueTable::getValue(StringRef name) {
   return ret;
 }
 
-llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
+llvm::BasicBlock *LayeredValueTable::getBlock(llvm::StringRef name) {
   if(Storage *store = get(name)) {
-    if( store->u.block && isa<llvm::BasicBlock>(store->u.block) )
+    if( store->u.block && llvm::isa<llvm::BasicBlock>(store->u.block) )
       return store->u.block;
   }
   return NULL;
 }
 
-llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
+llvm::Type *LayeredValueTable::getType(llvm::StringRef name, bool *isUnsigned) {
   if(Storage *store = get(name)) {
     if (isUnsigned != NULL) {
       *isUnsigned = store->isUnsigned;
     }
 
     if( store->u.type ) {
-      INT_ASSERT(isa<llvm::Type>(store->u.type));
+      INT_ASSERT(llvm::isa<llvm::Type>(store->u.type));
       return store->u.type;
     }
     if( store->u.cTypeDecl ) {
-      INT_ASSERT(isa<TypeDecl>(store->u.cTypeDecl));
+      INT_ASSERT(llvm::isa<clang::TypeDecl>(store->u.cTypeDecl));
       // we have a clang type decl.
       // maybe TypedefDecl,EnumDecl,RecordDecl
 
@@ -3989,8 +3993,8 @@ llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
 // (e.g. stat/struct stat).
 // Sets the output arguments to NULL if a type/value was not found.
 // Either output argument can be NULL.
-void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
-    ValueDecl** cValueOut, const char** cCastedToTypeOut, astlocT* astlocOut) {
+void LayeredValueTable::getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
+    clang::ValueDecl** cValueOut, const char** cCastedToTypeOut, astlocT* astlocOut) {
 
   if (cValueOut) *cValueOut = NULL;
   if (cTypeOut) *cTypeOut = NULL;
@@ -4001,14 +4005,14 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
       store = get(store->u.forwardToName);
     }
     if( store->u.cValueDecl ) {
-      INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
+      INT_ASSERT(llvm::isa<clang::ValueDecl>(store->u.cValueDecl));
       // we have a clang value decl.
       // maybe FunctionDecl,VarDecl,EnumConstantDecl
 
       if (cValueOut) *cValueOut = store->u.cValueDecl;
     }
     if( store->u.cTypeDecl ) {
-      INT_ASSERT(isa<TypeDecl>(store->u.cTypeDecl));
+      INT_ASSERT(llvm::isa<clang::TypeDecl>(store->u.cTypeDecl));
       // we have a clang type decl.
       // maybe TypedefDecl,EnumDecl,RecordDecl
 
@@ -4021,7 +4025,7 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
   }
 }
 
-bool LayeredValueTable::isCArray(StringRef cname) {
+bool LayeredValueTable::isCArray(llvm::StringRef cname) {
   clang::TypeDecl* cType = NULL;
   clang::ValueDecl* cValue = NULL;
 
@@ -4030,7 +4034,7 @@ bool LayeredValueTable::isCArray(StringRef cname) {
   return (cValue && cValue->getType().getTypePtr()->isArrayType());
 }
 
-VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
+VarSymbol* LayeredValueTable::getVarSymbol(llvm::StringRef name) {
   if(Storage *store = get(name)) {
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
       // we have a Chapel Var Symbol.
@@ -4042,29 +4046,29 @@ VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
   return NULL;
 }
 
-const clang::MacroInfo* LayeredValueTable::getMacro(StringRef name) {
+const clang::MacroInfo* LayeredValueTable::getMacro(llvm::StringRef name) {
   if (Storage *store = get(name)) {
     if (store->u.macro) {
-      INT_ASSERT(isa<clang::MacroInfo>(store->u.macro));
+      INT_ASSERT(llvm::isa<clang::MacroInfo>(store->u.macro));
       return store->u.macro;
     }
   }
   return NULL;
 }
 
-clang::FunctionDecl* LayeredValueTable::getMacroGetter(StringRef name) {
+clang::FunctionDecl* LayeredValueTable::getMacroGetter(llvm::StringRef name) {
   if (Storage* store = get(name))
     return store->u.macroGetter;
   return nullptr;
 }
 
-clang::FunctionDecl* LayeredValueTable::getMacroAddress(StringRef name) {
+clang::FunctionDecl* LayeredValueTable::getMacroAddress(llvm::StringRef name) {
   if (Storage* store = get(name))
     return store->u.macroAddress;
   return nullptr;
 }
 
-LayeredValueTable::Storage* LayeredValueTable::get(StringRef name) {
+LayeredValueTable::Storage* LayeredValueTable::get(llvm::StringRef name) {
   for(layer_iterator i = layers.begin(); i != layers.end(); ++i) {
     value_iterator j = i->find(name);
 
@@ -4113,29 +4117,29 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
   INT_ASSERT(clangInfo);
   clang::CodeGenerator* cCodeGen = clangInfo->getCodeGenerator();
 
-  TypeDecl* d = NULL;
+  clang::TypeDecl* d = NULL;
   int ret;
 
   info->lvt->getCDecl(typeName, &d, NULL);
   INT_ASSERT(d);
-  if( isa<TypedefDecl>(d) ) {
-    TypedefDecl* td = cast<TypedefDecl>(d);
+  if( llvm::isa<clang::TypedefDecl>(d) ) {
+    clang::TypedefDecl* td = llvm::cast<clang::TypedefDecl>(d);
     const clang::Type* t = td->getUnderlyingType().getTypePtr();
     while( t->isPointerType() ) {
       t = t->getPointeeType().getTypePtr();
     }
-    const RecordType* rt = t->getAsStructureType();
+    const clang::RecordType* rt = t->getAsStructureType();
     if (rt == nullptr)
       rt = t->getAsUnionType();
 
     INT_ASSERT(rt);
     d = rt->getDecl();
   }
-  INT_ASSERT(isa<RecordDecl>(d));
-  RecordDecl* rec = cast<RecordDecl>(d);
+  INT_ASSERT(llvm::isa<clang::RecordDecl>(d));
+  clang::RecordDecl* rec = llvm::cast<clang::RecordDecl>(d);
   // Find the field decl.
-  RecordDecl::field_iterator it;
-  FieldDecl* field = NULL;
+  clang::RecordDecl::field_iterator it;
+  clang::FieldDecl* field = NULL;
   for( it = rec->field_begin(); it != rec->field_end(); ++it ) {
     if( fieldName == it->getName() ) {
       field = *it;
@@ -4515,8 +4519,8 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
 
   auto retTy = getClangType(ft->returnType(), retRef);
   auto extInfo = clang::FunctionType::ExtInfo();
-  auto tag = CodeGen::RequiredArgs::All;
-  auto& ret = CodeGen::arrangeFreeFunctionCall(CGM, retTy, argTys,
+  auto tag = clang::CodeGen::RequiredArgs::All;
+  auto& ret = clang::CodeGen::arrangeFreeFunctionCall(CGM, retTy, argTys,
                                                extInfo,
                                                tag);
   return ret;
@@ -4687,15 +4691,16 @@ int getCTypeAlignment(::Type* type) {
   gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
   const clang::TypeDecl* td = cType;
 
-  QualType qType;
+  clang::QualType qType;
 
   if (td) {
-    if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+    if (const clang::TypedefNameDecl* tnd =
+            llvm::dyn_cast<clang::TypedefNameDecl>(td)) {
       qType = tnd->getCanonicalDecl()->getUnderlyingType();
-    } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+    } else if (const clang::EnumDecl* ed = llvm::dyn_cast<clang::EnumDecl>(td)) {
       qType = ed->getCanonicalDecl()->getIntegerType();
-    } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
-      RecordDecl *def = rd->getDefinition();
+    } else if (const clang::RecordDecl* rd = llvm::dyn_cast<clang::RecordDecl>(td)) {
+      clang::RecordDecl *def = rd->getDefinition();
       if (def == nullptr)
         // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
         return ALIGNMENT_DEFER;
@@ -4719,20 +4724,20 @@ int getCTypeAlignment(::Type* type) {
 bool isCTypeUnion(const char* name) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
-  TypeDecl* d = nullptr;
+  clang::TypeDecl* d = nullptr;
 
   info->lvt->getCDecl(name, &d, nullptr);
 
   if (d == nullptr)
     return false;
 
-  if (isa<TypedefDecl>(d)) {
-    TypedefDecl* td = cast<TypedefDecl>(d);
+  if (llvm::isa<clang::TypedefDecl>(d)) {
+    clang::TypedefDecl* td = llvm::cast<clang::TypedefDecl>(d);
     const clang::Type* t = td->getUnderlyingType().getTypePtr();
     return t->isUnionType();
   }
-  if (isa<RecordDecl>(d)) {
-    RecordDecl* rec = cast<RecordDecl>(d);
+  if (llvm::isa<clang::RecordDecl>(d)) {
+    clang::RecordDecl* rec = llvm::cast<clang::RecordDecl>(d);
     return rec->isUnion();
   }
   return false;
@@ -4762,27 +4767,27 @@ bool isBuiltinExternCFunction(const char* cname)
   else return false;
 }
 
-static void addDumpIr(ModulePassManager& MPM,
+static void addDumpIr(llvm::ModulePassManager& MPM,
                       LlvmOptimizationLevel v,
                       llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
-static void addDumpIr(CGSCCPassManager& CPM,
+static void addDumpIr(llvm::CGSCCPassManager& CPM,
                       LlvmOptimizationLevel v,
                       llvmStageNum::llvmStageNum_t stage) {
   CPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIr(FunctionPassManager& FPM,
+static void addDumpIr(llvm::FunctionPassManager& FPM,
                       LlvmOptimizationLevel v,
                       llvmStageNum::llvmStageNum_t stage) {
   FPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIr(LoopPassManager& LPM,
+static void addDumpIr(llvm::LoopPassManager& LPM,
                       LlvmOptimizationLevel v,
                       llvmStageNum::llvmStageNum_t stage) {
   LPM.addPass(DumpIRPass(stage));
 }
-static void registerDumpIrExtensions(PassBuilder& PB) {
+static void registerDumpIrExtensions(llvm::PassBuilder& PB) {
   for (int i = 0; i < llvmStageNum::LAST; i++) {
     llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
     if (llvmPrintIrStageNum == llvmStageNum::EVERY ||
@@ -5058,7 +5063,7 @@ void setupForGlobalToWide(void) {
   trackLLVMValue(retret);
 
   if (developer || fVerify) {
-    llvm::verifyFunction(*fn, &errs());
+    llvm::verifyFunction(*fn, &llvm::errs());
   }
 
   info->hasPreservingFn = true;
@@ -5163,16 +5168,16 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 }
 
 static std::string findSiblingClangToolPath(std::string_view toolName) {
-  BumpPtrAllocator A;
-  StringSaver Saver(A);
-  SmallVector<const char *, 2> split;
+  llvm::BumpPtrAllocator A;
+  llvm::StringSaver Saver(A);
+  llvm::SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   if (split.size() > 0) {
     auto clang = split[0];
-    auto parent = sys::path::parent_path(clang);
+    auto parent = llvm::sys::path::parent_path(clang);
     if (!parent.empty()) {
-      SmallString<128> path;
-      sys::path::append(path, parent, toolName);
+      llvm::SmallString<128> path;
+      llvm::sys::path::append(path, parent, toolName);
       if (chpl::pathExists(path.str())) {
         return std::string(path);
       }
@@ -5355,11 +5360,11 @@ static void saveIrToBcFileIfNeeded(const std::string& filename,
     GenInfo* info = gGenInfo;
     std::error_code tmpErr;
     // Save the generated LLVM IR to the given file
-    ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::OF_None);
+    llvm::ToolOutputFile output(filename.c_str(), tmpErr, llvm::sys::fs::OF_None);
     if (tmpErr) {
       USR_FATAL("Could not open output file %s", filename.c_str());
     }
-    WriteBitcodeToFile(*info->module, output.os());
+    llvm::WriteBitcodeToFile(*info->module, output.os());
     output.keep();
     output.os().flush();
   }
@@ -5379,7 +5384,7 @@ static llvm::MDNode* getMetadataContainingAttr(llvm::MDNode* MD, llvm::StringRef
 static unsigned getBinaryMetadataValue(llvm::MDNode* MD) {
   if (MD && MD->getNumOperands() == 2) {
     unsigned Count =
-        llvm::mdconst::extract<ConstantInt>(MD->getOperand(1))->getZExtValue();
+        llvm::mdconst::extract<llvm::ConstantInt>(MD->getOperand(1))->getZExtValue();
     return Count;
   }
   return 0;
@@ -5396,7 +5401,7 @@ static void checkLoopsAssertVectorize(void) {
       // extract from it the MD_loop, which will return something if its a BR
       // if its not well formed, the terminator will return nullptr
       if(auto I = BB.getTerminator()) {
-        if(auto MD = I->getMetadata(LLVMContext::MD_loop)) {
+        if(auto MD = I->getMetadata(llvm::LLVMContext::MD_loop)) {
           auto MD_assertvectorized =
             getMetadataContainingAttr(MD, "chpl.loop.assertvectorized");
           auto hasAssertVectorized = getBinaryMetadataValue(MD_assertvectorized) == 1;
@@ -5734,7 +5739,7 @@ static void llvmEmitObjectFile(void) {
       {
         llvm::legacy::PassManager emitPM;
 
-        emitPM.add(createTargetTransformInfoWrapperPass(
+        emitPM.add(llvm::createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
         info->targetMachine->addPassesToEmitFile(emitPM, outputOfile, nullptr,
@@ -5757,7 +5762,7 @@ static void llvmEmitObjectFile(void) {
 
         llvm::legacy::PassManager emitPM;
 
-        emitPM.add(createTargetTransformInfoWrapperPass(
+        emitPM.add(llvm::createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
         info->targetMachine->addPassesToEmitFile(emitPM, outputArtifactFile,
