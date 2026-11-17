@@ -318,7 +318,7 @@ jobs:
           NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-          brew install gcc cmake python gmp llvm@22
+          brew install gcc cmake python gmp llvm
       - name: Compile Chapel
         uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
         with:
