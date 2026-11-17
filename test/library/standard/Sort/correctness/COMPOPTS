@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
 # activate backend optimizations (but don't specialize or turn off bounds checking)
 # in order to make the run time more acceptable
---ccflags -O3
+# with sanitizers, compilation times out with --optimize
+san_exe=$($CHPL_HOME/util/chplenv/chpl_sanitizers.py --exe)
+if [ "$CHPL_SANITIZE_EXE" == "none" ]; then
+  echo "--optimize"
+fi
