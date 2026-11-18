@@ -1,1 +1,3 @@
 CHPL_TARGET_PLATFORM != linux64
+# uses extern blocks
+CHPL_LLVM==none

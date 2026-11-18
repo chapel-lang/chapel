@@ -1,0 +1,2 @@
+# uses extern blocks
+CHPL_LLVM==none
