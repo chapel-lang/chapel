@@ -68,6 +68,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             "cuda-nvcc-$cuda_package_version" "cuda-cudart-dev-$cuda_package_version" \
             "cuda-driver-dev-$cuda_package_version" "cuda-cccl-$cuda_package_version" \
+            "libcurand-dev-$cuda_package_version" \
             "clang-$LLVM_VERSION" "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
           # Keep the simulator's nvcc wrapper ahead of the real compiler.
           {
