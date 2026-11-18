@@ -1604,6 +1604,23 @@ def compute_host_link_settings():
             # goes after analysis
             idx = clang_static_libs.index("-lclangAnalysis") + 1
             clang_static_libs.insert(idx, "-lclangAnalysisLifetimeSafety")
+        # Starting with clang 23, clang needs additional libraries
+        if int(llvm_version) >= 23:
+            llvm_components.append("abi")
+            idx = clang_static_libs.index("-lclangCodeGen") + 1
+            clang_static_libs[idx:idx] = [
+                "-lclangDependencyScanning",
+                "-lclangScalableStaticAnalysisFrontend",
+                "-lclangScalableStaticAnalysisAnalyses",
+                "-lclangScalableStaticAnalysisSourceTransformation",
+                "-lclangScalableStaticAnalysisCore",
+                "-lclangToolingCore",
+                "-lclangRewrite",
+                "-lclangUnifiedSymbolResolution",
+                # Rescan these archives for dependencies from the new libraries.
+                "-lclangFrontend",
+                "-lclangSerialization",
+            ]
 
     # quit early if the llvm value is unset
     if llvm_val == "unset":
