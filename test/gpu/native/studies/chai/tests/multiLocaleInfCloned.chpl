@@ -1,1 +1,0 @@
-../ChAI/test/multiLocaleInfCloned.chpl
