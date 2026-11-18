@@ -638,3 +638,14 @@ jobs:
       # each test runs several locales at once, so use half the CPUs for
       # concurrent tests to avoid heavy oversubscription
       test-parallelism: $(( ($(util/buildRelease/chpl-make-cpu_count) + 1) / 2 ))
+  paratest-gpu-cpu:
+    name: Chapel paratest with CHPL_GPU=cpu
+    uses: $/.github/workflows/ga-paratest.yml
+    with:
+      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
+      configuration: gpu-cpu
+      cron-script: util/cron/test-gpu-cpu.bash
+      test-dirs: test/gpu/native test/users/engin/context test/release/examples
+      make-targets: all test-venv mason-deps spectests
+      ccache-key: x86-default
+      ccache-save: false
