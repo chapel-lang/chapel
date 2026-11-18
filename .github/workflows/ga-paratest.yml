@@ -651,10 +651,10 @@ jobs:
                 echo "::warning::Failed to extract output of failed tests"
 
               max_listed=50
+              if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+                echo >> "$FAILURE_EMAIL_ADDENDUM"
+              fi
               {
-                if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
-                  echo
-                fi
                 echo "$num_failed_tests failed test(s) in $CONFIGURATION:"
                 echo '```'
                 printf '%s\n' "${failed_tests[@]:0:max_listed}"
