@@ -2,10 +2,6 @@ name: Build and test Chapel
 description: Set up the Chapel environment, build Chapel, and run start_test in a single shell
 
 inputs:
-  shell:
-    description: Shell command used for the build and test step, including the {0} script placeholder
-    required: false
-    default: "bash -exuo pipefail {0}"
   setup:
     description: >-
       Bash commands to run after sourcing util/setchplenv.bash, e.g. to source a
@@ -33,7 +29,7 @@ runs:
   using: composite
   steps:
     - name: build and test Chapel
-      shell: ${{ inputs.shell }}
+      shell: bash -exuo pipefail {0}
       env:
         CI_SETUP: ${{ inputs.setup }}
         CI_MAKE_TARGETS: ${{ inputs.make-targets }}
