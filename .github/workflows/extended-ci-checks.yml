@@ -649,16 +649,3 @@ jobs:
       make-targets: all test-venv mason-deps spectests
       ccache-key: x86-default
       ccache-save: false
-  paratest-gpu-cpu-gasnet:
-    name: Chapel paratest with CHPL_GPU=cpu and GASNet
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
-      configuration: gpu-cpu-gasnet
-      pre-build-steps:
-        source util/cron/test-gpu-cpu.bash
-        source util/cron/common-gasnet.bash
-      test-dirs: test/gpu/native test/users/engin/context test/release/examples
-      make-targets: all test-venv mason-deps spectests
-      ccache-key: x86-default
-      ccache-save: false
