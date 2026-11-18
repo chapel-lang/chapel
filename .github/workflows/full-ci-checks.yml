@@ -410,6 +410,7 @@ jobs:
       pre-build-steps:
         source util/cron/test-gpu-cpu.bash
         source util/cron/common-gasnet.bash
+        export GASNET_QUIET=Y
       test-dirs: test/gpu/native test/users/engin/context test/release/examples
       make-targets: all test-venv mason-deps spectests
       ccache-key: x86-default
