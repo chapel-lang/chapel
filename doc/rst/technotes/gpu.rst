@@ -708,13 +708,13 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0*
+  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0*, 13.1*, 13.4*
 
 * AMD
 
   * Hardware: MI60, MI100, MI250X*, and MI300A
 
-  * Software:ROCm 5.4, 6.0, 6.1, 6.2, 6.3, 7.0*, 7.1, 7.2
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2, 6.3, 7.0*, 7.1*, 7.2
 
 
 GPU Support on Windows Subsystem for Linux
