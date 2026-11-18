@@ -1,0 +1,2 @@
+# silence simulated gpu diagnostics
+VGPU_QUIET=1
