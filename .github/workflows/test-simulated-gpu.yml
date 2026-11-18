@@ -28,7 +28,7 @@ defaults:
 
 jobs:
   test-nvidia:
-    name: Test CUDA ${{ matrix.cuda }} (comm=${{ matrix.comm }})
+    name: Test CUDA ${{ matrix.cuda }}${{ matrix.comm != 'none' && format(' with {0}', matrix.comm) || '' }}
     runs-on: ubuntu-24.04
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -103,7 +103,7 @@ jobs:
           test-paths: test/gpu/native test/users/engin/context test/release/examples
 
   test-amd:
-    name: Test ROCm ${{ matrix.rocm }} (comm=${{ matrix.comm }})
+    name: Test ROCm ${{ matrix.rocm }}${{ matrix.comm != 'none' && format(' with {0}', matrix.comm) || '' }}
     runs-on: ubuntu-24.04
     env:
       DEBIAN_FRONTEND: noninteractive
