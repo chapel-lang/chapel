@@ -1,1 +1,7 @@
---baseDir="../ChAI/"
+#!/usr/bin/env bash
+
+if [[ ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo '--baseDir="../ChAI/" --numImages=2 # multiLocaleInfCloned.sim.good'
+else
+  echo '--baseDir="../ChAI/"'
+fi

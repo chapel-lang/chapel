@@ -1,6 +1,14 @@
---low=2049789 --arrSize=283 --chunkSize=625
---low=2049789 --arrSize=2454536 --chunkSize=6250
+#!/usr/bin/env bash
+
+echo '--low=2049789 --arrSize=283 --chunkSize=625'
+if [[ ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo '--low=2049789 --arrSize=24553 --chunkSize=6250'
+else
+  echo '--low=2049789 --arrSize=2454536 --chunkSize=6250'
+fi
+cat <<'EOF'
 --low=20 --arrSize=40954 --chunkSize=63
 --low=20 --arrSize=432 --chunkSize=432
 --low=0
 --low=0 --arrSize=0
+EOF
