@@ -148,6 +148,16 @@ jobs:
           count: ${{ env.VGPU_DEVICE_COUNT }}
           rocm: ${{ matrix.rocm }}
           library-path: 'false'
+      - name: Add hipCUB and rocPRIM headers to ROCm
+        run: |
+          # Extract into the SDK, as PantheonSim does, without installing a ROCm runtime.
+          cd "$(mktemp -d "$RUNNER_TEMP/rocm-headers.XXXXXX")"
+          apt-get download hipcub-dev rocprim-dev
+          for deb in ./*.deb; do
+            sudo dpkg-deb -x "$deb" /
+          done
+          test -r "$ROCM_PATH/include/hipcub/hipcub.hpp"
+          test -r "$ROCM_PATH/include/rocprim/rocprim.hpp"
       - name: Check PantheonSim
         run: vgpu demo vectoradd --gpu "$VGPU_GPU"
       - name: Set up ccache
