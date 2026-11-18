@@ -12,9 +12,7 @@ read -r -a testlaunchcmd <<< "${LAUNCHCMD:-}"
 cxx=`$chpl_home/util/config/compileline --compile-c++`
 libs=`$chpl_home/util/config/compileline --libraries`
 gpu_flags=""
-if [[ "$chpl_gpu" == "nvidia" ]]; then
-  gpu_flags="-x cuda"
-elif [[ "$chpl_gpu" == "amd" ]]; then
+if [[ "$chpl_gpu" == "amd" ]]; then
   gpu_flags="-x hip"
 fi
 $cxx $CXXFLAGS $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
