@@ -3,5 +3,5 @@
 
 void hello_world(void)
 {
-    printf("hello world from C");
+    printf("hello world from C\n");
 }
