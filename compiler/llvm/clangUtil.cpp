@@ -4351,7 +4351,8 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
     USR_FATAL(fn, "object-like C macro '%s' is not supported as an extern proc",
               name);
 
-  std::string wrapperName = "chpl_macro_call_" + std::to_string(fn->id);
+  std::string wrapperName =
+      astr("chpl_macro_call_", legalizeName(name), "_", istr(fn->id));
   clang::TypeDecl* ignoredType = nullptr;
   clang::ValueDecl* value = nullptr;
   info->lvt->getCDecl(wrapperName, &ignoredType, &value);

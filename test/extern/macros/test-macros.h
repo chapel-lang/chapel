@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -18,7 +19,7 @@
 #define MACRO_STRINGIFY(a) #a
 #define MACRO_VARIADIC(...) (__VA_ARGS__)
 
-#define INFER_INT_KIND(x) _Generic((x), int: 1, long long: 2, default: 0)
+#define INFER_INT_KIND(x) _Generic((x), int: 1, int64_t: 2, default: 0)
 #define INFER_FLOAT_KIND(x) _Generic((x), float: 1, double: 2, default: 0)
 #define INFER_PTR_KIND(p) _Generic((p), int *: 1, double *: 2, default: 0)
 #define INFER_PTR_VALUE(p) (*(p))

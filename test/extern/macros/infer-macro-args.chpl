@@ -9,7 +9,7 @@ extern proc INFER_PAIR_KIND(a, b): c_int;
 extern proc INFER_CSTRING_LEN(s): c_size_t;
 
 writeln("integers: ", INFER_INT_KIND(7:c_int), " ",
-        INFER_INT_KIND(7:c_longlong));
+        INFER_INT_KIND(7:int(64)));
 writeln("floats: ", INFER_FLOAT_KIND(1.5:c_float), " ",
         INFER_FLOAT_KIND(1.5:c_double));
 
