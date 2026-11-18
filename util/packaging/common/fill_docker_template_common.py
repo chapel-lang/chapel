@@ -49,6 +49,8 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(gasnet_config, osname)}
 {generate_run_command(ofi_pmi2_config, osname)}
 {generate_run_command(gpu_config, osname)}
+{generate_run_command(gpu_gasnet_config, osname)}
+{generate_run_command(gpu_ofi_pmi2_config, osname)}
 {generate_run_command_default_config(osname)}
     """
 
@@ -107,6 +109,7 @@ default_config = {
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
+# TODO: add support for ibv
 gasnet_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
@@ -131,6 +134,7 @@ gasnet_config = {
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
+# TODO: ofi over mpi support, with openmpi as an optional package
 ofi_pmi2_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
@@ -156,6 +160,8 @@ ofi_pmi2_config = {
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"],
 }
+# TODO: proper gpu testing using simulatd gpus
+# TODO: ML GPU testing
 gpu_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
@@ -166,6 +172,7 @@ gpu_config = {
     "CHPL_GPU": ["cpu", "nvidia"],
     "CHPL_COMM": "none",
     "CHPL_TASKS": "qthreads",
+    "CHPL_LAUNCHER": [None, "slurm-srun"],
     "CHPL_UNWIND": "system",
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": "jemalloc",
@@ -174,7 +181,58 @@ gpu_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none",
+    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
+    "CHPL_SANITIZE": "none",
+    "CHPL_SANITIZE_EXE": "none",
+}
+gpu_gasnet_config = {
+    "CHPL_HOST_PLATFORM": "linux64",
+    "CHPL_TARGET_PLATFORM": "linux64",
+    "CHPL_TARGET_COMPILER": "llvm",
+    "CHPL_RUNTIME_CPU": "none",
+    "CHPL_TARGET_CPU": "native",
+    "CHPL_LOCALE_MODEL": "gpu",
+    "CHPL_GPU": ["cpu", "nvidia"],
+    "CHPL_COMM": "gasnet",
+    "CHPL_COMM_SUBSTRATE": "udp",
+    "CHPL_GASNET_SEGMENT": ["everything", "fast"],
+    "CHPL_TASKS": "qthreads",
+    "CHPL_LAUNCHER": None,
+    "CHPL_UNWIND": "system",
+    "CHPL_HOST_MEM": "jemalloc",
+    "CHPL_TARGET_MEM": "jemalloc",
+    "CHPL_ATOMICS": "cstdlib",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
+    "CHPL_RE2": "bundled",
+    "CHPL_LLVM": "system",
+    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
+    "CHPL_SANITIZE": "none",
+    "CHPL_SANITIZE_EXE": "none",
+}
+gpu_ofi_pmi2_config = {
+    "CHPL_HOST_PLATFORM": "linux64",
+    "CHPL_TARGET_PLATFORM": "linux64",
+    "CHPL_TARGET_COMPILER": "llvm",
+    "CHPL_RUNTIME_CPU": "none",
+    "CHPL_TARGET_CPU": "native",
+    "CHPL_LOCALE_MODEL": "gpu",
+    "CHPL_GPU": ["cpu", "nvidia"],
+    "CHPL_COMM": "ofi",
+    "CHPL_LIBFABRIC": "bundled",
+    "CHPL_COMM_OFI_OOB": "pmi2",
+    "CHPL_TASKS": "qthreads",
+    "CHPL_LAUNCHER": [None, "slurm-srun"],
+    "CHPL_UNWIND": "system",
+    "CHPL_HOST_MEM": "jemalloc",
+    "CHPL_TARGET_MEM": "jemalloc",
+    "CHPL_ATOMICS": "cstdlib",
+    "CHPL_NETWORK_ATOMICS": "ofi",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
+    "CHPL_RE2": "bundled",
+    "CHPL_LLVM": "system",
+    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": "none",
 }
