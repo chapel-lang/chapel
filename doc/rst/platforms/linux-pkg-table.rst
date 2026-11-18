@@ -274,10 +274,19 @@ Common settings:
 .. list-table::
    :header-rows: 1
 
-   * - CHPL_GPU
+   * - CHPL_LAUNCHER
+     - CHPL_GPU
      - OS compatibility
-   * - cpu
+   * - none
+     - cpu
      -
-   * - nvidia
+   * - none
+     - nvidia
+     - only on Ubuntu 26
+   * - slurm-srun
+     - cpu
+     -
+   * - slurm-srun
+     - nvidia
      - only on Ubuntu 26
 
