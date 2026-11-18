@@ -359,11 +359,11 @@ module interopWithC {
       extern {
          #include <math.h>
 
-         static double square(double num){
+         static double mysquare(double num){
             return pow(num,2);
          }
       }
    }
-   writeln(CDemo.square(3));
+   writeln(CDemo.mysquare(3));
 } // interopWithC
 
