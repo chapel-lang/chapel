@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# PantheonSim rejects bar.sync in a device function called by a partial warp.
+if [[ $CHPL_GPU == nvidia && ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo 1
+else
+  echo 0
+fi

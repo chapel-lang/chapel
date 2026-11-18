@@ -314,17 +314,17 @@ module interopWithC {
 
    require "fact.c", "fact.h";
 
-   extern record data{
+   extern record factData {
       var x: c_int;
    }
 
-   extern proc getNewData() ref : data;
+   extern proc getNewData() ref : factData;
 
-   ref d :data;
+   ref d: factData;
    d = getNewData();
 
-   extern proc fact_d(ref x: data) ref : data;
-   ref f : data;
+   extern proc fact_d(ref x: factData) ref : factData;
+   ref f : factData;
    f = fact_d(d);
 
    writeln(d);

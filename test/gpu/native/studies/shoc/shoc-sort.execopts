@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 if [[ ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
-  echo '--gpuDiags --sz=1'
+  # The exact launch counts are for the default size.
+  echo '--sz=1'
 else
   echo '--gpuDiags'
 fi
