@@ -1,0 +1,89 @@
+name: Test simulated GPUs
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/test-simulated-gpu.yml'
+      - 'util/test/prediff-for-pantheonsim'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-simulated-gpu-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+  test-nvidia:
+    name: Test CUDA ${{ matrix.cuda }}
+    runs-on: ubuntu-24.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      APT_NETWORK_CONF: |
+        Acquire::Retries "5";
+        Acquire::http::Timeout "30";
+        Acquire::https::Timeout "30";
+        Acquire::ForceIPv4 "true";
+      VGPU_GPU: nvidia/h100
+      VGPU_DEVICE_COUNT: '2'
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: ["12.8", "13.0", "13.1", "13.4"]
+        llvm: ["22"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install LLVM and Chapel build dependencies
+        env:
+          LLVM_VERSION: ${{ matrix.llvm }}
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+
+          sudo mkdir -p /etc/apt/keyrings
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/llvm.asc" \
+            https://apt.llvm.org/llvm-snapshot.gpg.key
+          sudo install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libedit-dev libzstd-dev m4 python3-dev python3-venv \
+            "clang-$LLVM_VERSION" "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
+      - name: Set up PantheonSim and CUDA
+        uses: pantheongpu/setup-pantheonsim@deff5781e8adfd83dec98dd5242dcbc96a564773 # v0
+        with:
+          gpu: ${{ env.VGPU_GPU }}
+          count: ${{ env.VGPU_DEVICE_COUNT }}
+          cuda-toolkit: ${{ matrix.cuda }}
+          library-path: 'false'
+      - name: Check PantheonSim
+        run: vgpu demo vectoradd --gpu "$VGPU_GPU"
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
+          key: ccache-${{ github.job }}-cuda-${{ matrix.cuda }}
+      - name: Compile Chapel and run the GPU tests
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        env:
+          LLVM_VERSION: ${{ matrix.llvm }}
+        with:
+          setup: |
+            export CHPL_LLVM=system
+            export CHPL_LLVM_CONFIG="llvm-config-$LLVM_VERSION"
+            export CHPL_LOCALE_MODEL=gpu
+            export CHPL_GPU=nvidia
+            export CHPL_TEST_GPU=true
+            export CHPL_TEST_LAUNCHCMD="vgpu run"
+            export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
+          # TODO: add all of  gpu/native and release/examples
+          test-paths: examples/gpu/hello-gpu.chpl
+          parallel: false

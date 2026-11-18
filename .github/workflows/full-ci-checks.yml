@@ -153,6 +153,9 @@ jobs:
   test-llvm-bundled:
     uses: $/.github/workflows/test-llvm-bundled.yml
 
+  test-simulated-gpu:
+    uses: $/.github/workflows/test-simulated-gpu.yml
+
   test-examples-linux32:
     runs-on: ubuntu-latest
     env:

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+sed '/^\[vgpu\]/d' "$2" > "$2.prediff.tmp"
+mv "$2.prediff.tmp" "$2"
