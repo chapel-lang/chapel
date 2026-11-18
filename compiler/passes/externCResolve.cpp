@@ -63,10 +63,10 @@ struct CImportScope {
   std::vector<DefExpr*> pending;
 };
 
-static std::map<ModuleSymbol*, CImportScope> cImportScopes;
+static std::map<ModuleSymbol*, CImportScope, AstIdLess> cImportScopes;
 
 static Symbol* lookupCImport(ModuleSymbol* module, const char* name,
-                            std::set<ModuleSymbol*>& visited) {
+                            std::set<ModuleSymbol*, AstIdLess>& visited) {
   if (!visited.insert(module).second)
     return nullptr;
   auto scope = cImportScopes.find(module);
@@ -90,7 +90,7 @@ static Symbol* lookupCImport(ModuleSymbol* module, const char* name) {
       cImportScopes[module].symbols[name] = symbol;
     return symbol;
   }
-  std::set<ModuleSymbol*> visited;
+  std::set<ModuleSymbol*, AstIdLess> visited;
   return lookupCImport(module, name, visited);
 }
 
