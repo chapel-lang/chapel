@@ -16,6 +16,8 @@ BASE_CONFIGS = [
     ("multi-node (CHPL_COMM=gasnet over udp/smp)", common.gasnet_config),
     ("multi-node (CHPL_COMM=ofi over pmi2)", common.ofi_pmi2_config),
     ("single-node GPU", common.gpu_config),
+    ("multi-node GPU (CHPL_COMM=gasnet over udp)", common.gpu_gasnet_config),
+    ("multi-node GPU (CHPL_COMM=ofi over pmi2)", common.gpu_ofi_pmi2_config),
 ]
 
 PACKAGING_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,6 +43,7 @@ def pretty_os(osname: str) -> str:
 
 SORT_KEYS = [
     "CHPL_TARGET_COMPILER",
+    "CHPL_GPU",
     "CHPL_LAUNCHER",
     "CHPL_COMM",
     "CHPL_COMM_SUBSTRATE",
