@@ -89,6 +89,8 @@ jobs:
             export CHPL_COMM="$COMM"
             if [[ "$COMM" == "gasnet" ]]; then
               source util/cron/common-gasnet.bash
+              export GASNET_QUIET=Y
+              export CHPL_GASNET_SEGMENT=everything
             fi
             export CHPL_LLVM=system
             export CHPL_LLVM_CONFIG="llvm-config-$LLVM_VERSION"
@@ -176,6 +178,8 @@ jobs:
             export CHPL_COMM="$COMM"
             if [[ "$COMM" == "gasnet" ]]; then
               source util/cron/common-gasnet.bash
+              export GASNET_QUIET=Y
+              export CHPL_GASNET_SEGMENT=everything
             fi
             export CHPL_LLVM=system
             export CHPL_LLVM_CONFIG="llvm-config-$LLVM_VERSION"
