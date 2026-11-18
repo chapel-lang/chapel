@@ -95,6 +95,7 @@ jobs:
             export CHPL_LOCALE_MODEL=gpu
             export CHPL_GPU=nvidia
             export CHPL_TEST_GPU=true
+            export CHPL_RT_OVERSUBSCRIBED=1
             export CHPL_TEST_LAUNCHCMD="vgpu run"
             export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
           # dont build spectests, they dont add much value for simulated GPU tests
@@ -172,6 +173,7 @@ jobs:
             # Must match the GPU architecture of the simulated device
             export CHPL_GPU_ARCH=gfx942
             export CHPL_TEST_GPU=true
+            export CHPL_RT_OVERSUBSCRIBED=1
             export CHPL_TEST_LAUNCHCMD="vgpu run"
             export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
           # dont build spectests, they dont add much value for simulated GPU tests
