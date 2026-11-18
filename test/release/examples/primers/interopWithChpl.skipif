@@ -1,1 +1,3 @@
 CHPL_LLVM == none
+# doesn't work with GPUs yet
+CHPL_LOCALE_MODEL == gpu

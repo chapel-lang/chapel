@@ -16,11 +16,12 @@ gpu_flags=()
 cuda_arch_flags=()
 if [[ "$chpl_gpu" == "nvidia" ]]; then
   # Match Chapel's target(s) instead of letting Clang default to sm_52.
-  IFS=, read -r -a cuda_arches <<< "$(sed -n 's/^CHPL_GPU_ARCH=//p' <<< "$chpl_env")"
-  if [[ ${#cuda_arches[@]} -eq 0 ]]; then
+  cuda_arch=$(CHPL_HOME="$chpl_home" "$chpl_home/util/printchplenv" --only CHPL_GPU_ARCH --value)
+  if [[ -z "$cuda_arch" ]]; then
     echo "Could not determine CHPL_GPU_ARCH for the NVIDIA client" >&2
     exit 1
   fi
+  IFS=, read -r -a cuda_arches <<< "$cuda_arch"
   for arch in "${cuda_arches[@]}"; do
     cuda_arch_flags+=("--offload-arch=$arch")
   done
