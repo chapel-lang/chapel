@@ -45,6 +45,7 @@ as follows:
   * libc/test
   * libc/examples
   * libc/docs
+  * libc/benchmarks
 
 Upgrading LLVM versions
 =======================
@@ -65,7 +66,7 @@ be done automatically by $CHPL_HOME/third-party/llvm/update-bundled.sh.
 8.  mv llvm-project-23.1.6.src/third-party third-party
 9.  rm -r llvm-src/test llvm-src/unittests llvm-src/examples llvm-src/benchmarks llvm-src/docs
 10. rm -r llvm-src/tools/clang/test llvm-src/tools/clang/unittests llvm-src/tools/clang/examples llvm-src/tools/clang/docs
-11. rm -r libc/test libc/examples libc/docs
+11. rm -r libc/test libc/examples libc/docs libc/benchmarks
 12. git add --force llvm-src cmake third-party
     ('--force' is needed to ensure git adds all files in the subdirectory)
 13. commit these changes
