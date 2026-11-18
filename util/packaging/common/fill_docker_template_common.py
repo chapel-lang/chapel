@@ -181,7 +181,7 @@ gpu_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
+    "CHPL_LIB_PIC": "none",  # TODO: gpu+pic
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": "none",
 }
@@ -206,7 +206,7 @@ gpu_gasnet_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
+    "CHPL_LIB_PIC": "none",  # TODO: gpu+pic
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": "none",
 }
@@ -232,7 +232,7 @@ gpu_ofi_pmi2_config = {
     "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
-    "CHPL_LIB_PIC": "none", # TODO: gpu+pic
+    "CHPL_LIB_PIC": "none",  # TODO: gpu+pic
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": "none",
 }
