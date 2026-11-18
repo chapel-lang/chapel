@@ -275,9 +275,78 @@ Common settings:
    :header-rows: 1
 
    * - CHPL_GPU
+     - CHPL_LAUNCHER
      - OS compatibility
    * - cpu
+     - none
+     -
+   * - cpu
+     - slurm-srun
      -
    * - nvidia
+     - none
+     - only on Ubuntu 26
+   * - nvidia
+     - slurm-srun
+     - only on Ubuntu 26
+
+
+multi-node GPU (CHPL_COMM=gasnet over udp)
+------------------------------------------
+
+Common settings:
+
+* ``CHPL_LOCALE_MODEL=gpu``
+* ``CHPL_COMM=gasnet``
+* ``CHPL_COMM_SUBSTRATE=udp``
+
+.. list-table::
+   :header-rows: 1
+
+   * - CHPL_GPU
+     - CHPL_GASNET_SEGMENT
+     - OS compatibility
+   * - cpu
+     - everything
+     -
+   * - cpu
+     - fast
+     -
+   * - nvidia
+     - everything
+     - only on Ubuntu 26
+   * - nvidia
+     - fast
+     - only on Ubuntu 26
+
+
+multi-node GPU (CHPL_COMM=ofi over pmi2)
+----------------------------------------
+
+Common settings:
+
+* ``CHPL_LOCALE_MODEL=gpu``
+* ``CHPL_COMM=ofi``
+* ``CHPL_LIBFABRIC=bundled``
+* ``CHPL_COMM_OFI_OOB=pmi2``
+* ``CHPL_NETWORK_ATOMICS=ofi``
+
+.. list-table::
+   :header-rows: 1
+
+   * - CHPL_GPU
+     - CHPL_LAUNCHER
+     - OS compatibility
+   * - cpu
+     - none
+     -
+   * - cpu
+     - slurm-srun
+     -
+   * - nvidia
+     - none
+     - only on Ubuntu 26
+   * - nvidia
+     - slurm-srun
      - only on Ubuntu 26
 
