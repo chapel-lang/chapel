@@ -1,0 +1,1 @@
+../../ChAI/test/moduleTests/adaptiveAvgPoolTest.chpl

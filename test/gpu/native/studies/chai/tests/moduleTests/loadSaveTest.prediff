@@ -1,0 +1,4 @@
+#!/bin/bash
+
+outfile=$2
+python3 test_checksum.py ./savedTensors/loadInput.chdata ./savedTensors/saveOutput.chdata >> $outfile

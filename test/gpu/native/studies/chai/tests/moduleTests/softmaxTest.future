@@ -1,0 +1,27 @@
+I have not been able to match the output from Pytorch for this linear layer.
+The output I get from Pytorch is something like:
+
+❯ python3 layerTest.py
+Testing Softmax layer
+tensor([[0., 1., 2.],
+        [3., 4., 5.],
+        [6., 7., 8.]])
+tensor([[0.0900, 0.2447, 0.6652],
+        [0.0900, 0.2447, 0.6652],
+        [0.0900, 0.2447, 0.6652]])
+
+See the layerTest.py file in the same directory for the Pytorch code.
+There also seems to be a lot of confusion in the ChAI code about what
+this Softmax function is supposed to be doing.
+It seems that in the loadPyTorchDump this layer is being mapped to the
+"LogSoftmax" module in PyTorch, which is not the same as the Softmax.
+
+Moreover, Softmax in pytorch *must* be used with a dim argument, which
+dimension along which Softmax will be computed (so every slice along dim will
+sum to 1). But this function doesn't do that.
+
+It also doesn't match up with Softmax2d in pytorch.
+In short, this function is not doing what it is supposed to be doing,
+but I don't understand what it is even trying to do in the first place,
+because it doesn't correspond completely to a single function in PyTorch.
+We'd have to ask the author.

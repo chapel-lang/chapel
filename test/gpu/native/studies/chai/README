@@ -1,0 +1,7 @@
+This directory is for nightly testing of the ChAI library using GPU support
+
+The SKIPIF file runs before the tests directory. It clones chapel-lang's fork
+of ChAI and applies any patches in the patches directory.
+
+The tests directory should have a link to each test in ChAI/test with an
+accompanying good file. If ChAI fails to clone, the tests will be skipped
