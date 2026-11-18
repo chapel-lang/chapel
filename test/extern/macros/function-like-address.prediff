@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: (cannot take the address of an rvalue|lvalue required as unary)' "$2"; then
+  printf '%s\n' 'error: cannot take the address of an rvalue' > "$2"
+fi

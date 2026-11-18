@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: called object .*not a function or function pointer' "$2"; then
+  printf '%s\n' 'error: called object is not a function or function pointer' > "$2"
+fi

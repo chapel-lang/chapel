@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: (too few arguments provided to function-like macro invocation|macro .*MACRO_SUM.* requires 2 arguments, but only 1 given)' "$2"; then
+  printf '%s\n' 'error: too few arguments for MACRO_SUM' > "$2"
+fi

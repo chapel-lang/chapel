@@ -863,6 +863,10 @@ Variadic macros, arbitrary token fragments, stringification or token-pasting of
 arguments, and dependencies on the caller's tokens, source location, or control
 flow are unsupported by the LLVM backend.
 
+The C backend expands explicitly declared macros in the generated C source.
+The target C compiler checks these expansions, so accepted uses and diagnostics
+can differ from the LLVM backend.
+
 
 Pointer Types in Extern Blocks
 ------------------------------

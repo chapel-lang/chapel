@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: (expression is not assignable|lvalue required as increment operand)' "$2"; then
+  printf '%s\n' 'error: cannot increment an rvalue' > "$2"
+fi

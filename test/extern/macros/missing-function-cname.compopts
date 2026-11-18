@@ -1,0 +1,1 @@
+--ccflags -Werror=implicit-function-declaration

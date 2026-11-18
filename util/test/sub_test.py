@@ -724,6 +724,14 @@ def FindGoodFile(basename, commExecNums=[""]):
                 goodfile = basename + specstr + commExecNum + ".good"
                 if os.path.isfile(goodfile):
                     break
+        # Else try the C-backend .good file.
+        if not os.path.isfile(goodfile):
+            cgood = basename + ".c-backend" + commExecNum + ".good"
+            if (
+                os.path.isfile(cgood)
+                and get_chplenv()["CHPL_TARGET_COMPILER"] != "llvm"
+            ):
+                goodfile = cgood
         # Else try the platform-specific .good file.
         if not os.path.isfile(goodfile):
             goodfile = basename + "." + platform + commExecNum + ".good"
