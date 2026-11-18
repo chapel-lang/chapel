@@ -791,16 +791,6 @@ void resolveExternMacroReturnType(FnSymbol* fn) {
   }
   normalize(fn->retExprType);
   resolveSpecifiedReturnType(fn);
-
-  if (fn->retType != dtVoid) {
-    auto ret = newTemp("ret", fn->retType);
-    ret->addFlag(FLAG_RVV);
-    fn->insertAtHead(new DefExpr(ret));
-    auto returnCall = toCallExpr(fn->body->body.last());
-    INT_ASSERT(returnCall && returnCall->isPrimitive(PRIM_RETURN));
-    returnCall->get(1)->replace(new SymExpr(ret));
-    fn->retSymbol = nullptr;
-  }
 }
 
 #endif
