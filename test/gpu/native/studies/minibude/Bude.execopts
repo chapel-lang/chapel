@@ -1,1 +1,7 @@
---correctness -w=64
+#!/usr/bin/env bash
+
+if [[ ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo '--correctness -w=64 --poses=128 --iter=1 # Bude.sim.good'
+else
+  echo '--correctness -w=64'
+fi
