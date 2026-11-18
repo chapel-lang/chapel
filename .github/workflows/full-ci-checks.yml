@@ -165,25 +165,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ./${{ env.CCACHE_DIR_NAME }}
-          key: ccache-${{ github.job }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: 386
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Check arch inside container
+      - name: Set up linux32 container
         run: |
-          docker run --rm --platform linux/386 debian:latest bash -c '
-          test $(uname -m) == "i686"
-          '
-      - name: run examples tests in linux32 container
-        run: |
-          docker run -v "$(pwd)":/app -w /app --rm -i --platform linux/386 debian:latest bash << 'EOF'
-          set -exuo pipefail
+          container=$(docker run --detach --platform linux/386 \
+            --volume "$PWD:/app" --workdir /app \
+            --env CCACHE_COMPILERCHECK=content \
+            --env "CCACHE_DIR=/app/$CCACHE_DIR_NAME" \
+            --env CCACHE_MAXSIZE \
+            debian:latest sleep infinity)
+          echo "LINUX32_CONTAINER=$container" >> "$GITHUB_ENV"
+
+          docker exec -i "$container" bash -exuo pipefail << 'EOF'
+          test "$(uname -m)" = i686
 
           apt-get update && apt-get install -y \
             ccache \
@@ -208,26 +207,60 @@ jobs:
           # Set up ccache
           ln -s /usr/bin/ccache /usr/local/bin/gcc
           ln -s /usr/bin/ccache /usr/local/bin/g++
-          export CCACHE_COMPILERCHECK=content
-          export CCACHE_DIR=$(pwd)/${{ env.CCACHE_DIR_NAME }}
-          export CCACHE_MAXSIZE=${{ env.CCACHE_MAXSIZE }}
 
           git config --system --add safe.directory "*"
+          EOF
 
+          image=$(docker inspect --format '{{.Image}}' "$container")
+          toolchain=$(docker exec "$container" dpkg-query -W 'gcc*' 'g++*' ccache)
+          fingerprint=$(printf '%s\n' "$image" "$toolchain" | sha256sum | cut -d ' ' -f 1)
+          echo "LINUX32_CCACHE_PREFIX=ccache-test-examples-linux32-bundled-$fingerprint-" >> "$GITHUB_ENV"
+      - name: Restore linux32 ccache
+        id: restore-linux32-ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ./${{ env.CCACHE_DIR_NAME }}
+          key: ${{ env.LINUX32_CCACHE_PREFIX }}${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ env.LINUX32_CCACHE_PREFIX }}
+      - name: Build Chapel in linux32 container
+        run: |
+          docker exec -i "$LINUX32_CONTAINER" bash -exuo pipefail << 'EOF'
           source util/quickstart/setchplenv.bash
 
           # Build bundled LLVM support lib, to make sure we can on 32-bit
           export CHPL_LLVM=none
           export CHPL_LLVM_SUPPORT=bundled
 
+          ccache --zero-stats
+          trap 'ccache --show-stats' EXIT
+          num_procs=$(util/buildRelease/chpl-make-cpu_count)
+          make -j"$num_procs" all test-venv spectests chpldoc
+          EOF
+      # Save the completed build's cache before the examples can hit the job timeout.
+      - name: Save linux32 ccache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ./${{ env.CCACHE_DIR_NAME }}
+          key: ${{ steps.restore-linux32-ccache.outputs.cache-primary-key }}
+      - name: Run examples tests in linux32 container
+        run: |
+          docker exec -i "$LINUX32_CONTAINER" bash -exuo pipefail << 'EOF'
+          source util/quickstart/setchplenv.bash
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+
           # Set longer default test timeout, as emulation is slow.
           export CHPL_TEST_TIMEOUT=1200
 
+          ccache --zero-stats
+          trap 'ccache --show-stats' EXIT
           num_procs=$(util/buildRelease/chpl-make-cpu_count)
-          make -j"$num_procs" all test-venv spectests chpldoc
-
           start_test --parallel "$num_procs" test/release/examples
           EOF
+      - name: Remove linux32 container
+        if: always() && env.LINUX32_CONTAINER != ''
+        run: docker rm --force "$LINUX32_CONTAINER"
 
   build-linux-packages:
     uses: $/.github/workflows/package-builds.yml
