@@ -11,6 +11,13 @@ on:
 permissions:
   contents: read
 
+env:
+  APT_NETWORK_CONF: |
+    Acquire::Retries "5";
+    Acquire::http::Timeout "30";
+    Acquire::https::Timeout "30";
+    Acquire::ForceIPv4 "true";
+
 concurrency:
   group: ${{ github.workflow }}-simulated-gpu-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
@@ -21,69 +28,231 @@ defaults:
 
 jobs:
   test-nvidia:
-    name: Test CUDA ${{ matrix.cuda }}
+    name: Test CUDA ${{ matrix.cuda }}${{ matrix.comm != 'none' && format(' with {0}', matrix.comm) || '' }}
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/pantheongpu/pantheonsim:0.2.1-cuda${{ startsWith(matrix.cuda, '12.') && '12.8' || '13.0' }}
     env:
       DEBIAN_FRONTEND: noninteractive
-      APT_NETWORK_CONF: |
-        Acquire::Retries "5";
-        Acquire::http::Timeout "30";
-        Acquire::https::Timeout "30";
-        Acquire::ForceIPv4 "true";
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_CONFIGPATH: ${{ github.workspace }}/.ccache/ccache.conf
       VGPU_GPU: nvidia/h100
       VGPU_DEVICE_COUNT: '2'
     strategy:
       fail-fast: false
       matrix:
-        cuda: ["12.8", "13.0", "13.1", "13.4"]
-        llvm: ["22"]
+        cuda: ["12.9", "13.1", &latest_cuda "13.4"]
+        llvm: [&cuda_llvm_version "22"]
+        comm: ["none"]
+        # TODO: add comm=ofi+mpi for ofi coverage
+        include:
+          - cuda: *latest_cuda
+            llvm: *cuda_llvm_version
+            comm: gasnet
     steps:
+      - name: Install CUDA, LLVM and Chapel build dependencies
+        env:
+          CUDA_VERSION: ${{ matrix.cuda }}
+          LLVM_VERSION: ${{ matrix.llvm }}
+        run: |
+          tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ccache cmake g++ git locales make perl pkg-config sudo util-linux wget \
+            libedit-dev libzstd-dev m4 python3-dev python3-venv
+
+          # Match the Chapel CI container's locale, which start_test expects.
+          sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+          locale-gen
+          update-locale LANG=en_US.UTF-8
+
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/cuda-keyring.deb" \
+            https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          dpkg -i "$RUNNER_TEMP/cuda-keyring.deb"
+          mkdir -p /etc/apt/keyrings
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/llvm.asc" \
+            https://apt.llvm.org/llvm-snapshot.gpg.key
+          install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" \
+            > /etc/apt/sources.list.d/llvm.list
+          apt-get update
+          cuda_package_version=${CUDA_VERSION//./-}
+          apt-get install -y --no-install-recommends \
+            "cuda-nvcc-$cuda_package_version" "cuda-cudart-dev-$cuda_package_version" \
+            "cuda-driver-dev-$cuda_package_version" "cuda-cccl-$cuda_package_version" \
+            "libcurand-dev-$cuda_package_version" \
+            "clang-$LLVM_VERSION" "clang-tools-$LLVM_VERSION" \
+            "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
+          {
+            echo "/usr/local/cuda-$CUDA_VERSION/bin"
+            echo "/opt/pantheonsim/bin"
+          } >> "$GITHUB_PATH"
+      - name: Check PantheonSim
+        run: vgpu demo vectoradd --gpu "$VGPU_GPU"
+      - name: Configure Git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install LLVM and Chapel build dependencies
-        env:
-          LLVM_VERSION: ${{ matrix.llvm }}
+      - name: Create non-root build user
         run: |
-          sudo tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
-
-          sudo mkdir -p /etc/apt/keyrings
-          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/llvm.asc" \
-            https://apt.llvm.org/llvm-snapshot.gpg.key
-          sudo install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
-          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" \
-            | sudo tee /etc/apt/sources.list.d/llvm.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libedit-dev libzstd-dev m4 python3-dev python3-venv \
-            "clang-$LLVM_VERSION" "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
-      - name: Set up PantheonSim and CUDA
-        uses: pantheongpu/setup-pantheonsim@deff5781e8adfd83dec98dd5242dcbc96a564773 # v0
-        with:
-          gpu: ${{ env.VGPU_GPU }}
-          count: ${{ env.VGPU_DEVICE_COUNT }}
-          cuda-toolkit: ${{ matrix.cuda }}
-          library-path: 'false'
-      - name: Check PantheonSim
-        run: vgpu demo vectoradd --gpu "$VGPU_GPU"
+          useradd --create-home --shell /bin/bash chpl-tester
+          mkdir -p "$CCACHE_DIR"
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-cuda-${{ matrix.cuda }}
+          save: ${{ github.ref == 'refs/heads/main' }}
+      - name: Set workspace ownership
+        run: chown -R chpl-tester:chpl-tester "$GITHUB_WORKSPACE"
       - name: Compile Chapel and run the GPU tests
         uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
         env:
           LLVM_VERSION: ${{ matrix.llvm }}
+          COMM: ${{ matrix.comm }}
         with:
+          shell: runuser -u chpl-tester -- bash -exuo pipefail {0}
           setup: |
+            export CHPL_COMM="$COMM"
+            if [[ "$COMM" == "gasnet" ]]; then
+              source util/cron/common-gasnet.bash
+              export GASNET_QUIET=Y
+              export CHPL_GASNET_SEGMENT=everything
+            fi
             export CHPL_LLVM=system
             export CHPL_LLVM_CONFIG="llvm-config-$LLVM_VERSION"
             export CHPL_LOCALE_MODEL=gpu
             export CHPL_GPU=nvidia
             export CHPL_TEST_GPU=true
+            export CHPL_RT_OVERSUBSCRIBED=1
             export CHPL_TEST_LAUNCHCMD="vgpu run"
             export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
-          # TODO: add all of  gpu/native and release/examples
-          test-paths: examples/gpu/hello-gpu.chpl
-          parallel: false
+          # dont build spectests, they dont add much value for simulated GPU tests
+          # that CHPL_GPU=cpu doesn't already cover
+          make-targets: all test-venv
+          test-paths: test/gpu/native test/users/engin/context test/release/examples
+
+  test-amd:
+    name: Test ROCm ${{ matrix.rocm }}${{ matrix.comm != 'none' && format(' with {0}', matrix.comm) || '' }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/pantheongpu/pantheonsim:0.2.1-cuda13.0
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_CONFIGPATH: ${{ github.workspace }}/.ccache/ccache.conf
+      VGPU_GPU: amd/mi300x
+      VGPU_DEVICE_COUNT: '2'
+    strategy:
+      fail-fast: false
+      matrix:
+        rocm: [&latest_rocm "7.1"]
+        llvm: [&rocm_llvm_version "22"]
+        comm: ["none"]
+        # TODO: add comm=ofi+mpi for ofi coverage
+        include:
+          - rocm: *latest_rocm
+            llvm: *rocm_llvm_version
+            comm: gasnet
+    steps:
+      - name: Install ROCm, LLVM and Chapel build dependencies
+        env:
+          ROCM_VERSION: ${{ matrix.rocm }}
+          LLVM_VERSION: ${{ matrix.llvm }}
+        run: |
+          tee /etc/apt/apt.conf.d/99-ci-network <<< "$APT_NETWORK_CONF"
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ccache cmake g++ git gnupg locales make perl pkg-config sudo util-linux wget \
+            libedit-dev libelf1t64 libnuma1 libxml2 libzstd-dev m4 python3-dev python3-venv
+
+          # Match the Chapel CI container's locale, which start_test expects.
+          sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+          locale-gen
+          update-locale LANG=en_US.UTF-8
+
+          mkdir -p /etc/apt/keyrings
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/llvm.asc" \
+            https://apt.llvm.org/llvm-snapshot.gpg.key
+          install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" \
+            > /etc/apt/sources.list.d/llvm.list
+          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/rocm.asc" \
+            https://repo.radeon.com/rocm/rocm.gpg.key
+          gpg --dearmor --output /etc/apt/keyrings/rocm.gpg "$RUNNER_TEMP/rocm.asc"
+          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION noble main" \
+            > /etc/apt/sources.list.d/rocm.list
+          printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' > /etc/apt/preferences.d/rocm
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            "clang-$LLVM_VERSION" "clang-tools-$LLVM_VERSION" "lld-$LLVM_VERSION" \
+            "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
+          # Extract the SDK without installing a GPU driver or runtime.
+          download_dir=$(mktemp -d "$RUNNER_TEMP/rocm-debs.XXXXXX")
+          cd "$download_dir"
+          apt-get download hipcc hip-dev rocm-llvm rocm-device-libs rocm-core hsa-rocr-dev hipcub-dev rocprim-dev
+          for deb in ./*.deb; do
+            dpkg-deb -x "$deb" /
+          done
+          rocm_root=$(find /opt -maxdepth 1 -type d -name "rocm-$ROCM_VERSION*" | sort -V | tail -1)
+          test -n "$rocm_root"
+          ln -sfn "$rocm_root" /opt/rocm
+          for soname in libamdhip64.so libamdhip64.so.6 libamdhip64.so.7; do
+            ln -sfn "/opt/pantheonsim/shim/$soname" "/opt/rocm/lib/$soname"
+          done
+          echo "/opt/rocm/bin" >> "$GITHUB_PATH"
+          echo "ROCM_PATH=/opt/rocm" >> "$GITHUB_ENV"
+          export ROCM_PATH=/opt/rocm
+          test -r "$ROCM_PATH/include/hipcub/hipcub.hpp"
+          test -r "$ROCM_PATH/include/rocprim/rocprim.hpp"
+          rm ./*.deb
+          cd "$RUNNER_TEMP"
+          rmdir "$download_dir"
+      - name: Check PantheonSim
+        run: vgpu demo vectoradd --gpu "$VGPU_GPU"
+      - name: Configure Git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create non-root build user
+        run: |
+          useradd --create-home --shell /bin/bash chpl-tester
+          mkdir -p "$CCACHE_DIR"
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          create-symlink: true
+          key: ccache-${{ github.job }}-rocm-${{ matrix.rocm }}
+          save: ${{ github.ref == 'refs/heads/main' }}
+      - name: Set workspace ownership
+        run: chown -R chpl-tester:chpl-tester "$GITHUB_WORKSPACE"
+      - name: Compile Chapel and run the GPU tests
+        uses: ./.github/actions/build-and-test-chapel # zizmor: ignore[self-repository] -- $/ fails to unpack this repo's dangling symlinks: actions/runner#4626
+        env:
+          LLVM_VERSION: ${{ matrix.llvm }}
+          COMM: ${{ matrix.comm }}
+        with:
+          shell: runuser -u chpl-tester -- bash -exuo pipefail {0}
+          setup: |
+            export CHPL_COMM="$COMM"
+            if [[ "$COMM" == "gasnet" ]]; then
+              source util/cron/common-gasnet.bash
+              export GASNET_QUIET=Y
+              export CHPL_GASNET_SEGMENT=everything
+            fi
+            export CHPL_LLVM=system
+            export CHPL_LLVM_CONFIG="llvm-config-$LLVM_VERSION"
+            export CHPL_LOCALE_MODEL=gpu
+            export CHPL_GPU=amd
+            # Must match the GPU architecture of the simulated device
+            export CHPL_GPU_ARCH=gfx942
+            export CHPL_TEST_GPU=true
+            export CHPL_RT_OVERSUBSCRIBED=1
+            export CHPL_TEST_LAUNCHCMD="vgpu run"
+            export CHPL_SYSTEM_PREDIFF="$CHPL_HOME/util/test/prediff-for-pantheonsim"
+          # dont build spectests, they dont add much value for simulated GPU tests
+          # that CHPL_GPU=cpu doesn't already cover
+          make-targets: all test-venv
+          test-paths: test/gpu/native test/users/engin/context test/release/examples

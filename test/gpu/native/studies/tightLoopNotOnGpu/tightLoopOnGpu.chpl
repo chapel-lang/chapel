@@ -25,7 +25,7 @@ if validate then startGpuDiagnostics();
 var numTrials = 0;
 
 on here.gpus[0] {
-  var A : [0..<M] int;
+  var A : [0..<P] int;
 
   t.start();
   do {

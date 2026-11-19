@@ -1,0 +1,2 @@
+# upstream test takes too long under simulated gpu
+LAUNCHCMD <= ^\s*(?:\S*/)?vgpu\s+run(?:\s|$)

@@ -9,7 +9,7 @@ on here.gpus[0] {
     const warpIndex = i/32;
 
     if i%32==0 {
-      for j in 0..<32 {
+      for j in 0..<min(32, n-i) {
         Arr[i+j] = warpIndex;
       }
       for i in 0..<n { // We do this to try and make the threads out of sync

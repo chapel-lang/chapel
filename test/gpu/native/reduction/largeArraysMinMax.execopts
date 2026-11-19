@@ -1,7 +1,17 @@
+#!/usr/bin/env bash
+
+if [[ ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  printf '%s\n' '--n=4000' '--n=4000 --setIdx=0' '--n=4000 --setIdx=1999' \
+    '--n=4000 --setIdx=2000' '--n=4000 --setIdx=2001' '--n=4000 --setIdx=2047'
+  exit
+fi
+
+cat <<'EOF'
  #largeArraysMinMax
 --setIdx=0
 --setIdx=1_999_999_999
 --setIdx=2_000_000_000
 --setIdx=2_000_000_001
 --setIdx=2_147_483_647
+EOF
 

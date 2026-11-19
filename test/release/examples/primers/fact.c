@@ -13,28 +13,28 @@ int fact(int x){
 
 
 
-data* getNewData(void){
-    data *d = (data*)malloc(sizeof(data));
+factData* getNewData(void){
+    factData *d = (factData*)malloc(sizeof(factData));
     d->x = 5;
     return d;
 }
 
-data* fact_d(data *d){
-    data *s = (data*)malloc(sizeof(data));
-    
+factData* fact_d(factData *d){
+    factData *s = (factData*)malloc(sizeof(factData));
+
     if(d->x <= 1){
         s->x = 1;
         return s;
     }
     s->x = d->x-1;
-    data *f = fact_d(s);
+    factData *f = fact_d(s);
     f->x *= d->x;
     free(s);
     return f;
 }
 
-data* getDataStructPtr(void){
-    data *d = (data*)malloc(sizeof(data));
+factData* getDataStructPtr(void){
+    factData *d = (factData*)malloc(sizeof(factData));
     d->x = 10;
     return d;
 }

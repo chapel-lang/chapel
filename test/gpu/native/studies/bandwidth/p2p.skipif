@@ -1,0 +1,2 @@
+# PantheonSim's nvidia-smi does not implement topo -p2p.
+LAUNCHCMD <= ^\s*(?:\S*/)?vgpu\s+run(?:\s|$)

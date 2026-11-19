@@ -2432,7 +2432,7 @@ def run_test(test_args, testname, out=sys.stdout):
             # systemPrediffs since they shouldn't be filtering all output
             # anyways, and it could create noise for configs that use them.
             if result != 0:
-                if prediff or TA.globalPrediff:
+                if prediff or TA.globalPrediff or TA.systemPrediffs:
                     out.write(
                         "[Compiler output before prediff was as follows:]\n"
                     )
@@ -3092,6 +3092,10 @@ def run_test(test_args, testname, out=sys.stdout):
                     out.write(stdout)
                     out.flush()
 
+                orig_exec_output = None
+                if prediff or TA.globalPrediff or TA.systemPrediffs:
+                    orig_exec_output = (pre_exec_to_write, output_to_write)
+
                 if not exectimeout and not launcher_error:
                     if TA.systemPrediffs:
                         for sprediff in TA.systemPrediffs:
@@ -3215,6 +3219,13 @@ def run_test(test_args, testname, out=sys.stdout):
                                 out=out,
                             )
                         out.write("]\n")
+
+                        if result != 0 and orig_exec_output is not None:
+                            out.write(
+                                "[Execution output before prediff was as follows:]\n"
+                            )
+                            for output_part in orig_exec_output:
+                                out.write(trim_output(output_part))
 
                         if result != 0 and futuretest != "":
                             badfile = test_filename + ".bad"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Signed and unsigned 16-bit min and max return wrong results on simulated AMD.
+if [[ $CHPL_GPU == amd && ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo 1
+else
+  echo 0
+fi

@@ -1,32 +1,47 @@
 #!/usr/bin/env bash
+set -e
 
 CHPL=$3
 OUTFILE=$2
 chpl_home=`$CHPL --print-chpl-home`
-chpl_gpu=$(CHPL_HOME=$chpl_home $chpl_home/util/printchplenv --all --simple | grep 'CHPL_GPU=' | sed 's/CHPL_GPU=//')
+chpl_env=$(CHPL_HOME="$chpl_home" "$chpl_home/util/printchplenv" --all --simple)
+chpl_gpu=$(sed -n 's/^CHPL_GPU=//p' <<< "$chpl_env")
+
+read -r -a testlaunchcmd <<< "${LAUNCHCMD:-}"
 
 # build with compileline
 cxx=`$chpl_home/util/config/compileline --compile-c++`
 libs=`$chpl_home/util/config/compileline --libraries`
-gpu_flags=""
+gpu_flags=()
+cuda_arch_flags=()
 if [[ "$chpl_gpu" == "nvidia" ]]; then
-  gpu_flags="-x cuda"
+  # Match Chapel's target(s) instead of letting Clang default to sm_52.
+  cuda_arch=$(CHPL_HOME="$chpl_home" "$chpl_home/util/printchplenv" --only CHPL_GPU_ARCH --value)
+  if [[ -z "$cuda_arch" ]]; then
+    echo "Could not determine CHPL_GPU_ARCH for the NVIDIA client" >&2
+    exit 1
+  fi
+  IFS=, read -r -a cuda_arches <<< "$cuda_arch"
+  for arch in "${cuda_arches[@]}"; do
+    cuda_arch_flags+=("--offload-arch=$arch")
+  done
+  gpu_flags=(-x cuda "${cuda_arch_flags[@]}")
 elif [[ "$chpl_gpu" == "amd" ]]; then
-  gpu_flags="-x hip"
+  gpu_flags=(-x hip)
 fi
-$cxx $CXXFLAGS $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
+$cxx $CXXFLAGS "${gpu_flags[@]}" test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
 echo "Running test_udf2_compileline" >> $OUTFILE
-./test_udf2_compileline >> $OUTFILE
+"${testlaunchcmd[@]}" ./test_udf2_compileline >> "$OUTFILE"
 
 # build with cmake
 mkdir cmakeBuild
 cmake -B cmakeBuild -S .
 cmake --build cmakeBuild --target test_udf2_cmake
 echo "Running test_udf2_cmake" >> $OUTFILE
-./cmakeBuild/test_udf2_cmake >> $OUTFILE
+"${testlaunchcmd[@]}" ./cmakeBuild/test_udf2_cmake >> "$OUTFILE"
 
 # build with makefile
-make test_udf2_make_$CHPL_GPU
+make "test_udf2_make_$chpl_gpu" "CUDA_ARCH_FLAGS=${cuda_arch_flags[*]}"
 echo "Running test_udf2_make" >> $OUTFILE
-./test_udf2_make >> $OUTFILE
+"${testlaunchcmd[@]}" ./test_udf2_make >> "$OUTFILE"
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# shoc-sort segfaults on simulated NVIDIA GPUs
+if [[ $CHPL_GPU == nvidia && ${LAUNCHCMD:-} =~ ^[[:space:]]*([^[:space:]]*/)?vgpu[[:space:]]+run([[:space:]]|$) ]]; then
+  echo 1
+else
+  echo 0
+fi

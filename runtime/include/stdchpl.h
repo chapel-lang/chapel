@@ -80,7 +80,8 @@
 #include "chpl-wide-ptr-fns.h"
 #include "chpl-mem-consistency.h"
 
-#ifdef HAS_GPU_LOCALE
+// GPU code generation needs C++ device headers - plain C library clients don't.
+#if defined(HAS_GPU_LOCALE) && (defined(GPU_RUNTIME_CPU) || defined(__cplusplus))
 #include "chpl-gpu-gen-includes.h"
 #endif
 

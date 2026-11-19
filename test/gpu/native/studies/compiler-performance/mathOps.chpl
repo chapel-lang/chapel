@@ -1,1 +1,1 @@
-../../mathOps.chpl
+../../operations/mathOps.chpl

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+hn=$(<localeName.hostname)
+comm=$("$CHPL_HOME/util/chplenv/chpl_comm.py")
+if [[ $comm == gasnet ]]; then
+  substrate=$("$CHPL_HOME/util/chplenv/chpl_comm_substrate.py")
+  # Local GASNet spawns append the locale ID to the hostname.
+  if [[ $substrate == smp || ( $substrate == udp && ${GASNET_SPAWNFN:-} == L ) ]]; then
+    hn+=-0
+  fi
+fi
+
+EXPECTED_LOCALE_NAME="$hn" awk '
+  BEGIN { name = ENVIRON["EXPECTED_LOCALE_NAME"] }
+  NR == 1 && $0 == name { $0 = "PREDIFF_HOSTNAME" }
+  NR == 3 && $0 == name "-GPU0" { $0 = "PREDIFF_HOSTNAME-GPU0" }
+  { print }
+' "$2" > "$2.predifftemp"
+mv "$2.predifftemp" "$2"

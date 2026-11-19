@@ -3,13 +3,13 @@
 
 int fact(int x);
 
-typedef struct _data {
+typedef struct factData {
     int  x;
-} data;
+} factData;
 
-data* getNewData(void);
-data* fact_d(data* d);
-data* getDataStructPtr(void);
+factData* getNewData(void);
+factData* fact_d(factData* d);
+factData* getDataStructPtr(void);
 
 void cFree(void* ptr);
 
