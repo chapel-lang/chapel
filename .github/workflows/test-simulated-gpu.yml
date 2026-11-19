@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         cuda: ["12.9", "13.1", &latest_cuda "13.4"]
-        llvm: [&cuda_llvm_version "22"]
+        llvm: [&cuda_llvm_version "23"]
         comm: ["none"]
         # TODO: add comm=ofi+mpi for ofi coverage
         include:
@@ -148,7 +148,7 @@ jobs:
       fail-fast: false
       matrix:
         rocm: [&latest_rocm "7.1"]
-        llvm: [&rocm_llvm_version "22"]
+        llvm: [&rocm_llvm_version "23"]
         comm: ["none"]
         # TODO: add comm=ofi+mpi for ofi coverage
         include:
