@@ -75,9 +75,9 @@ having all loaded Chapel programs utilize a single shared copy of the runtime.
 
   This feature is highly unstable (even more than the rest of this module).
   As of the 2.9 release, it is only supported when ``CHPL_COMM=none`` or
-  ``CHPL_COMM=gasnet``, and also requires ``CHPL_LIB_PIC=pic``. Safety checks
-  have not been added yet, so dynamically loaded code may break in unexpected
-  ways if these constraints are not met.
+  ``CHPL_COMM=gasnet``, and also requires ``CHPL_LIB_PIC=pic``. Only limited
+  safety checks have been added, so dynamically loaded Chapel code may break
+  in unexpected ways if these constraints are not met.
 
   Additionally, while it should be possible to execute parallel and
   distributed code from a loaded Chapel library, it is possible that certain
@@ -102,15 +102,6 @@ process that is described in the previous sections of this module.
 
 Do note that only ``export`` procedures may be called from the library. This
 restriction may be removed in the future.
-
-.. note::
-
-  You may get strange link-time errors when trying to run the executable.
-  If this happens, it is usually because of a bug that occurs when the
-  dynamic variant of the Chapel runtime library was built.
-
-  If you've built Chapel from source, a workaround is to touch a source
-  file in the Chapel runtime and then rebuild it.
 */
 @unstable('Dynamic library support is experimental and unstable.')
 module DynamicLibrary {
@@ -134,6 +125,7 @@ if !useProcedurePointers {
 }
 
 // I found this XOR-like requirement too hard to describe with a bool alone.
+@chpldoc.nodoc()
 enum PathProperty {
   MustContainSep,
   CannotContainSep
@@ -187,7 +179,7 @@ private proc loadFromPathImpl(path: string) throws {
   it was not marked as executable).
 
   Additionally, the ``path`` formal must be a string that contains one or
-  more instances of a path separator (e.g., `/`). This is required so that
+  more instances of a path separator (e.g., ``"/"``). This is required so that
   the path is interpreted by the dynamic linker as an absolute or relative
   path. If you want to rely on your dynamic linker's search behavior when
   no directory is specified, consider calling the :proc:`load()` procedure.
@@ -207,13 +199,14 @@ proc loadFromPath(path: string) throws {
   This procedure behaves similarly to :proc:`loadFromPath()`, except that it
   computes the path to load from the arguments that are passed to it.
 
-  For example, given a library ``name`` of `foo`, a ``directory`` of
-  `path/to`, a prefix of `lib`, and a Linux-based ``suffix`` of `.so`,
-  this procedure will attempt to load a dynamic library from the path
-  `path/to/libfoo.so`.
+  For example, given a library ``name`` of ``"foo"``, a ``directory`` of
+  ``"path/to"``, a ``prefix`` of ``"lib"``, and a Linux-based ``suffix`` of
+  ``".so"``, this procedure will attempt to load a dynamic library from the
+  path ``"path/to/libfoo.so"``.
 
   All the formal arguments except ``name`` are optional, so it is possible
-  to get the same result by only passing in the string `foo` and `path/to`.
+  to get the same result by only passing in the string ``"foo"`` and
+  ``"path/to"``.
 
   :arg name: The base name of the dynamic library to load
   :type name: `string`
@@ -221,10 +214,10 @@ proc loadFromPath(path: string) throws {
   :arg directory: An optional directory path to prepend to the result
   :type name: `string`
 
-  :arg prefix: Prefix for ``name``, by default `lib`
+  :arg prefix: Prefix for ``name``, by default ``"lib"``
   :type name: `string`
 
-  :arg suffix: Suffix for ``name``, by default a `.` period followed by a
+  :arg suffix: Suffix for ``name``, by default a ``"."`` period followed by a
                file extension fit for dynamic libraries on this platform
   :type name: `string`
 
