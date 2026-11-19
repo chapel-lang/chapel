@@ -5,15 +5,15 @@
 // This initializer uses a default intent, which violates the rule.
 record badRecord {
   var x: int;
-  proc init(x: int) {
-    this.x = x;
+  proc init(newX: int) {
+    x = newX;
   }
 }
 
 // This initializer uses an ``in`` intent, which is correct.
 record goodRecord {
   var x: int;
-  proc init(in x: int) {
-    this.x = x;
+  proc init(in newX: int) {
+    x = newX;
   }
 }
