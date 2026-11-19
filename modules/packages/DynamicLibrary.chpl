@@ -171,7 +171,6 @@ private proc loadFromPathImpl(path: string) throws {
 }
 
 /*
-  ..
   Create a record representing a dynamically loaded library using a string
   that stores the path to a library file. The file may be any natively
   executable program, though a "shared library" or "dynamic library" is by
@@ -204,7 +203,7 @@ proc loadFromPath(path: string) throws {
   return loadFromPathImpl(path);
 }
 
-/**
+/*
   This procedure behaves similarly to :proc:`loadFromPath()`, except that it
   computes the path to load from the arguments that are passed to it.
 
