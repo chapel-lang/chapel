@@ -32,6 +32,7 @@
 #include "chpl-comm.h"
 #include "chpl-env-gen.h"
 #include "chpl-mem.h"
+#include "chpllaunch.h"
 #include "chpl-prginfo.h"
 #include "chpl-error.h"
 #include "chpl-linefile-support.h"
@@ -403,6 +404,7 @@ const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val) {
 
 int chpl_rt_num_program_only_constants(void) {
   enum size_enum {
+    #define E_CALLBACK(name__, ret_type__, ...)
     #define E_CONSTANT(name__, type__) size_enum_##name__,
     #include "chpl-prginfo-data-macro-adapter.h"
     ENUM_SIZE
@@ -411,6 +413,7 @@ int chpl_rt_num_program_only_constants(void) {
 }
 
 static const char* program_only_constant_name_table[] = {
+  #define E_CALLBACK(name__, ret_type__, ...)
   #define E_CONSTANT(name__, type__) #name__,
   #include "chpl-prginfo-data-macro-adapter.h"
   NULL
@@ -422,29 +425,32 @@ const char* chpl_rt_program_only_constant_by_idx(int idx) {
   return program_only_constant_name_table[idx];
 }
 
-bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
-                                           chpl_rt_prginfo* prg2,
-                                           const char* constant,
-                                           char** out_error_msg) {
+chpl_bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
+                                                chpl_rt_prginfo* prg2,
+                                                const char* constant,
+                                                char** out_error_msg) {
   bool matches = false;
   char* buffer = NULL;
   int buffer_size = 0;
 
+  #define E_CALLBACK(name__, ret_type__, ...)
   #define E_CONSTANT(name__, type__) do {                                     \
-    if (!strcmp(name__, constant)) {                                          \
-      type__ v1 = CHPL_RT_PRGINFO_DATA(prg1, constant);                       \
-      type__ v2 = CHPL_RT_PRGINFO_DATA(prg2, constant);                       \
-      if (!strcmp(type__, "const char*") || !strcmp(type__, "c_string")) {    \
-        const char* s1 = *((void*)&v1);                                       \
-        const char* s2 = *((void*)&v2);                                       \
+    if (!strcmp(#name__, constant)) {                                         \
+      type__ v1 = CHPL_RT_PRGINFO_DATA(prg1, name__);                         \
+      type__ v2 = CHPL_RT_PRGINFO_DATA(prg2, name__);                         \
+      if (!strcmp(#type__, "const char*") || !strcmp(#type__, "c_string")) {  \
+        void* vp1 = &v1;                                                      \
+        void* vp2 = &v2;                                                      \
+        const char* s1 = *(const char**) vp1;                                 \
+        const char* s2 = *(const char**) vp2;                                 \
         matches = !strcmp(s1, s2);                                            \
-      } else if (NULL != strchar(type__, '*')) {                              \
+      } else if (NULL != strchr(#type__, '*')) {                              \
         chpl_internal_error("Unhandled pointer type!");                       \
       } else {                                                                \
         matches = (v1 == v2);                                                 \
       }                                                                       \
     }                                                                         \
-  } while (0)
+  } while (0);
   #include "chpl-prginfo-data-macro-adapter.h"
 
   if (!matches && out_error_msg) {
@@ -462,9 +468,9 @@ bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
   return false;
 }
 
-bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
-                                                const char* constant,
-                                                char** out_error_msg) {
+chpl_bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
+                                                     const char* constant,
+                                                     char** out_error_msg) {
   return chpl_rt_program_only_constant_matches(CHPL_RT_PRGINFO_ROOT, prg,
                                                constant, out_error_msg);
 }

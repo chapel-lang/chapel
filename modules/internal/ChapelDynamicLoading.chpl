@@ -244,6 +244,11 @@ module ChapelDynamicLoading {
     }
   }
 
+  // A list of program constants to check when loading a Chapel program.
+  const programConstantList = [
+    'CHPL_CACHE_REMOTE'
+  ];
+
   // This is one per entrypoint binary and lives on LOCALE-0.
   var chpl_binaryInfoStore = new owned chpl_BinaryInfoStore();
 
@@ -512,12 +517,19 @@ module ChapelDynamicLoading {
       }
     }
 
-    // TODO: Check for 'CHPL_CACHE_REMOTE'.
     inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
-      extern proc chpl_rt_program_only_constant_matches_root(
-                                     ref prg: chpl_rt_prginfo,
-                                     constant: c_ptrConst(c_char),
-                                     out_error_msg: c_ptr(c_ptrConst(c_char));
+      extern 'check_fn' proc chpl_rt_program_only_constant_matches_root(
+                               prg: c_ptr(chpl_rt_prginfo),
+                               constant: c_ptrConst(c_char),
+                               out_error_msg: c_ptr(c_ptrConst(c_char))): bool;
+      for c in programConstantList {
+        var error_msg: c_ptrConst(c_char);
+        const ok = check_fn(infoPtr, c.c_str(), c_ptrTo(error_msg));
+        if !ok {
+          var msg = string.createAdoptingBuffer(error_msg);
+          throw new DynLoadError(msg);
+        }
+      }
     }
 
     // Determines if this is a Chapel program or not and sets the '_kind'

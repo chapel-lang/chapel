@@ -83,10 +83,10 @@ const char* chpl_rt_program_only_constant_by_idx(int idx);
     allocated string containing an error message if the constants did
     not match.
 */
-bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
-                                           chpl_rt_prginfo* prg2,
-                                           const char* constant,
-                                           char** out_error_msg);
+chpl_bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
+                                                chpl_rt_prginfo* prg2,
+                                                const char* constant,
+                                                char** out_error_msg);
 
 /** Compare the value of a program-only constant from 'prg' against the
     value contained in 'CHPL_RT_PRGINFO_ROOT'. Returns 'true' if the
@@ -96,9 +96,9 @@ bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
     allocated string containing an error message if the constants did
     not match.
 */
-bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
-                                                const char* constant,
-                                                char** out_error_msg);
+chpl_bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
+                                                     const char* constant,
+                                                     char** out_error_msg);
 
 #ifdef __cplusplus
 }
