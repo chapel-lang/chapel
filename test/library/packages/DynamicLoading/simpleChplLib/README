@@ -1,0 +1,17 @@
+These tests are a variations on a simple "load an add function written
+in Chapel and call it". It was written before Chapel's dynamic loading
+feature supported loading Chapel libraries. As such, the programs all
+attempted to load a Chapel library as a "foreign" C program and then
+call into it, which *almost* worked.
+
+However, because the Chapel library was not initialized, it crashed on
+teardown instead of exiting gracefully.
+
+Since Chapel now supports dynamically loading Chapel programs, I've
+adjusted the tests to live in the new world. They all throw the flag
+"--no-builtin-runtime" in order to gracefully load the Chapel runtime
+as a dynamic library.
+
+Additionally, the 'exit(0)' calls have been removed, as the Chapel
+runtime now cleans itself up properly (because all programs are using
+the same copy).

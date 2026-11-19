@@ -10,4 +10,5 @@ for loc in Locales do
   on loc do
     writeln(myAddEm(42, here.id));
 
-exit(0); // exit early to avoid fault during teardown on linux
+// Explicit 'exit' call is no longer needed - teardown happens properly.
+// exit(0);
