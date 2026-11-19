@@ -156,9 +156,6 @@ private proc loadFromPathImpl(path: string) throws {
   const bin = chpl_BinaryInfo.create(path, err);
   if err then throw err;
 
-  // Should hold by construction.
-  assert(bin != nil);
-
   return new dynamicLibrary(bin!);
 }
 
