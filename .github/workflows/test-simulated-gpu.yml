@@ -147,11 +147,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm: ["7.14.1", &latest_rocm "10.1"]
-        llvm: [&rocm_llvm_version "23"]
-        comm: ["none"]
-        # TODO: add comm=ofi+mpi for ofi coverage
         include:
+          - rocm: "7.1"
+            llvm: "22"
+            comm: none
+          - rocm: &latest_rocm "10.1.0"
+            llvm: &rocm_llvm_version "23"
+            comm: none
           - rocm: *latest_rocm
             llvm: *rocm_llvm_version
             comm: gasnet
@@ -178,25 +180,40 @@ jobs:
           install -m 644 "$RUNNER_TEMP/llvm.asc" /etc/apt/keyrings/apt.llvm.org.asc
           echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" \
             > /etc/apt/sources.list.d/llvm.list
-          wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/rocm.asc" \
-            https://repo.radeon.com/rocm/rocm.gpg.key
-          gpg --dearmor --output /etc/apt/keyrings/rocm.gpg "$RUNNER_TEMP/rocm.asc"
-          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION noble main" \
-            > /etc/apt/sources.list.d/rocm.list
-          printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' > /etc/apt/preferences.d/rocm
+          if [[ "$ROCM_VERSION" == "7.1" ]]; then
+            wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv -O "$RUNNER_TEMP/rocm.asc" \
+              https://repo.radeon.com/rocm/rocm.gpg.key
+            gpg --dearmor --output /etc/apt/keyrings/rocm.gpg "$RUNNER_TEMP/rocm.asc"
+            echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/$ROCM_VERSION noble main" \
+              > /etc/apt/sources.list.d/rocm.list
+            printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' > /etc/apt/preferences.d/rocm
+          fi
           apt-get update
           apt-get install -y --no-install-recommends \
             "clang-$LLVM_VERSION" "clang-tools-$LLVM_VERSION" "lld-$LLVM_VERSION" \
             "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
           # Extract the SDK without installing a GPU driver or runtime.
-          download_dir=$(mktemp -d "$RUNNER_TEMP/rocm-debs.XXXXXX")
-          cd "$download_dir"
-          apt-get download hipcc hip-dev rocm-llvm rocm-device-libs rocm-core hsa-rocr-dev hipcub-dev rocprim-dev
-          for deb in ./*.deb; do
-            dpkg-deb -x "$deb" /
-          done
-          rocm_root=$(find /opt -maxdepth 1 -type d -name "rocm-$ROCM_VERSION*" | sort -V | tail -1)
-          test -n "$rocm_root"
+          if [[ "$ROCM_VERSION" == "7.1" ]]; then
+            download_dir=$(mktemp -d "$RUNNER_TEMP/rocm-debs.XXXXXX")
+            cd "$download_dir"
+            apt-get download hipcc hip-dev rocm-llvm rocm-device-libs rocm-core hsa-rocr-dev hipcub-dev rocprim-dev
+            for deb in ./*.deb; do
+              dpkg-deb -x "$deb" /
+            done
+            rocm_root=$(find /opt -maxdepth 1 -type d -name "rocm-$ROCM_VERSION*" | sort -V | tail -1)
+            test -n "$rocm_root"
+            rm ./*.deb
+            cd "$RUNNER_TEMP"
+            rmdir "$download_dir"
+          else
+            rocm_tarball="therock-dist-linux-gfx94X-dcgpu-$ROCM_VERSION.tar.gz"
+            wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv \
+              -O "$RUNNER_TEMP/$rocm_tarball" "https://stable.repo.amd.com/rocm/core/tarball/$rocm_tarball"
+            rocm_root=/opt/rocm/core
+            mkdir -p "$rocm_root"
+            tar -xzf "$RUNNER_TEMP/$rocm_tarball" -C "$rocm_root"
+            rm "$RUNNER_TEMP/$rocm_tarball"
+          fi
           ln -sfn "$rocm_root" /opt/rocm
           for soname in libamdhip64.so libamdhip64.so.6 libamdhip64.so.7; do
             ln -sfn "/opt/pantheonsim/shim/$soname" "/opt/rocm/lib/$soname"
@@ -206,9 +223,6 @@ jobs:
           export ROCM_PATH=/opt/rocm
           test -r "$ROCM_PATH/include/hipcub/hipcub.hpp"
           test -r "$ROCM_PATH/include/rocprim/rocprim.hpp"
-          rm ./*.deb
-          cd "$RUNNER_TEMP"
-          rmdir "$download_dir"
       - name: Check PantheonSim
         run: vgpu demo vectoradd --gpu "$VGPU_GPU"
       - name: Configure Git safe directory
