@@ -634,6 +634,10 @@ jobs:
             echo "Chapel build for $CONFIGURATION did not succeed (result: $BUILD_RESULT), so no tests were run." \
               > "$FAILURE_EMAIL_ADDENDUM"
           elif [[ "$overall_status" != "0" ]]; then
+            if [[ -n "$EXPECTED_JOBS" && "$actual_jobs" -lt "$EXPECTED_JOBS" ]]; then
+              echo "Expected $EXPECTED_JOBS runners, only $actual_jobs runners reported." \
+                > "$FAILURE_EMAIL_ADDENDUM"
+            fi
             mapfile -t failed_tests < <(
               grep -a '^\[Error' "$AGGREGATED_RESULTS_DIR/results.log.summary" 2>/dev/null || true
             )
@@ -647,6 +651,9 @@ jobs:
                 echo "::warning::Failed to extract output of failed tests"
 
               max_listed=50
+              if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+                echo >> "$FAILURE_EMAIL_ADDENDUM"
+              fi
               {
                 echo "$num_failed_tests failed test(s) in $CONFIGURATION:"
                 echo '```'
@@ -655,7 +662,7 @@ jobs:
                   echo "... and $((num_failed_tests - max_listed)) more"
                 fi
                 echo '```'
-              } > "$FAILURE_EMAIL_ADDENDUM"
+              } >> "$FAILURE_EMAIL_ADDENDUM"
             fi
           fi
 
