@@ -514,6 +514,10 @@ module ChapelDynamicLoading {
 
     // TODO: Check for 'CHPL_CACHE_REMOTE'.
     inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
+      extern proc chpl_rt_program_only_constant_matches_root(
+                                     ref prg: chpl_rt_prginfo,
+                                     constant: c_ptrConst(c_char),
+                                     out_error_msg: c_ptr(c_ptrConst(c_char));
     }
 
     // Determines if this is a Chapel program or not and sets the '_kind'

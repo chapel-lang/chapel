@@ -422,38 +422,49 @@ const char* chpl_rt_program_only_constant_by_idx(int idx) {
   return program_only_constant_name_table[idx];
 }
 
-static bool compare_c_string(const char* s1, const char* s2) {
-  return !strcmp(s1, s2);
-}
-
-bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
-                                                const char* constant,
-                                                char** out_error_msg) {
-  chpl_rt_prginfo* p1 = CHPL_RT_PRGINFO_ROOT;
-  chpl_rt_prginfo* p2 = prg;
+bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
+                                           chpl_rt_prginfo* prg2,
+                                           const char* constant,
+                                           char** out_error_msg) {
   bool matches = false;
   char* buffer = NULL;
   int buffer_size = 0;
 
   #define E_CONSTANT(name__, type__) do {                                     \
     if (!strcmp(name__, constant)) {                                          \
-      type__ v1 = CHPL_RT_PRGINFO_DATA(p1, constant);                         \
-      type__ v2 = CHPL_RT_PRGINFO_DATA(p2, constant);                         \
+      type__ v1 = CHPL_RT_PRGINFO_DATA(prg1, constant);                       \
+      type__ v2 = CHPL_RT_PRGINFO_DATA(prg2, constant);                       \
       if (!strcmp(type__, "const char*") || !strcmp(type__, "c_string")) {    \
-        matches = compare_c_string(v1, v2);                                   \
+        const char* s1 = *((void*)&v1);                                       \
+        const char* s2 = *((void*)&v2);                                       \
+        matches = !strcmp(s1, s2);                                            \
       } else if (NULL != strchar(type__, '*')) {                              \
         chpl_internal_error("Unhandled pointer type!");                       \
       } else {                                                                \
         matches = (v1 == v2);                                                 \
       }                                                                       \
     }                                                                         \
-    if (!matches) {
-      chpl_append_to_cmd(&buffer, &buffer_size,
-                         "the value of the field %s does not match"
-    }
   } while (0)
-
   #include "chpl-prginfo-data-macro-adapter.h"
 
+  if (!matches && out_error_msg) {
+    const char* path1 = prg1 == CHPL_RT_PRGINFO_ROOT ? "<root>" :
+                                chpl_rt_prginfo_load_path(prg1);
+    const char* path2 = prg2 == CHPL_RT_PRGINFO_ROOT ? "<root>" :
+                                chpl_rt_prginfo_load_path(prg2);
+
+    chpl_append_to_cmd(&buffer, &buffer_size,
+                       "the program constant '%s' in the program loaded "
+                       "at '%s' does not match the value contained in the "
+                       "program '%s'\n", constant, path2, path1);
+  }
+
   return false;
+}
+
+bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,
+                                                const char* constant,
+                                                char** out_error_msg) {
+  return chpl_rt_program_only_constant_matches(CHPL_RT_PRGINFO_ROOT, prg,
+                                               constant, out_error_msg);
 }

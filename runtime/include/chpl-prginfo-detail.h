@@ -76,6 +76,18 @@ int chpl_rt_num_program_only_constants(void);
 /** Get the name and type of the i'th program-only constant. */
 const char* chpl_rt_program_only_constant_by_idx(int idx);
 
+/** Compare the value of a program-only constant from 'prg1' against the
+    value contained in 'prg2'. Returns 'true' if the constant matches.
+
+    If the pointer 'out_error_msg' is non-null, it will be set with an
+    allocated string containing an error message if the constants did
+    not match.
+*/
+bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
+                                           chpl_rt_prginfo* prg2,
+                                           const char* constant,
+                                           char** out_error_msg);
+
 /** Compare the value of a program-only constant from 'prg' against the
     value contained in 'CHPL_RT_PRGINFO_ROOT'. Returns 'true' if the
     constant matches.
