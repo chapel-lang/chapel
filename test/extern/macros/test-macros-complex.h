@@ -16,4 +16,19 @@ static int readMacroState(void) { return macroState; }
 #define MACRO_LOCAL_LVALUE ((int){3})
 #define MACRO_LOCAL_POINTER() ((int[]){1, 2})
 
+typedef struct macro_result {
+  int x;
+  double y;
+} macro_result;
+
+static macro_result makeMacroResult(int x) {
+  macro_result result = {x, 2.5};
+  macroState = x;
+  return result;
+}
+
+#define MACRO_RECORD_RESULT(x) makeMacroResult(x)
+
+static int readMacroResultX(macro_result result) { return result.x; }
+
 #endif

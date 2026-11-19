@@ -729,10 +729,16 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       GenRet got = info->lvt->getValue(cname);
       if (!got.val && hasFlag(FLAG_EXTERN)) {
         if (auto* getter = resolveMacroGetter(info, cname)) {
-          llvm::Type* cType = codegenCType(getter->getReturnType());
-          llvm::Type* chapelType = typeInfo()->codegen().type;
-          if (cType != chapelType)
-            USR_FATAL(this, "type conflict for extern macro '%s'", name);
+          clang::QualType cType = getter->getReturnType();
+          Type* chapelType = typeInfo();
+          if (codegenCType(cType) != chapelType->codegen().type) {
+            USR_FATAL_CONT(this, "type conflict for extern macro '%s'", name);
+            // The getter's return type is spelled with a generated typeof.
+            USR_PRINT(this, "the C type is '%s'",
+                      cType.getCanonicalType().getAsString().c_str());
+            USR_PRINT(this, "the Chapel type is '%s'", toString(chapelType));
+            USR_STOP();
+          }
           auto* accessor = getter;
           if (!hasFlag(FLAG_CONST)) {
             accessor = info->lvt->getMacroAddress(cname);

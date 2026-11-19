@@ -3512,7 +3512,7 @@ static clang::FunctionDecl* parseMacroWrapper(GenInfo* info,
                                                const char* macroName,
                                                const std::string& wrapperName,
                                                const std::string& source,
-                                               const char* use,
+                                               const std::string& use,
                                                const std::string& diagnosticName = "") {
   clang::CompilerInstance& ci = *info->clangInfo->Clang;
   clang::Preprocessor& pp = ci.getPreprocessor();
@@ -3542,7 +3542,7 @@ static clang::FunctionDecl* parseMacroWrapper(GenInfo* info,
   gGenInfo = savedInfo;
 
   if (ci.getDiagnostics().hasErrorOccurred())
-    USR_FATAL("cannot use C macro '%s' %s", macroName, use);
+    USR_FATAL("cannot use C macro '%s' %s", macroName, use.c_str());
 
   clang::TypeDecl* ignoredType = nullptr;
   clang::ValueDecl* value = nullptr;
@@ -3601,7 +3601,8 @@ clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
   result = result.getUnqualifiedType();
   if (result->isVoidType() || result->isFunctionType() ||
       result->isArrayType() || result->isIncompleteType())
-    USR_FATAL("C macro '%s' has an unsupported result type", name);
+    USR_FATAL("C macro '%s' has an unsupported result type '%s'", name,
+              result.getCanonicalType().getAsString().c_str());
   if (result->isPointerType() && usesMacroLocalStorage(expr))
     USR_FATAL("C macro '%s' depends on the caller's storage", name);
 
@@ -4376,19 +4377,21 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
 
   auto& ctx = *info->clangInfo->Ctx;
   auto policy = ctx.getPrintingPolicy();
-  std::string formals, arguments, typeArguments;
+  std::string formals, arguments, typeArguments, argumentTypes;
   unsigned i = 0;
   for_formals(formal, fn) {
     std::string formalName = "chpl_formal_" + std::to_string(i++);
     if (!formals.empty()) {
       formals += ", ";
       arguments += ", ";
+      argumentTypes += ", ";
       if (inferReturnType)
         typeArguments += ", ";
     }
     if (formal->hasFlag(FLAG_TYPE_VARIABLE))
       USR_FATAL(fn, "C macro '%s' does not support type arguments", name);
     clang::CanQualType ty = getClangFormalType(formal, info);
+    argumentTypes += clang::QualType(ty).getAsString();
     llvm::raw_string_ostream out(formals);
     clang::QualType(ty).print(out, policy, formalName);
     out.flush();
@@ -4404,6 +4407,10 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
   if (formals.empty())
     formals = "void";
 
+  std::string use = "with this extern signature";
+  if (!argumentTypes.empty())
+    use += " (C argument types: " + argumentTypes + ")";
+
   std::string invocation = std::string(name) + "(" + arguments + ")";
   std::string probeName = wrapperName + "_probe";
   std::string probeSource =
@@ -4414,7 +4421,7 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
       ") { " + invocation + "; }\n"
       "#pragma clang diagnostic pop\n";
   auto probe = parseMacroWrapper(info, name, probeName, probeSource,
-                                  "with this extern signature", wrapperName);
+                                  use, wrapperName);
   if (const char* reason = unsupportedMacroStatementUse(probe->getBody(), probe))
     USR_FATAL(fn, "C macro '%s' %s", name, reason);
 
@@ -4430,7 +4437,8 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
         returnType = ctx.getDecayedType(returnType);
     }
     if (!returnType->isVoidType() && returnType->isIncompleteType())
-      USR_FATAL(fn, "C macro '%s' has an unsupported result type", name);
+      USR_FATAL(fn, "C macro '%s' has an unsupported result type '%s'", name,
+                returnType.getCanonicalType().getAsString().c_str());
   } else {
     bool returnsRef = fn->retTag == RET_REF || fn->retTag == RET_CONST_REF;
     returnType = getClangType(fn->retType, returnsRef, info);
@@ -4461,8 +4469,7 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
     source += invocation;
   source += "; }\n";
 
-  return parseMacroWrapper(info, name, wrapperName, source,
-                           "with this extern signature");
+  return parseMacroWrapper(info, name, wrapperName, source, use);
 }
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD) {

@@ -31,6 +31,9 @@
                   signed char *: 1, const signed char *: 1) * \
    strlen((const char *)(s)))
 #define INFER_ONLY_FLOAT(x) _Generic((x), float: 1)
+#define INFER_ONLY_DOUBLE_FLOAT(x, y) \
+  (_Generic((x), double: 1) + _Generic((y), float: 1))
+#define ONLY_INT(x) _Generic((x), int: 1)
 #define INFER_ONLY_INT_PTR(p) _Generic((p), int *: 1)
 
 #define MAKE_UNSIGNED(a) \
