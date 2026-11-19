@@ -83,9 +83,8 @@ int _runInLLDB(void) {
 }
 
 
-static void defineEnvVar(const char* currentArg,
-                         int32_t lineno, int32_t filename) {
-  char* eqp;
+static void defineEnvVar(char* currentArg, int32_t lineno, int32_t filename) {
+  char* eqp = NULL;
 
   //
   // We want to put a duplicate of the given value in the environment,
@@ -119,7 +118,7 @@ static void parseDashEArgs(int* argc, char* argv[]) {
 
   for (int i = 1; i < *argc; i++) {
     int32_t lineno = i;
-    const char* currentArg = argv[i];
+    char* currentArg = argv[i];
 
     if (currentArg[0] == '-' && currentArg[1] == 'E') {
       //
