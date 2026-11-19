@@ -44,30 +44,11 @@ proc test3() {
 proc test4() {
   writeln(Reflection.getRoutineName());
 
-  const lib1 = try! load('TestCLibrary', 'lib');
-  const lib2 = try! load('TestCLibrary', 'lib/');
-  const lib3 = try! load('TestCLibrary', 'lib//');
-}
-
-// TODO: Test sanitizing errors from 'loadFromPath'
-proc test5() {
-  writeln(Reflection.getRoutineName());
-
-  try {
-    // No extension:
-    const lib = load('TestCLibrary.so');
-  } catch e: IllegalArgumentError {
-    writeln(e.message());
-  } catch e {
-    try! throw e;
-  }
-}
-
-proc testCallLoad(
-
-// TODO: Test sanitizing errors from 'load'
-proc test6() {
-
+  const lib1 = try! load('TestCLibrary', directory='lib');
+  const lib2 = try! load('TestCLibrary', directory='lib/');
+  const lib3 = try! load('TestCLibrary', directory='lib//');
+  const lib4 = try! load('TestCLibrary', directory='./');
+  const lib5 = try! load('TestCLibraryToLoad', directory='./', prefix='');
 }
 
 proc main() {

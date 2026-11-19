@@ -70,7 +70,7 @@ Interoperability
 .. toctree::
    :maxdepth: 1
 
-   Dynamic Loading <packages/DynamicLoading>
+   Dynamic Library <packages/DynamicLibrary>
    Python <packages/Python>
 
 Math / Numerical Computing

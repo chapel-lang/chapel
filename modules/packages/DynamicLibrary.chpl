@@ -171,6 +171,7 @@ private proc loadFromPathImpl(path: string) throws {
 }
 
 /*
+  ..
   Create a record representing a dynamically loaded library using a string
   that stores the path to a library file. The file may be any natively
   executable program, though a "shared library" or "dynamic library" is by
@@ -190,7 +191,7 @@ private proc loadFromPathImpl(path: string) throws {
   more instances of a path separator (e.g., `/`). This is required so that
   the path is interpreted by the dynamic linker as an absolute or relative
   path. If you want to rely on your dynamic linker's search behavior when
-  no directory is specified, consider calling the :proc:`load` procedure.
+  no directory is specified, consider calling the :proc:`load()` procedure.
 
   :arg path: The path to the library file to dynamically load
   :type path: `string`
@@ -204,7 +205,7 @@ proc loadFromPath(path: string) throws {
 }
 
 /**
-  This procedure behaves similarly to :proc:`loadFromPath`, except that it
+  This procedure behaves similarly to :proc:`loadFromPath()`, except that it
   computes the path to load from the arguments that are passed to it.
 
   For example, given a library ``name`` of `foo`, a ``directory`` of
@@ -298,7 +299,7 @@ record dynamicLibrary {
 
     .. warning::
 
-      The procedure type ``t`` provided when calling :proc:`library.retrieve()`
+      The procedure type ``t`` provided when calling :proc:`dynamicLibrary.retrieve()`
       is used verbatim and is not checked against the type of the underlying
       symbol in any way. If the type provided does not match the actual type
       of the underlying procedure, then the resulting behavior when the
