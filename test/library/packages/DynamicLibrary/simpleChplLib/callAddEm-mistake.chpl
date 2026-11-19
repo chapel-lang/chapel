@@ -1,8 +1,6 @@
 use DynamicLibrary, ChplConfig;
 
-config param ext = if CHPL_TARGET_PLATFORM=="darwin" then ".dylib" else ".so";
-
-const lib = try! loadFromPath("./lib/libaddEm" + ext);
+const lib = try! load("addEm", directory="./lib");
 
 try {
   // NOTE: The name "addem" is intentionally incorrect!
