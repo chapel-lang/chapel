@@ -186,7 +186,7 @@ jobs:
           printf 'Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n' > /etc/apt/preferences.d/rocm
           apt-get update
           apt-get install -y --no-install-recommends \
-            "clang-$LLVM_VERSION" "clang-tools-$LLVM_VERSION" \
+            "clang-$LLVM_VERSION" "clang-tools-$LLVM_VERSION" "lld-$LLVM_VERSION" \
             "libclang-$LLVM_VERSION-dev" "libclang-cpp$LLVM_VERSION-dev" "llvm-$LLVM_VERSION-dev"
           # Extract the SDK without installing a GPU driver or runtime.
           download_dir=$(mktemp -d "$RUNNER_TEMP/rocm-debs.XXXXXX")
