@@ -1,10 +1,8 @@
 use DynamicLibrary;
-use Reflection;
 use ChplConfig;
+use UnitTest;
 
-proc test1() {
-  writeln(Reflection.getRoutineName());
-
+proc test1(test: borrowed Test) throws {
   const ext = dynamicLibrary.fileExt;
 
   if CHPL_TARGET_PLATFORM == 'darwin' {
@@ -21,8 +19,8 @@ enum Component {
 proc testLoadCannotContainSep(expected: Component,
                               name: string,
                               directory: string='',
-                              prefix: string=dynamicLibrary.prefix,
-                              suffix: string=dynamicLibrary.suffix) {
+                              prefix: string=dynamicLibrary.defaultPrefix,
+                              suffix: string=dynamicLibrary.defaultSuffix) {
   try {
     const lib = load(name, directory, prefix, suffix);
   } catch e: IllegalArgumentError {
@@ -44,9 +42,7 @@ proc testLoadCannotContainSep(expected: Component,
   }
 }
 
-proc test2() {
-  writeln(Reflection.getRoutineName());
-
+proc test2(test: borrowed Test) throws {
   testLoadCannotContainSep(expected=Component.Name, 'foo/');
   testLoadCannotContainSep(expected=Component.Prefix, 'foo', prefix='/bad');
   testLoadCannotContainSep(expected=Component.Suffix, 'foo', suffix='./so');
@@ -68,9 +64,7 @@ proc testLoadFromPathMustContainSep(path: string) {
   }
 }
 
-proc test3() {
-  writeln(Reflection.getRoutineName());
-
+proc test3(test: borrowed Test) throws {
   testLoadFromPathMustContainSep('foo');
   testLoadFromPathMustContainSep('libFoo.so');
   testLoadFromPathMustContainSep('libFoo.so');
@@ -78,17 +72,9 @@ proc test3() {
   testLoadFromPathMustContainSep('./TestCLibraryToLoad.so');
 }
 
-proc test4() {
-  writeln(Reflection.getRoutineName());
-
-  assert(dynamicLibrary.prefix == 'lib');
-  assert(dynamicLibrary.suffix == '.' + dynamicLibrary.fileExt);
+proc test4(test: borrowed Test) throws {
+  assert(dynamicLibrary.defaultPrefix == 'lib');
+  assert(dynamicLibrary.defaultSuffix == '.' + dynamicLibrary.fileExt);
 }
 
-proc main() {
-  const tests = [ test1, test2, test3, test4 ];
-  for test in tests {
-    test();
-    if test != tests.last then writeln();
-  }
-}
+UnitTest.main();

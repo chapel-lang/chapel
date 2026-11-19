@@ -214,11 +214,10 @@ proc loadFromPath(path: string) throws {
   :arg directory: An optional directory path to prepend to the result
   :type name: `string`
 
-  :arg prefix: Prefix for ``name``, by default ``"lib"``
+  :arg prefix: Prefix for ``name``, by default :proc:`dynamicLibrary.defaultPrefix()`
   :type name: `string`
 
-  :arg suffix: Suffix for ``name``, by default a ``"."`` period followed by a
-               file extension fit for dynamic libraries on this platform
+  :arg suffix: Suffix for ``name``, by default :proc:`dynamicLibrary.defaultSuffix()`
   :type name: `string`
 
   :throws DynLoadError: if dynamic loading fails
@@ -226,8 +225,8 @@ proc loadFromPath(path: string) throws {
                                 contains a path separator
 */
 proc load(name: string, directory: string='',
-          prefix: string=dynamicLibrary.prefix,
-          suffix: string=dynamicLibrary.suffix) throws {
+          prefix: string=dynamicLibrary.defaultPrefix,
+          suffix: string=dynamicLibrary.defaultSuffix) throws {
   use Path only joinPath;
 
   const style = PathProperty.CannotContainSep;
@@ -278,14 +277,14 @@ record dynamicLibrary {
   /*
     Return the default prefix used when calling the :proc:`load()` procedure.
   */
-  proc type prefix param {
+  proc type defaultPrefix param {
     return 'lib';
   }
 
   /*
     Return the default suffix used when calling the :proc:`load()` procedure.
   */
-  proc type suffix param {
+  proc type defaultSuffix param {
     return '.' + dynamicLibrary.fileExt;
   }
 
