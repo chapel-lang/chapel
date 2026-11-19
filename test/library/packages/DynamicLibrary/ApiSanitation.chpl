@@ -42,7 +42,6 @@ proc testLoadCannotContainSep(expected: Component,
   } catch e {
     try! throw e;
   }
-  
 }
 
 proc test2() {
