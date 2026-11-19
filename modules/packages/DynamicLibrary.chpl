@@ -234,8 +234,8 @@ proc loadFromPath(path: string) throws {
                                 contains a path separator
 */
 proc load(name: string, directory: string='',
-          prefix: string='lib',
-          suffix: string=('.' + dynamicLibrary.fileExt)) throws {
+          prefix: string=dynamicLibrary.prefix,
+          suffix: string=dynamicLibrary.suffix) throws {
   use Path only joinPath;
 
   const style = PathProperty.CannotContainSep;
@@ -281,6 +281,20 @@ record dynamicLibrary {
     rhs._bin.bumpRefCount();
     lhs._bin.dropRefCount();
     lhs._bin = rhs._bin;
+  }
+
+  /*
+    Return the default prefix used when calling the :proc:`load()` procedure.
+  */
+  proc type prefix param {
+    return 'lib';
+  }
+
+  /*
+    Return the default suffix used when calling the :proc:`load()` procedure.
+  */
+  proc type suffix param {
+    return '.' + dynamicLibrary.fileExt;
   }
 
   /*

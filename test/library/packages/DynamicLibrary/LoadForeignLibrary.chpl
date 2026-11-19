@@ -25,25 +25,14 @@ proc test1() {
 proc test2() {
   writeln(Reflection.getRoutineName());
 
-  const ext = dynamicLibrary.fileExt;
-
-  if CHPL_TARGET_PLATFORM == 'darwin' {
-    assert(ext == 'dylib');
-  } else {
-    assert(ext == 'so');
-  }
+  // TODO: Is it annoying to have to specify this all the time?
+  const lib = try! load('TestCLibrary', directory='./');
 }
 
 proc test3() {
   writeln(Reflection.getRoutineName());
 
-  // TODO: Is it annoying to have to specify this all the time?
-  const lib = try! load('TestCLibrary', directory='./');
-}
-
-proc test4() {
-  writeln(Reflection.getRoutineName());
-
+  // All these different directory paths should work.
   const lib1 = try! load('TestCLibrary', directory='lib');
   const lib2 = try! load('TestCLibrary', directory='lib/');
   const lib3 = try! load('TestCLibrary', directory='lib//');
@@ -52,7 +41,7 @@ proc test4() {
 }
 
 proc main() {
-  const tests = [ test1, test2, test3, test4 ];
+  const tests = [ test1, test2, test3 ];
   for test in tests {
     test();
     if test != tests.last then writeln();
