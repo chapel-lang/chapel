@@ -209,7 +209,7 @@ jobs:
             rocm_tarball="therock-dist-linux-gfx94X-dcgpu-$ROCM_VERSION.tar.gz"
             wget --tries=5 --waitretry=10 --retry-connrefused --timeout=30 -nv \
               -O "$RUNNER_TEMP/$rocm_tarball" "https://stable.repo.amd.com/rocm/core/tarball/$rocm_tarball"
-            rocm_root=/opt/rocm/core
+            rocm_root=/opt/rocm-$ROCM_VERSION
             mkdir -p "$rocm_root"
             tar -xzf "$RUNNER_TEMP/$rocm_tarball" -C "$rocm_root"
             rm "$RUNNER_TEMP/$rocm_tarball"
