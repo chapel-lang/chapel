@@ -83,6 +83,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/VersionTuple.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
@@ -4574,13 +4575,24 @@ static void linkGpuDeviceLibraries() {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
     auto libPath = CHPL_ROCM_AMDGCN_PATH + std::string("/bitcode");
+    llvm::VersionTuple rocmVersion;
+    if (rocmVersion.tryParse(envMap["CHPL_GPU_SDK_VERSION"])) {
+      USR_FATAL("Unable to parse ROCm SDK version '%s'",
+                envMap["CHPL_GPU_SDK_VERSION"]);
+    }
+    // ROCm 10 no longer ships the DAZ and correctly-rounded-sqrt controls.
+    const bool needsLegacyControls = rocmVersion < llvm::VersionTuple(10, 0);
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());
-    linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    if (needsLegacyControls) {
+      linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    }
     linkBitCodeFile((libPath + "/oclc_unsafe_math_off.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
-    linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    if (needsLegacyControls) {
+      linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    }
     linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
 
     for (auto gpuArch : gpuArches) {

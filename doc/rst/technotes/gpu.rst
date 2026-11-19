@@ -164,7 +164,7 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version between 5.0 and 5.4, 6.3, or ROCm 7 must be
+  * ROCm version between 5.0 and 5.4, 6.3, ROCm 7, or ROCm 10 must be
     installed.
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
@@ -175,7 +175,9 @@ The following are further requirements for GPU support:
   * For ROCm 6.3, only LLVM 21 is supported. Note that ROCm 6.x is not
     actively tested.
 
-  * For ROCm 7.x, only LLVM 21+ is supported.
+  * For ROCm 7.x, only LLVM 21 or 22 is supported.
+
+  * For ROCm 10.x, only LLVM 23 is supported.
 
 * Specifically for using the `CPU-as-Device mode`_:
 

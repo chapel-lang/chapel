@@ -594,12 +594,13 @@ def _validate_rocm_llvm_version_impl(gpu: GpuType):
             ):
                 error("Cannot target AMD GPUs with ROCm 6.3+ without LLVM 21")
     elif major_version == "7":
-        # requires LLVM 21+
-        if (
-            int(chpl_llvm.get_llvm_version()) < 21
-            and chpl_llvm.get() != "bundled"
+        llvm_version = int(chpl_llvm.get_llvm_version())
+        if llvm_version >= 23 or (
+            llvm_version < 21 and chpl_llvm.get() != "bundled"
         ):
-            error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21+")
+            error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21 or 22")
+    elif major_version == "10" and int(chpl_llvm.get_llvm_version()) != 23:
+        error("Cannot target AMD GPUs with ROCm 10.x without LLVM 23")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
@@ -696,8 +697,12 @@ def _validate_rocm_version_impl():
     MAX_ROCM6_REQ_VERSION_NICE = "6.3.x"
 
     MIN_ROCM7_REQ_VERSION = "7.0"
-    MAX_ROCM7_REQ_VERSION = "10.1"  # upper bound non-inclusive
+    MAX_ROCM7_REQ_VERSION = "8.0"  # upper bound non-inclusive
     MAX_ROCM7_REQ_VERSION_NICE = "7.x"
+
+    MIN_ROCM10_REQ_VERSION = "10.0"
+    MAX_ROCM10_REQ_VERSION = "10.2"  # upper bound non-inclusive
+    MAX_ROCM10_REQ_VERSION_NICE = "10.1.x"
 
     rocm_version = get_sdk_version()
 
@@ -713,9 +718,13 @@ def _validate_rocm_version_impl():
         and not is_ver_in_range(
             rocm_version, MIN_ROCM7_REQ_VERSION, MAX_ROCM7_REQ_VERSION
         )
+        and not is_ver_in_range(
+            rocm_version, MIN_ROCM10_REQ_VERSION, MAX_ROCM10_REQ_VERSION
+        )
     ):
         warning(
-            "Chapel requires ROCm versions %s to %s, %s to %s, or %s to %s, "
+            "Chapel requires ROCm versions %s to %s, %s to %s, %s to %s, "
+            "or %s to %s, "
             "detected version %s on system."
             % (
                 MIN_REQ_VERSION,
@@ -724,6 +733,8 @@ def _validate_rocm_version_impl():
                 MAX_ROCM6_REQ_VERSION_NICE,
                 MIN_ROCM7_REQ_VERSION,
                 MAX_ROCM7_REQ_VERSION_NICE,
+                MIN_ROCM10_REQ_VERSION,
+                MAX_ROCM10_REQ_VERSION_NICE,
                 rocm_version,
             )
         )
@@ -761,13 +772,5 @@ def validate(chplLocaleModel):
         )
 
     gpu.validate_llvm()
-
-    if gpu_val in ("nvidia", "amd"):
-        llvm_version = int(chpl_llvm.get_llvm_version())
-        if llvm_version >= 23:
-            warning(
-                "LLVM 23 and newer has not been tested with CHPL_GPU={} "
-                "(detected LLVM {}).".format(gpu_val, llvm_version)
-            )
 
     return True
