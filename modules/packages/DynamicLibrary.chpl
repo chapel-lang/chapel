@@ -125,7 +125,7 @@ if !useProcedurePointers {
 }
 
 // I found this XOR-like requirement too hard to describe with a bool alone.
-@chpldoc.nodoc()
+@chpldoc.nodoc
 enum PathProperty {
   MustContainSep,
   CannotContainSep
