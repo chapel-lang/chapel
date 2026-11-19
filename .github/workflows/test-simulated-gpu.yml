@@ -147,7 +147,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm: [&latest_rocm "7.1"]
+        rocm: ["7.14.1", &latest_rocm "10.1"]
         llvm: [&rocm_llvm_version "23"]
         comm: ["none"]
         # TODO: add comm=ofi+mpi for ofi coverage
