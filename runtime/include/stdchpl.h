@@ -81,7 +81,7 @@
 #include "chpl-mem-consistency.h"
 
 // GPU code generation needs C++ device headers - plain C library clients don't.
-#if defined(HAS_GPU_LOCALE) && defined(__cplusplus)
+#if defined(HAS_GPU_LOCALE) && (defined(GPU_RUNTIME_CPU) || defined(__cplusplus))
 #include "chpl-gpu-gen-includes.h"
 #endif
 
