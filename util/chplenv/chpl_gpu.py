@@ -172,7 +172,7 @@ def _find_rocm_version(compiler: str):
         sep + r"rocm-([\d\.]+)" + sep,
         sep + r"hip-([\d\.]+)",
         sep + r"llvm-amdgpu-([\d\.]+)",
-        sep + r"rocm" + sep + r"([\d\.]+)" + sep,
+        sep + r"rocm" + sep + r"(?:core-)?([\d\.]+)" + sep,
     ]
 
     out = gpu_compiler_basic_compile(compiler, "hip")
@@ -183,7 +183,13 @@ def _find_rocm_version(compiler: str):
         match = re.search(regex, out)
         if match:
             return match.group(1)
-    return None
+
+    # if these fail, look for 'HIP version' in hipcc --version
+    exists, returncode, out, _ = try_run_command([compiler, "--version"])
+    if not (exists and returncode == 0):
+        return None
+    match = re.search(r"HIP version: ([\d\.]+)", out)
+    return match.group(1) if match else None
 
 
 GPU_TYPES = {
@@ -690,7 +696,7 @@ def _validate_rocm_version_impl():
     MAX_ROCM6_REQ_VERSION_NICE = "6.3.x"
 
     MIN_ROCM7_REQ_VERSION = "7.0"
-    MAX_ROCM7_REQ_VERSION = "8.0"  # upper bound non-inclusive
+    MAX_ROCM7_REQ_VERSION = "10.1"  # upper bound non-inclusive
     MAX_ROCM7_REQ_VERSION_NICE = "7.x"
 
     rocm_version = get_sdk_version()
