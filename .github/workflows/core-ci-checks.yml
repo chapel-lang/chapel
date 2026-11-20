@@ -105,12 +105,12 @@ jobs:
         # also builds chapel-py so those docs are included
         run: |
           ./util/buildRelease/smokeTest quickstart chapel-py docs
-          tar -cvf docs.tar.gz -C doc/html .
+          tar -czf docs.tar.gz -C doc/html --transform 's,^\.,doc,' .
       - name: upload docs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: documentation
           path: docs.tar.gz
+          archive: false
           if-no-files-found: error
 
   make_mason:
