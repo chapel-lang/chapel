@@ -5779,8 +5779,7 @@ static IteratorFormalInfo computeIteratorFormalInfo(FnSymbol* fn) {
 
     Type* ft = canonicalClassType(formal->type->getValType());
     if (AggregateType* at = toAggregateType(ft)) {
-      if (at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
-                                    FLAG_ITERATOR_CLASS) &&
+      if (at->symbol->hasAnyFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS) &&
           !at->symbol->hasFlag(FLAG_GENERIC)) {
         return { i, at };
       }
@@ -5799,7 +5798,7 @@ static bool iteratorFormalCannotMatch(CallInfo& info, FnSymbol* fn) {
   if (fExplainVerbose)
     return false;
 
-  if (!fn->hasEitherFlag(FLAG_AUTO_II, FLAG_COMPILER_GENERATED) &&
+  if (!fn->hasAnyFlag(FLAG_AUTO_II, FLAG_COMPILER_GENERATED) &&
       !fn->hasFlag(FLAG_FIELD_ACCESSOR))
     return false;
 
