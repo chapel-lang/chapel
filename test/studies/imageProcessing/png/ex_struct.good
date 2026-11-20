@@ -1,0 +1,35 @@
+
+Demonstrating unions
+  assigned union int 1234
+  copy has int field 1234
+  changed union to complex 1 + 2i
+  copied union still int   1234
+
+Demonstrating records
+  exrcd:  300 x  400 (=      0 pix)   nil r? true
+  cprcd:    0 x    0 (=    100 pix)   nil r? true
+  ex == cp? false
+  copy exrcd to cprcd
+  exrcd:  300 x  400 (=      0 pix)   nil r? true
+  cprcd:  300 x  400 (=      0 pix)   nil r? true   == exrcd? true
+  set exrcd ncol, nrow
+  exrcd:  600 x  800 (=      0 pix)   nil r? true
+  cprcd:  300 x  400 (=      0 pix)   nil r? true   == exrcd? false
+
+Demonstrating classes
+  excls nil post-declaration? true
+  new excls:        5 x  200 (=   1000 npix)   nil r? true
+  excls changed:   10 x  200 (=   2000 npix)   nil r? true
+  make cpcls:      10 x  200 (=   2000 npix)   nil r? true   == excls? true
+  excls changed:   10 x  400 (=   4000 npix)   nil r? true
+  cpcls now:       10 x  400 (=   4000 npix)   nil r? true   == excls? true
+
+Demonstrating constructors
+image size   10 x   20 (=    200 npix)
+
+Demonstrating memory management
+in test_destruct1:
+  called record destructor, tmp was 2
+in test_destruct2:
+  called class destructor, tmp was 2
+  called record destructor, tmp was 3

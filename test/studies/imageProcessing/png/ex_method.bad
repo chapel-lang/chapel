@@ -1,0 +1,11 @@
+ex_method.chpl:26: In method 'changeInst':
+ex_method.chpl:27: warning: here, 'this' is set to the result of borrowing from a 'new'
+ex_method.chpl:27: note: if you meant to save the result of new, change the type of 'this' to not be 'borrowed'
+ex_method.chpl:27: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+
+demonstrate static method
+calling without an instance
+
+demonstrate ref intent
+original instance {v = 3} (same as old? true)
+new instance {v = 3} (same as old? true)

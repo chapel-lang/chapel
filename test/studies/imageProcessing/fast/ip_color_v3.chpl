@@ -1,0 +1,725 @@
+
+/*****
+      ip_color_v3.chpl -
+      Module holding the common routines and data types for color space
+      transformations.  Not a stand-alone program.  'use ip_color_v3'
+
+      This version adds the clrimage(clrimage) constructor, tracks the
+      color space with the clrimage, and adds per-pixel inverse color
+      mappings back to RGB.
+
+      The public bits:
+         C Interface
+           rgbimage - image with R, G, B planes separated (uchar data)
+           CLR_[GREY|RGB|R|G|B] - which plane PNG_write should put in file
+                                  (RGB full color, all others 8-bit greys)
+           PNG_read - read PNG image from file
+           PNG_write - save an rgbimage as a PNG
+           PNG_isa - test if a file is a PNG image
+           alloc_rgbimage - create a new rgbimage
+           free_rgbimage - release the memory of an rgbimage
+         Data Structures
+           clrspace - HSV | LAB | YUV | RGB
+           clrimage - image after color conversion (real data)
+               new clrimage(ncol, nrow, space) - create new image of given size
+               new clrimage(clrimage) - create with same domain as existing
+           conversion - spec for translating color values back to RGB
+             rgbconvert - scaling of color values (reals) to 8-bit
+             clrplane - which color to translate
+                          C1 = H|L|Y|R  C2 = S|A|U|G  C3 = V(alue)|B|V|B(lue)
+         Conversion Functions
+           rgb_to_lab - rgbimage to clrimage in CIE L*A*B* coordinates
+           rgb_to_hsv - rgbimage to clrimage in HSV coordinates
+           rgb_to_yuv - rgbimage to clrimage in YUV coordinates
+           rgb_to_rgb - rgbimage to clrimage keeping RGB coordinates
+           display_color - clrimage to 8-bit rgbimage RGB coordinates
+           display_plane - save a single plane to an 8-bit pixel
+           labpix_to_rgb - back conversion from L*A*B* of a single pixel
+           yuvpix_to_rgb - back conversion from YUV of a single pixel
+           hsvpix_to_rgb - back conversion from HSV of a single pixel
+           rgbpix_to_rgb - back conversion from RGB of a single pixel
+
+      c 2015-2018 Primordial Machine Vision Systems
+*****/
+
+use CTypes;
+
+
+/**** C Interfaces ****/
+
+/* The C image data structure. */
+extern record rgbimage {
+  var ncol : c_int;                     /* width (columns) of image */
+  var nrow : c_int;                     /* height (rows) of image */
+  var npix : c_int;                     /* number pixels = w * h */
+  var r : c_ptr(c_uchar);               /* red plane */
+  var g : c_ptr(c_uchar);               /* green plane */
+  var b : c_ptr(c_uchar);               /* blue plane */
+}
+
+/* Can't import an enum directly from C; need to grab each component. */
+extern const CLR_GREY : int(32);
+extern const CLR_RGB : int(32);
+extern const CLR_R : int(32);
+extern const CLR_G : int(32);
+extern const CLR_B : int(32);
+
+/* External img_png linkage. */
+extern proc PNG_read(fname : c_ptrConst(c_char), ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_ptrConst(c_char), img : c_ptr(rgbimage), plane : c_int) : c_int;
+extern proc PNG_isa(fname : c_ptrConst(c_char)) : c_int;
+extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
+                           ncol : c_int, nrow : c_int) : c_int;
+extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
+
+
+/**** Constants - Internal ****/
+
+const XYZ_SCALE = 0.17697;              /* scale from CIE XYZ space */
+const LAB_DELTA = 6.0 / 29.0;           /* knee point of L*A*B* map function */
+const LAB_XNORM = 1.0 / XYZ_SCALE;      /* white references */
+const LAB_YNORM = 1.0 / XYZ_SCALE;
+const LAB_ZNORM = 1.0 / XYZ_SCALE;
+/* The absolute limits of the transform are L 0 t/m 100, A -500 t/m 500,
+   B -200 t/m 200.  In practice the RGB space doesn't cover the whole range.
+   The limits for A and B are from an exhaustive check of RGB.  Note this
+   produces an uncentered point if mapped back to 8-bit, ie. A=0 is at 106
+   and B=0 at 128. */
+const LAB_LMIN  =    0.0;               /* for scaling from real to uchar */
+const LAB_LMAX  =  100.0;
+const LAB_AMIN  = -128.15;
+const LAB_AMAX  =  182.46;
+const LAB_BMIN  = -155.36;
+const LAB_BMAX  =  156.20;
+
+
+/**** Data Structures ****/
+
+class clrimage {
+  var ncol : int;                       /* width (columns) of image */
+  var nrow : int;                       /* height (rows) of image */
+  var npix : int;                       /* number pixels = w * h */
+  var space : clrspace;                 /* color space this is in */
+  var cols : range;                     /* all the columns of the image */
+  var rows : range;                     /* all the rows of the image */
+  var area : domain(rank=2);            /* array bounds by x and y */
+  var c2 : [area] real;                 /* second color plane (A, S, U) */
+  var c1 : [area] real;                 /* first color plane (L, H, Y) */
+  var c3 : [area] real;                 /* third color plane (B, V, V) */
+
+  /***
+      init:      Initializer that allocates the arrays to store the color
+                 data.
+      args:      w, h - number of columns, rows in image
+                 clr - color space to use
+      modifies:  ncol, nrow, npix, area
+  ***/
+  proc init(w : int, h : int, clr : clrspace) {
+    ncol = w;
+    nrow = h;
+    npix = w * h;
+    space = clr;
+    /* This automatically resizes the arrays. */
+    cols = 0..ncol-1;
+    rows = 0..nrow-1;
+    area = {rows, cols};
+  }
+
+  /***
+    init:      "Copy" an existing image.  This instance will share the same
+               domain and ranges as the original.  The image data will not
+               be shared.
+    args:      orig - image to duplicate
+    modifies:  ncol, nrow, npix, area
+  ***/
+  proc init(orig : clrimage) {
+    ncol = orig.ncol;
+    nrow = orig.nrow;
+    npix = orig.npix;
+    space = orig.space;
+    cols = orig.cols;
+    rows = orig.rows;
+    area = orig.area;
+  }
+}
+
+/* color spaces to which we can convert
+     HSV - Hue, Saturation, Value
+     LAB - CIE L*A*B*
+     YUV - aka. YCbCr
+     RGB - RGB, just cast to the internal format
+*/
+enum clrspace {
+  HSV, LAB, YUV, RGB
+}
+
+/* how to convert an clrimage plane to an rgbimage
+   BOUND - scale uchar range to min/max
+   DATA - take limits from data
+   CENTER - take limits from data, but if cross zero center at zero
+   CLIP - clamp values outside min/max range, no scaling
+*/
+enum rgbconvert {
+  BOUND, DATA, CENTER, CLIP
+}
+
+/* which plane to handle in clrimage
+   C1, C2, C3 - c[123] plane converted, stored in R, G, B (ie. greyscale)
+   ALL - c1 converted, stored in R, c2 in G, c3 in B
+ */
+enum clrplane {
+  C1, C2, C3, ALL
+}
+
+record conversion {
+  var plane : clrplane;                 /* which plane to copy to RGB */
+  var how : rgbconvert;                 /* how to convert clr -> rgb */
+  var min : real;                       /* lower limit of bound/clip range */
+  var max : real;                       /* upper limit of bound/clip range */
+}
+
+
+
+/**** Color Conversion - General ****/
+
+/***
+    rgb_convert:  Take an RGB image and convert it to some other color
+                  space.  An instance of the image in the new space is
+                  created.  Basically a routing function to the
+                  specific implementations.
+    args:         rgb - color image in RGB space
+                  clr - converted image
+                  space - space to convert to
+    modifies:  clr
+***/
+proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : clrspace) {
+
+  select space {
+    when clrspace.LAB do rgb_to_lab(rgb, clr);
+    when clrspace.HSV do rgb_to_hsv(rgb, clr);
+    when clrspace.YUV do rgb_to_yuv(rgb, clr);
+    when clrspace.RGB do rgb_to_rgb(rgb, clr);
+    otherwise halt("unknown colorspace ", space);
+  }
+}
+
+
+
+/**** Color Conversion - LAB ****/
+
+/***
+    rgb_to_lab:  Take an RGB image and convert it to the CIE L*A*B* space.
+                 An instance of the LAB image is created here.
+    args:        rgb - color image in RGB space
+                 lab - converted image
+    modifies:  lab
+***/
+proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage?) {
+  var xy : int;                         /* pixel index */
+
+  lab = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.LAB);
+
+  for (y, x) in lab!.area {
+    xy = (y * rgb.deref().ncol) + x;
+    rgbpix_to_lab(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
+               lab!.c1(y,x), lab!.c2(y,x), lab!.c3(y,x));
+  }
+}
+
+/***
+    rgbpix_to_lab:  Convert an RGB pixel into the L*A*B* space.  L range
+                    0 - 100, A -500 - 500, B -200 - 200.
+    args:        r, g, b - source pixel to convert
+                 l, l_a, l_b - result
+    modifies:  l, l_a, l_b
+***/
+inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
+                          out l : real, out l_a : real, out l_b : real) {
+  var x, y, z : real;                   /* intermidate conversion to CIE XYZ */
+
+  rgbpix_to_xyz(r, g, b, x, y, z);
+
+  /* 116 = 25 * (100 ** (1/3)) */
+  l = 116.0 * lab_map(y / LAB_YNORM) - 16.0;
+  l_a = 500.0 * (lab_map(x / LAB_XNORM) - lab_map(y / LAB_YNORM));
+  l_b = 200.0 * (lab_map(y / LAB_YNORM) - lab_map(z / LAB_ZNORM));
+}
+
+/***
+    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for
+                    L*A*B*).  XYZ are in the range 0 t/m 1/XYZ_SCALE (5.65075).
+    args:           r, g, b - source pixel to convert
+                    x, y, z - result
+    modifies:  x, y, z
+***/
+private inline proc rgbpix_to_xyz(r : c_uchar, g : c_uchar, b : c_uchar,
+                                  out  x : real, out y : real, out z : real) {
+
+  /* The original RGB space is 0 t/m 1, so divide by 255.0. */
+  x = (0.49 * r    + 0.31 * g    + 0.2 * b)     / (255.0 * XYZ_SCALE);
+  y = (0.17697 * r + 0.81240 * g + 0.01063 * b) / (255.0 * XYZ_SCALE);
+  z = (              0.01 * g    + 0.99 * b)    / (255.0 * XYZ_SCALE);
+}
+
+/***
+    lab_map:  L*A*B* scaling function (non-linear mapping function).
+    args:     t - value to map
+    returns:   re-mapping of t
+***/
+private inline proc lab_map(t : real) : real {
+
+  if ((LAB_DELTA ** 3.0) < t) then
+    return t ** (1.0 / 3.0);
+  else
+    return (t / (3.0 * LAB_DELTA * LAB_DELTA)) + (2.0 * LAB_DELTA / 3.0);
+}
+
+
+
+/**** Color Conversion - HSV ****/
+
+/***
+    rgb_to_hsv:  Take an RGB image and convert it to the HSV (hue-sat-value)
+                 space.  Creates an instance for hsv.
+    args:        rgb - color image in RGB space
+                 hsv - converted image
+    modifies:  hsv
+***/
+proc rgb_to_hsv(rgb : c_ptr(rgbimage), ref hsv : unmanaged clrimage?) {
+  var xy : int;                         /* pixel index */
+
+  hsv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.HSV);
+
+  for (y, x) in hsv!.area {
+    xy = (y * rgb.deref().ncol) + x;
+    rgbpix_to_hsv(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
+                  hsv!.c1(y,x), hsv!.c2(y,x), hsv!.c3(y,x));
+  }
+}
+
+/***
+    rgbpix_to_hsv:  Convert an RGB pixel into the HSV space.  H is in degrees
+                    (0-360), S and V 0-1.
+    args:           r, g, b - source pixel to convert
+                    h, s, v - result
+    modifies:  h, s, v
+***/
+proc rgbpix_to_hsv(r : c_uchar, g : c_uchar, b : c_uchar,
+                   out h : real, out s : real, out v : real) {
+  var minrgb : real;                    /* minimum of R, G, B values */
+  var maxrgb : real;                    /* maximum of R, G, B values */
+  var hsector : int;                    /* which of R, G, B is maximum */
+
+  minrgb = r;
+  if (g < minrgb) {
+    minrgb = g;
+  }
+  if (b < minrgb) {
+    minrgb = b;
+  }
+
+  maxrgb = r;
+  hsector = 1;
+  if (maxrgb < g) {
+    maxrgb = g;
+    hsector = 2;
+  }
+  if (maxrgb < b) {
+    maxrgb = b;
+    hsector = 3;
+  }
+
+  if (maxrgb == minrgb) {
+    h = 0.0;
+  } else if (1 == hsector) {
+    h = 60.0 * (g : real - b) / (maxrgb - minrgb);
+  } else if (2 == hsector) {
+    h = 120.0 + (60.0 * (b : real - r) / (maxrgb - minrgb));
+  } else {
+    h = 240.0 + (60.0 * (r : real - g) / (maxrgb - minrgb));
+  }
+  if (h < 0.0) {
+    h += 360.0;
+  }
+  if (360.0 < h) {
+    h -= 360.0;
+  }
+
+  if (0.0 == maxrgb) {
+    s = 0.0;
+  } else {
+    s = 1.0 - (minrgb / maxrgb);
+  }
+
+  v = maxrgb / 255.0;
+}
+
+
+
+/**** Color Conversion - YUV ****/
+
+/***
+    rgb_to_yuv:  Take an RGB image and convert it to the YUV space.  Creates
+                 an instance for yuv.
+    args:        rgb - color image in RGB space
+                 yuv - converted image
+    modifies:  yuv
+***/
+proc rgb_to_yuv(rgb : c_ptr(rgbimage), ref yuv : unmanaged clrimage?) {
+  var xy : int;                         /* pixel index */
+
+  yuv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.YUV);
+
+  for (y, x) in yuv!.area {
+    xy = (y * rgb.deref().ncol) + x;
+    rgbpix_to_yuv(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
+                  yuv!.c1(y,x), yuv!.c2(y,x), yuv!.c3(y,x));
+  }
+}
+
+/***
+    rgbpix_to_yuv:  Convert an RGB pixel into the YUV space (aka YCbCr,
+                    specifically, ITU-R BT.601).  Y, U, and V are clamped for
+                    a direct representation in 8-bit space.  Y offset to range
+                    16 t/m 235, U and V 16 t/m 239.
+    args:           r, g, b - source pixel to convert
+                    y, u, v - result
+    modifies:  y, u, v
+***/
+proc rgbpix_to_yuv(r : c_uchar, g : c_uchar, b : c_uchar,
+                   out y : real, out u : real, out v : real) {
+  var ytmp, utmp, vtmp : real;          /* color values before clamping */
+
+  /* Search fourcc for YUV-RGB conversion; formulas also appear on Wikipedia
+     with U = Cb and V = Cr.   Y offset is 16, U, V offset of 128 centers 0
+     in uchar range. */
+
+  ytmp = (0.299 * r) + (0.587 * g) + (0.114 * b);
+  y = clamp(ytmp + 16.0, 16.0, 235.0);
+
+  utmp = (-0.168736 * r) + (-0.331264 * g) + (0.500 * b);
+  u = clamp(utmp + 128.0, 16.0, 239.0);
+
+  vtmp = (0.500 * r) + (-0.418688 * g) + (-0.081312 * b);
+  v = clamp(vtmp + 128.0, 16.0, 239.0);
+
+}
+
+/***
+    clamp:  Ensure the value is between the two bounds.  If max < min, value
+            is clamped to min.
+    args:   val - value to clamp to min/max
+            minval - smallest value allowed
+            maxval - largest value allowed
+    returns:   val in range minval t/m maxval
+***/
+private inline proc clamp(val : real, minval : real, maxval : real) {
+
+  if (maxval < minval) then return minval;
+  else if (val < minval) then return minval;
+  else if (maxval < val) then return maxval;
+  else return val;
+}
+
+
+
+/**** Color Conversion - RGB ****/
+
+/***
+    rgb_to_rgb:  Take an RGB image in the C format and convert it to the
+                 Chapel data structure.  Creates an instance for rgb_chpl.
+    args:        rgb_c - color image in C data structure
+                 rgb_chpl - color image in Chapel data structure
+    modifies:  rgb_chpl
+***/
+proc rgb_to_rgb(rgb_c : c_ptr(rgbimage), ref rgb_chpl : unmanaged clrimage?) {
+  var x, y, xy : int;                   /* pixel coordinates/index */
+
+  rgb_chpl = new unmanaged clrimage(rgb_c.deref().ncol, rgb_c.deref().nrow, clrspace.RGB);
+
+  for (y, x) in rgb_chpl!.area {
+    xy = (y * rgb_c.deref().ncol) + x;
+    rgb_chpl!.c1(y,x) = rgb_c.deref().r(xy);
+    rgb_chpl!.c2(y,x) = rgb_c.deref().g(xy);
+    rgb_chpl!.c3(y,x) = rgb_c.deref().b(xy);
+  }
+}
+
+
+
+/**** clrimage - rgbimage Conversion ****/
+
+/***
+    display_color:  Convert one or all planes into an 8-bit image (grey or
+                    color).  Supports three transforms: scale fixed range to
+                    0 t/m 255, no scaling while clipping to limits, or
+                    scale data range to 0 t/m 255.
+    args:           clr - color space data
+                    rgb - displayable RGB image
+                    spec - how to map color data to RGB
+    returns:   0 if successful
+               < 0 on failure (value depends on error)
+    modifies:  rgb
+***/
+proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
+                   spec : conversion) : int {
+  var xy : int;                         /* pixel index */
+  var retval : int;
+
+  retval = alloc_rgbimage(rgb, clr!.ncol : c_int, clr!.nrow : c_int);
+  if (retval < 0) then return retval;
+
+  if ((clrplane.C1 == spec.plane) || (clrplane.ALL == spec.plane)) {
+    retval = display_plane(clr!.c1, rgb.r, rgb.ncol, spec);
+    if (retval < 0) then return retval;
+
+    if (clrplane.C1 == spec.plane) {
+      for xy in 0..(rgb.npix-1) {
+        rgb.g(xy) = rgb.r(xy);
+        rgb.b(xy) = rgb.r(xy);
+      }
+      return 0;
+    }
+  }
+
+  if ((clrplane.C2 == spec.plane) || (clrplane.ALL == spec.plane)) {
+    retval = display_plane(clr!.c2, rgb.g, rgb.ncol, spec);
+    if (retval < 0) then return retval;
+
+    if (clrplane.C2 == spec.plane) {
+      for xy in 0..(rgb.npix-1) {
+        rgb.r(xy) = rgb.g(xy);
+        rgb.b(xy) = rgb.g(xy);
+      }
+      return 0;
+    }
+  }
+
+  if ((clrplane.C3 == spec.plane) || (clrplane.ALL == spec.plane)) {
+    retval = display_plane(clr!.c3, rgb.b, rgb.ncol, spec);
+    if (retval < 0) then return retval;
+
+    if (clrplane.C3 == spec.plane) {
+      for xy in 0..(rgb.npix-1) {
+        rgb.r(xy) = rgb.b(xy);
+        rgb.g(xy) = rgb.b(xy);
+      }
+      return 0;
+    }
+  }
+
+  return 0;
+}
+
+/***
+    display_plane:  Prepare a single color plane for display following the
+                    conversion spec.  Supports three transforms: scale fixed
+                    range to uchar, no scaling while clipping to uchar, scale
+                    data min/max to uchar.
+    args:           clr - color plane data (source)
+                    rgb - RGB plane (dest)
+                    ncol - width of RGB image
+                    spec - how to map color data to rgb
+    returns:   0 if successful
+               < 0 on failure (value depends on error)
+    modifies:  rgb
+***/
+proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
+                   spec : conversion) : c_int {
+  var minpix, maxpix : real;            /* data limits */
+  var pix : real;                       /* calculated pixel */
+  var x, y, xy : int;                   /* pixel coordinates/index */
+
+  if ((rgbconvert.DATA == spec.how) || (rgbconvert.CENTER == spec.how)) {
+    minpix = min reduce clr;
+    maxpix = max reduce clr;
+  }
+  if (rgbconvert.CENTER == spec.how) {
+    if (abs(minpix) < abs(maxpix)) then minpix = -maxpix;
+    else maxpix = -minpix;
+  }
+
+  /* Prevent a divide by 0.  Pixel will still map to 0. */
+  if (minpix == maxpix) then maxpix = minpix + 1.0;
+
+  for (y, x) in clr.domain {
+    xy = (y * ncol) + x;
+    if (rgbconvert.CLIP == spec.how) {
+      if (clr(y,x) < 0.0) then pix = 0.0;
+      else if (255.0 < clr(y,x)) then pix = 255.0;
+      else pix = nearbyint(clr(y,x));
+    } else if ((rgbconvert.DATA == spec.how) ||
+               (rgbconvert.CENTER == spec.how)) {
+      pix = nearbyint(255.0 * (clr(y,x)-minpix) / (maxpix-minpix));
+    } else if (rgbconvert.BOUND == spec.how) {
+      if (clr(y,x) < spec.min) then pix = 0.0;
+      else if (spec.max < clr(y,x)) then pix = 255.0;
+      else pix = nearbyint(255.0 * (clr(y,x)-spec.min) / (spec.max-spec.min));
+    } else {
+      writef("unknown method %s to convert colors to 8-bit\n", spec.how);
+      return -1;
+    }
+
+    rgb(xy) = pix : c_uchar;
+  }
+
+  return 0;
+}
+
+
+
+/**** Back conversions ****/
+
+/***
+    labpix_to_rgb:  Back convert a CIE L*A*B* pixel to RGB.  L is in the range
+
+    args:
+
+    returns:   0 if successful
+               < 0 on failure (value depends on error)
+    modifies:
+***/
+proc labpix_to_rgb(l : real, l_a : real, l_b : real,
+                   out r : c_uchar, out g : c_uchar, out b : c_uchar) {
+  var ltmp, l_atmp, l_btmp : real;      /* lab shift back to original range */
+  var x, y, z : real;                   /* CIE XYZ space coords */
+  var rtmp, gtmp, btmp : real;          /* intermediate RGB value */
+
+  ltmp = (l + 16.0) / 116.0;
+
+  y = LAB_YNORM * lab_invmap(ltmp);
+  x = LAB_XNORM * lab_invmap((l_a / 500.0) + ltmp);
+  z = LAB_ZNORM * lab_invmap(ltmp - (l_b / 200.0));
+
+  xyzpix_to_rgb(x, y, z, r, g, b);
+}
+
+/***
+    xyzpix_to_rgb:  Back convert a CIE XYZ pixel to RGB.  X, Y, Z are in the
+                    range 0-1.  RGB fits an rgbimage.
+    args:           x, y, z - color point to convert
+                    r, g, b - result
+    modifies:  r, g, b
+***/
+private proc xyzpix_to_rgb(x : real, y: real, z: real,
+                           out r : c_uchar, out g : c_uchar, out b : c_uchar) {
+  var rtmp, gtmp, btmp : real;          /* intermediate RGB value */
+  const scale = 255.0 * XYZ_SCALE;      /* scale XYZ space to 8 bit */
+
+  /* Values from inverting the matrix used for rgb_to_xyz, to 6 decimal
+     places. */
+  rtmp =  (2.364614 * x) - (0.896541 * y) - (0.468073 * z);
+  gtmp = -(0.515166 * x) + (1.426408 * y) + (0.088758 * z);
+  btmp =  (0.005204 * x) - (0.014408 * y) + (1.009204 * z);
+
+  r = nearbyint(clamp(scale * rtmp, 0.0, 255.0)) : c_uchar;
+  g = nearbyint(clamp(scale * gtmp, 0.0, 255.0)) : c_uchar;
+  b = nearbyint(clamp(scale * btmp, 0.0, 255.0)) : c_uchar;
+}
+
+/***
+    lab_invmap:  Inverse mapping function for L*A*B* to XYZ space.
+    args:        t - value to map
+    returns:   inverse mapping of t
+***/
+private proc lab_invmap(t : real) : real {
+
+  if (LAB_DELTA < t) {
+    return t**3;
+  } else {
+    return (3.0 * t - LAB_DELTA) * LAB_DELTA * LAB_DELTA;
+  }
+}
+
+/***
+    yuvpix_to_rgb:  Back convert a YUV pixel to RGB.  Y is in the range 16-235
+                    and U and V 16-239.  RGB fits an rgbimage.
+    args:           y, u, v - color point to convert
+                    r, g, b - result
+    modifies:  r, g, b
+***/
+proc yuvpix_to_rgb(y : real, u : real, v : real,
+                   out r : c_uchar, out g : c_uchar, out b : c_uchar) {
+  var ytmp, utmp, vtmp : real;          /* yuv shifted back to original range */
+  var rtmp, gtmp, btmp : real;          /* intermediate RGB value */
+
+  ytmp = y - 16.0;
+  utmp = u - 128.0;
+  vtmp = v - 128.0;
+
+  /* Inverse of matrix in rgbpix_to_yuv calculated to 6 decimal places.
+     Since YUV already in 8-bit range, don't need to multiply by 255.0. */
+  rtmp = ytmp + (1.402000 * vtmp);
+  gtmp = ytmp + (-0.344136) * utmp + (-0.714136 * vtmp);
+  btmp = ytmp + (1.772000 * utmp);
+
+  r = nearbyint(clamp(rtmp, 0.0, 255.0)) : c_uchar;
+  g = nearbyint(clamp(gtmp, 0.0, 255.0)) : c_uchar;
+  b = nearbyint(clamp(btmp, 0.0, 255.0)) : c_uchar;
+}
+
+/***
+    hsvpix_to_rgb:  Back convert an HSV value to RGB.  H is in the range 0-360
+                    and S and V 0.0-1.0.  RGB fits an rgbimage.
+    args:           h, s, v - color point to convert
+                    r, g, b - result
+    modifies:  r, g, b
+***/
+proc hsvpix_to_rgb(h : real, s : real, v : real,
+                   out r : c_uchar, out g : c_uchar, out b : c_uchar) {
+  var rtmp, gtmp, btmp : real;          /* RGB intermediate value */
+  var htmp : real;                      /* h rescaled to 0-6 */
+  var f, p, q, t, v2 : real;            /* temporary values */
+
+  if (s < 0.0) {
+    rtmp = 255.0 * v;
+    gtmp = rtmp;
+    btmp = rtmp;
+  } else {
+    htmp = h;
+    while (360.0 < htmp) {
+      htmp -= 360.0;
+    }
+    while (htmp < 0) {
+      htmp += 360.0;
+    }
+    htmp /= 60.0;
+
+    f = (htmp - floor(htmp));
+
+    p = 255.0 * v * (1.0 - s);
+    q = 255.0 * v * (1.0 - (s * f));
+    t = 255.0 * v * (1.0 - (s * (1.0 - f)));
+    v2 = 255.0 * v;
+
+    select floor(htmp) : int {
+      when 0 { rtmp = v2;   gtmp = t;    btmp = p;  }
+      when 1 { rtmp = q;    gtmp = v2;   btmp = p;  }
+      when 2 { rtmp = p;    gtmp = v2;   btmp = t;  }
+      when 3 { rtmp = p;    gtmp = q;    btmp = v2; }
+      when 4 { rtmp = t;    gtmp = p;    btmp = v2; }
+      when 5 { rtmp = v2;   gtmp = p;    btmp = q;  }
+      when 6 { rtmp = v2;   gtmp = p;    btmp = q;  }
+      otherwise { rtmp = 0;   gtmp = 0;   btmp = 0; }
+      }
+
+    r = nearbyint(clamp(rtmp, 0.0, 255.0)) : c_uchar;
+    g = nearbyint(clamp(gtmp, 0.0, 255.0)) : c_uchar;
+    b = nearbyint(clamp(btmp, 0.0, 255.0)) : c_uchar;
+  }
+}
+
+/***
+    rgbpix_to_rgb:  Back convert the clrimage RGB representation to the
+                    rgbimage format.  This is really a cast.
+    args:           r_in, g_in, b_in - clrimage format of RGB value
+                    r_out, g_out, b_out - rgbimage format of value
+    modifies:  r_out, g_out, b_out
+***/
+proc rgbpix_to_rgb(r_in : real, g_in : real, b_in : real, out r_out : c_uchar,
+                   out g_out : c_uchar, out b_out : c_uchar) {
+
+  r_out = nearbyint(r_in) : c_uchar;
+  g_out = nearbyint(g_in) : c_uchar;
+  b_out = nearbyint(b_in) : c_uchar;
+}
