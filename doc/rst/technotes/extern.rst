@@ -796,11 +796,10 @@ it in inline assembly.
 #defines
 --------
 
-The extern block functionality allows simple #defines to be used from
-Chapel code. Simple defines take no arguments and define an integer,
-string, or real value or use another #define that does so. Casts to
-built-in numeric types are also supported, as are macros that are simply
-an alternative name for another C variable. For example:
+Extern blocks can import object-like macros that expand to complete C
+expressions. These include nested arithmetic, casts, ``sizeof``, conditionals,
+strings, pointers, and calls to C functions. Clang determines the result type
+using the original C compilation environment. For example:
 
 .. code-block:: chapel
 
@@ -811,31 +810,62 @@ an alternative name for another C variable. For example:
   writeln(NEG_ONE);
   writeln(MY_NUMBER);
 
-However, it is easy to create #defines that are not supported because the
-Chapel compiler is unable to determine their expression type. In particular,
-any #define taking arguments is not currently supported. For example, the
-ADD definition below has a resulting expression type that cannot be determined
-by the Chapel compiler:
+An imported macro is not a Chapel ``param``, even if Clang can fold its value.
+Runtime expressions are evaluated at each use, not once at initialization.
+An addressable, modifiable lvalue macro can also be assigned to or passed by
+reference:
 
 .. code-block:: chapel
 
- extern {
-   #define ADD(x,y) ((x)+(y)) // NOT SUPPORTED
- }
- var x = ADD(1,2); // ERROR - ADD not defined in Chapel.
+  extern {
+    static int limit = 3;
+    static int* limitPtr(void) { return &limit; }
+    #define LIMIT (*limitPtr())
+  }
+  LIMIT = 7;
+  LIMIT += 2;
 
-If the library you are using depends on these types, the current solution
-is to create inline functions to call the define with the appropriate argument
-types; for example:
+Fixed-arity function-like macros, including zero-argument macros, can be
+called directly from an extern block. Their argument types come from the Chapel
+call, and Clang infers the return type separately for each concrete signature:
 
 .. code-block:: chapel
 
- extern {
-   #define ADD(x,y) ((x)+(y))
-   static inline int ADD_int_int(int x, int y) { return ADD(x,y); }
- }
- var sum = ADD_int_int(1,2);
- writeln(sum);
+  use CTypes;
+  extern {
+    #define ADD(x, y) ((x) + (y))
+  }
+  var sum = ADD(1:c_int, 2:c_int);
+  var mixed = ADD(1:c_int, 2.5:c_double);
+
+Macros from required C headers can instead be described explicitly with
+``extern const``, ``extern var``, or ``extern proc``. Use ``extern var`` only
+for supported writable lvalues, and ``extern const`` for value expressions.
+Explicit extern procedures must declare the return type,
+omitting it means ``void``. Omitted argument types specialize at each call.
+Self-contained statement macros return ``void``:
+
+.. code-block:: chapel
+
+  require "my_macros.h";
+  extern proc ADD(x: c_int, y: c_int): c_int;
+  extern proc RESET();
+
+  RESET(); // e.g., #define RESET() do { clear_state(); log_reset(); } while (0)
+
+With the LLVM backend, complex macros like ``RESET`` are implemented with generated C wrappers. Arguments are
+evaluated before entering the wrapper. This is a procedure-like interface, not
+textual substitution of Chapel expressions. Mutating a wrapper's by-value
+parameter or taking its address is unsupported.
+
+Result and argument types must be supported by Chapel's C interoperability.
+Variadic macros, arbitrary token fragments, stringification or token-pasting of
+arguments, and dependencies on the caller's tokens, source location, or control
+flow are unsupported by the LLVM backend.
+
+The C backend expands explicitly declared macros in the generated C source.
+The target C compiler checks these expansions, so accepted uses and diagnostics
+can differ from the LLVM backend.
 
 
 Pointer Types in Extern Blocks

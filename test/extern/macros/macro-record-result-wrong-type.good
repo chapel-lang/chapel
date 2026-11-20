@@ -1,0 +1,2 @@
+error: returning 'macro_result' from a function with incompatible result type 'int'
+macro-record-result-wrong-type.chpl: error: cannot use C macro 'MACRO_RECORD_RESULT' with this extern signature (C argument types: int)

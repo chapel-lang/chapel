@@ -1,0 +1,2 @@
+error: controlling expression type 'int' not compatible with any generic association type
+infer-int-as-float.chpl: error: cannot use C macro 'INFER_ONLY_FLOAT' with this extern signature (C argument types: int)

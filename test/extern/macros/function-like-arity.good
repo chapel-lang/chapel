@@ -1,0 +1,1 @@
+function-like-arity.chpl:3: error: C macro 'MACRO_SUM' expects 2 arguments, but extern proc has 1

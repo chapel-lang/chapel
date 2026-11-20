@@ -727,6 +727,35 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     if(!isImmediate()) {
       // check LVT for value
       GenRet got = info->lvt->getValue(cname);
+      if (!got.val && hasFlag(FLAG_EXTERN)) {
+        if (auto* getter = resolveMacroGetter(info, cname)) {
+          clang::QualType cType = getter->getReturnType();
+          Type* chapelType = typeInfo();
+          if (codegenCType(cType) != chapelType->codegen().type) {
+            USR_FATAL_CONT(this, "type conflict for extern macro '%s'", name);
+            // The getter's return type is spelled with a generated typeof.
+            USR_PRINT(this, "the C type is '%s'",
+                      cType.getCanonicalType().getAsString().c_str());
+            USR_PRINT(this, "the Chapel type is '%s'", toString(chapelType));
+            USR_STOP();
+          }
+          auto* accessor = getter;
+          if (!hasFlag(FLAG_CONST)) {
+            accessor = info->lvt->getMacroAddress(cname);
+            if (!accessor)
+              USR_FATAL(this, "C macro '%s' is not a supported writable lvalue, "
+                             "declare it as extern const to read its value",
+                        name);
+          }
+          std::vector<GenRet> args;
+          std::string accessorName = accessor->getNameAsString();
+          got = codegenCallExprWithArgs(accessorName.c_str(), args, nullptr,
+                                        currentAstLoc, accessor);
+          if (accessor != getter)
+            got.isLVPtr = GEN_PTR;
+          got.isUnsigned = getter->getReturnType()->isUnsignedIntegerType();
+        }
+      }
       got.chplType = typeInfo();
       Type* valType = getValType();
       if (got.val && hasFlag(FLAG_EXTERN)) {
@@ -3636,12 +3665,13 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       ret.val = getFunctionLLVM(cname);
       if( ! ret.val ) {
         if( hasFlag(FLAG_EXTERN) ) {
-          if( isBuiltinExternCFunction(cname) ) {
+          if (auto* wrapper = resolveMacroFunction(info, this)) {
+            ret.val = codegenCValue(wrapper).val;
+          } else if (isBuiltinExternCFunction(cname)) {
             // it's OK.
           } else {
             USR_FATAL(this->defPoint,
-                      "Could not find C function for %s; "
-                      " perhaps it is missing or is a macro?", cname);
+                      "Could not find C function or supported macro for '%s', make sure its declaration is available", cname);
           }
         } else {
           INT_FATAL("Missing LLVM function for %s", cname);

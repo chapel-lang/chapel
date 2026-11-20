@@ -1,0 +1,2 @@
+macro-caller-context.chpl:5: error: C macro 'CALLER_LINE' depends on the caller's context
+Note: This source location is a guess.

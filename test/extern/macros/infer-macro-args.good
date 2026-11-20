@@ -1,0 +1,7 @@
+integers: 1 2
+floats: 1 2
+pointers: 1 2
+values: 17.0 2.5
+mixed: 11 22
+array as c_ptr: 1
+strings: 5 15 2

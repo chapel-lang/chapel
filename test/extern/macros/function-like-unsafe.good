@@ -1,0 +1,1 @@
+function-like-unsafe.chpl:3: error: C macro 'MACRO_MUTATE' may mutate a by-value argument

@@ -48,6 +48,7 @@
 #include "ForallStmt.h"
 #include "ImportStmt.h"
 #include "LoopExpr.h"
+#include "externCResolve.h"
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -1405,6 +1406,15 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
       }
     }
   }
+
+#ifdef HAVE_LLVM
+  if (symbols.empty() && fAllowExternC) {
+    if (auto module = toModuleSymbol(mAstRef)) {
+      if (auto symbol = tryCResolveLocally(module, fieldName))
+        symbols.push_back(symbol);
+    }
+  }
+#endif
 
   return (symbols.size() != 0) ? true : false;
 }

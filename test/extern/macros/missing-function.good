@@ -1,0 +1,1 @@
+missing-function.chpl:1: error: Could not find C function or supported macro for 'missingFunction', make sure its declaration is available

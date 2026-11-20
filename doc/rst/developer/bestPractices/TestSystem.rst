@@ -370,8 +370,10 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 - ``.comm-ofi.good``: used with ``CHPL_COMM=ofi``
 - ``.comm-ugni.good``: used with ``CHPL_COMM=ugni``
 - ``.no-local.good``: used with ``--no-local`` testing
+- ``.fast.good``: used with ``--fast`` testing
 - ``.na-none.good``: used with ``CHPL_NETWORK_ATOMICS=none``
 - ``.tasks-fifo.good``: used with ``CHPL_TASKS=fifo``
+- ``.c-backend.good``: used when ``CHPL_TARGET_COMPILER`` is not ``llvm``
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
 Note that ``.comm-``, ``.na-``, and ``lm-`` can be combined, in that order.

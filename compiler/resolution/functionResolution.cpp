@@ -33,12 +33,14 @@
 #include "caches.h"
 #include "callInfo.h"
 #include "CatchStmt.h"
+#include "clangUtil.h"
 #include "CForLoop.h"
 #include "config.h"
 #include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "externCResolve.h"
 #include "fixupExports.h"
 #include "forallOptimizations.h"
 #include "ForallStmt.h"
@@ -12292,6 +12294,11 @@ void resolve() {
   saveGenericSubstitutions();
 
   checkNoVoidFields();
+
+  cleanupExternC();
+#ifdef HAVE_LLVM
+  cleanupExternMacroTypes();
+#endif
 
   pruneResolvedTree();
 

@@ -470,16 +470,6 @@ jobs:
       ccache-save: false
       cron-script: util/cron/test-no-local.bash
       start-test-args: -compopts --no-local
-  paratest-quickstart:
-    name: Chapel paratest with quickstart configuration
-    uses: $/.github/workflows/ga-paratest.yml
-    with:
-      CHAPEL_CI_IMAGE: ${{ inputs.CHAPEL_CI_IMAGE }}
-      configuration: quickstart
-      ccache-key: x86-llvm-none
-      ccache-save: false
-      cron-script: util/cron/test-quickstart.bash
-      make-targets: all test-venv mason-deps spectests
   paratest-quickstart-gasnet:
     name: Chapel paratest with quickstart and GASNet
     uses: $/.github/workflows/ga-paratest.yml

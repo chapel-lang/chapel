@@ -1,2 +1,0 @@
-# Does not work with LLVM due to #26018
-CHPL_TARGET_COMPILER==llvm

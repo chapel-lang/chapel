@@ -250,6 +250,7 @@ PRAGMA(EXPR_TEMP, npr,
        "expr temp",
        "temporary that stores the result of an expression")
 PRAGMA(EXTERN, npr, "extern", "extern variables, types, and functions")
+PRAGMA(EXTERN_MACRO, npr, "extern macro", "automatically imported function-like C macro")
 PRAGMA(EXTERN_UNION, npr, "extern union", "extern union")
 PRAGMA(EXTERN_FN_WITH_ARRAY_ARG, "npr",
        "extern fn with array arg",

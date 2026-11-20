@@ -1,0 +1,1 @@
+missing-function-cname.chpl:1: error: Could not find C function or supported macro for 'missing_c_function', make sure its declaration is available

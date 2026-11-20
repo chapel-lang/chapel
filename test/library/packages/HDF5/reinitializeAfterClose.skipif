@@ -1,0 +1,2 @@
+# Extern blocks require Clang support.
+CHPL_LLVM == none
