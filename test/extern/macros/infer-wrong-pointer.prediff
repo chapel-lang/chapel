@@ -1,0 +1,11 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2"; then
+  if grep -Eq ": error: (controlling expression type|.*selector of type) ('double \*'|'[^']+' \(aka 'double \*'\)) not compatible with any generic association|: error: .*selector of type .*double \*[^[:space:]]* is not compatible with any association" "$2"; then
+    printf '%s\n' "error: controlling expression type 'double *' not compatible with any generic association type" > "$2"
+  fi
+else
+  sed -n -E '
+    s/^chpl_macro_call_[A-Za-z0-9_$]+_[0-9]+:[0-9]+:[0-9]+: (error: .*)$/\1/p
+    s/^(infer-wrong-pointer\.chpl):[0-9]+: (error: .*)$/\1: \2/p
+  ' "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+fi

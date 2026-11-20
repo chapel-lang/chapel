@@ -1,0 +1,1 @@
+macro-local-lvalue.chpl:4: error: C macro 'MACRO_LOCAL_LVALUE' is not a supported writable lvalue, declare it as extern const to read its value

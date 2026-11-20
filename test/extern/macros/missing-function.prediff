@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: (call to undeclared function|implicit declaration of function).*missingFunction' "$2"; then
+  printf '%s\n' 'error: missing declaration for missingFunction' > "$2"
+fi

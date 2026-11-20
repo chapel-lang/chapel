@@ -1,0 +1,5 @@
+#!/bin/sh
+if grep -q '^error: compiling generated source$' "$2" &&
+   grep -Eq ': error: (expression is not assignable|lvalue required as left operand of assignment)' "$2"; then
+  printf '%s\n' 'error: cannot assign to an rvalue' > "$2"
+fi

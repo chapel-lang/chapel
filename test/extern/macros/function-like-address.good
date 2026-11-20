@@ -1,0 +1,1 @@
+function-like-address.chpl:3: error: C macro 'MACRO_ADDR' takes the address of a by-value argument

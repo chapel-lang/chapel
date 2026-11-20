@@ -122,17 +122,18 @@ public:
 
 
 void buildDefaultFunctions() {
-  FnSymbolIndex fsi;
-
   buildChplEntryPoints();
-
-  SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
   // Take a copy of the existing TypeSymbols because the below loop can create
   // new ones. This maintains compatibility with the previous approach which
   // used a collect_ast on rootModule
   std::vector<TypeSymbol *> typeSymbols(gTypeSymbols.begin(), gTypeSymbols.end());
+  buildDefaultFunctionsForTypes(typeSymbols);
+}
 
+void buildDefaultFunctionsForTypes(const std::vector<TypeSymbol*>& typeSymbols) {
+  FnSymbolIndex fsi;
+  SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
   for (TypeSymbol *type : typeSymbols) {
     INT_ASSERT(type->inTree());
     // Here we build default functions that are always generated (even when

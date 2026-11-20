@@ -1,0 +1,1 @@
+object-like-constant-proc.chpl:3: error: object-like C macro 'ANSWER' is not supported as an extern proc

@@ -1,0 +1,2 @@
+error: controlling expression type 'double *' not compatible with any generic association type
+infer-wrong-pointer.chpl: error: cannot use C macro 'INFER_ONLY_INT_PTR' with this extern signature (C argument types: double *)

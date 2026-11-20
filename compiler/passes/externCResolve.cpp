@@ -22,22 +22,32 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "buildDefaultFunctions.h"
 #include "clangUtil.h"
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
+#include "passes.h"
+#include "resolution.h"
+#include "resolveFunction.h"
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 #include "vec.h"
+#include "global-ast-vecs.h"
+
+#include <map>
+#include <set>
+#include <utility>
 
 #ifdef HAVE_LLVM
 // clang headers
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
+#include "clang/Lex/MacroInfo.h"
 #include "llvm/ADT/SmallSet.h"
 
 // Functions for converting parsed Clang AST (ie C declarations)
@@ -47,6 +57,77 @@
 
 //For naming of variadic function variables (and temporary names for void *'s).
 static int query_uid = 1;
+
+struct CImportScope {
+  std::map<const char*, Symbol*> symbols;
+  std::vector<DefExpr*> pending;
+};
+
+static std::map<ModuleSymbol*, CImportScope, AstIdLess> cImportScopes;
+
+static Symbol* lookupCImport(ModuleSymbol* module, const char* name,
+                            std::set<ModuleSymbol*, AstIdLess>& visited) {
+  if (!visited.insert(module).second)
+    return nullptr;
+  auto scope = cImportScopes.find(module);
+  if (scope != cImportScopes.end()) {
+    auto symbol = scope->second.symbols.find(astr(name));
+    if (symbol != scope->second.symbols.end())
+      return symbol->second;
+  }
+  for (auto used: module->modUseList)
+    if (auto symbol = lookupCImport(used, name, visited))
+      return symbol;
+  return nullptr;
+}
+
+static Symbol* lookupCImport(ModuleSymbol* module, const char* name) {
+  name = astr(name);
+  if (!normalized) {
+    int ignoredCount = 0;
+    auto symbol = lookupInModuleOrBuiltins(module, name, ignoredCount);
+    if (symbol)
+      cImportScopes[module].symbols[name] = symbol;
+    return symbol;
+  }
+  std::set<ModuleSymbol*, AstIdLess> visited;
+  return lookupCImport(module, name, visited);
+}
+
+void prepareExternMacroTypes() {
+  bool needed = false;
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+    if (fn->inTree() && fn->hasFlag(FLAG_EXTERN_MACRO))
+      needed = true;
+  if (!needed) {
+    cImportScopes.clear();
+    return;
+  }
+  // Scope tables do not survive into resolution. Retain the type symbols the
+  // shared C importer needs when a concrete macro signature becomes available.
+  static const char* names[] = {
+    "bool", "c_char", "c_schar", "c_uchar", "c_short", "c_ushort",
+    "c_int", "c_uint", "c_long", "c_ulong", "c_longlong", "c_ulonglong",
+    "c_float", "c_double", "c_ptr", "c_ptrConst", "c_array", "c_fn_ptr"
+  };
+  forv_Vec(ModuleSymbol, module, gModuleSymbols) {
+    if (!module->inTree())
+      continue;
+    auto& symbols = cImportScopes[module].symbols;
+    for_alist(expr, module->block->body) {
+      if (auto def = toDefExpr(expr))
+        if (isTypeSymbol(def->sym) || def->sym->hasFlag(FLAG_TYPE_VARIABLE))
+          symbols[def->sym->name] = def->sym;
+    }
+    if (module->extern_info)
+      for (auto name : names)
+        lookupCImport(module, name);
+  }
+}
+
+void cleanupExternMacroTypes() {
+  cImportScopes.clear();
+}
 
 
 static void addCDef(ModuleSymbol* module, DefExpr* def);
@@ -89,9 +170,9 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
 
   // Other pointers are represented as a call to c_ptr or c_ptrConst.
   if (pointeeType.isConstQualified()) {
-    return new CallExpr(new UnresolvedSymExpr("c_ptrConst"), pointee);
+    return new CallExpr(tryCResolveExpr(module, "c_ptrConst"), pointee);
   } else {
-    return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+    return new CallExpr(tryCResolveExpr(module, "c_ptr"), pointee);
   }
 }
 
@@ -119,7 +200,8 @@ Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module,
   int64_t isize = size.getSExtValue();
   Symbol* isym = new_IntSymbol(isize, INT_SIZE_64);
 
-  return new CallExpr("c_array", eltTypeChapel, new SymExpr(isym));
+  return new CallExpr(tryCResolveExpr(module, "c_array"),
+                      eltTypeChapel, new SymExpr(isym));
 }
 
 static
@@ -133,9 +215,9 @@ Expr* convertArrayToChplType(ModuleSymbol* module,
 
   // For now, just represent it as a c_ptr
   if (eltType.isConstQualified()) {
-    return new CallExpr("c_ptrConst", eltTypeChapel);
+    return new CallExpr(tryCResolveExpr(module, "c_ptrConst"), eltTypeChapel);
   } else {
-    return new CallExpr("c_ptr", eltTypeChapel);
+    return new CallExpr(tryCResolveExpr(module, "c_ptr"), eltTypeChapel);
   }
 }
 
@@ -168,8 +250,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   }
 
   // Don't convert it if it's already converted
-  int ignoredCount = 0;
-  if (Symbol* sym = lookupInModuleOrBuiltins(module, chpl_name, ignoredCount))
+  if (Symbol* sym = lookupCImport(module, chpl_name))
     return new SymExpr(sym);
 
   // Create an empty struct and add it to the AST
@@ -356,7 +437,8 @@ static Expr* convertToChplType(ModuleSymbol* module,
 static void convertMacroToChpl(ModuleSymbol* module,
                                const char*   name,
                                Type*         chplType,
-                               Expr*         chplTypeExpr) {
+                               Expr*         chplTypeExpr,
+                               bool          writable) {
   INT_ASSERT(module->extern_info);
 
   VarSymbol* v = NULL;
@@ -366,7 +448,8 @@ static void convertMacroToChpl(ModuleSymbol* module,
     v = new VarSymbol(name);
 
   v->addFlag(FLAG_EXTERN);
-  v->addFlag(FLAG_CONST);
+  if (!writable)
+    v->addFlag(FLAG_CONST);
 
   DefExpr* def = NULL;
   if (chplTypeExpr)
@@ -408,8 +491,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
 
   if( do_typedef ) {
     // Don't convert it if it's already converted
-    int ignoredCount = 0;
-    if (lookupInModuleOrBuiltins(module, typedef_name, ignoredCount))
+    if (lookupCImport(module, typedef_name))
       return typedef_name;
 
     // Create a a DefExpr without the initializing expression
@@ -446,9 +528,27 @@ void convertDeclToChpl(ModuleSymbol* module,
   INT_ASSERT(module->extern_info != NULL);
 
   // Don't convert it if it's already converted
-  int ignoredCount = 0;
-  if (lookupInModuleOrBuiltins(module, cname, ignoredCount))
+  if (lookupCImport(module, cname))
     return;
+
+  if (auto macro = getFunctionMacroInExternBlock(module, cname)) {
+    if (macro->isVariadic())
+      USR_FATAL("variadic C macro '%s' is not supported", cname);
+    auto fn = new FnSymbol(cname);
+    fn->addFlag(FLAG_EXTERN);
+    fn->addFlag(FLAG_LOCAL_ARGS);
+    fn->addFlag(FLAG_EXTERN_MACRO);
+    for (unsigned i = 0; i < macro->getNumParams(); i++) {
+      const char* name = astr(macro->params()[i]->getName().str().c_str());
+      fn->insertFormalAtTail(new ArgSymbol(INTENT_IN, name, dtAny));
+    }
+    auto declaration = buildFunctionDecl(fn, RET_VALUE, nullptr, false,
+                                          nullptr, nullptr, nullptr);
+    auto def = toDefExpr(declaration->body.first());
+    def->remove();
+    addCDef(module, def);
+    return;
+  }
 
   clang::TypeDecl* cType = NULL;
   clang::ValueDecl* cValue = NULL;
@@ -473,14 +573,19 @@ void convertDeclToChpl(ModuleSymbol* module,
   // Now, if we have no cdecl, it may be a macro.
   if( (!cType) && (!cValue) ) {
     Expr* chplTypeExpr = NULL;
-    if (cCastedToType) {
+    if (auto getter = getMacroGetterInExternBlock(module, cname)) {
+      chplType = NULL;
+      chplTypeExpr =
+          convertToChplType(module, getter->getReturnType().getTypePtr());
+    } else if (cCastedToType) {
       // If the macro contained a cast, replace the Chapel type
       // with a type expression.
       chplType = NULL;
       chplTypeExpr = tryCResolveExpr(module, cCastedToType);
     }
 
-    convertMacroToChpl(module, cname, chplType, chplTypeExpr);
+    convertMacroToChpl(module, cname, chplType, chplTypeExpr,
+                       isMacroLvalueInExternBlock(module, cname));
     return;
   }
 
@@ -571,8 +676,7 @@ Symbol* tryCResolveLocally(ModuleSymbol* module, const char* name) {
     // Convert it and update the scope table
     convertDeclToChpl(module, name);
     // Look it up again using the scope table
-    int ignoredCount = 0;
-    return lookupInModuleOrBuiltins(module, name, ignoredCount);
+    return lookupCImport(module, name);
   }
 
   return NULL;
@@ -629,9 +733,15 @@ Symbol* tryCResolve(ModuleSymbol* mod, const char* name) {
 }
 
 static void addCDef(ModuleSymbol* module, DefExpr* def) {
-  module->block->insertAtHead(def);
-
-  addToSymbolTable(def);
+  if (normalized && isVarSymbol(def->sym))
+    module->initFn->insertAtHead(def);
+  else
+    module->block->insertAtHead(def);
+  cImportScopes[module].symbols[def->sym->name] = def->sym;
+  if (normalized)
+    cImportScopes[module].pending.push_back(def);
+  else
+    addToSymbolTable(def);
 }
 
 static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name) {
@@ -643,12 +753,44 @@ static Expr* tryCResolveExpr(ModuleSymbol* module, const char* name) {
 }
 
 static Expr* lookupExpr(ModuleSymbol* module, const char* name) {
-  int ignoredCount = 0;
-  Symbol* sym = lookupInModuleOrBuiltins(module, astr(name), ignoredCount);
+  Symbol* sym = lookupCImport(module, name);
   if (sym == NULL)
     USR_FATAL("Could not find C type %s", name);
 
   return new SymExpr(sym);
+}
+
+void resolveExternMacroReturnType(FnSymbol* fn) {
+  SET_LINENO(fn);
+  auto module = fn->getModule();
+  auto wrapper = resolveMacroFunctionInExternBlock(fn);
+  INT_ASSERT(wrapper);
+  Expr* type = convertToChplType(module, wrapper->getReturnType().getTypePtr());
+  fn->retExprType = new BlockStmt(type, BLOCK_TYPE);
+  insert_help(fn->retExprType, nullptr, fn);
+
+  auto pending = std::move(cImportScopes[module].pending);
+  std::vector<TypeSymbol*> types;
+  for (auto def : pending) {
+    if (auto ts = toTypeSymbol(def->sym)) {
+      normalize(def);
+      types.push_back(ts);
+    }
+  }
+  buildDefaultFunctionsForTypes(types);
+  for (auto def : pending) {
+    if (auto alias = toVarSymbol(def->sym)) {
+      INT_ASSERT(alias->hasFlag(FLAG_TYPE_VARIABLE));
+      auto use = new SymExpr(alias);
+      fn->retExprType->insertAtHead(use);
+      alias->type = resolveTypeAlias(use);
+      use->remove();
+      if (def->init)
+        def->init->remove();
+    }
+  }
+  normalize(fn->retExprType);
+  resolveSpecifiedReturnType(fn);
 }
 
 #endif

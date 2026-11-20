@@ -1,0 +1,1 @@
+object-like-proc.chpl:3: error: object-like C macro 'MACRO_SUM_ALIAS' is not supported as an extern proc

@@ -66,8 +66,10 @@ namespace clang {
 class Type;
 class VarSymbol;
 class ModuleSymbol;
+struct GenInfo;
 
 void cleanupExternC();
+void cleanupUnusedExternC();
 
 #ifdef HAVE_LLVM
 // should support TypedefDecl,EnumDecl,RecordDecl
@@ -78,6 +80,15 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 
 llvm::Function* getFunctionLLVM(const char* name);
 clang::FunctionDecl* getFunctionDeclClang(const char* name);
+clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name);
+clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
+                                         bool inferReturnType = false);
+const clang::MacroInfo* getFunctionMacroInExternBlock(ModuleSymbol* module,
+                                                     const char* name);
+clang::FunctionDecl* resolveMacroFunctionInExternBlock(FnSymbol* fn);
+clang::FunctionDecl* getMacroGetterInExternBlock(ModuleSymbol* module,
+                                                  const char* name);
+bool isMacroLvalueInExternBlock(ModuleSymbol* module, const char* name);
 
 llvm::Type* getTypeLLVM(const char* name);
 int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);

@@ -29,6 +29,7 @@
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
+#include "externCResolve.h"
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
@@ -553,7 +554,11 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       // TODO: Should be empty, can we just remove this?
       resolveBlockStmt(fn->body);
 
-
+#ifdef HAVE_LLVM
+      if (fn->hasFlag(FLAG_EXTERN_MACRO)) {
+        resolveExternMacroReturnType(fn);
+      } else
+#endif
       if (fn->retExprType) {
         resolveSpecifiedReturnType(fn);
 

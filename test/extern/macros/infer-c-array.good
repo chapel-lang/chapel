@@ -1,0 +1,1 @@
+infer-c-array.chpl:3: error: a concrete intent is required for the extern function formal 's' which has record type 'c_array(int(8),3)'

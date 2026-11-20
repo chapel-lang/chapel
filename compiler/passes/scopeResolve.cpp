@@ -3308,21 +3308,28 @@ void scopeResolve() {
 
   processGetVisibleSymbols();
 
-  ResolveScope::destroyAstMap();
-
   warnedForDotInsideWith.clear();
   interfaceMethodNames.clear();
   thisTypeToIfcFormal.clear();
 
   renameDefaultTypesToReflectWidths();
 
-  cleanupExternC();
+  forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
+    eb->remove();
+  }
+  gExternBlockStmts.clear();
 
   resolveUnmanagedBorrows();
 
   detectUserDefinedBorrowMethods();
 
   removeUnusedModules();
+
+  cleanupUnusedExternC();
+#ifdef HAVE_LLVM
+  prepareExternMacroTypes();
+#endif
+  ResolveScope::destroyAstMap();
 
   // Clear the cache so that functions can be removed
   // (e.g. in normalize cloneParameterizedPrimitive)

@@ -1,0 +1,2 @@
+macro-record-result-unknown-type.chpl:4: In function 'MACRO_RECORD_RESULT':
+macro-record-result-unknown-type.chpl:4: error: 'macro_result' undeclared (first use this function)

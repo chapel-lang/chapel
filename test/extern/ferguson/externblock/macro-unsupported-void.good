@@ -1,0 +1,2 @@
+macro-unsupported-void.chpl:5: error: C macro 'MACRO_VOID' has an unsupported result type 'void'
+Note: This source location is a guess.
