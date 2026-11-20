@@ -155,7 +155,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedBag.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
-	packages/DynamicLoading.chpl \
+	packages/DynamicLibrary.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \

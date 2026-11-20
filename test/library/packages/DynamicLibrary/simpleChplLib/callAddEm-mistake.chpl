@@ -1,12 +1,10 @@
-use DynamicLoading, ChplConfig;
+use DynamicLibrary, ChplConfig;
 
-config param ext = if CHPL_TARGET_PLATFORM=="darwin" then ".dylib" else ".so";
-
-const bin = try! binary.load("./lib/libaddEm" + ext);
+const lib = try! load("addEm", directory="./lib");
 
 try {
   // NOTE: The name "addem" is intentionally incorrect!
-  const myAddEm = bin.retrieve("addem", proc(x: int, y: int): int);
+  const myAddEm = lib.retrieve("addem", proc(x: int, y: int): int);
   writeln(myAddEm(42, 45));
 } catch e : DynLoadError {
   assert(e.message().find("addem") != -1);

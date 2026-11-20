@@ -1,6 +1,6 @@
-use DynamicLoading;
+use DynamicLibrary;
 use CTypes;
-import ChplConfig.CHPL_TARGET_PLATFORM;
+
 class A {
   var x:int;
   proc getX() {
@@ -18,11 +18,6 @@ class C: B {
   }
 }
 
-proc libSuffix() param do
-  return if CHPL_TARGET_PLATFORM == "darwin" then ".dylib" else ".so";
-proc libName(name, prefix="", suffix=libSuffix()) {
-  return prefix + name + suffix;
-}
 config const path = "./lib/";
 
 proc main() {
@@ -35,8 +30,8 @@ proc main() {
   writeln(c.getX());
   writeln("="*80);
 
-  var bin = binary.load(libName("libnewSubClassLib", path));
-  var callGetX = bin.retrieve("callGetX", proc(ptr: c_ptr(void)): int);
+  var lib = load("newSubClassLib", directory=path);
+  var callGetX = lib.retrieve("callGetX", proc(ptr: c_ptr(void)): int);
 
   writeln(callGetX(c_ptrTo(a)));
   writeln(callGetX(c_ptrTo(b)));

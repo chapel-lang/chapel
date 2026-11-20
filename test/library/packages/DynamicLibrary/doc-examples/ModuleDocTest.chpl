@@ -3,21 +3,21 @@
 //
 
 /* START_EXAMPLE_0 */
-use DynamicLoading;
+use DynamicLibrary;
 
-// A binary may or may not exist at this path.
+// A dynamic library may or may not exist at this path.
 const path = './TestBinary.so';
 
 // If loading fails an error will be issued and the 'try!' will halt.
-const bin = try! binary.load(path);
+const lib = try! loadFromPath(path);
 /* STOP_EXAMPLE_0 */
 
 /* START_EXAMPLE_1 */
 // Declare the type of the procedure.
 type P = proc(): void;
 
-// Retrieve a procedure named 'foo' from 'bin' with the type 'P'.
-const p1 = try! bin.retrieve('foo', P);
+// Retrieve a procedure named 'foo' from 'lib' with the type 'P'.
+const p1 = try! lib.retrieve('foo', P);
 
 // Call the procedure.
 p1();
