@@ -192,11 +192,23 @@ const char* legalizeName(const char* name) {
       case ' ': ret +=  "_SPACE_";      break;
       case '(': ret += "";              break;
       case ')': ret += "";              break;
+      case '[': ret += "";              break;
+      case ']': ret += "";              break;
+      case '"': ret += "";              break;
       case ',': ret += "_";             break;
       default:
       {
-        char c = *ch;
-        ret += c;
+        unsigned char c = *ch;
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') || c == '_') {
+          ret += c;
+        } else {
+          const char* hex = "0123456789ABCDEF";
+          ret += "_x";
+          ret += hex[c >> 4];
+          ret += hex[c & 0x0f];
+          ret += '_';
+        }
         break;
       }
     }
