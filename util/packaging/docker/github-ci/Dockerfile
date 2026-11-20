@@ -16,7 +16,7 @@ RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
     && apt update \
     && apt install gh -y
 
-ARG LLVM_VERSION=22
+ARG LLVM_VERSION=23
 
 RUN wget -nv -O /etc/apt/keyrings/apt.llvm.org.asc https://apt.llvm.org/llvm-snapshot.gpg.key \
     && chmod go+r /etc/apt/keyrings/apt.llvm.org.asc \

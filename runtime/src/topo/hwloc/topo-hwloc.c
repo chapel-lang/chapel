@@ -70,8 +70,6 @@ static hwloc_topology_t topology;
 static const struct hwloc_topology_support* topoSupport;
 static chpl_bool do_set_area_membind;
 
-static int topoDepth;
-
 static int numNumaDomains;
 
 // A note on core and PU numbering. As per the hwloc documentation, a cpuset
@@ -204,11 +202,6 @@ void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
        && strcmp(CHPL_GASNET_SEGMENT_RT, "everything") != 0)) {
       do_set_area_membind = false;
   }
-
-  //
-  // We need depth information.
-  //
-  topoDepth = hwloc_topology_get_depth(topology);
 
   if (accessiblePUsMask != NULL) {
     CHK_ERR_ERRNO((logAccMask = hwloc_bitmap_alloc()) != NULL);

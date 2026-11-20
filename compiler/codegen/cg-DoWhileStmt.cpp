@@ -78,7 +78,7 @@ GenRet DoWhileStmt::codegen()
     trackLLVMValue(blockStmtBody);
     trackLLVMValue(blockStmtEnd);
 
-    llvm::BranchInst* toBody = info->irBuilder->CreateBr(blockStmtBody);
+    auto toBody = info->irBuilder->CreateBr(blockStmtBody);
     trackLLVMValue(toBody);
 
     // Now add the body.
@@ -98,7 +98,7 @@ GenRet DoWhileStmt::codegen()
     insertBasicBlockAtEnd(func, blockStmtEndCond);
 
     // Insert an explicit branch from the body block to the loop condition.
-    llvm::BranchInst* toCond = info->irBuilder->CreateBr(blockStmtEndCond);
+    auto toCond = info->irBuilder->CreateBr(blockStmtEndCond);
     trackLLVMValue(toCond);
 
     // set insert point
@@ -115,7 +115,7 @@ GenRet DoWhileStmt::codegen()
       trackLLVMValue(condValue);
     }
 
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    auto condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
     insertBasicBlockAtEnd(func, blockStmtEnd);

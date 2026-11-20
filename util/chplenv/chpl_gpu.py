@@ -172,7 +172,7 @@ def _find_rocm_version(compiler: str):
         sep + r"rocm-([\d\.]+)" + sep,
         sep + r"hip-([\d\.]+)",
         sep + r"llvm-amdgpu-([\d\.]+)",
-        sep + r"rocm" + sep + r"([\d\.]+)" + sep,
+        sep + r"rocm" + sep + r"(?:core-)?([\d\.]+)" + sep,
     ]
 
     out = gpu_compiler_basic_compile(compiler, "hip")
@@ -183,7 +183,13 @@ def _find_rocm_version(compiler: str):
         match = re.search(regex, out)
         if match:
             return match.group(1)
-    return None
+
+    # if these fail, look for 'HIP version' in hipcc --version
+    exists, returncode, out, _ = try_run_command([compiler, "--version"])
+    if not (exists and returncode == 0):
+        return None
+    match = re.search(r"HIP version: ([\d\.]+)", out)
+    return match.group(1) if match else None
 
 
 GPU_TYPES = {
@@ -588,12 +594,13 @@ def _validate_rocm_llvm_version_impl(gpu: GpuType):
             ):
                 error("Cannot target AMD GPUs with ROCm 6.3+ without LLVM 21")
     elif major_version == "7":
-        # requires LLVM 21+
-        if (
-            int(chpl_llvm.get_llvm_version()) < 21
-            and chpl_llvm.get() != "bundled"
+        llvm_version = int(chpl_llvm.get_llvm_version())
+        if llvm_version >= 23 or (
+            llvm_version < 21 and chpl_llvm.get() != "bundled"
         ):
-            error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21+")
+            error("Cannot target AMD GPUs with ROCm 7.x without LLVM 21 or 22")
+    elif major_version == "10" and int(chpl_llvm.get_llvm_version()) != 23:
+        error("Cannot target AMD GPUs with ROCm 10.x without LLVM 23")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
@@ -693,6 +700,10 @@ def _validate_rocm_version_impl():
     MAX_ROCM7_REQ_VERSION = "8.0"  # upper bound non-inclusive
     MAX_ROCM7_REQ_VERSION_NICE = "7.x"
 
+    MIN_ROCM10_REQ_VERSION = "10.0"
+    MAX_ROCM10_REQ_VERSION = "10.2"  # upper bound non-inclusive
+    MAX_ROCM10_REQ_VERSION_NICE = "10.1.x"
+
     rocm_version = get_sdk_version()
 
     if rocm_version == "none":
@@ -707,9 +718,13 @@ def _validate_rocm_version_impl():
         and not is_ver_in_range(
             rocm_version, MIN_ROCM7_REQ_VERSION, MAX_ROCM7_REQ_VERSION
         )
+        and not is_ver_in_range(
+            rocm_version, MIN_ROCM10_REQ_VERSION, MAX_ROCM10_REQ_VERSION
+        )
     ):
         warning(
-            "Chapel requires ROCm versions %s to %s, %s to %s, or %s to %s, "
+            "Chapel requires ROCm versions %s to %s, %s to %s, %s to %s, "
+            "or %s to %s, "
             "detected version %s on system."
             % (
                 MIN_REQ_VERSION,
@@ -718,6 +733,8 @@ def _validate_rocm_version_impl():
                 MAX_ROCM6_REQ_VERSION_NICE,
                 MIN_ROCM7_REQ_VERSION,
                 MAX_ROCM7_REQ_VERSION_NICE,
+                MIN_ROCM10_REQ_VERSION,
+                MAX_ROCM10_REQ_VERSION_NICE,
                 rocm_version,
             )
         )

@@ -1,3 +1,0 @@
-#!/bin/bash
-LLVM_VERSION=`${CHPL_HOME}/util/printchplenv --all --simple | grep CHPL_LLVM_VERSION | cut -d = -f 2-`
-echo --actualLlvmVersion=$LLVM_VERSION

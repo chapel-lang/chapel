@@ -449,6 +449,70 @@ namespace {
       return call;
     }
 
+    IntegerType* getLocaleIntegerType() {
+      const DataLayout& DL = M.getDataLayout();
+      uint64_t localeBits = DL.getTypeStoreSizeInBits(info->localeIdType).getFixedValue();
+      assert(localeBits > 0 &&
+             localeBits + DL.getPointerSizeInBits(0) <= info->globalPtrBits);
+      return IntegerType::get(M.getContext(), static_cast<unsigned>(localeBits));
+    }
+
+    Instruction* globalPointerToInteger(Value* ptr, Instruction* insertBefore) {
+      const DataLayout& DL = M.getDataLayout();
+      auto* intTy = cast<IntegerType>(DL.getIntPtrType(ptr->getType()));
+      Value* wide = callGlobalToWideFn(ptr, insertBefore);
+      Value* locale = createRlocale(info, wide, insertBefore);
+      Value* addr = createRaddr(info, wide, insertBefore);
+
+      Instruction* localeBits = createStoreLoadCast(
+          locale, getLocaleIntegerType(), insertBefore);
+      Instruction* localeWide = CastInst::CreateIntegerCast(
+          localeBits, intTy, false, "", getInsertPosition(insertBefore));
+      trackLLVMValue(localeWide);
+
+      // GEP offsets apply to the low address bits, not to the locale.
+      Instruction* localeHigh = BinaryOperator::CreateShl(
+          localeWide, ConstantInt::get(intTy, DL.getPointerSizeInBits(0)), "",
+          getInsertPosition(insertBefore));
+      trackLLVMValue(localeHigh);
+      Instruction* addrBits = new PtrToIntInst(
+          addr, intTy, "", getInsertPosition(insertBefore));
+      trackLLVMValue(addrBits);
+      Instruction* result = BinaryOperator::CreateOr(
+          localeHigh, addrBits, "", getInsertPosition(insertBefore));
+      trackLLVMValue(result);
+      return result;
+    }
+
+    Instruction* integerToGlobalPointer(Value* value, Type* globalPtrTy,
+                                        Instruction* insertBefore) {
+      const DataLayout& DL = M.getDataLayout();
+      auto* intTy = cast<IntegerType>(DL.getIntPtrType(globalPtrTy));
+      if (value->getType() != intTy) {
+        value = CastInst::CreateIntegerCast(value, intTy, false, "",
+                                            getInsertPosition(insertBefore));
+        trackLLVMValue(value);
+      }
+
+      Instruction* addr = new IntToPtrInst(
+          value, getPointerType(M.getContext(), 0), "",
+          getInsertPosition(insertBefore));
+      trackLLVMValue(addr);
+      Instruction* localeHigh = BinaryOperator::CreateLShr(
+          value, ConstantInt::get(intTy, DL.getPointerSizeInBits(0)), "",
+          getInsertPosition(insertBefore));
+      trackLLVMValue(localeHigh);
+      Instruction* localeBits = CastInst::CreateIntegerCast(
+          localeHigh, getLocaleIntegerType(), false, "",
+          getInsertPosition(insertBefore));
+      trackLLVMValue(localeBits);
+      Instruction* locale = createStoreLoadCast(
+          localeBits, info->localeIdType, insertBefore);
+      Type* wideTy = convertTypeGlobalToWide(&M, info, globalPtrTy);
+      Instruction* wide = createWideAddr(info, locale, addr, wideTy, insertBefore);
+      return callWideToGlobalFn(wide, globalPtrTy, insertBefore);
+    }
+
     // When we encounter a call to wideToGlobal or globalToWide,
     // we store in the map that we will replace it with its argument.
     // This function looks for that argument being a call to wideToGlobal
@@ -861,17 +925,30 @@ namespace {
             myReplaceInstWithInst(oldStore, put);
           }
           break; }
-        case Instruction::PtrToInt: {
-          PtrToIntInst *ptrToInt = cast<PtrToIntInst>(insn);
-          if( ptrToInt->getPointerAddressSpace() == info->globalSpace ) {
-            Value* ptr = ptrToInt->getPointerOperand();
-
-            assert(M.getDataLayout().getTypeSizeInBits(ptrToInt->getType()) ==
-                   M.getDataLayout().getTypeSizeInBits(ptr->getType()));
-
-            Instruction* conv = createStoreLoadCast(ptr,
-                                                    ptrToInt->getType(),
-                                                    ptrToInt);
+        case Instruction::PtrToInt:
+#if LLVM_VERSION_MAJOR >= 22
+        case Instruction::PtrToAddr:
+#endif
+        {
+          CastInst* ptrToInt = cast<CastInst>(insn);
+          Value* ptr = ptrToInt->getOperand(0);
+          if( ptr->getType()->getPointerAddressSpace() == info->globalSpace ) {
+            Instruction* conv = globalPointerToInteger(ptr, ptrToInt);
+#if LLVM_VERSION_MAJOR >= 22
+            if (insn->getOpcode() == Instruction::PtrToAddr) {
+              Type* addrType = M.getDataLayout().getIndexType(ptr->getType());
+              if (addrType != conv->getType()) {
+                conv = CastInst::CreateIntegerCast(conv, addrType, false, "",
+                                                   getInsertPosition(ptrToInt));
+                trackLLVMValue(conv);
+              }
+            }
+#endif
+            if (conv->getType() != ptrToInt->getType()) {
+              conv = CastInst::CreateIntegerCast(conv, ptrToInt->getType(),
+                                                 false, "", getInsertPosition(ptrToInt));
+              trackLLVMValue(conv);
+            }
             myReplaceInstWithInst(ptrToInt, conv);
           }
           break; }
@@ -879,13 +956,8 @@ namespace {
           IntToPtrInst *intToPtr = cast<IntToPtrInst>(insn);
           if( intToPtr->getAddressSpace() == info->globalSpace ) {
             Value* i = intToPtr->getOperand(0);
-
-            assert(M.getDataLayout().getTypeSizeInBits(intToPtr->getType()) ==
-                   M.getDataLayout().getTypeSizeInBits(i->getType()));
-
-            Instruction* conv = createStoreLoadCast(i,
-                                                    intToPtr->getType(),
-                                                    intToPtr);
+            Instruction* conv = integerToGlobalPointer(i, intToPtr->getType(),
+                                                       intToPtr);
             myReplaceInstWithInst(intToPtr, conv);
           }
           break; }
@@ -1652,6 +1724,10 @@ bool GlobalToWide::run(Module &M) {
               }
               if (cast<CallInst>(Call)->isTailCall())
                 NewCI->setTailCall();
+            }
+
+            if (update_return) {
+              removeInvalidRetAttrs(cast<CallBase>(New), RetTy);
             }
 
             // replace_with wideToGlobal if needed on result

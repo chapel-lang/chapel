@@ -154,7 +154,7 @@ GenRet BlockStmt::codegen() {
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     trackLLVMValue(blockStmtBody);
 
-    llvm::BranchInst* toBody = info->irBuilder->CreateBr(blockStmtBody);
+    auto toBody = info->irBuilder->CreateBr(blockStmtBody);
     trackLLVMValue(toBody);
 
     // Now add the body.
@@ -294,7 +294,7 @@ CondStmt::codegen() {
 
     info->lvt->addLayer();
 
-    llvm::BranchInst* toCond = info->irBuilder->CreateBr(condStmtIf);
+    auto toCond = info->irBuilder->CreateBr(condStmtIf);
     trackLLVMValue(toCond);
 
     insertBasicBlockAtEnd(func, condStmtIf);
@@ -313,7 +313,7 @@ CondStmt::codegen() {
       trackLLVMValue(condValue);
     }
 
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
+    auto condBr = info->irBuilder->CreateCondBr(
         condValue,
         condStmtThen,
         (elseStmt) ? condStmtElse : condStmtEnd);
@@ -325,7 +325,7 @@ CondStmt::codegen() {
     info->lvt->addLayer();
     thenStmt->codegen();
 
-    llvm::BranchInst* toEnd1 = info->irBuilder->CreateBr(condStmtEnd);
+    auto toEnd1 = info->irBuilder->CreateBr(condStmtEnd);
     trackLLVMValue(toEnd1);
     info->lvt->removeLayer();
 
@@ -335,7 +335,7 @@ CondStmt::codegen() {
 
       info->lvt->addLayer();
       elseStmt->codegen();
-      llvm::BranchInst* toEnd2 = info->irBuilder->CreateBr(condStmtEnd);
+      auto toEnd2 = info->irBuilder->CreateBr(condStmtEnd);
       trackLLVMValue(toEnd2);
       info->lvt->removeLayer();
     }
@@ -381,7 +381,7 @@ GenRet GotoStmt::codegen() {
       info->lvt->addBlock(cname, blockLabel);
     }
 
-    llvm::BranchInst* toLabel = info->irBuilder->CreateBr(blockLabel);
+    auto toLabel = info->irBuilder->CreateBr(blockLabel);
     trackLLVMValue(toLabel);
 
     getFunction()->codegenUniqueNum++;

@@ -1,9 +1,5 @@
 use CTypes;
-
-extern {
-  #define MACRO_SCALE(x) ((x) * 3 + 1)
-  #define MACRO_OFFSET ((unsigned int)(sizeof(int) + 1))
-}
+require "macros.h";
 
 pragma "codegen for GPU"
 extern proc MACRO_SCALE(x: c_int): c_int;
