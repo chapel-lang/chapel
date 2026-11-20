@@ -1,6 +1,6 @@
 use myClasses;
 use CTypes;
-use DynamicLibrary;
+import DynamicLibrary;
 
 config const path = "./lib/";
 
@@ -17,7 +17,7 @@ proc main() {
   writeln("Loading Library");
   var lib = load("loadClassesLib", directory=path);
 
-  var producer = binary.load(libName("libarrayProducer", path));
+  var producer = DynamicLibrary.load(libName("libarrayProducer", directory=path));
   var makeC = producer.retrieve("makeC", proc(): c_ptr(void));
   var checkAndDeleteC = producer.retrieve("checkAndDeleteC", proc(ptr: c_ptr(void)): void);
   var updateArray = lib.retrieve("updateArray", proc(ptr: c_ptr(void)): void);
