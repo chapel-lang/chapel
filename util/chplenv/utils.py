@@ -302,5 +302,3 @@ def is_true(value):
         True,
     )
     return value in truthy
-
-
