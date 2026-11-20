@@ -1,0 +1,3 @@
+# doesn't seem to work with real gpus yet
+CHPL_GPU==nvidia
+CHPL_GPU==amd
