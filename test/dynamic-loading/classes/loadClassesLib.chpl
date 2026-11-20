@@ -1,6 +1,11 @@
 use myClasses;
 use CTypes;
 
+export proc updateArray(ptr: c_ptr(void)) {
+  var c = (ptr : unmanaged C?)!;
+  forall value in c.values do value += here.id + 1;
+}
+
 export proc callMyClasses() {
   var c = new C();
   var b = new B();
@@ -22,15 +27,15 @@ export proc getAndDyncCast(ptr: c_ptr(void)) {
 }
 
 export proc getC(): c_ptr(void) {
-  var cObj = new C();
+  var cObj = new unmanaged C();
   return c_ptrTo(cObj);
 }
 export proc getB(): c_ptr(void) {
-  var bObj = new B();
+  var bObj = new unmanaged B();
   return c_ptrTo(bObj);
 }
 export proc getA(): c_ptr(void) {
-  var aObj = new A();
+  var aObj = new unmanaged A();
   return c_ptrTo(aObj);
 }
 

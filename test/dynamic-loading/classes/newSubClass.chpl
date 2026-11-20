@@ -1,17 +1,9 @@
 use DynamicLoading;
 use CTypes;
 import ChplConfig.CHPL_TARGET_PLATFORM;
-class A {
-  var x:int;
-  proc getX() {
-    return x;
-  }
-}
-class B : A {
-  override proc getX() {
-    return x + 1;
-  }
-}
+use newSubClassCommon;
+
+// Only the executable knows C. The library must not dispatch it as B.
 class C: B {
   override proc getX() {
     return x + 2;

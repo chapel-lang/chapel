@@ -28,13 +28,21 @@
 #include <dlfcn.h>
 
 #include "chplrt.h"
+#include "chpl-atomics.h"
 #include "chpl-comm.h"
 #include "chpl-env-gen.h"
+#include "chpl-mem.h"
 #include "chpl-prginfo.h"
 
 #include <string.h>
 
 static chpl_rt_prginfo* chpl_prg_root;
+
+// Class id translation caches. 'cid_caches[self]' points to an array indexed
+// by foreign program id, whose elements point to an array indexed by the
+// foreign program's class index holding self's class index (0 if not yet
+// looked up). Element 0 of that array holds its length.
+static chpl_atomic_uintptr_t cid_caches[CHPL_CID_MAX_PROGRAMS];
 
 /** Define setters that module code can call to set up program data. */
 #define CONCAT(a__, b__) a__##b__
@@ -96,6 +104,10 @@ chpl_rt_prginfo_register_here_nosync(chpl_rt_prg_id id, chpl_rt_prginfo* prg) {
 
 int chpl_rt_prginfo_register_root_here(chpl_rt_prginfo* prg) {
   if (chpl_prg_root == NULL) {
+    for (size_t i = 0; i < CHPL_CID_MAX_PROGRAMS; i++) {
+      atomic_init_uintptr_t(&cid_caches[i], 0);
+    }
+
     // Bind and set the ID.
     chpl_prg_root = prg;
     prg->id = CHPL_RT_PRGINFO_ROOT_ID;
@@ -134,6 +146,112 @@ chpl_rt_prginfo* chpl_rt_prginfo_from_id_here(chpl_rt_prg_id id) {
 
 chpl_rt_prg_id chpl_rt_prginfo_id(chpl_rt_prginfo* prg) {
   return prg ? prg->id : CHPL_RT_PRGINFO_NULL_ID;
+}
+
+// Returns the array of per-foreign-program caches for 'self'.
+static chpl_atomic_uintptr_t* cid_caches_for(chpl_rt_prg_id self) {
+  chpl_atomic_uintptr_t* slot = &cid_caches[self];
+  uintptr_t p = atomic_load_explicit_uintptr_t(slot, chpl_memory_order_acquire);
+  if (p == 0) {
+    chpl_atomic_uintptr_t* fresh =
+      chpl_mem_allocMany(CHPL_CID_MAX_PROGRAMS, sizeof(*fresh),
+                         CHPL_RT_MD_CLASS_ID_CACHE, 0, 0);
+    for (size_t i = 0; i < CHPL_CID_MAX_PROGRAMS; i++) {
+      atomic_init_uintptr_t(&fresh[i], 0);
+    }
+    uintptr_t expected = 0;
+    if (atomic_compare_exchange_strong_explicit_uintptr_t(
+          slot, &expected, (uintptr_t) fresh,
+          chpl_memory_order_acq_rel, chpl_memory_order_acquire)) {
+      p = (uintptr_t) fresh;
+    } else {
+      chpl_mem_free(fresh, 0, 0);
+      p = expected;
+    }
+  }
+  return (chpl_atomic_uintptr_t*) p;
+}
+
+// Returns self's cache for class ids from program 'foreign'.
+static chpl_atomic_uint_least32_t*
+cid_cache_for(chpl_rt_prginfo* self, chpl_rt_prg_id foreign,
+              int32_t lineno, int32_t filenameIdx) {
+  chpl_atomic_uintptr_t* slot = &cid_caches_for(self->id)[foreign];
+  uintptr_t p = atomic_load_explicit_uintptr_t(slot, chpl_memory_order_acquire);
+  if (p == 0) {
+    chpl_rt_prginfo* f = chpl_rt_prginfo_from_id_here(foreign);
+    if (f == NULL) {
+      chpl_error("class instance belongs to an unknown Chapel program",
+                 lineno, filenameIdx);
+    }
+    int n = CHPL_RT_PRGINFO_DATA(f, chpl_classInfoSize);
+    chpl_atomic_uint_least32_t* fresh =
+      chpl_mem_allocMany(n, sizeof(*fresh), CHPL_RT_MD_CLASS_ID_CACHE,
+                         lineno, filenameIdx);
+    atomic_init_uint_least32_t(&fresh[0], (uint_least32_t) n);
+    for (int i = 1; i < n; i++) {
+      atomic_init_uint_least32_t(&fresh[i], 0);
+    }
+    uintptr_t expected = 0;
+    if (atomic_compare_exchange_strong_explicit_uintptr_t(
+          slot, &expected, (uintptr_t) fresh,
+          chpl_memory_order_acq_rel, chpl_memory_order_acquire)) {
+      p = (uintptr_t) fresh;
+    } else {
+      chpl_mem_free(fresh, lineno, filenameIdx);
+      p = expected;
+    }
+  }
+  return (chpl_atomic_uint_least32_t*) p;
+}
+
+chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
+                                  int32_t lineno, int32_t filenameIdx) {
+  chpl_rt_prg_id foreign = cid >> CHPL_CID_IDX_BITS;
+  chpl__class_id idx = cid & ((1u << CHPL_CID_IDX_BITS) - 1);
+
+  chpl_atomic_uint_least32_t* cache =
+    cid_cache_for(self, foreign, lineno, filenameIdx);
+
+  uint_least32_t n =
+    atomic_load_explicit_uint_least32_t(&cache[0], chpl_memory_order_relaxed);
+  if (idx == 0 || idx >= n) {
+    chpl_error("invalid class id", lineno, filenameIdx);
+  }
+
+  chpl__class_id ret =
+    atomic_load_explicit_uint_least32_t(&cache[idx], chpl_memory_order_relaxed);
+  if (ret != 0) return ret;
+
+  // TODO: compare mangled names instead, and avoid the linear search
+  chpl_rt_prginfo* f = chpl_rt_prginfo_from_id_here(foreign);
+  const chpl_class_info* fTable = CHPL_RT_PRGINFO_DATA(f, chpl_classInfo);
+  const char* fqName = fTable[idx].fqName;
+
+  if (fqName != NULL) {
+    const chpl_class_info* sTable = CHPL_RT_PRGINFO_DATA(self, chpl_classInfo);
+    int sN = CHPL_RT_PRGINFO_DATA(self, chpl_classInfoSize);
+    for (int i = 1; i < sN; i++) {
+      if (sTable[i].fqName != NULL && strcmp(sTable[i].fqName, fqName) == 0) {
+        ret = (chpl__class_id) i;
+        break;
+      }
+    }
+  }
+
+  if (ret == 0) {
+    char msg[256];
+    snprintf(msg, sizeof(msg),
+             "class '%s' from Chapel program %" PRIu64
+             " is not known to Chapel program %" PRIu64,
+             fqName ? fqName : "<unknown>",
+             (uint64_t) foreign, (uint64_t) self->id);
+    chpl_error(msg, lineno, filenameIdx);
+  }
+
+  atomic_store_explicit_uint_least32_t(&cache[idx], ret,
+                                       chpl_memory_order_relaxed);
+  return ret;
 }
 
 const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg) {
