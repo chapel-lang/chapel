@@ -1,7 +1,8 @@
 use BlockEntry;
 use CTypes;
-use DynamicLoading;
-import ChplConfig.CHPL_TARGET_PLATFORM;
+use DynamicLibrary;
+
+config const path = "./lib"
 
 proc checkStream(ref lib, name: string, alpha: ?t) {
   var a = new owned Entry(t);
@@ -23,8 +24,7 @@ proc main() {
   var entry = new owned Entry();
   forall i in entry.values.domain do entry.values[i] = i;
 
-  param suffix = if CHPL_TARGET_PLATFORM == "darwin" then ".dylib" else ".so";
-  var lib = binary.load("./lib/libaddOneLib" + suffix);
+  var lib = load("addOneLib", directory=path);
   const addOne = lib.retrieve("addOne", proc(ptr: c_ptr(void)): void);
   addOne(c_ptrTo(entry));
   checkStream(lib, "streamInt", 2);

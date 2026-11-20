@@ -1,16 +1,15 @@
 use CTypes;
-use DynamicLoading;
+import DynamicLibrary;
 use newSubClassCommon;
-import ChplConfig.CHPL_TARGET_PLATFORM;
 
 require "chpltypes.h";
 extern const CHPL_CID_IDX_BITS: c_int;
 
+config const path = "./lib"
 config const scenario = 0;
 
 proc main() {
-  const suffix = if CHPL_TARGET_PLATFORM == "darwin" then ".dylib" else ".so";
-  var bin = binary.load("./lib/libmalformedClassIdLib" + suffix);
+  var bin = DynamicLibrary.load("malformedClassIdLib", path);
   var callGetX = bin.retrieve("callGetX", proc(ptr: c_ptr(void)): int);
   var obj = new A(1);
   const ptr = c_ptrTo(obj);
