@@ -288,6 +288,7 @@ struct MachineSMEABI : public MachineFunctionPass {
     AU.setPreservesCFG();
     AU.addRequired<EdgeBundlesWrapperLegacy>();
     AU.addRequired<MachineOptimizationRemarkEmitterPass>();
+    AU.addRequired<LibcallLoweringInfoWrapper>();
     AU.addPreservedID(MachineLoopInfoID);
     AU.addPreservedID(MachineDominatorsID);
     MachineFunctionPass::getAnalysisUsage(AU);
@@ -297,8 +298,8 @@ struct MachineSMEABI : public MachineFunctionPass {
   /// within the machine function.
   FunctionInfo collectNeededZAStates(SMEAttrs SMEFnAttrs);
 
-  /// Assigns each edge bundle a ZA state based on the needed states of blocks
-  /// that have incoming or outgoing edges in that bundle.
+  /// Assigns each edge bundle a ZA state based on the desired states of
+  /// incoming and outgoing blocks in the bundle.
   SmallVector<ZAState> assignBundleZAStates(const EdgeBundles &Bundles,
                                             const FunctionInfo &FnInfo);
 
@@ -307,6 +308,9 @@ struct MachineSMEABI : public MachineFunctionPass {
   void insertStateChanges(EmitContext &, const FunctionInfo &FnInfo,
                           const EdgeBundles &Bundles,
                           ArrayRef<ZAState> BundleStates);
+
+  void addSMELibCall(MachineInstrBuilder &MIB, RTLIB::Libcall LC,
+                     CallingConv::ID ExpectedCC);
 
   void emitZT0SaveRestore(EmitContext &, MachineBasicBlock &MBB,
                           MachineBasicBlock::iterator MBBI, bool IsSave);
@@ -384,6 +388,11 @@ struct MachineSMEABI : public MachineFunctionPass {
                            unsigned Marker, StringRef RemarkName,
                            StringRef SaveName) const;
 
+  void emitError(const Twine &Message) {
+    LLVMContext &Context = MF->getFunction().getContext();
+    Context.emitError(MF->getName() + ": " + Message);
+  }
+
   /// Save live physical registers to virtual registers.
   PhysRegSave createPhysRegSave(LiveRegs PhysLiveRegs, MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MBBI, DebugLoc DL);
@@ -398,7 +407,8 @@ private:
   const AArch64Subtarget *Subtarget = nullptr;
   const AArch64RegisterInfo *TRI = nullptr;
   const AArch64FunctionInfo *AFI = nullptr;
-  const TargetInstrInfo *TII = nullptr;
+  const AArch64InstrInfo *TII = nullptr;
+  const LibcallLoweringInfo *LLI = nullptr;
 
   MachineOptimizationRemarkEmitter *ORE = nullptr;
   MachineRegisterInfo *MRI = nullptr;
@@ -465,6 +475,9 @@ FunctionInfo MachineSMEABI::collectNeededZAStates(SMEAttrs SMEFnAttrs) {
     auto FirstTerminatorInsertPt = MBB.getFirstTerminator();
     auto FirstNonPhiInsertPt = MBB.getFirstNonPHI();
     for (MachineInstr &MI : reverse(MBB)) {
+      if (MI.isDebugInstr())
+        continue;
+
       MachineBasicBlock::iterator MBBI(MI);
       LiveUnits.stepBackward(MI);
       LiveRegs PhysLiveRegs = getPhysLiveRegs(LiveUnits);
@@ -480,7 +493,6 @@ FunctionInfo MachineSMEABI::collectNeededZAStates(SMEAttrs SMEFnAttrs) {
       auto [NeededState, InsertPt] = getInstNeededZAState(*TRI, MI, SMEFnAttrs);
       assert((InsertPt == MBBI || isCallStartOpcode(InsertPt->getOpcode())) &&
              "Unexpected state change insertion point!");
-      // TODO: Do something to avoid state changes where NZCV is live.
       if (MBBI == FirstTerminatorInsertPt)
         Block.PhysLiveRegsAtExit = PhysLiveRegs;
       if (MBBI == FirstNonPhiInsertPt)
@@ -504,8 +516,8 @@ FunctionInfo MachineSMEABI::collectNeededZAStates(SMEAttrs SMEFnAttrs) {
                       PhysLiveRegsAfterSMEPrologue};
 }
 
-/// Assigns each edge bundle a ZA state based on the needed states of blocks
-/// that have incoming or outgoing blocks in that bundle.
+/// Assigns each edge bundle a ZA state based on the desired states of incoming
+/// and outgoing blocks in the bundle.
 SmallVector<ZAState>
 MachineSMEABI::assignBundleZAStates(const EdgeBundles &Bundles,
                                     const FunctionInfo &FnInfo) {
@@ -521,9 +533,9 @@ MachineSMEABI::assignBundleZAStates(const EdgeBundles &Bundles,
           Bundles.getBundle(BlockID, /*Out=*/false) != I)
         continue;
 
-      // Pick a state that matches all incoming blocks. Fallback to "ACTIVE" if
-      // any blocks doesn't match. This will hoist the state from incoming
-      // blocks to outgoing blocks.
+      // Pick a state that matches all incoming blocks. Fall back to "ACTIVE" if
+      // any incoming state doesn't match. This will hoist the state from
+      // incoming blocks to outgoing blocks.
       if (!BundleState)
         BundleState = Block.DesiredIncomingState;
       else if (BundleState != Block.DesiredIncomingState)
@@ -573,6 +585,9 @@ MachineSMEABI::findStateChangeInsertionPoint(
   setPhysLiveRegs(LiveUnits, PhysLiveRegs);
   auto BestCandidate = std::make_pair(InsertPt, PhysLiveRegs);
   for (MachineBasicBlock::iterator I = InsertPt; I != PrevStateChangeI; --I) {
+    if (I->isDebugInstr())
+      continue;
+
     // Don't move before/into a call (which may have a state change before it).
     if (I->getOpcode() == TII->getCallFrameDestroyOpcode() || I->isCall())
       break;
@@ -780,11 +795,24 @@ void MachineSMEABI::restorePhyRegSave(const PhysRegSave &RegSave,
         .addReg(RegSave.X0Save);
 }
 
+void MachineSMEABI::addSMELibCall(MachineInstrBuilder &MIB, RTLIB::Libcall LC,
+                                  CallingConv::ID ExpectedCC) {
+  RTLIB::LibcallImpl LCImpl = LLI->getLibcallImpl(LC);
+  if (LCImpl == RTLIB::Unsupported)
+    emitError("cannot lower SME ABI (SME routines unsupported)");
+  CallingConv::ID CC = LLI->getLibcallImplCallingConv(LCImpl);
+  StringRef ImplName = RTLIB::RuntimeLibcallsInfo::getLibcallImplName(LCImpl);
+  if (CC != ExpectedCC)
+    emitError("invalid calling convention for SME routine: '" + ImplName + "'");
+  // FIXME: This assumes the ImplName StringRef is null-terminated.
+  MIB.addExternalSymbol(ImplName.data());
+  MIB.addRegMask(TRI->getCallPreservedMask(*MF, CC));
+}
+
 void MachineSMEABI::emitRestoreLazySave(EmitContext &Context,
                                         MachineBasicBlock &MBB,
                                         MachineBasicBlock::iterator MBBI,
                                         LiveRegs PhysLiveRegs) {
-  auto *TLI = Subtarget->getTargetLowering();
   DebugLoc DL = getDebugLoc(MBB, MBBI);
   Register TPIDR2EL0 = MRI->createVirtualRegister(&AArch64::GPR64RegClass);
   Register TPIDR2 = AArch64::X0;
@@ -805,11 +833,12 @@ void MachineSMEABI::emitRestoreLazySave(EmitContext &Context,
       .addImm(0)
       .addImm(0);
   // (Conditionally) restore ZA state.
-  BuildMI(MBB, MBBI, DL, TII->get(AArch64::RestoreZAPseudo))
-      .addReg(TPIDR2EL0)
-      .addReg(TPIDR2)
-      .addExternalSymbol(TLI->getLibcallName(RTLIB::SMEABI_TPIDR2_RESTORE))
-      .addRegMask(TRI->SMEABISupportRoutinesCallPreservedMaskFromX0());
+  auto RestoreZA = BuildMI(MBB, MBBI, DL, TII->get(AArch64::RestoreZAPseudo))
+                       .addReg(TPIDR2EL0)
+                       .addReg(TPIDR2);
+  addSMELibCall(
+      RestoreZA, RTLIB::SMEABI_TPIDR2_RESTORE,
+      CallingConv::AArch64_SME_ABI_Support_Routines_PreserveMost_From_X0);
   // Zero TPIDR2_EL0.
   BuildMI(MBB, MBBI, DL, TII->get(AArch64::MSR))
       .addImm(AArch64SysReg::TPIDR2_EL0)
@@ -893,7 +922,6 @@ static constexpr unsigned ZERO_ALL_ZA_MASK = 0b11111111;
 
 void MachineSMEABI::emitSMEPrologue(MachineBasicBlock &MBB,
                                     MachineBasicBlock::iterator MBBI) {
-  auto *TLI = Subtarget->getTargetLowering();
   DebugLoc DL = getDebugLoc(MBB, MBBI);
 
   bool ZeroZA = AFI->getSMEFnAttrs().isNewZA();
@@ -910,9 +938,10 @@ void MachineSMEABI::emitSMEPrologue(MachineBasicBlock &MBB,
         BuildMI(MBB, MBBI, DL, TII->get(AArch64::CommitZASavePseudo))
             .addReg(TPIDR2EL0)
             .addImm(ZeroZA)
-            .addImm(ZeroZT0)
-            .addExternalSymbol(TLI->getLibcallName(RTLIB::SMEABI_TPIDR2_SAVE))
-            .addRegMask(TRI->SMEABISupportRoutinesCallPreservedMaskFromX0());
+            .addImm(ZeroZT0);
+    addSMELibCall(
+        CommitZASave, RTLIB::SMEABI_TPIDR2_SAVE,
+        CallingConv::AArch64_SME_ABI_Support_Routines_PreserveMost_From_X0);
     if (ZeroZA)
       CommitZASave.addDef(AArch64::ZAB0, RegState::ImplicitDefine);
     if (ZeroZT0)
@@ -935,8 +964,6 @@ void MachineSMEABI::emitFullZASaveRestore(EmitContext &Context,
                                           MachineBasicBlock &MBB,
                                           MachineBasicBlock::iterator MBBI,
                                           LiveRegs PhysLiveRegs, bool IsSave) {
-  auto *TLI = Subtarget->getTargetLowering();
-
   DebugLoc DL = getDebugLoc(MBB, MBBI);
 
   if (IsSave)
@@ -951,13 +978,12 @@ void MachineSMEABI::emitFullZASaveRestore(EmitContext &Context,
       .addReg(Context.getAgnosticZABufferPtr(*MF));
 
   // Call __arm_sme_save/__arm_sme_restore.
-  BuildMI(MBB, MBBI, DL, TII->get(AArch64::BL))
-      .addReg(BufferPtr, RegState::Implicit)
-      .addExternalSymbol(TLI->getLibcallName(
-          IsSave ? RTLIB::SMEABI_SME_SAVE : RTLIB::SMEABI_SME_RESTORE))
-      .addRegMask(TRI->getCallPreservedMask(
-          *MF,
-          CallingConv::AArch64_SME_ABI_Support_Routines_PreserveMost_From_X1));
+  auto SaveRestoreZA = BuildMI(MBB, MBBI, DL, TII->get(AArch64::BL))
+                           .addReg(BufferPtr, RegState::Implicit);
+  addSMELibCall(
+      SaveRestoreZA,
+      IsSave ? RTLIB::SMEABI_SME_SAVE : RTLIB::SMEABI_SME_RESTORE,
+      CallingConv::AArch64_SME_ABI_Support_Routines_PreserveMost_From_X1);
 
   restorePhyRegSave(RegSave, MBB, MBBI, DL);
 }
@@ -1007,14 +1033,11 @@ void MachineSMEABI::emitAllocateFullZASaveBuffer(
 
   // Calculate the SME state size.
   {
-    auto *TLI = Subtarget->getTargetLowering();
-    const AArch64RegisterInfo *TRI = Subtarget->getRegisterInfo();
-    BuildMI(MBB, MBBI, DL, TII->get(AArch64::BL))
-        .addExternalSymbol(TLI->getLibcallName(RTLIB::SMEABI_SME_STATE_SIZE))
-        .addReg(AArch64::X0, RegState::ImplicitDefine)
-        .addRegMask(TRI->getCallPreservedMask(
-            *MF, CallingConv::
-                     AArch64_SME_ABI_Support_Routines_PreserveMost_From_X1));
+    auto SMEStateSize = BuildMI(MBB, MBBI, DL, TII->get(AArch64::BL))
+                            .addReg(AArch64::X0, RegState::ImplicitDefine);
+    addSMELibCall(
+        SMEStateSize, RTLIB::SMEABI_SME_STATE_SIZE,
+        CallingConv::AArch64_SME_ABI_Support_Routines_PreserveMost_From_X1);
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::COPY), BufferSize)
         .addReg(AArch64::X0);
   }
@@ -1111,7 +1134,7 @@ void MachineSMEABI::emitStateChange(EmitContext &Context,
   // This section handles: LOCAL_COMMITTED -> (OFF|LOCAL_SAVED)
   case transitionFrom(ZAState::LOCAL_COMMITTED).to(ZAState::OFF):
   case transitionFrom(ZAState::LOCAL_COMMITTED).to(ZAState::LOCAL_SAVED):
-    // These transistions are a no-op.
+    // These transitions are a no-op.
     break;
 
   // This section handles: LOCAL_(SAVED|COMMITTED) -> ACTIVE[_ZT0_SAVED]
@@ -1127,7 +1150,7 @@ void MachineSMEABI::emitStateChange(EmitContext &Context,
       emitZT0SaveRestore(Context, MBB, InsertPt, /*IsSave=*/false);
     break;
 
-  // This section handles transistions to OFF (not previously covered)
+  // This section handles transitions to OFF (not previously covered)
   case transitionFrom(ZAState::ACTIVE).to(ZAState::OFF):
   case transitionFrom(ZAState::ACTIVE_ZT0_SAVED).to(ZAState::OFF):
   case transitionFrom(ZAState::LOCAL_SAVED).to(ZAState::OFF):
@@ -1142,6 +1165,19 @@ void MachineSMEABI::emitStateChange(EmitContext &Context,
            << getZAStateString(To) << '\n';
     llvm_unreachable("Unimplemented state transition");
   }
+}
+
+/// Returns true if private ZA setup can be elided. This occurs when there is
+/// no instruction within the function that requires ZA to be active.
+static bool canElidePrivateZASetup(const FunctionInfo &FnInfo) {
+  for (const BlockInfo &BlockInfo : FnInfo.Blocks) {
+    for (const InstInfo &InstInfo : BlockInfo.Insts) {
+      if (InstInfo.NeededState == ZAState::ACTIVE ||
+          InstInfo.NeededState == ZAState::ACTIVE_ZT0_SAVED)
+        return false;
+    }
+  }
+  return true;
 }
 
 } // end anonymous namespace
@@ -1164,6 +1200,8 @@ bool MachineSMEABI::runOnMachineFunction(MachineFunction &MF) {
 
   this->MF = &MF;
   ORE = &getAnalysis<MachineOptimizationRemarkEmitterPass>().getORE();
+  LLI = &getAnalysis<LibcallLoweringInfoWrapper>().getLibcallLowering(
+      *MF.getFunction().getParent(), *Subtarget);
   TII = Subtarget->getInstrInfo();
   TRI = Subtarget->getRegisterInfo();
   MRI = &MF.getRegInfo();
@@ -1172,6 +1210,9 @@ bool MachineSMEABI::runOnMachineFunction(MachineFunction &MF) {
       getAnalysis<EdgeBundlesWrapperLegacy>().getEdgeBundles();
 
   FunctionInfo FnInfo = collectNeededZAStates(SMEFnAttrs);
+
+  if (SMEFnAttrs.hasPrivateZAInterface() && canElidePrivateZASetup(FnInfo))
+    return false;
 
   SmallVector<ZAState> BundleStates = assignBundleZAStates(Bundles, FnInfo);
 

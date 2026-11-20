@@ -86,6 +86,10 @@ STATISTIC(NumTailCalls, "Number of tail calls");
 extern cl::opt<bool> EmitJalrReloc;
 extern cl::opt<bool> NoZeroDivCheck;
 
+static cl::opt<bool> UseMipsTailCalls("mips-tail-calls", cl::Hidden,
+                                      cl::desc("MIPS: permit tail calls."),
+                                      cl::init(false));
+
 static const MCPhysReg Mips64DPRegs[8] = {
   Mips::D12_64, Mips::D13_64, Mips::D14_64, Mips::D15_64,
   Mips::D16_64, Mips::D17_64, Mips::D18_64, Mips::D19_64
@@ -220,7 +224,8 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
   setOperationAction(ISD::BlockAddress,       MVT::i32,   Custom);
   setOperationAction(ISD::GlobalTLSAddress,   MVT::i32,   Custom);
   setOperationAction(ISD::JumpTable,          MVT::i32,   Custom);
-  setOperationAction(ISD::ConstantPool,       MVT::i32,   Custom);
+  if (!Subtarget.inMips16Mode())
+    setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
   setOperationAction(ISD::SELECT,             MVT::f32,   Custom);
   setOperationAction(ISD::SELECT,             MVT::f64,   Custom);
   setOperationAction(ISD::SELECT,             MVT::i32,   Custom);
@@ -268,7 +273,8 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
     setOperationAction(ISD::BlockAddress,       MVT::i64,   Custom);
     setOperationAction(ISD::GlobalTLSAddress,   MVT::i64,   Custom);
     setOperationAction(ISD::JumpTable,          MVT::i64,   Custom);
-    setOperationAction(ISD::ConstantPool,       MVT::i64,   Custom);
+    if (!Subtarget.inMips16Mode())
+      setOperationAction(ISD::ConstantPool, MVT::i64, Custom);
     setOperationAction(ISD::SELECT,             MVT::i64,   Custom);
     if (Subtarget.hasMips64r6()) {
       setOperationAction(ISD::LOAD,               MVT::i64,   Legal);
@@ -412,7 +418,10 @@ MipsTargetLowering::MipsTargetLowering(const MipsTargetMachine &TM,
                        ISD::OR, ISD::ADD, ISD::SUB, ISD::AssertZext, ISD::SHL,
                        ISD::SIGN_EXTEND});
 
-  if (Subtarget.isGP64bit())
+  // R5900 has no LL/SC instructions for atomic operations
+  if (Subtarget.isR5900())
+    setMaxAtomicSizeInBitsSupported(0);
+  else if (Subtarget.isGP64bit())
     setMaxAtomicSizeInBitsSupported(64);
   else
     setMaxAtomicSizeInBitsSupported(32);
@@ -441,9 +450,9 @@ MipsTargetLowering::create(const MipsTargetMachine &TM,
 }
 
 // Create a fast isel object.
-FastISel *
-MipsTargetLowering::createFastISel(FunctionLoweringInfo &funcInfo,
-                                  const TargetLibraryInfo *libInfo) const {
+FastISel *MipsTargetLowering::createFastISel(
+    FunctionLoweringInfo &funcInfo, const TargetLibraryInfo *libInfo,
+    const LibcallLoweringInfo *libcallLowering) const {
   const MipsTargetMachine &TM =
       static_cast<const MipsTargetMachine &>(funcInfo.MF->getTarget());
 
@@ -458,7 +467,8 @@ MipsTargetLowering::createFastISel(FunctionLoweringInfo &funcInfo,
       Subtarget.useXGOT())
     UseFastISel = false;
 
-  return UseFastISel ? Mips::createFastISel(funcInfo, libInfo) : nullptr;
+  return UseFastISel ? Mips::createFastISel(funcInfo, libInfo, libcallLowering)
+                     : nullptr;
 }
 
 EVT MipsTargetLowering::getSetCCResultType(const DataLayout &, LLVMContext &,
@@ -867,9 +877,10 @@ static SDValue performORCombine(SDNode *N, SelectionDAG &DAG,
   } else {
     // Pattern match DINS.
     //  $dst = or (and $src, mask0), mask1
-    //  where mask0 = ((1 << SMSize0) -1) << SMPos0
+    //  where mask0 = maskTrailingOnes<uint64_t>(SMSize0) << SMPos0
     //  => dins $dst, $src, pos, size
-    if (~CN->getSExtValue() == ((((int64_t)1 << SMSize0) - 1) << SMPos0) &&
+    uint64_t Mask = maskTrailingOnes<uint64_t>(SMSize0) << SMPos0;
+    if (~CN->getSExtValue() == (int64_t)Mask &&
         ((SMSize0 + SMPos0 <= 64 && Subtarget.hasMips64r2()) ||
          (SMSize0 + SMPos0 <= 32))) {
       // Check if AND instruction has constant as argument
@@ -1799,7 +1810,8 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicBinaryPartword(
   BuildMI(BB, DL, TII->get(ABI.GetPtrAndOp()), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
   BuildMI(BB, DL, TII->get(Mips::ANDi), PtrLSB2)
-      .addReg(Ptr, 0, ArePtrs64bit ? Mips::sub_32 : 0).addImm(3);
+      .addReg(Ptr, {}, ArePtrs64bit ? Mips::sub_32 : 0)
+      .addImm(3);
   if (Subtarget.isLittle()) {
     BuildMI(BB, DL, TII->get(Mips::SLL), ShiftAmt).addReg(PtrLSB2).addImm(3);
   } else {
@@ -1986,7 +1998,8 @@ MachineBasicBlock *MipsTargetLowering::emitAtomicCmpSwapPartword(
   BuildMI(BB, DL, TII->get(ArePtrs64bit ? Mips::AND64 : Mips::AND), AlignedAddr)
     .addReg(Ptr).addReg(MaskLSB2);
   BuildMI(BB, DL, TII->get(Mips::ANDi), PtrLSB2)
-      .addReg(Ptr, 0, ArePtrs64bit ? Mips::sub_32 : 0).addImm(3);
+      .addReg(Ptr, {}, ArePtrs64bit ? Mips::sub_32 : 0)
+      .addImm(3);
   if (Subtarget.isLittle()) {
     BuildMI(BB, DL, TII->get(Mips::SLL), ShiftAmt).addReg(PtrLSB2).addImm(3);
   } else {
@@ -2503,7 +2516,7 @@ SDValue MipsTargetLowering::lowerFABS32(SDValue Op, SelectionDAG &DAG,
   SDLoc DL(Op);
   SDValue Res, Const1 = DAG.getConstant(1, DL, MVT::i32);
 
-  if (DAG.getTarget().Options.NoNaNsFPMath || Subtarget.inAbs2008Mode())
+  if (Op->getFlags().hasNoNaNs() || Subtarget.inAbs2008Mode())
     return DAG.getNode(MipsISD::FAbs, DL, Op.getValueType(), Op.getOperand(0));
 
   // If operand is of type f64, extract the upper 32-bit. Otherwise, bitcast it
@@ -2543,7 +2556,7 @@ SDValue MipsTargetLowering::lowerFABS64(SDValue Op, SelectionDAG &DAG,
   SDLoc DL(Op);
   SDValue Res, Const1 = DAG.getConstant(1, DL, MVT::i32);
 
-  if (DAG.getTarget().Options.NoNaNsFPMath || Subtarget.inAbs2008Mode())
+  if (Op->getFlags().hasNoNaNs() || Subtarget.inAbs2008Mode())
     return DAG.getNode(MipsISD::FAbs, DL, Op.getValueType(), Op.getOperand(0));
 
   // Bitcast to integer node.
@@ -2655,8 +2668,23 @@ SDValue MipsTargetLowering::lowerATOMIC_FENCE(SDValue Op,
   // FIXME: Set SType for weaker fences where supported/appropriate.
   unsigned SType = 0;
   SDLoc DL(Op);
-  return DAG.getNode(MipsISD::Sync, DL, MVT::Other, Op.getOperand(0),
-                     DAG.getConstant(SType, DL, MVT::i32));
+  SyncScope::ID FenceSSID =
+      static_cast<SyncScope::ID>(Op.getConstantOperandVal(2));
+
+  if (Subtarget.hasMips2() && FenceSSID == SyncScope::System)
+    return DAG.getNode(MipsISD::Sync, DL, MVT::Other, Op.getOperand(0),
+                       DAG.getTargetConstant(SType, DL, MVT::i32));
+
+  // singlethread fences only synchronize with signal handlers on the same
+  // thread and thus only need to preserve instruction order, not actually
+  // enforce memory ordering.
+  if ((Subtarget.hasMips1() && !Subtarget.hasMips2()) ||
+      FenceSSID == SyncScope::SingleThread) {
+    // MEMBARRIER is a compiler barrier; it codegens to a no-op.
+    return DAG.getNode(ISD::MEMBARRIER, DL, MVT::Other, Op.getOperand(0));
+  }
+
+  return Op;
 }
 
 SDValue MipsTargetLowering::lowerShiftLeftParts(SDValue Op,
@@ -3111,6 +3139,7 @@ static bool CC_MipsO32_FP64(unsigned ValNo, MVT ValVT, MVT LocVT,
                                         ISD::ArgFlagsTy ArgFlags, Type *OrigTy,
                                         CCState &State);
 
+#define GET_CALLING_CONV_IMPL
 #include "MipsGenCallingConv.inc"
 
  CCAssignFn *MipsTargetLowering::CCAssignFnForCall() const{
@@ -3142,15 +3171,14 @@ SDValue MipsTargetLowering::passArgOnStack(SDValue StackPtr, unsigned Offset,
                       MachineMemOperand::MOVolatile);
 }
 
-void MipsTargetLowering::
-getOpndList(SmallVectorImpl<SDValue> &Ops,
-            std::deque<std::pair<unsigned, SDValue>> &RegsToPass,
-            bool IsPICCall, bool GlobalOrExternal, bool InternalLinkage,
-            bool IsCallReloc, CallLoweringInfo &CLI, SDValue Callee,
-            SDValue Chain) const {
+void MipsTargetLowering::getOpndList(
+    SmallVectorImpl<SDValue> &Ops,
+    std::deque<std::pair<unsigned, SDValue>> &RegsToPass, bool IsPICCall,
+    bool GlobalOrExternal, bool LocalLinkage, bool IsCallReloc,
+    CallLoweringInfo &CLI, SDValue Callee, SDValue Chain) const {
   // Insert node "GP copy globalreg" before call to function.
   //
-  // R_MIPS_CALL* operators (emitted when non-internal functions are called
+  // R_MIPS_CALL* operators (emitted when non-local functions are called
   // in PIC mode) allow symbols to be resolved via lazy binding.
   // The lazy binding stub requires GP to point to the GOT.
   // Note that we don't need GP to point to the GOT for indirect calls
@@ -3158,7 +3186,7 @@ getOpndList(SmallVectorImpl<SDValue> &Ops,
   // lazy binding stub for a function only when R_MIPS_CALL* are the only relocs
   // used for the function (that is, Mips linker doesn't generate lazy binding
   // stub for a function whose address is taken in the program).
-  if (IsPICCall && !InternalLinkage && IsCallReloc) {
+  if (IsPICCall && !LocalLinkage && IsCallReloc) {
     unsigned GPReg = ABI.IsN64() ? Mips::GP_64 : Mips::GP;
     EVT Ty = ABI.IsN64() ? MVT::i64 : MVT::i32;
     RegsToPass.push_back(std::make_pair(GPReg, getGlobalReg(CLI.DAG, Ty)));
@@ -3228,30 +3256,32 @@ void MipsTargetLowering::AdjustInstrPostInstrSelection(MachineInstr &MI,
       // If added to MI, asm printer will emit .reloc R_MIPS_JALR for the
       // symbol.
       const SDValue TargetAddr = Node->getOperand(0).getOperand(1);
-      StringRef Sym;
+      MCSymbol *S = nullptr;
       if (const GlobalAddressSDNode *G =
               dyn_cast_or_null<const GlobalAddressSDNode>(TargetAddr)) {
+        const GlobalValue *GV = G->getGlobal();
+
         // We must not emit the R_MIPS_JALR relocation against data symbols
         // since this will cause run-time crashes if the linker replaces the
         // call instruction with a relative branch to the data symbol.
-        if (!isa<Function>(G->getGlobal())) {
+        if (!isa<Function>(GV)) {
           LLVM_DEBUG(dbgs() << "Not adding R_MIPS_JALR against data symbol "
-                            << G->getGlobal()->getName() << "\n");
+                            << GV->getName() << "\n");
           return;
         }
-        Sym = G->getGlobal()->getName();
+        S = getTargetMachine().getSymbol(GV);
       }
       else if (const ExternalSymbolSDNode *ES =
                    dyn_cast_or_null<const ExternalSymbolSDNode>(TargetAddr)) {
-        Sym = ES->getSymbol();
+        S = MI.getParent()->getParent()->getContext().getOrCreateSymbol(
+            ES->getSymbol());
       }
 
-      if (Sym.empty())
+      if (!S)
         return;
 
-      MachineFunction *MF = MI.getParent()->getParent();
-      MCSymbol *S = MF->getContext().getOrCreateSymbol(Sym);
-      LLVM_DEBUG(dbgs() << "Adding R_MIPS_JALR against " << Sym << "\n");
+      LLVM_DEBUG(dbgs() << "Adding R_MIPS_JALR against " << S->getName()
+                        << "\n");
       MI.addOperand(MachineOperand::CreateMCSymbol(S, MipsII::MO_JALR));
     }
   }
@@ -3331,26 +3361,43 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   // Call site info for function parameters tracking and call base type info.
   MachineFunction::CallSiteInfo CSInfo;
   // Set type id for call site info.
-  if (MF.getTarget().Options.EmitCallGraphSection && CB && CB->isIndirectCall())
-    CSInfo = MachineFunction::CallSiteInfo(*CB);
+  setTypeIdForCallsiteInfo(CB, MF, CSInfo);
 
-  // Check if it's really possible to do a tail call. Restrict it to functions
-  // that are part of this compilation unit.
-  bool InternalLinkage = false;
-  if (IsTailCall) {
-    IsTailCall = isEligibleForTailCallOptimization(
-        CCInfo, StackSize, *MF.getInfo<MipsFunctionInfo>());
-    if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
-      InternalLinkage = G->getGlobal()->hasInternalLinkage();
-      IsTailCall &= (InternalLinkage || G->getGlobal()->hasLocalLinkage() ||
-                     G->getGlobal()->hasPrivateLinkage() ||
-                     G->getGlobal()->hasHiddenVisibility() ||
-                     G->getGlobal()->hasProtectedVisibility());
-     }
+  // Check if it's really possible to do a tail call.
+  // For non-musttail calls, restrict to functions that won't require $gp
+  // restoration. In PIC mode, calling external functions via tail call can
+  // cause issues with $gp register handling (see D24763).
+  bool IsMustTail = CLI.CB && CLI.CB->isMustTailCall();
+  bool CalleeIsLocal = true;
+  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
+    const GlobalValue *GV = G->getGlobal();
+    bool HasLocalLinkage = GV->hasLocalLinkage() || GV->hasPrivateLinkage();
+    bool HasHiddenVisibility =
+        GV->hasHiddenVisibility() || GV->hasProtectedVisibility();
+    if (GV->isDeclarationForLinker())
+      CalleeIsLocal = HasLocalLinkage || HasHiddenVisibility;
+    else
+      CalleeIsLocal = GV->isDSOLocal();
   }
-  if (!IsTailCall && CLI.CB && CLI.CB->isMustTailCall())
-    report_fatal_error("failed to perform tail call elimination on a call "
-                       "site marked musttail");
+
+  if (IsTailCall) {
+    if (!UseMipsTailCalls) {
+      IsTailCall = false;
+      if (IsMustTail)
+        report_fatal_error("failed to perform tail call elimination on a call "
+                           "site marked musttail");
+    } else {
+      bool Eligible = isEligibleForTailCallOptimization(
+          CCInfo, StackSize, *MF.getInfo<MipsFunctionInfo>());
+      if (!Eligible || !CalleeIsLocal) {
+        IsTailCall = false;
+        if (IsMustTail)
+          report_fatal_error(
+              "failed to perform tail call elimination on a call "
+              "site marked musttail");
+      }
+    }
+  }
 
   if (IsTailCall)
     ++NumTailCalls;
@@ -3525,6 +3572,7 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     }
   }
 
+  bool LocalLinkage = false;
   if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
     if (Subtarget.isTargetCOFF() &&
         G->getGlobal()->hasDLLImportStorageClass()) {
@@ -3535,9 +3583,9 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
                            getDllimportSymbol(G, SDLoc(G), Ty, DAG), PtrInfo);
     } else if (IsPIC) {
       const GlobalValue *Val = G->getGlobal();
-      InternalLinkage = Val->hasInternalLinkage();
+      LocalLinkage = Val->hasLocalLinkage();
 
-      if (InternalLinkage)
+      if (LocalLinkage)
         Callee = getAddrLocal(G, DL, Ty, DAG, ABI.IsN32() || ABI.IsN64());
       else if (Subtarget.useXGOT()) {
         Callee = getAddrGlobalLargeGOT(G, DL, Ty, DAG, MipsII::MO_CALL_HI16,
@@ -3578,7 +3626,7 @@ MipsTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   SmallVector<SDValue, 8> Ops(1, Chain);
   SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
 
-  getOpndList(Ops, RegsToPass, IsPIC, GlobalOrExternal, InternalLinkage,
+  getOpndList(Ops, RegsToPass, IsPIC, GlobalOrExternal, LocalLinkage,
               IsCallReloc, CLI, Callee, Chain);
 
   if (IsTailCall) {
@@ -3828,7 +3876,7 @@ SDValue MipsTargetLowering::LowerFormalArguments(
 
       assert(!VA.needsCustom() && "unexpected custom memory argument");
 
-      // Only arguments pased on the stack should make it here. 
+      // Only arguments pased on the stack should make it here.
       assert(VA.isMemLoc());
 
       // The stack pointer offset is relative to the caller stack frame.
@@ -4616,8 +4664,8 @@ void MipsTargetLowering::passByValArg(
   SDValue Dst = DAG.getNode(ISD::ADD, DL, PtrTy, StackPtr,
                             DAG.getIntPtrConstant(VA.getLocMemOffset(), DL));
   Chain = DAG.getMemcpy(
-      Chain, DL, Dst, Src, DAG.getConstant(MemCpySize, DL, PtrTy),
-      Align(Alignment), /*isVolatile=*/false, /*AlwaysInline=*/false,
+      Chain, DL, Dst, Src, DAG.getConstant(MemCpySize, DL, PtrTy), Alignment,
+      Alignment, /*isVolatile=*/false, /*AlwaysInline=*/false,
       /*CI=*/nullptr, std::nullopt, MachinePointerInfo(), MachinePointerInfo());
   MemOpChains.push_back(Chain);
 }
@@ -4955,9 +5003,23 @@ MipsTargetLowering::getRegisterByName(const char *RegName, LLT VT,
   // 3. Get register.
   if (regIdx >= 0 && regIdx < 32) {
     const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
-    const MCRegisterClass &RC = Subtarget.isGP64bit()
-                                    ? MRI->getRegClass(Mips::GPR64RegClassID)
-                                    : MRI->getRegClass(Mips::GPR32RegClassID);
+    unsigned RegClassID = Mips::GPR32RegClassID;
+    if (VT.isValid()) {
+      if (VT.getSizeInBits() == 64) {
+        if (!Subtarget.isGP64bit())
+          report_fatal_error("64-bit registers not supported on 32-bit target");
+        RegClassID = Mips::GPR64RegClassID;
+      } else if (VT.getSizeInBits() == 32) {
+        RegClassID = Mips::GPR32RegClassID;
+      } else {
+        report_fatal_error(Twine("Invalid register \"" + StringRef(RegName) +
+                                 "\" for " + Twine(VT.getSizeInBits()) +
+                                 "-bit type."));
+      }
+    } else if (Subtarget.isGP64bit()) {
+      RegClassID = Mips::GPR64RegClassID;
+    }
+    const MCRegisterClass &RC = MRI->getRegClass(RegClassID);
     return RC.getRegister(regIdx);
   }
 

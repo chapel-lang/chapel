@@ -170,6 +170,12 @@ GOFFObjectFile::GOFFObjectFile(MemoryBufferRef Object, Error &Err)
       TextPtrs.emplace_back(I);
       LLVM_DEBUG(dbgs() << "  --  TXT\n");
       break;
+    case GOFF::RT_RLD:
+      LLVM_DEBUG(dbgs() << "  --  RLD (GOFF record type) unhandled\n");
+      break;
+    case GOFF::RT_LEN:
+      LLVM_DEBUG(dbgs() << "  --  LEN (GOFF record type) unhandled\n");
+      break;
     case GOFF::RT_END:
       LLVM_DEBUG(dbgs() << "  --  END (GOFF record type) unhandled\n");
       break;
@@ -177,7 +183,10 @@ GOFFObjectFile::GOFFObjectFile(MemoryBufferRef Object, Error &Err)
       LLVM_DEBUG(dbgs() << "  --  HDR (GOFF record type) unhandled\n");
       break;
     default:
-      llvm_unreachable("Unknown record type");
+      Err = createStringError(object_error::parse_failed,
+                              "record %zu has unknown record type 0x%02" PRIX8,
+                              RecordNum, RecordType);
+      return;
     }
     PrevRecordType = RecordType;
     PrevContinuationBits = I[1] & 0x03;
@@ -270,7 +279,13 @@ Expected<uint32_t> GOFFObjectFile::getSymbolFlags(DataRefImpl Symb) const {
   GOFF::ESDBindingScope BindingScope;
   ESDRecord::getBindingScope(Record, BindingScope);
 
-  if (BindingScope != GOFF::ESD_BSC_Section) {
+  GOFF::ESDSymbolType Type;
+  ESDRecord::getSymbolType(Record, Type);
+
+  if (Type != GOFF::ESD_ST_SectionDefinition &&
+      Type != GOFF::ESD_ST_ElementDefinition &&
+      BindingScope != GOFF::ESD_BSC_Section &&
+      BindingScope != GOFF::ESD_BSC_Module) {
     Expected<StringRef> Name = getSymbolName(Symb);
     if (Name && *Name != " ") { // Blank name is local.
       Flags |= SymbolRef::SF_Global;
@@ -364,6 +379,44 @@ GOFFObjectFile::getSymbolSection(DataRefImpl Symb) const {
                            "symbol with ESD id " + std::to_string(Symb.d.a) +
                                " refers to invalid section with ESD id " +
                                std::to_string(SymEdId));
+}
+
+uint32_t GOFFObjectFile::getZOSSymbolArchiveAttributes(DataRefImpl Symb) const {
+  const uint8_t *SymRecord = getSymbolEsdRecord(Symb);
+  uint32_t Attrs = 0;
+
+  // Bit 2 (0x4): 64-bit AMODE. If the child AMODE is unspecified,
+  // query the parent ED.
+  // TODO: The parent-walk path (child ESD_AMODE_None with a parent that has
+  // ESD_AMODE_64) cannot currently be tested as GOFFObjectWriter always emits
+  // ESD_AMODE_64 directly on LD/ER records and does not set AMODE on ED
+  // records. Full coverage requires yaml2obj GOFF ESD record support.
+  GOFF::ESDAmode Amode;
+  ESDRecord::getAmode(SymRecord, Amode);
+  if (Amode == GOFF::ESD_AMODE_None) {
+    uint32_t ParentEsdId;
+    ESDRecord::getParentEsdId(SymRecord, ParentEsdId);
+    if (ParentEsdId) {
+      const uint8_t *EdRecord = EsdPtrs[ParentEsdId];
+      ESDRecord::getAmode(EdRecord, Amode);
+    }
+  }
+  if (Amode == GOFF::ESD_AMODE_64)
+    Attrs |= 0x4;
+
+  // Bit 1 (0x2): XPLink — LinkageType is ESD_LT_XPLink.
+  GOFF::ESDLinkageType LinkageType;
+  ESDRecord::getLinkageType(SymRecord, LinkageType);
+  if (LinkageType == GOFF::ESD_LT_XPLink)
+    Attrs |= 0x2;
+
+  // Bit 0 (0x1): Writable Static Area.
+  GOFF::ESDNameSpaceId NameSpace;
+  ESDRecord::getNameSpaceId(SymRecord, NameSpace);
+  if (NameSpace == GOFF::ESD_NS_Parts)
+    Attrs |= 0x1;
+
+  return Attrs;
 }
 
 uint64_t GOFFObjectFile::getSymbolSize(DataRefImpl Symb) const {
@@ -504,7 +557,7 @@ GOFFObjectFile::getSectionContents(DataRefImpl Sec) const {
               Data.begin() + TxtDataOffset);
   }
   auto &Cache = SectionDataCache[Sec.d.a];
-  Cache = Data;
+  Cache = std::move(Data);
   return ArrayRef<uint8_t>(Cache);
 }
 

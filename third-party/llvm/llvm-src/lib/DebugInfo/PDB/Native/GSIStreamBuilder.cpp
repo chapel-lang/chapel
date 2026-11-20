@@ -68,15 +68,6 @@ struct llvm::pdb::GSIHashStreamBuilder {
 
 // DenseMapInfo implementation for deduplicating symbol records.
 struct llvm::pdb::SymbolDenseMapInfo {
-  static inline CVSymbol getEmptyKey() {
-    static CVSymbol Empty;
-    return Empty;
-  }
-  static inline CVSymbol getTombstoneKey() {
-    static CVSymbol Tombstone(
-        DenseMapInfo<ArrayRef<uint8_t>>::getTombstoneKey());
-    return Tombstone;
-  }
   static unsigned getHashValue(const CVSymbol &Val) {
     return xxh3_64bits(Val.RecordData);
   }
@@ -166,7 +157,7 @@ static int gsiRecordCmp(StringRef S1, StringRef S2) {
     return memcmp(S1.data(), S2.data(), LS);
 
   // Both strings are ascii, perform a case-insensitive comparison.
-  return S1.compare_insensitive(S2.data());
+  return S1.compare_insensitive(S2);
 }
 
 void GSIStreamBuilder::finalizePublicBuckets() {

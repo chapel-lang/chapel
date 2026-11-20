@@ -146,7 +146,7 @@ protected:
 
 protected:
   // Use deleteValue() to delete a generic User.
-  ~User();
+  LLVM_ABI ~User();
 
 public:
   User(const User &) = delete;
@@ -343,21 +343,6 @@ static_assert(alignof(Use) >= alignof(User),
               "Alignment is insufficient after objects prepended to User");
 static_assert(alignof(Use *) >= alignof(User),
               "Alignment is insufficient after objects prepended to User");
-
-template<> struct simplify_type<User::op_iterator> {
-  using SimpleType = Value*;
-
-  static SimpleType getSimplifiedValue(User::op_iterator &Val) {
-    return Val->get();
-  }
-};
-template<> struct simplify_type<User::const_op_iterator> {
-  using SimpleType = /*const*/ Value*;
-
-  static SimpleType getSimplifiedValue(User::const_op_iterator &Val) {
-    return Val->get();
-  }
-};
 
 } // end namespace llvm
 

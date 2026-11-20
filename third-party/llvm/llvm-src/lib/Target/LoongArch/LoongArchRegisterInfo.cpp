@@ -38,10 +38,13 @@ LoongArchRegisterInfo::LoongArchRegisterInfo(unsigned HwMode)
 const MCPhysReg *
 LoongArchRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   auto &Subtarget = MF->getSubtarget<LoongArchSubtarget>();
+  auto CC = MF->getFunction().getCallingConv();
 
-  if (MF->getFunction().getCallingConv() == CallingConv::GHC)
+  if (CC == CallingConv::GHC)
     return CSR_NoRegs_SaveList;
-  if (MF->getFunction().getCallingConv() == CallingConv::PreserveMost)
+  if (CC == CallingConv::PreserveNone)
+    return CSR_NoneRegs_SaveList;
+  if (CC == CallingConv::PreserveMost)
     return CSR_MostRegs_SaveList;
   switch (Subtarget.getTargetABI()) {
   default:
@@ -65,6 +68,8 @@ LoongArchRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
 
   if (CC == CallingConv::GHC)
     return CSR_NoRegs_RegMask;
+  if (CC == CallingConv::PreserveNone)
+    return CSR_NoneRegs_RegMask;
   if (CC == CallingConv::PreserveMost)
     return CSR_MostRegs_RegMask;
   switch (Subtarget.getTargetABI()) {
@@ -149,6 +154,18 @@ bool LoongArchRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   // Handle offsets that exceed the immediate range of the instruction.
   switch (MIOpc) {
+  case LoongArch::VLDREPL_H:
+  case LoongArch::XVLDREPL_H:
+    OffsetLegal = isShiftedInt<11, 1>(FixedOffset);
+    break;
+  case LoongArch::VLDREPL_W:
+  case LoongArch::XVLDREPL_W:
+    OffsetLegal = isShiftedInt<10, 2>(FixedOffset);
+    break;
+  case LoongArch::VLDREPL_D:
+  case LoongArch::XVLDREPL_D:
+    OffsetLegal = isShiftedInt<9, 3>(FixedOffset);
+    break;
   case LoongArch::VSTELM_B:
   case LoongArch::XVSTELM_B:
     OffsetLegal = isInt<8>(FixedOffset);
