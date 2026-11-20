@@ -2178,7 +2178,9 @@ static void setupModule()
   // wrong answer  because some i64s were stored at the wrong alignment).
   info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
 
-  adjustLayoutForGlobalToWide();
+  // The make-binary phase reloads IR whose global pointers were already lowered.
+  if (!fDriverMakeBinaryPhase)
+    adjustLayoutForGlobalToWide();
 
   // Set the TargetMachine
   std::string Err;

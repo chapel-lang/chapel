@@ -9,6 +9,9 @@ config.test_source_root = os.path.join("@CMAKE_CURRENT_SOURCE_DIR@", 'test')
 # Configuration file for the 'lit' test runner.
 config.test_format = formats.ShTest(True)
 
+if int("@LLVM_VERSION_MAJOR@") >= 22:
+  config.available_features.add('llvm-22-or-newer')
+
 # suffixes: A list of file extensions to treat as test files. This is overriden
 # by individual lit.local.cfg files in the test subdirectories.
 config.suffixes = ['.ll', '.c', '.cpp', '.test', '.txt', '.s']

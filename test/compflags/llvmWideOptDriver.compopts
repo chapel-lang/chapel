@@ -1,0 +1,2 @@
+--fast --llvm-wide-opt --compiler-driver
+--fast --llvm-wide-opt --no-compiler-driver
