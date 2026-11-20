@@ -1996,7 +1996,7 @@ static llvm::TargetOptions getTargetOptions(
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Allow unsafe fast floating point optimization
-    // LLVM is removing the global indivdual fast-math flags in favor of
+    // LLVM is removing the global individual fast-math flags in favor of
     // per-instruction level flags. We already handle that with 'setFastMathFlags'
     // so this is safe to remove in newer versions
     // Only remove the global flags here as they get removed in future LLVM versions
