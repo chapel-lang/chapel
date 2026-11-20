@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+
+import sys
+import unittest
+from pathlib import Path
+
+
+def main():
+    test_dir = Path(__file__).resolve().parent
+    sys.path.insert(0, str(test_dir.parents[2] / "util" / "chplenv"))
+    suite = unittest.defaultTestLoader.discover(str(test_dir))
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if result.wasSuccessful():
+        print("[Success matching chplenv unit tests.]")
+        return 0
+    print("[Error running chplenv unit tests.]")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
