@@ -1496,40 +1496,32 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 }
 
 static const char* prettyPrintString(VarSymbol* var, bool cname) {
-  std::string ret;
   const size_t bufSize = 128;
   char immediate[bufSize];
-  snprint_imm(immediate, bufSize, *var->immediate);
-
-  // escape quote characters in name string
-  char name[bufSize];
-  char * name_p = &name[0];
-  char * immediate_p = &immediate[0];
-  for ( ;
-        name_p < &name[bufSize-1] && // don't overflow buffer
-          '\0' != *immediate_p;      // stop at null in source
-        name_p++, immediate_p++) {
-    if ('"' == *immediate_p) { // escape quotes
-      *name_p++ = '\\';
-    }
-    *name_p = *immediate_p;
-  }
-  *name_p = '\0';
-  ret += name;
-
-  // add ellipsis if too long for buffer
-  if (name_p == &name[bufSize-1]) {
-    ret += "...";
-  }
+  int len = snprint_imm(immediate, bufSize, *var->immediate);
 
   if (!cname) {
+    std::string ret;
+    // Keep existing C escapes intact, including at the truncation boundary.
+    for (const char* p = immediate; *p; p++) {
+      if (*p == '\\') {
+        if (!p[1] || (p[1] == 'x' && (!p[2] || !p[3])))
+          break;
+        ret += *p++;
+      } else if (*p == '"') {
+        ret += '\\';
+      }
+      ret += *p;
+    }
+    if (len >= static_cast<int>(bufSize))
+      ret += "...";
     return astr(ret);
   }
 
   // filter unacceptable characters for cname string
   char cstr[bufSize];
   char * cstr_p = &cstr[0];
-  immediate_p = &immediate[0];
+  char * immediate_p = &immediate[0];
   size_t maxNameLength = 32; // add "_etc" after this many characters
 
   for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
@@ -1545,7 +1537,7 @@ static const char* prettyPrintString(VarSymbol* var, bool cname) {
     }
   }
   *cstr_p = '\0';
-  ret = cstr;
+  std::string ret = cstr;
 
   // add _etc if too long
   if (immediate_p == &immediate[bufSize-1] || // too long for buffer
