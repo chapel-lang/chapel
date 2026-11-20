@@ -33,6 +33,8 @@
 #include "chpl-env-gen.h"
 #include "chpl-mem.h"
 #include "chpl-prginfo.h"
+#include "chpl-error.h"
+#include "chpl-linefile-support.h"
 
 #include <string.h>
 
@@ -181,7 +183,7 @@ cid_cache_for(chpl_rt_prginfo* self, chpl_rt_prg_id foreign,
   if (p == 0) {
     chpl_rt_prginfo* f = chpl_rt_prginfo_from_id_here(foreign);
     if (f == NULL) {
-      chpl_error("class instance belongs to an unknown Chapel program",
+      chpl_rt_error("class instance belongs to an unknown Chapel program",
                  lineno, filenameIdx);
     }
     int n = CHPL_RT_PRGINFO_DATA(f, chpl_classInfoSize);
@@ -216,7 +218,7 @@ chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
   uint_least32_t n =
     atomic_load_explicit_uint_least32_t(&cache[0], chpl_memory_order_relaxed);
   if (idx == 0 || idx >= n) {
-    chpl_error("invalid class id", lineno, filenameIdx);
+    chpl_rt_error("invalid class id", lineno, filenameIdx);
   }
 
   chpl__class_id ret =
@@ -246,7 +248,8 @@ chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
              " is not known to Chapel program %" PRIu64,
              fqName ? fqName : "<unknown>",
              (uint64_t) foreign, (uint64_t) self->id);
-    chpl_error(msg, lineno, filenameIdx);
+    const char* filename = chpl_rt_lookup_filename(self, filenameIdx);
+    chpl_prg_error(msg, lineno, filename);
   }
 
   atomic_store_explicit_uint_least32_t(&cache[idx], ret,

@@ -4,4 +4,4 @@
 ================================================================================
 1
 2
-error: class 'C_chpl' from Chapel program 1 is not known to Chapel program 2
+newSubClassLib.chpl:9: error: class 'C_chpl' from Chapel program 1 is not known to Chapel program 2
