@@ -1,6 +1,6 @@
 
 proc ifMask(ref Res, A, B) {
-  // CHECK-LABEL: @ifMask_chpl
+  // CHECK-LABEL: @ifMask_ifMask_chpl
   // CHECK-SAME: %Res,
   // CHECK-SAME: %A,
   // CHECK-SAME: %B)

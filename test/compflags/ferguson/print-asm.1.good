@@ -1,5 +1,5 @@
 2 symbol names to disassemble
-# Disassembling symbol bar_chpl
-ADDR <bar_chpl>:
-# Disassembling symbol foo_chpl
-ADDR <foo_chpl>:
+# Disassembling symbol print_HYPHEN_asm_bar_chpl
+ADDR <print_HYPHEN_asm_bar_chpl>:
+# Disassembling symbol print_HYPHEN_asm_foo_chpl
+ADDR <print_HYPHEN_asm_foo_chpl>:

@@ -1,4 +1,4 @@
 hello
-; LLVM IR representation of foo_chpl function after basic optimization stage
+; LLVM IR representation of printToFile_foo_chpl function after basic optimization stage
 ; ModuleID = 'root'
 source_filename = "root"

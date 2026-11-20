@@ -12,7 +12,7 @@ proc end_block() { return 5; }
 // - basic block at the end of the loop
 
 proc loop (A, B, n) {
-  //CHECK-LABEL: void @loop
+  //CHECK-LABEL: void @generation_inside_loop_loop
   foreach i in 1..n {
     // CHECK-LABEL: start_block
     start_block();

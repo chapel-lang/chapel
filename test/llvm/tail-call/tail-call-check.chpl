@@ -3,10 +3,10 @@
 
 config const n = 10;
 
-// CHECK: i64 @recurse
+// CHECK: i64 @tail_HYPHEN_call_HYPHEN_check_recurse
 proc recurse(arg: int) : int {
   // CHECK-SAME: {
-  // CHECK-NOT: @recurse
+  // CHECK-NOT: @tail_HYPHEN_call_HYPHEN_check_recurse
   if arg <= 0 then
     return 0;
   return 1 + recurse(arg - 1);

@@ -1,5 +1,5 @@
 b targetVar.chpl:5
-b bar_chpl
+b targetVar_bar_chpl
 r
 info args
 info locals

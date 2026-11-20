@@ -6,12 +6,12 @@ proc begin_loop() { return 3; }
 proc end_loop() { return 4; }
 
 proc main() {
-  // CHECK: @begin_print
+  // CHECK: @check_HYPHEN_llvm_HYPHEN_debugger_begin_print
   // CHECK: @llvm.debugtrap
-  // CHECK: @writeln
+  // CHECK: @ChapelIO_writeln
   // CHECK: @llvm.debugtrap
-  // CHECK: @writeln
-  // CHECK: @end_print
+  // CHECK: @ChapelIO_writeln
+  // CHECK: @check_HYPHEN_llvm_HYPHEN_debugger_end_print
   begin_print();
   debugTrap;
   writeln("hello");
@@ -23,9 +23,9 @@ proc main() {
 
   var a: int;
   for i in A.domain {
-    // CHECK: @begin_loop
+    // CHECK: @check_HYPHEN_llvm_HYPHEN_debugger_begin_loop
     // CHECK: @llvm.debugtrap
-    // CHECK: @end_loop
+    // CHECK: @check_HYPHEN_llvm_HYPHEN_debugger_end_loop
     begin_loop();
     a = A[i];
     debugTrap;

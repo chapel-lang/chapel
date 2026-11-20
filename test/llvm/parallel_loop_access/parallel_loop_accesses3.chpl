@@ -9,7 +9,7 @@ proc load(arg: int(32)) {
   if arg < 0 then halt("x");
 }
 
-// CHECK: void @loop1
+// CHECK: void @parallel_loop_accesses3_loop1
 proc loop1() {
   var outer: c_array(int(32), nn);
   foreach i in 0..n {
@@ -30,7 +30,7 @@ loop1();
 
 var globalCArray: c_array(int(32), nn);
 
-// CHECK: void @loop2
+// CHECK: void @parallel_loop_accesses3_loop2
 proc loop2() {
   foreach i in 0..n {
     // CHECK: store i32 %
@@ -47,7 +47,7 @@ loop2();
 // CHECK: ![[LOOP2]] = distinct !{![[LOOP2]], ![[PA2:[0-9]+]]
 // CHECK: ![[PA2]] = !{!"llvm.loop.parallel_accesses", ![[GROUP2]]
 
-// CHECK: void @loop3
+// CHECK: void @parallel_loop_accesses3_loop3
 proc loop3() {
   var tup: nn * int(32);
   foreach i in 0..n with (ref tup) {
@@ -67,7 +67,7 @@ loop3();
 
 var globalTup: nn * int(32);
 
-// CHECK: void @loop4
+// CHECK: void @parallel_loop_accesses3_loop4
 proc loop4() {
   foreach i in 0..n with (ref globalTup) {
     // CHECK: store i32 %

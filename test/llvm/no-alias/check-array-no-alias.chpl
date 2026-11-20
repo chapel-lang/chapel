@@ -11,7 +11,7 @@ proc main() {
   test(n, A, B);
 }
 
-// CHECK: void @test
+// CHECK: void @check_HYPHEN_array_HYPHEN_no_HYPHEN_alias_test
 proc test(n:int, ref a, ref b) {
   // CHECK-SAME: {
 
