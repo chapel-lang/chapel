@@ -1,6 +1,6 @@
 #!/bin/sh
 if grep -q '^error: compiling generated source$' "$2"; then
-  if grep -Eq ": error: .*('macro_result'| 'struct macro_result').*incompatible.*'(int|int32_t)'|: error: .*'(int|int32_t)'.*incompatible.*'(struct )?macro_result'" "$2"; then
+  if grep -Eq ": error: .*('macro_result'| 'struct macro_result').*incompatible.*'(int|int32_t)'|: error: .*'(int|int32_t)'.*incompatible.*'(struct )?macro_result'|: error: incompatible types when assigning to type [^[:alnum:]_]*int(32_t)?[^[:alnum:]_]*( \{aka [^[:alnum:]_]*int[^[:alnum:]_]*\})? from type [^[:alnum:]_]*macro_result[^[:alnum:]_]*$" "$2"; then
     printf '%s\n' "error: cannot use a 'macro_result' as an 'int'" > "$2"
   fi
 else

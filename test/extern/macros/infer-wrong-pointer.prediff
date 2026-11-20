@@ -1,6 +1,6 @@
 #!/bin/sh
 if grep -q '^error: compiling generated source$' "$2"; then
-  if grep -Eq ": error: (controlling expression type|.*selector of type) ('double \*'|'[^']+' \(aka 'double \*'\)) not compatible with any generic association" "$2"; then
+  if grep -Eq ": error: (controlling expression type|.*selector of type) ('double \*'|'[^']+' \(aka 'double \*'\)) not compatible with any generic association|: error: .*selector of type .*double \*[^[:space:]]* is not compatible with any association" "$2"; then
     printf '%s\n' "error: controlling expression type 'double *' not compatible with any generic association type" > "$2"
   fi
 else
