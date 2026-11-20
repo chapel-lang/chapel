@@ -1,0 +1,43 @@
+x-slurm: &slurm
+  image: ${SLURM_CI_IMAGE:?}
+  init: true
+  cpus: 1
+  volumes:
+    - "${GITHUB_WORKSPACE:?}:${GITHUB_WORKSPACE:?}"
+    - "${SLURM_KEY:?}:/run/slurm-ci/munge.key:ro"
+
+x-compute: &compute
+  <<: *slurm
+  command: [slurmd]
+  depends_on:
+    controller:
+      condition: service_healthy
+
+services:
+  controller:
+    <<: *slurm
+    hostname: controller
+    cpus: 4
+    command: [slurmctld]
+    volumes:
+      - "${GITHUB_WORKSPACE:?}:${GITHUB_WORKSPACE:?}"
+      - "${RUNNER_TEMP:?}:${RUNNER_TEMP:?}"
+      - "${SLURM_KEY:?}:/run/slurm-ci/munge.key:ro"
+    healthcheck:
+      test: ["CMD", "scontrol", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  node1:
+    <<: *compute
+    hostname: node1
+  node2:
+    <<: *compute
+    hostname: node2
+  node3:
+    <<: *compute
+    hostname: node3
+  node4:
+    <<: *compute
+    hostname: node4
