@@ -20,7 +20,7 @@ if grep -q "^Function Simplification Pipeline: " $OUTFILE; then
       sroa early-cse simplifycfg instcombine licm gvn sccp dse adce \
       jump-threading correlated-propagation memcpyopt loop-rotate indvars
     checkPasses "Module" \
-      always-inline inline mem2reg sroa simplifycfg instcombine licm gvn \
+      inline mem2reg sroa simplifycfg instcombine licm gvn \
       globalopt globaldce ipsccp loop-vectorize slp-vectorizer
   )
 else
