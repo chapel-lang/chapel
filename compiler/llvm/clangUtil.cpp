@@ -2525,7 +2525,7 @@ static llvm::PassBuilder constructPassBuilder(
   llvm::TargetMachine* targetMachine,
   llvm::PassInstrumentationCallbacks* PIC,
   bool forFunction) {
-  chpl::optional<PGOOptions> PGOOpt;
+  chpl::optional<llvm::PGOOptions> PGOOpt;
 #if LLVM_VERSION_MAJOR < 19
   // this is required to be set, or LLVM will not properly populate the pass
   // names. technically this flag enables extra printing to the dbg() output,
