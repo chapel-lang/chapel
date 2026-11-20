@@ -16,7 +16,7 @@ proc main() {
     breakpoint;
 
     // CHECK: {{^}}(lldb) p myArr
-    // CHECK-NEXT: (_ref(_array(unmanaged [domain(1,int(64),one)] int(64)))) 0x{{[0-9a-f]+}} [1..10] int
+    // CHECK-NEXT: {{\((\[domain\(1,int\(64\),one\)\] int\(64\)|_ref\(_array\(unmanaged \[domain\(1,int\(64\),one\)\] int\(64\)\)\))\)}} 0x{{[0-9a-f]+}} [1..10] int
     // CHECK-NEXT: [1] = 1
     // CHECK-NEXT: [2] = 2
     // CHECK-NEXT: [3] = 3
