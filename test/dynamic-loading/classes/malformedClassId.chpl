@@ -5,7 +5,7 @@ use newSubClassCommon;
 require "chpltypes.h";
 extern const CHPL_CID_IDX_BITS: c_int;
 
-config const path = "./lib"
+config const path = "./lib";
 config const scenario = 0;
 
 proc main() {

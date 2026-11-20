@@ -2,7 +2,7 @@ use BlockEntry;
 use CTypes;
 use DynamicLibrary;
 
-config const path = "./lib"
+config const path = "./lib";
 
 proc checkStream(ref lib, name: string, alpha: ?t) {
   var a = new owned Entry(t);
