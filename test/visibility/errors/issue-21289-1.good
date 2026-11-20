@@ -1,0 +1,2 @@
+issue-21289-1.chpl:10: warning: an implicit module named 'issue-21289-1' is being introduced to contain file-scope code
+issue-21289-1.chpl:12: error: cannot apply '.' to the first-class function 'bar'
