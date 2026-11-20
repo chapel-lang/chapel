@@ -371,13 +371,14 @@ genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
 
 static void
 genGlobalInt(const char* cname, int value, bool isHeader,
-             bool isConstant=true) {
+             bool isConstant=true, bool hidden=false) {
   GenInfo* info = gGenInfo;
+  const char* attr = hidden ? " chpl_hidden" : "";
   if( info->cfile ) {
     if(isHeader)
-      fprintf(info->cfile, "extern const int %s;\n", cname);
+      fprintf(info->cfile, "extern const int %s%s;\n", cname, attr);
     else
-    fprintf(info->cfile, "const int %s = %d;\n", cname, value);
+    fprintf(info->cfile, "const int %s%s = %d;\n", cname, attr, value);
   } else {
 #ifdef HAVE_LLVM
     llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
@@ -385,6 +386,8 @@ genGlobalInt(const char* cname, int value, bool isHeader,
           cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
     globalInt->setConstant(isConstant);
+    if (hidden)
+      globalInt->setLinkage(llvm::GlobalValue::InternalLinkage);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
@@ -890,7 +893,7 @@ genVirtualMethodTables(std::vector<TypeSymbol*>& types, bool isHeader) {
 }
 
 // emits chpl_classInfo[], indexed by class id
-// {vtable, Schubert number, vtable length, class name}
+// {vtable, Schubert number, vtable length, class name, fully qualified name}
 // Must run after genVirtualMethodTables so the chpl_vmt_* symbols exist.
 // This uses Schubert Numbering but we could use Cohen's Display,
 // which can be computed more incrementally.
@@ -902,6 +905,9 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* eltType = "chpl_class_info";
   const char* name = "chpl_classInfo";
+
+  genGlobalInt("chpl_classInfoSize", gMaxClassId + 1, isHeader,
+               /* isConstant */ true, /* hidden */ true);
 
   if (isHeader) {
     codegenGlobalConstArray(name, eltType, /* hidden */ true);
@@ -949,7 +955,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     if (info->cfile) {
       row.c = formatter.format("{", vmtLen > 0 ? vmtName(ts) : "NULL",
                                ", ", n2[id], ", ", vmtLen, ", \"", ts->name,
-                               "\"}");
+                               "\", \"", ts->cname, "\"}");
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* vmtPtrTy = st->getElementType(0);
@@ -965,11 +971,12 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         vmtPtr = llvm::Constant::getNullValue(vmtPtrTy);
       }
 
-      llvm::Constant* fields[4];
+      llvm::Constant* fields[5];
       fields[0] = vmtPtr;
       fields[1] = llvm::ConstantInt::get(int32Ty, n2[id]);
       fields[2] = llvm::ConstantInt::get(int32Ty, vmtLen);
       fields[3] = codegenStringForTableLLVM(ts->name);
+      fields[4] = codegenStringForTableLLVM(ts->cname);
       row.val = llvm::ConstantStruct::get(st, fields);
 #endif
     }
@@ -981,7 +988,7 @@ genClassInfoTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   for (size_t i = 0; i < rows.size(); i++) {
     if (rows[i].isEmpty()) {
       if (info->cfile) {
-        rows[i].c = "{NULL, 0, 0, \"\"}";
+        rows[i].c = "{NULL, 0, 0, \"\", NULL}";
       } else {
         rows[i] = codegenTypedNull(structType);
       }

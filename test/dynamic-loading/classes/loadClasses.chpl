@@ -10,12 +10,20 @@ proc main() {
   var a = new A();
 
   callAllMethods(c, b, a);
-  doDynamicCasts(c.borrow());
+  doDynamicCasts(c.borrow():borrowed A?);
   doDynamicCasts(b.borrow():borrowed A?);
   doDynamicCasts(a.borrow():borrowed A?);
 
   writeln("Loading Library");
   var lib = load("loadClassesLib", directory=path);
+
+  var producer = binary.load(libName("libarrayProducer", path));
+  var makeC = producer.retrieve("makeC", proc(): c_ptr(void));
+  var checkAndDeleteC = producer.retrieve("checkAndDeleteC", proc(ptr: c_ptr(void)): void);
+  var updateArray = lib.retrieve("updateArray", proc(ptr: c_ptr(void)): void);
+  var ptr = makeC();
+  updateArray(ptr);
+  checkAndDeleteC(ptr);
 
   writeln("Calling classes made in library");
   var callMyClasses = lib.retrieve("callMyClasses", proc():void);
@@ -41,7 +49,7 @@ proc main() {
   var newA = (getA():unmanaged A?)!;
 
   callAllMethods(newC, newB, newA);
-  doDynamicCasts(newC.borrow());
+  doDynamicCasts(newC.borrow():borrowed A?);
   doDynamicCasts(newB.borrow():borrowed A?);
   doDynamicCasts(newA.borrow():borrowed A?);
 

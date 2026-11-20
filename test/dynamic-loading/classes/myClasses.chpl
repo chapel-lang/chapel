@@ -1,4 +1,6 @@
 
+use BlockDist;
+
 class A {
   proc init() {
     writeln("A init");
@@ -36,6 +38,8 @@ class B: A {
 }
 
 class C: B {
+  var values: [blockDist.createDomain({1..2*numLocales})] int;
+
   proc init() {
     writeln("C init");
   }

@@ -195,6 +195,7 @@ typedef struct _chpl_class_info {
   chpl__class_id   maxSubclassId;
   int32_t          numVirtualMethods;
   const char*      name;
+  const char*      fqName;
 } chpl_class_info;
 
 // It is tempting to #undef true and false and then #define them just to be sure

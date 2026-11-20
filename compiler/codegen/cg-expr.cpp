@@ -62,6 +62,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <ostream>
 #include <stack>
 
@@ -1606,11 +1607,10 @@ GenRet codegenFieldUidPtr(GenRet base) {
   return ret;
 }
 
-// The id of the Chapel program being generated, loaded at run time from
-// 'chpl_programInfoHere._info.id'.
+// A pointer to this program's 'chpl_programInfoHere._info', or an empty
+// GenRet if there is no program info.
 static
-GenRet codegenProgramIdHere() {
-  GenInfo* info = gGenInfo;
+GenRet codegenProgramInfoHerePtr() {
   static VarSymbol* prgInfo = nullptr;
   if (prgInfo == nullptr) {
     forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -1626,8 +1626,20 @@ GenRet codegenProgramIdHere() {
     AggregateType* at = toAggregateType(prgInfo->type);
     INT_ASSERT(at);
     Symbol* field = at->getField("_info");
-    GenRet infoPtr = doCodegenFieldPtr(prgInfo, field->cname, field->name,
-                                       field_normal);
+    ret = doCodegenFieldPtr(prgInfo, field->cname, field->name, field_normal);
+  }
+  return ret;
+}
+
+// The id of the Chapel program being generated, loaded at run time from
+// 'chpl_programInfoHere._info.id'.
+static
+GenRet codegenProgramIdHere() {
+  GenInfo* info = gGenInfo;
+  GenRet infoPtr = codegenProgramInfoHerePtr();
+
+  GenRet ret;
+  if (!infoPtr.isEmpty()) {
     if (info->cfile) {
       ret.c = "((" + infoPtr.c + ")->id)";
     } else {
@@ -1661,36 +1673,48 @@ GenRet codegenProgramIdHere() {
   return ret;
 }
 
-// Emits 'if (cond) chpl_error(msg)' at the current point.
+// Emits 'if (cond) { thenFn(); } else { elseFn(); }' at the current point.
 static
-void codegenErrorIf(GenRet cond, const char* msg, Expr* ctx) {
+void codegenIfThenElse(GenRet cond,
+                       const std::function<void()>& thenFn,
+                       const std::function<void()>& elseFn) {
   GenInfo* info = gGenInfo;
-  GenRet ln = new_IntSymbol(ctx->linenum(), INT_SIZE_32);
-  GenRet fn = new_IntSymbol(getFilenameTableIndex(ctx->fname()), INT_SIZE_32);
   GenRet condVal = codegenValue(cond);
 
   if (info->cfile) {
-    GenRet err = codegenCallExpr("chpl_error", new_CStringSymbol(msg), ln, fn);
-    info->cStatements.push_back("if (" + condVal.c + ") " + err.c + ";\n");
+    info->cStatements.push_back("if (" + condVal.c + ") {\n");
+    thenFn();
+    info->cStatements.push_back("} else {\n");
+    elseFn();
+    info->cStatements.push_back("}\n");
   } else {
 #ifdef HAVE_LLVM
     llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
-    llvm::BasicBlock* haltBlock = llvm::BasicBlock::Create(
+    llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(
         info->module->getContext(), "ifTrue");
-    trackLLVMValue(haltBlock);
-    llvm::BasicBlock* contBlock = llvm::BasicBlock::Create(
+    trackLLVMValue(thenBlock);
+    llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(
         info->module->getContext(), "ifFalse");
+    trackLLVMValue(elseBlock);
+    llvm::BasicBlock* contBlock = llvm::BasicBlock::Create(
+        info->module->getContext(), "ifEnd");
     trackLLVMValue(contBlock);
 
     auto condBr = info->irBuilder->CreateCondBr(
-        condVal.val, haltBlock, contBlock);
+        condVal.val, thenBlock, elseBlock);
     trackLLVMValue(condBr);
 
-    insertBasicBlockAtEnd(func, haltBlock);
-    info->irBuilder->SetInsertPoint(haltBlock);
-    codegenCallExpr("chpl_error", new_CStringSymbol(msg), ln, fn);
-    auto toCont = info->irBuilder->CreateBr(contBlock);
-    trackLLVMValue(toCont);
+    insertBasicBlockAtEnd(func, thenBlock);
+    info->irBuilder->SetInsertPoint(thenBlock);
+    thenFn();
+    auto thenToCont = info->irBuilder->CreateBr(contBlock);
+    trackLLVMValue(thenToCont);
+
+    insertBasicBlockAtEnd(func, elseBlock);
+    info->irBuilder->SetInsertPoint(elseBlock);
+    elseFn();
+    auto elseToCont = info->irBuilder->CreateBr(contBlock);
+    trackLLVMValue(elseToCont);
 
     insertBasicBlockAtEnd(func, contBlock);
     info->irBuilder->SetInsertPoint(contBlock);
@@ -1718,33 +1742,56 @@ GenRet codegenMakeCid(Type* classType) {
 }
 
 // Converts a class id read from an instance into an index into this
-// program's 'chpl_classInfo'. With --dynamic-library-checks, halts if the
-// instance was allocated by a different Chapel program.
+// program's 'chpl_classInfo'. Class ids from other Chapel programs are
+// translated at run time by 'chpl_cid_translate', which halts if this
+// program has no matching class.
 static
 GenRet codegenCidIndex(GenRet cid, Expr* ctx) {
   cid = codegenValue(cid);
   cid.chplType = CLASS_ID_TYPE;
   cid.isUnsigned = true;
 
-  if (!fNoDynamicLibraryChecks) {
-    cid = createTempVarWith(cid);
+  GenRet mask = new_UIntSymbol((1u << CLASS_ID_INDEX_BITS) - 1, INT_SIZE_32);
+  GenRet infoPtr = codegenProgramInfoHerePtr();
 
-    GenRet cidPrg = codegenRsh(cid, new_UIntSymbol(CLASS_ID_INDEX_BITS,
-                                                   INT_SIZE_32));
-    cidPrg.chplType = CLASS_ID_TYPE;
-    cidPrg.isUnsigned = true;
-
-    GenRet prg = codegenCast(CLASS_ID_TYPE, codegenProgramIdHere());
-    prg.chplType = CLASS_ID_TYPE;
-    prg.isUnsigned = true;
-
-    codegenErrorIf(codegenNotEquals(cidPrg, prg),
-                  "class instance was allocated by a different Chapel program",
-                  ctx);
+  if (infoPtr.isEmpty()) {
+    GenRet ret = codegenAnd(cid, mask);
+    ret.chplType = CLASS_ID_TYPE;
+    ret.isUnsigned = true;
+    return ret;
   }
 
-  GenRet mask = new_UIntSymbol((1u << CLASS_ID_INDEX_BITS) - 1, INT_SIZE_32);
-  GenRet ret = codegenAnd(cid, mask);
+  cid = createTempVarWith(cid);
+  GenRet idx = createTempVar(CLASS_ID_TYPE);
+
+  GenRet cidPrg = codegenRsh(cid, new_UIntSymbol(CLASS_ID_INDEX_BITS,
+                                                 INT_SIZE_32));
+  cidPrg.chplType = CLASS_ID_TYPE;
+  cidPrg.isUnsigned = true;
+
+  GenRet prg = codegenCast(CLASS_ID_TYPE, codegenProgramIdHere());
+  prg.chplType = CLASS_ID_TYPE;
+  prg.isUnsigned = true;
+
+  codegenIfThenElse(codegenNotEquals(cidPrg, prg), [&]() {
+    std::vector<GenRet> args;
+    args.push_back(codegenAddrOf(infoPtr));
+    args.push_back(codegenValue(cid));
+    args.push_back(new_IntSymbol(ctx->linenum(), INT_SIZE_32));
+    args.push_back(new_IntSymbol(getFilenameTableIndex(ctx->fname()),
+                                 INT_SIZE_32));
+    GenRet translated = codegenCallExprWithArgs("chpl_cid_translate", args);
+    translated.chplType = CLASS_ID_TYPE;
+    translated.isUnsigned = true;
+    codegenAssign(idx, translated);
+  }, [&]() {
+    GenRet localIdx = codegenAnd(cid, mask);
+    localIdx.chplType = CLASS_ID_TYPE;
+    localIdx.isUnsigned = true;
+    codegenAssign(idx, localIdx);
+  });
+
+  GenRet ret = codegenValue(idx);
   ret.chplType = CLASS_ID_TYPE;
   ret.isUnsigned = true;
   return ret;
@@ -2974,7 +3021,8 @@ GenRet codegenIsNotZero(GenRet x)
   V(vmt, 0, NULL) \
   V(maxSubclassId, 1, CLASS_ID_TYPE) \
   V(numVirtualMethods, 2, dtInt[INT_SIZE_32]) \
-  V(name, 3, dtStringC)
+  V(name, 3, dtStringC) \
+  V(fqName, 4, dtStringC)
 
 enum class ClassInfoField {
 #define CLASS_INFO_FIELD_ENUM(field, idx, type) field = idx,

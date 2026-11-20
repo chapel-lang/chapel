@@ -102,6 +102,16 @@ E_CONSTANT_RT(chpl_ftable, const chpl_fn_p*)
 */
 E_CONSTANT_RT(chpl_ftableSize, int64_t)
 
+/** CODE-GENERATED
+    Per-class information, indexed by the lower bits of a class id.
+*/
+E_CONSTANT_RT(chpl_classInfo, const chpl_class_info*)
+
+/** CODE-GENERATED
+    Length of the class information table.
+*/
+E_CONSTANT_RT(chpl_classInfoSize, int)
+
 /** MODULE-CODE: ChapelLocale.chpl
     Call to increment the task running count.
 */
