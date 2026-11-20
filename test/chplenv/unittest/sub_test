@@ -11,11 +11,10 @@ def main():
     suite = unittest.defaultTestLoader.discover(str(test_dir))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     if result.wasSuccessful():
-        print("[Success matching chplenv unit tests.]")
-        return 0
-    print("[Error running chplenv unit tests.]")
-    return 1
+        print("[Success matching chplenv unit tests]")
+    else:
+        print("[Error running chplenv unit tests]")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
