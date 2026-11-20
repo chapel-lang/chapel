@@ -50,36 +50,36 @@ proc main() {
 // CHECK-NEXT: Breakpoint [[#BREAKPOINT_START:]]
 
 // CHECK: b myFunc
-// CHECK-NEXT: functionCalls`myFunc
+// CHECK-NEXT: functionCalls`functionCalls_myFunc_chpl
 // CHECK-SAME: functionCalls.chpl:2
 // CHECK: b functionCalls.chpl:4
-// CHECK-NEXT: functionCalls`myFunc
+// CHECK-NEXT: functionCalls`functionCalls_myFunc_chpl
 // CHECK-SAME: functionCalls.chpl:4
 
 // CHECK: b getString
 // CHECK: b functionCalls.chpl:10
-// CHECK-NEXT: functionCalls`getString
+// CHECK-NEXT: functionCalls`functionCalls_getString_chpl
 // CHECK-SAME: functionCalls.chpl:10
 
 // CHECK: b getMyRec
-// CHECK-NEXT: functionCalls`getMyRec
+// CHECK-NEXT: functionCalls`functionCalls_getMyRec_chpl
 // CHECK-SAME: functionCalls.chpl:18
 // CHECK: b functionCalls.chpl:20
-// CHECK-NEXT: functionCalls`getMyRec
+// CHECK-NEXT: functionCalls`functionCalls_getMyRec_chpl
 // CHECK-SAME: functionCalls.chpl:20
 
 // CHECK: b getMyRec2
-// CHECK-NEXT: functionCalls`getMyRec2
+// CHECK-NEXT: functionCalls`functionCalls_getMyRec2_chpl
 // CHECK-SAME: functionCalls.chpl:29
 // CHECK: b functionCalls.chpl:31
-// CHECK-NEXT: functionCalls`getMyRec2
+// CHECK-NEXT: functionCalls`functionCalls_getMyRec2_chpl
 // CHECK-SAME: functionCalls.chpl:31
 
 // CHECK: b getMyClass
-// CHECK-NEXT: functionCalls`getMyClass
+// CHECK-NEXT: functionCalls`functionCalls_getMyClass_chpl
 // CHECK-SAME: functionCalls.chpl:36
 // CHECK: b functionCalls.chpl:38
-// CHECK-NEXT: functionCalls`getMyClass
+// CHECK-NEXT: functionCalls`functionCalls_getMyClass_chpl
 // CHECK-SAME: functionCalls.chpl:38
 
 // CHECK: stop reason = breakpoint [[#BREAKPOINT_START+1]]

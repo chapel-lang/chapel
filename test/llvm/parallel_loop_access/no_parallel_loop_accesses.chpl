@@ -11,7 +11,7 @@ proc load(arg: int(32)) {
 proc keep(ref arg) { return 1; }
 proc mark() { return 2; }
 
-// CHECK: void @loop1
+// CHECK: void @no_parallel_loop_accesses_loop1
 proc loop1(A, B) {
   // Check that we don't generate llvm.access.group metadata in
   // non-order-independent loops
@@ -32,7 +32,7 @@ proc loop1(A, B) {
 // Check that we don't generate llvm.access.group metadata in
 // loads/stores for stack local variables in the loop.
 
-// CHECK: void @loop2
+// CHECK: void @no_parallel_loop_accesses_loop2
 proc loop2() {
   foreach i in 0..n {
     // CHECK: store i32 %
@@ -46,7 +46,7 @@ proc loop2() {
 }
 loop2();
 
-// CHECK: void @loop3
+// CHECK: void @no_parallel_loop_accesses_loop3
 proc loop3() {
   foreach i in 0..n {
     var tmp: c_array(int(32), nn);
@@ -62,7 +62,7 @@ proc loop3() {
 }
 loop3();
 
-// CHECK: void @loop4
+// CHECK: void @no_parallel_loop_accesses_loop4
 proc loop4() {
   foreach i in 0..n {
     var tmp: nn*int(32);
@@ -82,7 +82,7 @@ record R {
   var x: int(32);
 }
 
-// CHECK: void @loop5
+// CHECK: void @no_parallel_loop_accesses_loop5
 proc loop5() {
   foreach i in 0..n {
     var tmp: R;
@@ -98,7 +98,7 @@ proc loop5() {
 }
 loop5();
 
-// CHECK: void @loop6
+// CHECK: void @no_parallel_loop_accesses_loop6
 proc loop6() {
   foreach i in 0..n {
     var tmp: R;
@@ -114,7 +114,7 @@ proc loop6() {
 }
 loop6();
 
-// CHECK: void @loop7
+// CHECK: void @no_parallel_loop_accesses_loop7
 proc loop7() {
   foreach i in 0..n {
     var tmp: R;
@@ -131,7 +131,7 @@ proc loop7() {
 }
 loop7();
 
-// CHECK: void @loop8
+// CHECK: void @no_parallel_loop_accesses_loop8
 proc loop8() {
   foreach i in 0..n {
     var tmp: R;

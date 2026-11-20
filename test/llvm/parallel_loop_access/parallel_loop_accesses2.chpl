@@ -1,7 +1,7 @@
 config const n = 11;
 // check for correct access.group and llvm.loop.parallel_accesses hinting
 
-// CHECK: void @nestedLoops
+// CHECK: void @parallel_loop_accesses2_nestedLoops
 proc nestedLoops (A, B) {
   for i in 0..n {
     foreach j in 0..n {
