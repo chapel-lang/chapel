@@ -1,0 +1,1 @@
+writeln("In implicit a");
