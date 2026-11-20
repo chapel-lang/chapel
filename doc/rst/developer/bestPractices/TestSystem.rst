@@ -68,6 +68,8 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
+   - `A Test That Has Memory Leaks`_
+
  * `Invoking start_test`_
 
    - `Correctness Testing`_
@@ -840,6 +842,37 @@ There are three situations under which a future will get resolved.
 
    - The developer may then either remove the supporting files for futures, or
      remove the test entirely.
+
+A Test That Has Memory Leaks
+----------------------------
+
+Normally, if a test leaks memory, that will be caught by the testing system as
+an error, which will also be tagged as a leak for triaging the issue easily.
+However, in some cases, a unit test might have a leak that's acceptable --
+because it may be checking a very specific and internal feature, or it may be
+locking in the behavior of a WIP feature. In those cases, it is possible to
+create a unit test that doesn't get flagged as an error, while also being able
+to make sure that it doesn't have any new leaks. The suggested way for it is:
+
+- Have an ``execopts`` file with ``--memLeaks`` flag: this will ensure that the
+  test will report its leaks in all configurations and not only memory leak
+  configuration.
+
+- Include the generated leak table in the ``good`` file.
+
+- Add a ``prediff`` file to filter out the addresses in the generated table as
+  they are going to change from run to run.
+
+As long as the test leaks the same amount of memory, it will pass testing.
+Changes in leaks (either positively or negatively) will be reported as a testing
+error tat needs to be acted upon either by updating the ``good`` file or fixing
+the leak.
+
+.. _`memory leak plots`: https://chapel-lang.org/perf/chapcs/?graphs=memoryleaksforalltests,numberoftestswithleaks
+
+Note that leaky tests are captured by the `memory leak plots`_
+here. It is a good practice to keep the triager when a new leaky test is merged
+so that the changes in those plots can be annotated promptly.
 
 Invoking start_test
 ===================
