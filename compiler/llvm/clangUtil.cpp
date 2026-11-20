@@ -2520,6 +2520,7 @@ static void registerDumpIrExtensions(llvm::PassBuilder& PB);
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
+#endif
 static llvm::PassBuilder constructPassBuilder(
   llvm::TargetMachine* targetMachine,
   llvm::PassInstrumentationCallbacks* PIC,
