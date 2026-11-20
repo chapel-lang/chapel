@@ -515,7 +515,7 @@ jobs:
           echo "should_push=${{ !inputs.skip_publish && github.repository_owner == 'chapel-lang' && contains(fromJSON('["push","workflow_dispatch","schedule"]'), github.event_name) }}" >> "$GITHUB_OUTPUT"
       - name: log in to Docker Hub
         if: steps.should_push.outputs.should_push == 'true'
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PAT }}
