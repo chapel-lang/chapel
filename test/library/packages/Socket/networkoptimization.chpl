@@ -45,10 +45,15 @@ proc test_delayAck_tcpConn(test: borrowed Test) throws {
   var host = "127.0.0.1";
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
+  var checksDone: sync bool;
   sync {
     begin {
       var conn = server.accept();
+      // A peer FIN can change Linux's TCP_QUICKACK state.
+      checksDone.readFE();
+      conn.close();
     }
+    defer checksDone.writeEF(true);
     var conn = connect(host, port, IPFamily.IPv4);
     defer conn.close();
     conn.setDelayAck(true);
