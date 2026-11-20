@@ -124,24 +124,32 @@ def connect(debugger: lldb.SBDebugger, command, result, internal_dict):
         return
 
     # clear all targets
-    for i in range(debugger.GetNumTargets()):
+    for i in reversed(range(debugger.GetNumTargets())):
         target = debugger.GetTargetAtIndex(i)
-        debugger.DeleteTarget(target)
+        if not debugger.DeleteTarget(target):
+            result.SetError(f"Failed to remove target {i}")
+            return
 
     # create targets for each locale
     BASE_PORT = int(os.environ.get("CHPL_RT_DEBUG_SERVER_BASE_PORT", "5000"))
-    targets = []
     for i in range(num_locales):
         target = debugger.CreateTargetWithFileAndArch(
             binary, lldb.LLDB_ARCH_DEFAULT
         )
         if not target.IsValid():
-            print(f"Failed to create target for locale {i}")
+            result.SetError(f"Failed to create target for locale {i}")
             return
-        targets.append(target)
         debugger.SetSelectedTarget(target)
-        # debugger.HandleCommand(f"process connect connect://127.0.0.1:{BASE_PORT + i}")
-        debugger.HandleCommand(f"gdb-remote {BASE_PORT + i}")
+        error = lldb.SBError()
+        process = target.ConnectRemote(
+            lldb.SBListener(),
+            f"connect://127.0.0.1:{BASE_PORT + i}",
+            "gdb-remote",
+            error,
+        )
+        if not error.Success() or not process.IsValid():
+            result.SetError(f"Failed to connect locale {i}: {error}")
+            return
 
 
 def __lldb_init_module(debugger, internal_dict):
