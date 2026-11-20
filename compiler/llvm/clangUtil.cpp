@@ -1332,6 +1332,7 @@ void readMacrosClang(void) {
   clang::Preprocessor& preproc = clangInfo->Clang->getPreprocessor();
   for (auto& [id, macroState]: preproc.macros()) {
     handleMacro(id, macroState.getLatest()->getMacroInfo());
+  }
 };
 
 
