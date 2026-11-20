@@ -2481,16 +2481,27 @@ codegenFunctionTypeLLVMImpl(
           }
 
           clang::CharUnits align = argInfo->getIndirectAlign();
+#if LLVM_VERSION_MAJOR >= 23
+          // Clang also communicates alignment for non-byval indirect arguments.
+          b.addAlignmentAttr(align.getQuantity());
+#else
           if (argInfo->getIndirectByVal()) {
             b.addAlignmentAttr(align.getQuantity());
-          } else {
+          }
+#endif
+          if (!argInfo->getIndirectByVal()) {
 #if LLVM_VERSION_MAJOR >= 22
             // mark dead on return for records only for non-sret indirect
             auto isMaybeStructLike = isPrimitiveType(formalInfo->type()) &&
                                      formalInfo->type()->symbol->hasFlag(FLAG_EXTERN);
             if ((isRecord(formalInfo->type()) || isMaybeStructLike) &&
-                !outAttrs.hasParamAttr(i, llvm::Attribute::StructRet))
+                !outAttrs.hasParamAttr(i, llvm::Attribute::StructRet)) {
+#if LLVM_VERSION_MAJOR >= 23
+              b.addDeadOnReturnAttr(llvm::DeadOnReturnInfo());
+#else
               b.addAttribute(llvm::Attribute::DeadOnReturn);
+#endif
+            }
 #endif
           }
 
