@@ -29,6 +29,8 @@ use MasonUtils;
 import MasonLogger;
 use List only list;
 
+import Package;
+
 import ThirdParty.Pathlib.path;
 use ThirdParty.Pathlib.IOHelpers;
 
@@ -40,44 +42,24 @@ proc masonDoc(args: [] string) throws {
   var passArgs = parser.addPassThrough();
   parser.parseArgs(args);
 
-  const tomlName = "Mason.toml";
-  const projectHome = getProjectHome(path.cwd(), tomlName);
-  const tomlPath = projectHome / tomlName;
+  const package = Package.getMasonPackage(skipUpdate=true, show=false);
 
-  const toParse = open(tomlPath, ioMode.r);
-  var tomlFile = parseToml(toParse);
+  const projectName = package.name;
+  const version = package.version;
 
-  const projectName = tomlFile["brick.name"]!.s;
-  const projectFile = projectName + ".chpl";
-
-  const version = tomlFile["brick.version"]!.s;
-
-  var authors: string;
-  if const authorsToml = tomlFile.get["brick.authors"] {
-    if !isStringOrStringArray(authorsToml) {
-      throw new MasonError("unable to parse authors");
-    }
-    if authorsToml.tomlType == "string" {
-      authors = authorsToml.s;
-    } else if authorsToml.tomlType == "array" {
-      authors = ", ".join(authorsToml.arr!.s);
-    }
-  }
-  var copyrightYear: string;
-  if const copyrightToml = tomlFile.get["brick.copyrightYear"] {
-    copyrightYear = copyrightToml.s;
-  }
+  var authors: string = ", ".join(package.authors.toArray());
+  var copyrightYear: string = package.copyrightYear;
 
   const srcDir = "src":path;
-  const absSrcDir = projectHome / "src";
-  if absSrcDir.isDir() && (absSrcDir / projectFile).isFile() {
+  const projectFile = package.projectHome / "src" / (projectName + ".chpl");
+  if projectFile.isFile() {
     // Must use relative paths with chpldoc to prevent baking in abs paths
-    projectHome.chdir();
+    package.projectHome.chdir();
 
     var command = new list([
       "chpldoc",
       "--project-name=" + projectName,
-      "--project-version=" + version,
+      "--project-version=" + version:string,
     ]);
     if authors != "" {
       command.pushBack("--author=" + authors);
@@ -92,7 +74,7 @@ proc masonDoc(args: [] string) throws {
       "-o",
       "doc/",
     ]);
-    command.pushBack(getTomlDocopts(tomlFile));
+    command.pushBack(package.docopts);
     command.pushBack(passArgs.values());
     const commandArr = command.toArray();
     const commandStr = " ".join(commandArr);
