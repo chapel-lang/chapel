@@ -2,7 +2,7 @@ proc loop_start() { return 1; }
 proc loop_end() { return 2; }
 
 proc loops() {
-  // CHECK-LABEL: @loops
+  // CHECK-LABEL: @loopAttributes_HYPHEN_for_loops
   var sum = 0;
   @llvm.metadata("loop.attr.byitself")
   for i in 0..<512 {

@@ -38,10 +38,6 @@ module ChapelArray {
   use ChapelNumLocales;
   public use ChapelDomain;
 
-  // Explicitly use a processor atomic, as most calls to this function are
-  // likely be on locale 0
-  @chpldoc.nodoc
-  var numPrivateObjects: chpl__processorAtomicType(int);
   @chpldoc.nodoc
   param nullPid = -1;
 
@@ -104,7 +100,9 @@ module ChapelArray {
   // with a privatized value that can be retrieved by the pid
   // without communication.
   proc _newPrivatizedClass(value) : int {
-    const pid = numPrivateObjects.fetchAdd(1);
+    extern proc chpl_allocatePrivatizationId(): int(64);
+    var pid: int;
+    on Locales[0] do pid = chpl_allocatePrivatizationId();
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     const definedConst = if isSubtype(value.type, BaseDom) then value.definedConst

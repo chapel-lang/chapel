@@ -72,7 +72,6 @@ _chpl ()
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
---dynamic-library-checks \
 --dyno \
 --dyno-break-error \
 --dyno-break-on-hash \
@@ -215,7 +214,6 @@ _chpl ()
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
---no-dynamic-library-checks \
 --no-dyno \
 --no-dyno-break-error \
 --no-dyno-debug-print-parsed-files \
@@ -489,7 +487,6 @@ _chpl ()
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
---dynamic-library-checks \
 --edition \
 --explain-call \
 --explain-instantiation \
@@ -552,7 +549,6 @@ _chpl ()
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
---no-dynamic-library-checks \
 --no-explain-verbose \
 --no-fast-followers \
 --no-formal-domain-checks \

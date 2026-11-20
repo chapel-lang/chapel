@@ -18,7 +18,7 @@ chplenv = subprocess.check_output([CHPL_HOME + "/util/printchplenv",
                                    "--all", "--internal", "--simple"])
 
 # This is an implementation sym that should appear with '--no-inline'.
-sym = 'fmaSelectPrimitiveOrExternCall_chpl'
+sym = 'Math_fmaSelectPrimitiveOrExternCall_chpl'
 
 # This is the x86 hardware instruction.
 ins = 'vfmadd213sd'

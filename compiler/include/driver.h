@@ -57,7 +57,6 @@ extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
-extern bool fNoDynamicLibraryChecks;
 extern bool fNoUnionChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;

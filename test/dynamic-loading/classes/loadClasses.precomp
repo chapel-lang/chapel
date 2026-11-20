@@ -5,4 +5,5 @@ chpl_home=$($chpl --print-chpl-home)
 srcname="loadClassesLib.chpl"
 
 echo "Building dynamic Chapel library..."
+"$chpl" --library --dynamic --no-builtin-runtime arrayProducer.chpl || exit $?
 $chpl --library --dynamic --no-builtin-runtime $srcname

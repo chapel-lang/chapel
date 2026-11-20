@@ -311,7 +311,7 @@ void InitNormalize::initializeField(Expr* insertBefore,
                    "can't omit initialization of field \"%s\", "
                    "no type or default value provided",
                    field->sym->name);
-  } else if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
+  } else if (field->sym->hasAnyFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
     if (typeExpr != NULL && initExpr == NULL) {
       ret = genericFieldInitTypeWoutInit(insertBefore, field);
 
@@ -1050,7 +1050,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
 
   if (field != NULL) {
     PrimitiveTag tag = PRIM_GET_MEMBER;
-    if (field->sym->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
+    if (field->sym->hasAnyFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE)) {
       tag = PRIM_GET_MEMBER_VALUE;
     }
 

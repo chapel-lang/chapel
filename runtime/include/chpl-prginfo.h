@@ -210,6 +210,14 @@ chpl_rt_prg_id chpl_rt_prginfo_id(chpl_rt_prginfo* prg);
 /** Get the load path of a program info. */
 const char* chpl_rt_prginfo_load_path(chpl_rt_prginfo* prg);
 
+/**
+  Translate a class id allocated by another Chapel program into an index
+  into the class info table of 'self'. Halts if 'self' has no class with
+  the same name. Results are cached.
+*/
+chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
+                                  int32_t lineno, int32_t filenameIdx);
+
 /** Fetch a pointer to the main argument for a given program. */
 static inline chpl_main_argument*
 chpl_rt_prginfo_main_argument(chpl_rt_prginfo* prg) {

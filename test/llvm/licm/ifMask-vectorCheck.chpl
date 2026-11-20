@@ -1,6 +1,6 @@
 
 proc ifMask(ref Res, A, B) {
-  // CHECK-LABEL: @ifMask_chpl
+  // CHECK-LABEL: @ifMask_HYPHEN_vectorCheck_ifMask_chpl
   // CHECK-SAME: %Res{{[0-9a-zA-Z_.]*}},
   // CHECK-SAME: %A{{[0-9a-zA-Z_.]*}},
   // CHECK-SAME: %B{{[0-9a-zA-Z_.]*}})

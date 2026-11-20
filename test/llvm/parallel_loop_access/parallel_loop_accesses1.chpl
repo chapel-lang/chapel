@@ -1,7 +1,7 @@
 config const n = 11;
 // check for correct access.group and llvm.loop.parallel_accesses hinting
 
-// CHECK: void @loop1
+// CHECK: void @parallel_loop_accesses1_loop1
 proc loop1 (A, B) {
   foreach i in 0..n {
     // CHECK: load i32, {{.*}}!llvm.access.group ![[GROUP:[0-9]+]]

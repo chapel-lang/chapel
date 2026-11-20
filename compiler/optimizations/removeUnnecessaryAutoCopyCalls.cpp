@@ -37,7 +37,7 @@
 //
 
 bool RemoveUnnecessaryAutoCopyCalls::shouldProcess(FnSymbol* fn) {
-  if (fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN)) {
+  if (fn->hasAnyFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN)) {
     if (fn->retType == dtNothing)
       // initCopy(none) and autoCopy(none) will have had their nothing
       // argument removed

@@ -28,13 +28,13 @@ proc main() {
 // CHECK-NEXT: Breakpoint [[#BREAKPOINT_START:]]
 
 // CHECK: b methodCallsRec.chpl:8
-// CHECK-NEXT: methodCallsRec`toString
+// CHECK-NEXT: methodCallsRec`methodCallsRec_myRec_toString_chpl
 // CHECK-SAME: methodCallsRec.chpl:8
 // CHECK: b methodCallsRec.chpl:12
-// CHECK-NEXT: methodCallsRec`myMethod
+// CHECK-NEXT: methodCallsRec`methodCallsRec_myRec_myMethod_chpl
 // CHECK-SAME: methodCallsRec.chpl:12
 // CHECK: b methodCallsRec.chpl:15
-// CHECK-NEXT: methodCallsRec`setter
+// CHECK-NEXT: methodCallsRec`methodCallsRec_myRec_setter_chpl
 // CHECK-SAME: methodCallsRec.chpl:15
 
 // CHECK: stop reason = breakpoint [[#BREAKPOINT_START+2]]
