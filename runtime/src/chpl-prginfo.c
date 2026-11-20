@@ -183,8 +183,9 @@ cid_cache_for(chpl_rt_prginfo* self, chpl_rt_prg_id foreign,
   if (p == 0) {
     chpl_rt_prginfo* f = chpl_rt_prginfo_from_id_here(foreign);
     if (f == NULL) {
-      chpl_rt_error("class instance belongs to an unknown Chapel program",
-                 lineno, filenameIdx);
+      const char* filename = chpl_rt_lookup_filename(self, filenameIdx);
+      chpl_prg_error("class instance belongs to an unknown Chapel program",
+                     lineno, filename);
     }
     int n = CHPL_RT_PRGINFO_DATA(f, chpl_classInfoSize);
     chpl_atomic_uint_least32_t* fresh =
@@ -218,7 +219,8 @@ chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
   uint_least32_t n =
     atomic_load_explicit_uint_least32_t(&cache[0], chpl_memory_order_relaxed);
   if (idx == 0 || idx >= n) {
-    chpl_rt_error("invalid class id", lineno, filenameIdx);
+    const char* filename = chpl_rt_lookup_filename(self, filenameIdx);
+    chpl_prg_error("invalid class id", lineno, filename);
   }
 
   chpl__class_id ret =
