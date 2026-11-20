@@ -229,7 +229,13 @@ class Test:
                 dbg_process.stdin.write(line + "\n")
                 dbg_process.stdin.flush()
                 time.sleep(1)
-        dbg_process.wait(timeout=timeout())
+        try:
+            dbg_process.wait(timeout=timeout())
+        except sp.TimeoutExpired:
+            sys.stdout.write("[Error: debugger timed out]\n")
+            sys.stdout.flush()
+            dbg_process.kill()
+            dbg_process.wait()
         exec_process_group_pid = os.getpgid(executable_process.pid)
         try:
             time.sleep(0.5)

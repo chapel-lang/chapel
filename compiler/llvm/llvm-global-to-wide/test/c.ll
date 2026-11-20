@@ -81,3 +81,23 @@ entry:
   store i64 %v, ptr addrspace(100) %ptr
   ret void
 }
+
+declare noalias nonnull noundef ptr addrspace(100) @alloc_wide(ptr addrspace(100) nonnull)
+
+; CHECK-LABEL: declare noundef { %struct.c_localeid_t, ptr } @alloc_wide({ %struct.c_localeid_t, ptr })
+; CHECK-LABEL: define { %struct.c_localeid_t, ptr } @call_wide(
+; CHECK: call noundef { %struct.c_localeid_t, ptr } @alloc_wide({ %struct.c_localeid_t, ptr }
+define ptr addrspace(100) @call_wide(ptr addrspace(100) %p) {
+  %ret = call noalias nonnull noundef ptr addrspace(100) @alloc_wide(ptr addrspace(100) nonnull %p)
+  ret ptr addrspace(100) %ret
+}
+
+declare noalias nonnull ptr @alloc_local(ptr addrspace(100))
+
+; CHECK-LABEL: declare noalias nonnull ptr @alloc_local({ %struct.c_localeid_t, ptr })
+; CHECK-LABEL: define noalias nonnull ptr @call_local(
+; CHECK: call noalias nonnull ptr @alloc_local({ %struct.c_localeid_t, ptr }
+define noalias nonnull ptr @call_local(ptr addrspace(100) %p) {
+  %ret = call noalias nonnull ptr @alloc_local(ptr addrspace(100) %p)
+  ret ptr %ret
+}

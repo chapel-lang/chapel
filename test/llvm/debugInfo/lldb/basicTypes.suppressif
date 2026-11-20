@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# LLDB 23 crashes while parsing recursive iterator array parameter types.
+# LLDB 22 can inspect the same LLVM 23 binary.
+# this is likely caused by us making array classes and array records normalized
+# to have the same name, which confuses LLDB. this has been a problem for many
+# things, but in LLDB 23 it seems to cause crashes
+set -e
+
+if [[ "${CHPL_LLVM_VERSION:-}" == 23 ]]; then
+  version=$(lldb --version)
+  if [[ "$version" =~ lldb[[:space:]]+version[[:space:]]+23([.[:space:]]|$) ]]; then
+    echo True
+    exit
+  fi
+fi
+
+echo False

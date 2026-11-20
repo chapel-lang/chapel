@@ -1,0 +1,350 @@
+/*
+ * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+Support for loading dynamic libraries in Chapel.
+
+.. note::
+
+  As of the 2.9 release, prototypical support has been added for loading
+  and executing code from Chapel programs at runtime. See the section
+  :ref:`Loading_Chapel_Programs_at_Runtime` below.
+
+This module provides the ability to load a library at runtime. Procedures
+contained in a dynamically loaded library can be retrieved and called on
+any locale without compile-time knowledge of their names or locations.
+
+A hypothetical C library could contain a procedure named ``foo``:
+
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/TestBinary.c
+   :language: c
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
+
+This library can be can be loaded in Chapel at runtime as follows:
+
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
+
+And a procedure named ``foo`` with type ``proc(): void`` can be retrieved:
+
+.. literalinclude:: ../../../../test/library/packages/DynamicLibrary/doc-examples/ModuleDocTest.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
+
+When a procedure is retrieved from a loaded library, the returned procedure
+value is callable on any locale despite :proc:`dynamicLibrary.retrieve()` only
+being called on a single locale. The returned procedure is considered to
+be ``extern`` and this is reflected in its type.
+
+.. note::
+
+  Currently, only procedures can be retrieved from loaded libraries.
+  Support for retrieving references to data stored in a library could
+  be added in the future.
+
+.. _Loading_Chapel_Programs_at_Runtime:
+
+Loading Chapel Programs at Runtime
+----------------------------------
+
+Chapel supports the ability to dynamically load other Chapel programs while
+having all loaded Chapel programs utilize a single shared copy of the runtime.
+
+.. warning::
+
+  This feature is highly unstable (even more than the rest of this module).
+  As of the 2.9 release, it is only supported when ``CHPL_COMM=none`` or
+  ``CHPL_COMM=gasnet``, and also requires ``CHPL_LIB_PIC=pic``. Only limited
+  safety checks have been added, so dynamically loaded Chapel code may break
+  in unexpected ways if these constraints are not met.
+
+  Additionally, while it should be possible to execute parallel and
+  distributed code from a loaded Chapel library, it is possible that certain
+  (combinations of) features may have bugs and fail to work correctly.
+
+To utilize this feature, *both* the Chapel program that is doing the loading
+(the "executable") and the Chapel library that is loaded (the "library") must
+be compiled with the flag ``--no-builtin-runtime``.
+
+This flag causes a Chapel program to be linked against a shared library
+variant of the Chapel runtime rather than to statically link in a copy as has
+traditionally been done.
+
+In order to use ``--no-builtin-runtime``, you must make sure your Chapel
+configuration was built with ``CHPL_LIB_PIC=pic`` so that the runtime,
+executable, and library can be compiled with position-independent code.
+
+Additionally, the library must be compiled with ``--library --dynamic``.
+
+Once compiled, the library can be loaded by the executable using the same
+process that is described in the previous sections of this module.
+
+Do note that only ``export`` procedures may be called from the library. This
+restriction may be removed in the future.
+*/
+@unstable('Dynamic library support is experimental and unstable.')
+module DynamicLibrary {
+
+// This internal module contains the low-level implementation.
+private use ChapelDynamicLoading;
+
+// Publish this error class for use by users.
+public use ChapelDynamicLoading only DynLoadError;
+
+private proc containsPathSep(s: string): bool {
+  use Path only pathSep;
+  return s.contains(pathSep);
+}
+
+if !useProcedurePointers {
+  compilerError('This module cannot be used unless the experimental ' +
+                'procedure pointer implementation is activated. Set the ' +
+                'config param \'useProcedurePointers\' to ' +
+                '\'true\' when compiling to activate it');
+}
+
+// I found this XOR-like requirement too hard to describe with a bool alone.
+@chpldoc.nodoc
+enum PathProperty {
+  MustContainSep,
+  CannotContainSep
+}
+
+private proc tryCheckPathComponent(style: PathProperty,
+                                   componentName: string,
+                                   val: string) throws {
+  const containsSep = containsPathSep(val);
+  var ok = containsSep;
+
+  if style == PathProperty.CannotContainSep {
+    ok = !containsSep;
+  }
+
+  if !ok {
+    const desc = if style == PathProperty.CannotContainSep
+                    then 'cannot ' else 'must ';
+    const msg = 'the provided library ' + componentName + ' \'' + val +
+                '\' ' + desc + ' contain a path separator';
+    throw new IllegalArgumentError(msg);
+  }
+}
+
+private proc loadFromPathImpl(path: string) throws {
+  var err: owned DynLoadError?;
+
+  const bin = chpl_BinaryInfo.create(path, err);
+  if err then throw err;
+
+  return new dynamicLibrary(bin!);
+}
+
+/*
+  Create a record representing a dynamically loaded library using a string
+  that stores the path to a library file. The file may be any natively
+  executable program, though a "shared library" or "dynamic library" is by
+  far the most common and well supported.
+
+  The implementation will attempt to load the library on all locales. If
+  loading should fail on any locale then the entire process will be
+  aborted and an error will be thrown.
+
+  Dynamic loading can fail for a variety of reasons. It can fail if the
+  library could not be loaded on any locale. It can fail if no file was
+  found at ``path`` or if a file was found but it did not have a suitable
+  representation (e.g., the file format was not natively executable, or
+  it was not marked as executable).
+
+  Additionally, the ``path`` formal must be a string that contains one or
+  more instances of a path separator (e.g., ``"/"``). This is required so that
+  the path is interpreted by the dynamic linker as an absolute or relative
+  path. If you want to rely on your dynamic linker's search behavior when
+  no directory is specified, consider calling the :proc:`load()` procedure.
+
+  :arg path: The path to the library file to dynamically load
+  :type path: `string`
+
+  :throws DynLoadError: if dynamic loading fails
+  :throws IllegalArgumentError: if ``path`` does not contain a path separator
+*/
+proc loadFromPath(path: string) throws {
+  tryCheckPathComponent(style=PathProperty.MustContainSep, 'path', path);
+  return loadFromPathImpl(path);
+}
+
+/*
+  This procedure behaves similarly to :proc:`loadFromPath()`, except that it
+  computes the path to load from the arguments that are passed to it.
+
+  For example, given a library ``name`` of ``"foo"``, a ``directory`` of
+  ``"path/to"``, a ``prefix`` of ``"lib"``, and a Linux-based ``suffix`` of
+  ``".so"``, this procedure will attempt to load a dynamic library from the
+  path ``"path/to/libfoo.so"``.
+
+  All the formal arguments except ``name`` are optional, so it is possible
+  to get the same result by only passing in the string ``"foo"`` and
+  ``"path/to"``.
+
+  :arg name: The base name of the dynamic library to load
+  :type name: `string`
+
+  :arg directory: An optional directory path to prepend to the result
+  :type name: `string`
+
+  :arg prefix: Prefix for ``name``, by default :proc:`dynamicLibrary.defaultPrefix()`
+  :type name: `string`
+
+  :arg suffix: Suffix for ``name``, by default :proc:`dynamicLibrary.defaultSuffix()`
+  :type name: `string`
+
+  :throws DynLoadError: if dynamic loading fails
+  :throws IllegalArgumentError: if any component other than ``directory``
+                                contains a path separator
+*/
+proc load(name: string, directory: string='',
+          prefix: string=dynamicLibrary.defaultPrefix,
+          suffix: string=dynamicLibrary.defaultSuffix) throws {
+  use Path only joinPath;
+
+  const style = PathProperty.CannotContainSep;
+  tryCheckPathComponent(style, 'name', name);
+  tryCheckPathComponent(style, 'prefix', prefix);
+  tryCheckPathComponent(style, 'suffix', suffix);
+
+  const fileName = prefix + name + suffix;
+  const path = joinPath(directory, fileName);
+
+  return loadFromPathImpl(path);
+}
+
+/*
+  A wrapper around a dynamically loaded library.
+*/
+record dynamicLibrary {
+  @chpldoc.nodoc
+  var _bin: unmanaged chpl_BinaryInfo;
+
+  @chpldoc.nodoc
+  proc init(bin: unmanaged chpl_BinaryInfo) {
+    this._bin = bin;
+  }
+
+  /* The initialized library refers to the same library stored in ``rhs``. */
+  proc init=(rhs: dynamicLibrary) {
+    this._bin = rhs._bin;
+  }
+
+  @chpldoc.nodoc
+  proc postinit() do _bin.bumpRefCount();
+
+  proc deinit() {
+    // TODO: Could mark symbols for GC or reclaim the library on drop.
+    _bin.dropRefCount();
+  }
+
+  /*
+    After assignment, ``lhs`` will refer to the same library stored in ``rhs``.
+  */
+  operator=(ref lhs: dynamicLibrary, rhs: dynamicLibrary) {
+    rhs._bin.bumpRefCount();
+    lhs._bin.dropRefCount();
+    lhs._bin = rhs._bin;
+  }
+
+  /*
+    Return the default prefix used when calling the :proc:`load()` procedure.
+  */
+  proc type defaultPrefix param {
+    return 'lib';
+  }
+
+  /*
+    Return the default suffix used when calling the :proc:`load()` procedure.
+  */
+  proc type defaultSuffix param {
+    return '.' + dynamicLibrary.fileExt;
+  }
+
+  /*
+    Return the expected dynamic library file extension for the current
+    platform. The file extension does not include a prefix ``.``.
+  */
+  proc type fileExt param {
+    use ChplConfig;
+    if CHPL_TARGET_PLATFORM == 'darwin' then return 'dylib';
+    return 'so';
+  }
+
+  /*
+    Fetch a procedure from a dynamically loaded library. Throws an error if
+    no procedure could be found.
+
+    .. warning::
+
+      The procedure type ``t`` provided when calling :proc:`dynamicLibrary.retrieve()`
+      is used verbatim and is not checked against the type of the underlying
+      symbol in any way. If the type provided does not match the actual type
+      of the underlying procedure, then the resulting behavior when the
+      retrieved procedure is called is undefined. Crashes or other bugs
+      could occur.
+
+    The retrieved procedure is considered to be ``extern`` and will use an
+    extern calling convention, the same as is used for other ``extern``
+    procedures declared in Chapel code. This impacts how it can be used.
+    For example, it cannot currently be assigned to a procedure value that
+    is not also considered ``extern``.
+
+    :arg name: The name of the procedure to retrieve
+    :type name: `string`
+
+    :arg t: The type of the retrieved procedure
+    :throws DynLoadError: if procedure lookup fails
+  */
+  proc retrieve(name: string, type t) throws where isProcedureType(t) {
+    var err: owned DynLoadError?;
+    var ret = if _bin then _bin!.loadSymbol(name, t, err) else nil;
+    if err != nil then throw err;
+    return ret;
+  }
+
+  @chpldoc.nodoc
+  proc retrieve(name: string, type t) ref throws where !isProcedureType(t) {
+    compilerError('The \'retrieve()\' method currently only works with ' +
+                  'procedure types (tried to retrieve type \'' + t:string +
+                  '\')');
+    // TODO: We can return a (wide) reference to a value that is loaded up,
+    // but it will only refer to the version of the value stored on a
+    // single locale. The process will look like this except that it will
+    // return a dereference of a non-nil pointer.
+    //
+    use CTypes;
+
+    halt('Should never reach here!');
+
+    // This produces an invalid ref, but that's OK. It will never compile.
+    const ptr: c_ptr(t) = nil;
+    return ptr.deref();
+  }
+}
+
+}

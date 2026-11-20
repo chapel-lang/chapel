@@ -186,7 +186,9 @@ static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
 static const char* envExpectedProvider; // env: provider we should select
 
 static size_t numTxCtxs;
+#ifdef CHPL_COMM_DEBUG
 static size_t numRxCtxs;
+#endif
 
 struct perTxCtxInfo_t {
   chpl_atomic_bool allocated;        // true: in use; false: available
@@ -2542,7 +2544,9 @@ void init_ofiEp(void) {
   }
 
   CHK_TRUE(ofi_info->domain_attr->max_ep_rx_ctx >= numAmHandlers);
+#ifdef CHPL_COMM_DEBUG
   numRxCtxs = numAmHandlers;
+#endif
 
   tciTabLen = numTxCtxs;
   CHK_TRUE(tciTabLen > 0);

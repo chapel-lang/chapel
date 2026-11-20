@@ -1,0 +1,4 @@
+TestCLibraryToLoad.so
+libTestCLibrary.so
+libTestCLibrary.dylib
+lib/

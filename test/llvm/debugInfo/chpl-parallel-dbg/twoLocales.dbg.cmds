@@ -1,6 +1,10 @@
 on 0
 c
 on 1
+# locale 1's continue must block until it hits 'breakpoint', otherwise the
+# following commands race with the program. Locale 0's continue must stay
+# async, since locale 0 cannot make progress until locale 1 is resumed.
+script lldb.debugger.SetAsync(False)
 c
 f
 p myArr

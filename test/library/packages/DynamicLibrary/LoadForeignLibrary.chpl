@@ -1,0 +1,49 @@
+use DynamicLibrary;
+use Reflection;
+use ChplConfig;
+
+proc test1() {
+  writeln(Reflection.getRoutineName());
+
+  const lib = try! loadFromPath("./TestCLibraryToLoad.so");
+
+  type P1 = proc(_: int, _: int): int;
+
+  const addTwoReturn = try! lib.retrieve("addTwoReturn", P1);
+
+  writeln(addTwoReturn.type:string);
+  writeln();
+
+  for loc in Locales do on loc {
+    const n = (here.id : int);
+    const x = addTwoReturn(n, n);
+    writeln(here, ' got: ', x);
+    writeln('---');
+  }
+}
+
+proc test2() {
+  writeln(Reflection.getRoutineName());
+
+  // TODO: Is it annoying to have to specify this all the time?
+  const lib = try! load('TestCLibrary', directory='./');
+}
+
+proc test3() {
+  writeln(Reflection.getRoutineName());
+
+  // All these different directory paths should work.
+  const lib1 = try! load('TestCLibrary', directory='lib');
+  const lib2 = try! load('TestCLibrary', directory='lib/');
+  const lib3 = try! load('TestCLibrary', directory='lib//');
+  const lib4 = try! load('TestCLibrary', directory='./');
+  const lib5 = try! load('TestCLibraryToLoad', directory='./', prefix='');
+}
+
+proc main() {
+  const tests = [ test1, test2, test3 ];
+  for test in tests {
+    test();
+    if test != tests.last then writeln();
+  }
+}

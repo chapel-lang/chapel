@@ -1,0 +1,2 @@
+--llvm-print-passes
+--llvm-print-passes --fast # printPasses-fast.good

@@ -3,12 +3,12 @@ use DataFrames, HDF5;
 config const inputDir = "hdf5_files";
 
 var colDom: domain(string);
-var columns: [colDom] Series;
+var columns: [colDom] owned Series?;
 var dataFrame = new owned DataFrame(columns);
 
 type inputTypes = (int, real);
 
-for param i in 1..inputTypes.size {
+for param i in 0..<inputTypes.size {
   type inType = inputTypes(i);
   param typeName = inType:string;
 
@@ -17,7 +17,7 @@ for param i in 1..inputTypes.size {
 
   for (arr, j) in zip(arrays, 1..) {
     var col = new owned TypedSeries(arr.A);
-    var name = "s" + i + "_" + j;
+    var name = "s" + i:string + "_" + j:string;
     dataFrame.insert(name, col);
   }
 }

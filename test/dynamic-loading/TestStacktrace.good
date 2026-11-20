@@ -6,4 +6,4 @@ halt() at $CHPL_HOME/modules/standard/Errors.chpl:nnnn in libTestStacktraceLib.s
 shouldHalt() at TestStacktraceLib.chpl:2 in libTestStacktraceLib.so
 anotherLayer() at TestStacktraceLib.chpl:6 in libTestStacktraceLib.so
 callMe() at TestStacktraceLib.chpl:10 in libTestStacktraceLib.so
-main() at TestStacktrace.chpl:12
+main() at TestStacktrace.chpl:5

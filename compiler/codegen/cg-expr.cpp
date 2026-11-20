@@ -2602,9 +2602,9 @@ GenRet codegenMod(GenRet a, GenRet b)
 }
 
 #ifdef HAVE_LLVM
-static llvm::CallInst* CreateIntrinsic(llvm::Intrinsic::ID id,
-                                        llvm::ArrayRef<llvm::Type*> tys,
-                                        llvm::ArrayRef<llvm::Value*> args) {
+static auto CreateIntrinsic(llvm::Intrinsic::ID id,
+                            llvm::ArrayRef<llvm::Type*> tys,
+                            llvm::ArrayRef<llvm::Value*> args) {
   auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args);
   trackLLVMValue(call);
   return call;
@@ -5335,7 +5335,8 @@ DEFINE_PRIM(RETURN) {
       // Since putting anything after the return statement will make the LLVM
       // IR invalid, we set the insert point before the return instruction so that
       // other compilation processes work fine and as expected.
-      gGenInfo->irBuilder->SetInsertPoint(returnInst);
+      gGenInfo->irBuilder->SetInsertPoint(returnInst->getParent(),
+                                          returnInst->getIterator());
     }
 #endif
   }

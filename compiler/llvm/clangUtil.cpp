@@ -88,6 +88,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/VersionTuple.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
@@ -1328,13 +1329,9 @@ void readMacrosClang(void) {
   addMinMax("INT64", 64, true);
   addMinMax("UINT64", 64, false);
 
-  //printf("Running ReadMacrosAction\n");
-  clang::Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
-  for(clang::Preprocessor::macro_iterator i = preproc.macro_begin();
-      i != preproc.macro_end();
-      i++) {
-
-    handleMacro(i->first, i->second.getLatest()->getMacroInfo());
+  clang::Preprocessor& preproc = clangInfo->Clang->getPreprocessor();
+  for (auto& [id, macroState]: preproc.macros()) {
+    handleMacro(id, macroState.getLatest()->getMacroInfo());
   }
 };
 
@@ -2001,19 +1998,20 @@ static llvm::TargetOptions getTargetOptions(
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Allow unsafe fast floating point optimization
+    // LLVM is removing the global individual fast-math flags in favor of
+    // per-instruction level flags. We already handle that with 'setFastMathFlags'
+    // so this is safe to remove in newer versions
+    // Only remove the global flags here as they get removed in future LLVM versions
 #if LLVM_VERSION_MAJOR < 22
-    // NOTE (Jade 3-18-26): its not clear why LLVM removed "UnsafeFPMath", and
-    // what the proper replacement is, if any.
-    // They may have removed it due to it being redundant and so
-    // everything may just work fine
     Options.UnsafeFPMath = 1; // e.g. FSIN instruction
 #endif
+#if LLVM_VERSION_MAJOR < 23
     Options.NoInfsFPMath = 1;
     Options.NoNaNsFPMath = 1;
-    Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
+#endif
+    Options.NoTrappingFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
@@ -2084,7 +2082,11 @@ static llvm::TargetOptions getTargetOptions(
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
+#if LLVM_VERSION_MAJOR >= 23
+  Options.StackUsageFile = CodeGenOpts.StackUsageFile;
+#else
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
+#endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
   Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
   Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
@@ -2178,7 +2180,9 @@ static void setupModule()
   // wrong answer  because some i64s were stored at the wrong alignment).
   info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
 
-  adjustLayoutForGlobalToWide();
+  // The make-binary phase reloads IR whose global pointers were already lowered.
+  if (!fDriverMakeBinaryPhase)
+    adjustLayoutForGlobalToWide();
 
   // Set the TargetMachine
   std::string Err;
@@ -2510,24 +2514,32 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 
 static void registerDumpIrExtensions(llvm::PassBuilder& PB);
 
+#if LLVM_VERSION_MAJOR < 19
 // expose a command line option from LLVM
 // we set it via a chpl command line option
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
+#endif
 static llvm::PassBuilder constructPassBuilder(
   llvm::TargetMachine* targetMachine,
   llvm::PassInstrumentationCallbacks* PIC,
   bool forFunction) {
+  chpl::optional<llvm::PGOOptions> PGOOpt;
+#if LLVM_VERSION_MAJOR < 19
   // this is required to be set, or LLVM will not properly populate the pass
   // names. technically this flag enables extra printing to the dbg() output,
   // but we only keep the flag long enough to populate the pass names.
   // this must always be set so that `--print-before` (and similar commands) will
   // still work with their nice pass name
+  // LLVM 19+ always registers a class-to-pass-name callback on PIC,
+  // so this hack isn't needed
   llvm::PrintPipelinePasses = true;
-  chpl::optional<llvm::PGOOptions> PGOOpt;
+#endif
   llvm::PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+#if LLVM_VERSION_MAJOR < 19
   llvm::PrintPipelinePasses = false;
+#endif
   return PB;
 }
 
@@ -5010,13 +5022,24 @@ static void linkGpuDeviceLibraries() {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
     auto libPath = CHPL_ROCM_AMDGCN_PATH + std::string("/bitcode");
+    llvm::VersionTuple rocmVersion;
+    if (rocmVersion.tryParse(envMap["CHPL_GPU_SDK_VERSION"])) {
+      USR_FATAL("Unable to parse ROCm SDK version '%s'",
+                envMap["CHPL_GPU_SDK_VERSION"]);
+    }
+    // ROCm 10 no longer ships the DAZ and correctly-rounded-sqrt controls.
+    const bool needsLegacyControls = rocmVersion < llvm::VersionTuple(10, 0);
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());
-    linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    if (needsLegacyControls) {
+      linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    }
     linkBitCodeFile((libPath + "/oclc_unsafe_math_off.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
-    linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    if (needsLegacyControls) {
+      linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    }
     linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
 
     for (auto gpuArch : gpuArches) {

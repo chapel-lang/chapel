@@ -36,7 +36,7 @@
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python libunwind
-      sudo pacman -S llvm22 clang22
+      sudo pacman -S llvm clang
 
 
   * CentOS Stream 9, 10::
@@ -45,7 +45,7 @@
       sudo dnf install epel-release
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake libunwind-devel
       sudo dnf install which diffutils
-      sudo dnf install llvm20-devel clang20 clang20-devel
+      sudo dnf install llvm-devel clang clang-devel
 
 
   * Debian 12 "Bookworm"::

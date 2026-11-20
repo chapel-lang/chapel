@@ -1,13 +1,7 @@
 use myClasses;
 use CTypes;
-use DynamicLoading;
-import ChplConfig.CHPL_TARGET_PLATFORM;
+use DynamicLibrary;
 
-proc libSuffix() param do
-  return if CHPL_TARGET_PLATFORM == "darwin" then ".dylib" else ".so";
-proc libName(name, prefix="", suffix=libSuffix()) {
-  return prefix + name + suffix;
-}
 config const path = "./lib/";
 
 proc main() {
@@ -21,7 +15,7 @@ proc main() {
   doDynamicCasts(a.borrow():borrowed A?);
 
   writeln("Loading Library");
-  var lib = binary.load(libName("libloadClassesLib", path));
+  var lib = load("loadClassesLib", directory=path);
 
   var producer = binary.load(libName("libarrayProducer", path));
   var makeC = producer.retrieve("makeC", proc(): c_ptr(void));

@@ -16,7 +16,7 @@ proc main() {
 // CHECK-NOLOCAL-NEXT: (wide(ref(wide([domain(1,int(64),one)] locale)))) {
 
 // CHECK: target var Locales
-// CHECK-LOCAL-NEXT: (_ref(_array(unmanaged [domain(1,int(64),one)] locale))) Locales = 0x{{0*[0-9a-fA-F]+}} [0..0] ChapelLocale::locale: {
+// CHECK-LOCAL-NEXT: {{\((\[domain\(1,int\(64\),one\)\] locale|_ref\(_array\(unmanaged \[domain\(1,int\(64\),one\)\] locale\)\))\)}} Locales = 0x{{0*[0-9a-fA-F]+}} [0..0] ChapelLocale::locale: {
 // CHECK-LOCAL-NEXT: [0] = {
 // CHECK-LOCAL-NEXT: _instance = 0x{{0*[0-9a-fA-F]+}}
 // CHECK-LOCAL-NEXT: }
