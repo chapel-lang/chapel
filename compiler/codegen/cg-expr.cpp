@@ -442,7 +442,7 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
   return gep;
 }
 static bool isWideOrLocaleIdType(Type* t) {
-  return t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+  return t->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
          t == LOCALE_ID_TYPE;
 }
 
