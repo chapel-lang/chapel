@@ -7,23 +7,30 @@
 set -e
 
 # Paths to be ignored for update by 'git grep'
-EXCLUDE_PATHS="':!third-party/' ':!test/'"
+EXCLUDE_PATHS=(':!third-party/' ':!test/')
 
 
 # Read in and validate input years
+DRY_RUN=false
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=true
+  shift
+fi
 if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 [previous_year] [current_year]"
+  echo "Usage: $0 [--dry-run] previous_year current_year"
   exit 1
 fi
 PREVIOUS_YEAR=$1
 CURRENT_YEAR=$2
-if [ "$CURRENT_YEAR" != "$(date '+%Y')" ]; then
-  echo "Specified current year $CURRENT_YEAR does not appear to be the actual current year"
-  exit 1
-fi
-if [[ $((PREVIOUS_YEAR + 1)) != "$CURRENT_YEAR" ]]; then
-  echo "Current year $CURRENT_YEAR is not exactly 1 greater than previous year $PREVIOUS_YEAR"
-  exit 1
+if [[ "$DRY_RUN" == false ]]; then
+  if [ "$CURRENT_YEAR" != "$(date '+%Y')" ]; then
+    echo "Specified current year $CURRENT_YEAR does not appear to be the actual current year"
+    exit 1
+  fi
+  if [[ $((PREVIOUS_YEAR + 1)) != "$CURRENT_YEAR" ]]; then
+    echo "Current year $CURRENT_YEAR is not exactly 1 greater than previous year $PREVIOUS_YEAR"
+    exit 1
+  fi
 fi
 
 
@@ -47,22 +54,28 @@ echo "Updating latest copyright year from $PREVIOUS_YEAR to $CURRENT_YEAR..."
 
 # Do replacement for a pattern.
 # First arg is 'git grep' search pattern, second arg is 'sed' find/replace pattern.
+# Pass 'optional' as a third arg if the pattern might not appear in a given year.
 function tryReplacementForPattern {
   SEARCH_PATTERN=$1
   SED_PATTERN=$2
+  local grep_status
 
   echo -n "Attempting replacements for grep pattern '$SEARCH_PATTERN' with sed command '$SED_PATTERN'... "
 
-  # Error if a pattern has no matches (and therefore wouldn't result in any updates).
-  # It's still possible to have a pattern give no updates if the sed pattern is wrong.
-  cmd="PAGER=cat git grep -l \"$SEARCH_PATTERN\" -- $EXCLUDE_PATHS"
-  # Ignore errors from the git grep command
-  search_output=$(eval "$cmd" || true)
-  if [[ -z "$search_output" ]]; then
-    echo "ERROR" # to end the unfinished status line emitted above
-    echo "No matches found for pattern '$SEARCH_PATTERN', stopping with no further replacement; script may need to be updated if we aren't using this pattern anymore."
-    exit 1
-  fi
+  search_output=$(git --no-pager grep -l "$SEARCH_PATTERN" -- "${EXCLUDE_PATHS[@]}") || {
+    grep_status=$?
+    if [[ "$grep_status" -eq 1 && "${3:-}" == optional ]]; then
+      echo "no matches (optional)"
+      return 0
+    fi
+    echo "ERROR"
+    if [[ "$grep_status" -eq 1 ]]; then
+      echo "No matches found for pattern '$SEARCH_PATTERN', stopping with no further replacement; script may need to be updated if we aren't using this pattern anymore."
+    else
+      echo "git grep failed for pattern '$SEARCH_PATTERN' (exit status $grep_status)."
+    fi
+    exit "$grep_status"
+  }
 
   # Perform replacement
   # Sed '-i' argument for in-place differs between GNU sed (on Linux) and BSD sed (on macOS).
@@ -81,7 +94,7 @@ function tryReplacementForPattern {
 # Case: "Copyright 20xy-[previous year]"->"Copyright 20xy-[current year]"
 tryReplacementForPattern "Copyright 20[0-9][0-9]-$PREVIOUS_YEAR" "s/Copyright \(20[0-9][0-9]\)-$PREVIOUS_YEAR Hewlett/Copyright \1-$CURRENT_YEAR Hewlett/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
-tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR Hewlett/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR Hewlett/g"
+tryReplacementForPattern "Copyright $PREVIOUS_YEAR Hewlett" "s/Copyright $PREVIOUS_YEAR Hewlett/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR Hewlett/g" optional
 # Case: "copyright_year = [previous year]"->"copyright_year = [current year]"
 # (this is just for doc/rst/conf.py)
 tryReplacementForPattern "copyright_year = $PREVIOUS_YEAR" "s/copyright_year = $PREVIOUS_YEAR/copyright_year = $CURRENT_YEAR/g"
