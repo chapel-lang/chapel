@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 
-echo "slurm"
+if [ -n "$CHPL_TEST_SBATCH_LARGE_OUTPUT" ]; then
+  python3 -c 'print("x" * 300)'
+else
+  echo "slurm"
+fi
