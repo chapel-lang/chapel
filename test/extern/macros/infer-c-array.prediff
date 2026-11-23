@@ -1,0 +1,3 @@
+#!/bin/sh
+# c_char is uint(8) on targets where C char is unsigned
+sed -e 's/c_array(uint(8),3)/c_array(int(8),3)/' "$2" > "$2.tmp" && mv "$2.tmp" "$2"
