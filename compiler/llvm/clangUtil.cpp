@@ -3577,6 +3577,20 @@ static bool usesMacroLocalStorage(const clang::Stmt* stmt) {
   return false;
 }
 
+static std::string macroReturnTypeExpression(const clang::Expr* expr,
+                                             const std::string& invocation) {
+  // C string literals have non-const array types, but modifying them is undefined.
+  if (llvm::isa<clang::StringLiteral>(expr->IgnoreParenImpCasts()))
+    return "const __typeof__((" + invocation + ")[0]) *";
+
+  std::string typeExpression = "(void)0, (" + invocation + ")";
+  if (expr->getType()->isArrayType() || expr->getType()->isFunctionType())
+    typeExpression = "0 ? (" + invocation + ") : (" + invocation + ")";
+  // The comma operator applies C's lvalue conversion without promoting short
+  // integers. typeof also preserves anonymous C types without printing them
+  return "__typeof__(" + typeExpression + ")";
+}
+
 clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
   if (auto getter = info->lvt->getMacroGetter(name))
     return getter;
@@ -3618,12 +3632,7 @@ clang::FunctionDecl* resolveMacroGetter(GenInfo* info, const char* name) {
   if (result->isPointerType() && usesMacroLocalStorage(expr))
     USR_FATAL("C macro '%s' depends on the caller's storage", name);
 
-  std::string typeExpression = std::string("(void)0, (") + name + ")";
-  if (expr->getType()->isArrayType() || expr->getType()->isFunctionType())
-    typeExpression = std::string("0 ? (") + name + ") : (" + name + ")";
-  // The comma operator applies C's lvalue conversion without promoting short
-  // integers. typeof also preserves anonymous C types without printing them
-  source = "static __typeof__(" + typeExpression + ") " + getterName +
+  source = "static " + macroReturnTypeExpression(expr, name) + " " + getterName +
            "(void) { return " + name + "; }\n";
   auto getter = parseMacroWrapper(info, name, getterName, source,
                                    "as a value expression");
@@ -4461,11 +4470,7 @@ clang::FunctionDecl* resolveMacroFunction(GenInfo* info, FnSymbol* fn,
   std::string source = "static ";
   if (inferReturnType && !returnsVoid) {
     std::string typeInvocation = std::string(name) + "(" + typeArguments + ")";
-    std::string typeExpression = "(void)0, (" + typeInvocation + ")";
-    if (expression->getType()->isArrayType() ||
-        expression->getType()->isFunctionType())
-      typeExpression = "0 ? (" + typeInvocation + ") : (" + typeInvocation + ")";
-    source += "__typeof__(" + typeExpression + ") " +
+    source += macroReturnTypeExpression(expression, typeInvocation) + " " +
               wrapperName + "(" + formals + ")";
   } else {
     llvm::raw_string_ostream out(source);
