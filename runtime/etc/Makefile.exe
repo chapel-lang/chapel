@@ -53,7 +53,7 @@ endif
 ifeq ($(COMP_GEN_DEBUG),1)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
 ifneq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
-	dsymutil $(TMPBINNAME) -o $(TMPBINNAME).dSYM
+	dsymutil $(TMPBINNAME) --no-odr -o $(TMPBINNAME).dSYM
 endif
 endif
 endif

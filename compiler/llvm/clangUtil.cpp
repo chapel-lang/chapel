@@ -5757,7 +5757,16 @@ void makeBinaryLLVM(void) {
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
       // better name?
-      std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
+      // TODO: Chapel can emit multiple different types with the same debug name
+      // so ODR type uniquing can cause issues. Frankly, Chapel shouldn't do
+      // this, but its a massive change.
+      // This is an ABI issue and is a frequent headache as most
+      // debug tools don't know how to handle this. --no-odr maintains the
+      // status quo for now. NOTE: --no-odr is also used in Makefile.exe for
+      // the c backend
+      std::vector<std::string> cmd = {
+        bin, tmpbinname, "--no-odr", "-o", tmp
+      };
       mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
     }
 
