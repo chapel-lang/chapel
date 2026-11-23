@@ -128,7 +128,7 @@ jobs:
 
           expected_nodes=$(printf '%s\n' node1 node2 node3 node4)
           ready_nodes=""
-          for attempt in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if nodes=$(docker exec "$controller" sinfo -N -h -o '%N %T'); then
               ready_nodes=$(awk '$2 == "idle" { print $1 }' <<< "$nodes" | sort)
               if [[ "$ready_nodes" == "$expected_nodes" ]]; then
@@ -147,9 +147,6 @@ jobs:
           mpi_types=$(docker exec "$controller" srun --mpi=list 2>&1)
           printf '%s\n' "$mpi_types"
           grep -Eq '(^|[[:space:]])pmi2($|[[:space:]])' <<< "$mpi_types"
-          if [[ "$COMM" == "gasnet" ]]; then
-            grep -Eq '(^|[[:space:]])pmix($|[[:space:]])' <<< "$mpi_types"
-          fi
           timeout 60s docker exec --user chpl-tester "$controller" \
             srun --mpi=none -N4 -n4 --ntasks-per-node=1 hostname \
             | sort > "$RUNNER_TEMP/slurm-ci/nodes"
@@ -176,9 +173,8 @@ jobs:
               export SLURM_MPI_TYPE=pmi2
               export FI_PROVIDER=tcp
             elif [[ "$COMM" == "gasnet" ]]; then
+              export CHPL_LAUNCHER=slurm-gasnetrun_mpi
               export CHPL_COMM_SUBSTRATE=mpi
-              # Open MPI uses Slurm's PMIx plugin rather than PMI2.
-              export SLURM_MPI_TYPE=pmix
               export GASNET_QUIET=Y
             else
               export SLURM_MPI_TYPE=none

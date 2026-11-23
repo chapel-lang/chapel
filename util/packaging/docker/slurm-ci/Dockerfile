@@ -14,6 +14,8 @@ RUN printf '%s\n' \
 
 COPY slurm.conf /etc/slurm/slurm.conf
 COPY entrypoint.sh /usr/local/bin/slurm-ci-entrypoint
-RUN chmod 0755 /usr/local/bin/slurm-ci-entrypoint
+# These containers do not run systemd, so Slurm cannot create cgroup scopes
+RUN printf '%s\n' 'CgroupPlugin=disabled' > /etc/slurm/cgroup.conf \
+    && chmod 0755 /usr/local/bin/slurm-ci-entrypoint
 
 ENTRYPOINT ["/usr/local/bin/slurm-ci-entrypoint"]
