@@ -608,8 +608,7 @@ def _validate_rocm_llvm_version_impl(gpu: GpuType):
 
 
 def _validate_cuda_version_impl():
-    """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
-    MAX_REQ_VERSION"""
+    """Check the installed CUDA version and its LLVM compatibility."""
     MIN_REQ_VERSION = "11.7"
     MAX_REQ_VERSION = "14"  # upper bound non-inclusive
 
@@ -618,6 +617,22 @@ def _validate_cuda_version_impl():
     if cuda_version is None:
         _reportMissingGpuReq("Unable to determine CUDA version.")
         return False
+
+    if is_ver_in_range(cuda_version, "11", "12"):
+        llvm = chpl_llvm.get()
+        if llvm in ("system", "bundled"):
+            llvm_version = int(chpl_llvm.get_llvm_version())
+            if llvm_version >= 23:
+                _reportMissingGpuReq(
+                    "LLVM versions 23 and newer do not support CUDA 11. "
+                    "Your LLVM (CHPL_LLVM={}) version is {}. "
+                    "Use CUDA 12 or newer, or LLVM 22 or older.".format(
+                        llvm, llvm_version
+                    ),
+                    allowExempt=False,
+                    suggestNone=False,
+                )
+                return False
 
     if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
         warning(
