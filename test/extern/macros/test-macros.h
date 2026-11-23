@@ -28,7 +28,8 @@
    _Generic((b), double: 1, int *: 2, default: 0))
 #define INFER_CSTRING_LEN(s) \
   (_Generic((s), char *: 1, const char *: 1, \
-                  signed char *: 1, const signed char *: 1) * \
+                  signed char *: 1, const signed char *: 1, \
+                  unsigned char *: 1, const unsigned char *: 1) * \
    strlen((const char *)(s)))
 #define INFER_ONLY_FLOAT(x) _Generic((x), float: 1)
 #define INFER_ONLY_DOUBLE_FLOAT(x, y) \
