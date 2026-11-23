@@ -39,6 +39,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     gfortran \
     git \
     jq \
+    libarrow-dev \
     libclang-${LLVM_VERSION}-dev \
     libclang-cpp${LLVM_VERSION}-dev \
     libclang-rt-${LLVM_VERSION}-dev \
@@ -46,7 +47,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libedit-dev \
     libfltk1.4-dev \
     libhdf5-dev \
+    libidn2-dev \
     libopenmpi-dev \
+    libparquet-dev \
     libprotoc-dev \
     libssl-dev \
     libyaml-dev \
