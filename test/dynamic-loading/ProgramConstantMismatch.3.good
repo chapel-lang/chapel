@@ -1,0 +1,8 @@
+------------------------------------------------------------------------
+SETUP (LIBRARY)
+------------------------------------------------------------------------
+-- program ID = 2
+-- program path = ./lib/libIncompatibleChapelLibrary.so
+
+Checking constant: CHPL_HOME
+SKIPPED

@@ -79,7 +79,7 @@ static void print_setter_proc(std::ofstream& ofs, int indent) {
   ofs << "proc " << setter_proc_name << "(ref " << program_formal_name << ": ";
   ofs << program_type << ") {\n";
 
-  #define E_CONSTANT(name__, type__) do { \
+  #define E_CONSTANT(name__, type__, invariant__) do { \
     expand_constant(ofs, indent+2, #name__, #type__); \
   } while (0);
 

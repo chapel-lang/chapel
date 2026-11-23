@@ -205,6 +205,8 @@ module ChapelUtil {
   }
 
   export proc chpl_deinitModules() {
+    use ChapelProgramRegistration;
+
     extern proc printf(fmt:c_ptrConst(c_char));
     extern proc printf(fmt:c_ptrConst(c_char), arg:c_ptrConst(c_char));
     extern proc chpl_execute_module_deinit(deinitFun:chpl_c_fn_ptr);

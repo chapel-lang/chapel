@@ -1,0 +1,8 @@
+-sconstant='"CHPL_LAUNCHER"' --no-builtin-runtime                           # ProgramConstantMismatch.1.good
+-sconstant='"CHPL_THIRD_PARTY"' -sexpectError=false --no-builtin-runtime    # ProgramConstantMismatch.2.good
+-sconstant='"CHPL_HOME"' -sexpectError=false --no-builtin-runtime           # ProgramConstantMismatch.3.good
+-sconstant='"CHPL_CACHE_REMOTE"' --no-builtin-runtime                       # ProgramConstantMismatch.4.good
+-sconstant='"warnUnstable"' --no-builtin-runtime                            # ProgramConstantMismatch.5.good
+-sconstant='"CHPL_LLVM_BIN_DIR"' -sexpectError=false --no-builtin-runtime   # ProgramConstantMismatch.6.good
+-sconstant='"CHPL_INTERLEAVE_MEM"' --no-builtin-runtime                     # ProgramConstantMismatch.7.good
+-sconstant='"CHPL_STACK_CHECKS"' --no-builtin-runtime                       # ProgramConstantMismatch.8.good

@@ -70,7 +70,7 @@ static chpl_atomic_uintptr_t cid_caches[CHPL_CID_MAX_PROGRAMS];
     size_t sz = sizeof(CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__));            \
     memcpy(&prg->data.name__, data, sz);                                    \
   }
-#define E_CONSTANT(name__, type__) SETTER(PREFIX, name__)
+#define E_CONSTANT(name__, type__, invariant__) SETTER(PREFIX, name__)
 #define E_CALLBACK(name__, ret_type__, ...) SETTER(PREFIX, name__)
 #include "chpl-prginfo-data-macro-adapter.h"
 #undef PREFIX
@@ -366,7 +366,7 @@ void chpl_rt_prginfo_dump_data_entries(chpl_rt_prginfo* prg,
               ((int) chpl_nodeID),
               chpl_rt_prginfo_load_path(prg));
 
-  #define E_CONSTANT(name__, type__) do {                                   \
+  #define E_CONSTANT(name__, type__, invariant__) do {                      \
     const char* name = STR(name__);                                         \
     const char* type = STR(type__);                                         \
     void* addr = &(CHPL_RT_PRGINFO_DATA(prg, name__));                      \
@@ -402,70 +402,98 @@ const char* chpl_rt_build_constant_by_idx(int idx, const char** out_val) {
   return lookup_table[idx][0];
 }
 
+typedef enum {
+  #define E_CALLBACK(name__, ret_type__, ...)
+  #define E_CONSTANT(name__, type__, invariant__) \
+    program_only_constant_##name__,
+  #include "chpl-prginfo-data-macro-adapter.h"
+  program_only_constant_enum_size
+} program_only_constant_enum;
+
 int chpl_rt_num_program_only_constants(void) {
-  enum size_enum {
-    #define E_CALLBACK(name__, ret_type__, ...)
-    #define E_CONSTANT(name__, type__) size_enum_##name__,
-    #include "chpl-prginfo-data-macro-adapter.h"
-    ENUM_SIZE
-  };
-  return ENUM_SIZE;
+  return (int) program_only_constant_enum_size;
 }
 
 static const char* program_only_constant_name_table[] = {
   #define E_CALLBACK(name__, ret_type__, ...)
-  #define E_CONSTANT(name__, type__) #name__,
+  #define E_CONSTANT(name__, type__, invariant__) #name__,
   #include "chpl-prginfo-data-macro-adapter.h"
   NULL
 };
 
-const char* chpl_rt_program_only_constant_by_idx(int idx) {
+const char*
+chpl_rt_program_only_constant_by_idx(int idx) {
   int num_program_only_constants = chpl_rt_num_program_only_constants();
   assert(0 <= idx && idx < num_program_only_constants);
   return program_only_constant_name_table[idx];
+}
+
+chpl_bool chpl_rt_program_only_constant_is_invariant(int idx) {
+  int num_program_only_constants = chpl_rt_num_program_only_constants();
+  assert(0 <= idx && idx < num_program_only_constants);
+
+  program_only_constant_enum e = (program_only_constant_enum) idx;
+
+  switch (e) {
+    #define E_CALLBACK(name__, ret_type__, ...)
+    #define E_CONSTANT(name__, type__, invariant__) \
+      case program_only_constant_##name__: return invariant__;
+    #include "chpl-prginfo-data-macro-adapter.h"
+    default: {
+      chpl_internal_error("Not possible!");
+    } break;
+  }
+
+  return 0;
 }
 
 chpl_bool chpl_rt_program_only_constant_matches(chpl_rt_prginfo* prg1,
                                                 chpl_rt_prginfo* prg2,
                                                 const char* constant,
                                                 char** out_error_msg) {
-  bool matches = false;
   char* buffer = NULL;
   int buffer_size = 0;
+  bool ret = false;
 
   #define E_CALLBACK(name__, ret_type__, ...)
-  #define E_CONSTANT(name__, type__) do {                                     \
+  #define E_CONSTANT(name__, type__, invariant__) do {                        \
     if (!strcmp(#name__, constant)) {                                         \
       type__ v1 = CHPL_RT_PRGINFO_DATA(prg1, name__);                         \
       type__ v2 = CHPL_RT_PRGINFO_DATA(prg2, name__);                         \
+      void* vp1 = &v1;                                                        \
+      void* vp2 = &v2;                                                        \
       if (!strcmp(#type__, "const char*") || !strcmp(#type__, "c_string")) {  \
-        void* vp1 = &v1;                                                      \
-        void* vp2 = &v2;                                                      \
         const char* s1 = *(const char**) vp1;                                 \
         const char* s2 = *(const char**) vp2;                                 \
-        matches = !strcmp(s1, s2);                                            \
+        ret = !strcmp(s1, s2);                                                \
       } else if (NULL != strchr(#type__, '*')) {                              \
         chpl_internal_error("Unhandled pointer type!");                       \
       } else {                                                                \
-        matches = (v1 == v2);                                                 \
+        type__ x1 = *(type__*) vp1;                                           \
+        type__ x2 = *(type__*) vp2;                                           \
+        ret = (x1 == x2);                                                     \
       }                                                                       \
     }                                                                         \
   } while (0);
   #include "chpl-prginfo-data-macro-adapter.h"
 
-  if (!matches && out_error_msg) {
+  if (!ret && out_error_msg) {
     const char* path1 = prg1 == CHPL_RT_PRGINFO_ROOT ? "<root>" :
                                 chpl_rt_prginfo_load_path(prg1);
     const char* path2 = prg2 == CHPL_RT_PRGINFO_ROOT ? "<root>" :
                                 chpl_rt_prginfo_load_path(prg2);
 
+    // TODO: Print the actual values - this could use a more robust type that
+    //       abstracts printing to either a FILE* or a buffer, then we can
+    //       rewrite the debug printing code above.
     chpl_append_to_cmd(&buffer, &buffer_size,
                        "the program constant '%s' in the program loaded "
                        "at '%s' does not match the value contained in the "
                        "program '%s'\n", constant, path2, path1);
+    *out_error_msg = buffer;
   }
 
-  return false;
+  return ret;
 }
 
 chpl_bool chpl_rt_program_only_constant_matches_root(chpl_rt_prginfo* prg,

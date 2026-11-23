@@ -38,7 +38,7 @@ extern "C" {
 #define PREFIX chpl_rt_prginfo_data_entry_set_
 #define SETTER(prefix__, name__) \
   void CONCAT(prefix__, name__)(chpl_rt_prginfo* prg, const void* data);
-#define E_CONSTANT(name__, type__) SETTER(PREFIX, name__)
+#define E_CONSTANT(name__, type__, invariant__) SETTER(PREFIX, name__)
 #define E_CALLBACK(name__, ret_type__, ...) SETTER(PREFIX, name__)
 #include "chpl-prginfo-data-macro-adapter.h"
 #undef PREFIX
@@ -75,6 +75,9 @@ int chpl_rt_num_program_only_constants(void);
 
 /** Get the name and type of the i'th program-only constant. */
 const char* chpl_rt_program_only_constant_by_idx(int idx);
+
+/** An invariant program-only constant cannot differ between programs. */
+chpl_bool chpl_rt_program_only_constant_is_invariant(int idx);
 
 /** Compare the value of a program-only constant from 'prg1' against the
     value contained in 'prg2'. Returns 'true' if the constant matches.

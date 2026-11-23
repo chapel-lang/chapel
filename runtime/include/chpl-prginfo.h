@@ -133,7 +133,7 @@ typedef struct qio_channel_s qio_channel_t;
   ret_type__ (*)(__VA_ARGS__)
 
 // Expand out unique typedefs for each data entry.
-#define E_CONSTANT(name__, type__) \
+#define E_CONSTANT(name__, type__, invariant__) \
   typedef type__ CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__);
 #define E_CALLBACK(name__, ret_type__, ...) \
   typedef ret_type__ (*CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__))(__VA_ARGS__);
@@ -194,7 +194,7 @@ typedef struct chpl_rt_prginfo {
   // This structure contains "data entries" which must be supplied by each
   // compiled Chapel program. Currently it is unorganized and per-locale.
   struct chpl_rt_prginfo_data {
-    #define E_CONSTANT(name__, type__) type__ name__;
+    #define E_CONSTANT(name__, type__, invariant__) type__ name__;
     #define E_CALLBACK(name__, ret_type__, ...) \
       CHPL_RT_PRGINFO_DATA_ENTRY_TYPE(name__) name__;
     #include "chpl-prginfo-data-macro-adapter.h"
