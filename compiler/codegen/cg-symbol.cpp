@@ -208,7 +208,6 @@ std::vector<std::string> gatherPrintLlvmIrCNames() {
 #ifdef HAVE_LLVM
 
 static std::set<const llvm::GlobalValue*> funcsToPrint;
-static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
 
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
@@ -227,7 +226,6 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
       extractAndPrintFunctionsLLVM(&funcs);
     } else {
       funcsToPrint.insert(func);
-      partlyPrintedStage = numStage;
     }
   }
 }
@@ -236,7 +234,6 @@ void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage
 void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 #ifdef HAVE_LLVM
   extractAndPrintFunctionsLLVM(&funcsToPrint);
-  partlyPrintedStage = llvmStageNum_t::NOPRINT;
   funcsToPrint.clear();
 #endif
 }
