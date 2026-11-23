@@ -311,6 +311,10 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     }
 
     buf[numRead] = '\0';
+    if (strstr(buf, "internal error: ") != NULL) {
+      chpl_warning(buf, 0, 0);
+      return -1;
+    }
     memcpy(outbuf, buf, numRead + 1);
   }
   return numRead;
