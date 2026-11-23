@@ -14,7 +14,7 @@ config const N = 512;
 proc loop (ref A, B, n) {
   // there is a load of a ptr, a load of an i32, and a store of an i32
   // all of them should get the same parallel access
-  // CHECK: @loop_chpl
+  // CHECK: @parallel_loop_loop_chpl
   // CHECK: !llvm.access.group ![[GROUP:[0-9]+]]
   // CHECK: !llvm.access.group ![[GROUP]]
   // CHECK: !llvm.access.group ![[GROUP]]

@@ -9,7 +9,7 @@ proc end_loop3() { return 6; }
 
 //Check whether we generate different metadata number for loops
 proc loop (A, B, n) {
-  //CHECK-LABEL: void @loop
+  //CHECK-LABEL: void @different_numbers_loop
   foreach i in 1..n {
     //CHECK-LABEL: start_loop1
     start_loop1();

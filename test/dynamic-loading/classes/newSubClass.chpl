@@ -1,17 +1,8 @@
 use DynamicLibrary;
 use CTypes;
+use newSubClassCommon;
 
-class A {
-  var x:int;
-  proc getX() {
-    return x;
-  }
-}
-class B : A {
-  override proc getX() {
-    return x + 1;
-  }
-}
+// Only the executable knows C. The library must not dispatch it as B.
 class C: B {
   override proc getX() {
     return x + 2;

@@ -2,4 +2,6 @@
 2
 3
 ================================================================================
-newSubClassLib.chpl:20: error: class instance was allocated by a different Chapel program
+1
+2
+newSubClassLib.chpl:9: error: class 'C_chpl' from Chapel program 1 (newSubClass) is not known to Chapel program 2 (libnewSubClassLib.dylib)

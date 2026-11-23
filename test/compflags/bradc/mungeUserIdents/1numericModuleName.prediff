@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+grep -oE '[a-zA-Z_0-9]+Box_getValue' genCode/1numericModuleName.c | sort | uniq >> $2
+grep -oE '[a-zA-Z_0-9]+_increment' genCode/1numericModuleName.c | sort | uniq >> $2

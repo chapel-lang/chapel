@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 void chpl_privatization_init(void);
+int64_t chpl_allocatePrivatizationId(void);
 
 void chpl_newPrivatizedClass(void*, int64_t);
 

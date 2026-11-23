@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+chpl=$3
+echo "Building dynamic Chapel library..."
+$chpl --library --dynamic --no-builtin-runtime malformedClassIdLib.chpl

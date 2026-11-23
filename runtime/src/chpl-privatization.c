@@ -25,11 +25,20 @@
 
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_atomic_spinlock_t lock;
+static chpl_atomic_int_least64_t nextPid;
 
 chpl_privateObject_t* chpl_privateObjects = NULL;
 
 void chpl_privatization_init(void) {
   atomic_init_spinlock_t(&lock);
+  atomic_init_int_least64_t(&nextPid, 0);
+}
+
+// Only called on locale 0. Allocate from the shared runtime so every Chapel
+// binary registering objects in chpl_privateObjects uses the same ID space.
+int64_t chpl_allocatePrivatizationId(void) {
+  return atomic_fetch_add_explicit_int_least64_t(&nextPid, 1,
+                                                  chpl_memory_order_relaxed);
 }
 
 static inline int64_t max(int64_t a, int64_t b) {

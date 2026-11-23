@@ -611,9 +611,9 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
   Type* lhsType = lhs->typeInfo();
   Type* rhsType = rhs->typeInfo();
 
-  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || lhs->isWideRef())
+  if(lhsType->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || lhs->isWideRef())
     return true; // direct put
-  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || rhs->isWideRef())
+  if(rhsType->symbol->hasAnyFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || rhs->isWideRef())
     return true; // direct get
 
   //now it is still possible that rhs primitive has a nonwide symbol yet
@@ -627,7 +627,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
         case PRIM_SET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
-          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
+          if(rhsCe->get(1)->typeInfo()->symbol->hasAnyFlag(FLAG_WIDE_REF,
                 FLAG_WIDE_CLASS) || rhsCe->get(1)->isWideRef()) {
             return true;
           }
@@ -804,7 +804,7 @@ static bool acceptableUse(ReturnByRefDef& defInfo, SymExpr* fnUse,
 static void transformRetTempUse(ReturnByRefUse& info) {
   Expr*   fnCall  = info.fnSE->parentExpr;
   Symbol* retTemp = info.tempSE->symbol();
-  INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
+  INT_ASSERT(! retTemp->type->symbol->hasAnyFlag(FLAG_REF, FLAG_WIDE_REF));
 
   // replace:
   //   call fn(args, ret_tmp)

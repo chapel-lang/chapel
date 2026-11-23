@@ -418,7 +418,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   bool isCompilerGenerated = false;
   bool isTaskIntent = false;
   if (FnSymbol* fn = arg->getFunction()) {
-    isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+    isTaskIntent = fn->hasAnyFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
     isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
   }
   // we have full control here, but this should be ok

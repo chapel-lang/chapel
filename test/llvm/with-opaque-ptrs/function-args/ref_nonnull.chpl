@@ -1,7 +1,7 @@
 // This test checks whether nonnull attributes are generated for
 // attributes that have ref intent
 
-//CHECK: i64 @f_chpl(
+//CHECK: i64 @ref_nonnull_f_chpl(
 //CHECK: ptr nonnull
 //CHECK: ptr nonnull
 //CHECK: i64

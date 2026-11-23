@@ -1,0 +1,2 @@
+--munge-user-idents --savec genCode
+--no-munge-user-idents --savec genCode

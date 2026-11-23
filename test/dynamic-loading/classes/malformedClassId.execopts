@@ -1,0 +1,3 @@
+--scenario=0 # malformedClassId.unknownProgram.good
+--scenario=1 # malformedClassId.zeroIndex.good
+--scenario=2 # malformedClassId.pastEnd.good

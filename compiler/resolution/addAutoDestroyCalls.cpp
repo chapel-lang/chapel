@@ -742,7 +742,7 @@ static void gatherIgnoredVariablesForYield(
     VarSymbol* var = toVarSymbol(foundSe->symbol());
 
     if (var &&
-        var->hasEitherFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
+        var->hasAnyFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
                            FLAG_EXPR_TEMP))
       ignoredVariables.insert(var);
   }
