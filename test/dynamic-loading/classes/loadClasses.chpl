@@ -15,7 +15,7 @@ proc main() {
   doDynamicCasts(a.borrow():borrowed A?);
 
   writeln("Loading Library");
-  var lib = load("loadClassesLib", directory=path);
+  var lib = DynamicLibrary.load("loadClassesLib", directory=path);
 
   var producer = DynamicLibrary.load(libName("libarrayProducer", directory=path));
   var makeC = producer.retrieve("makeC", proc(): c_ptr(void));
