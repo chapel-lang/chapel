@@ -244,12 +244,26 @@ chpl__class_id chpl_cid_translate(chpl_rt_prginfo* self, chpl__class_id cid,
   }
 
   if (ret == 0) {
-    char msg[256];
+    char msg[512];
+    const char* foreignPath = chpl_rt_prginfo_load_path(f);
+    const char* selfPath = chpl_rt_prginfo_load_path(self);
+    if (foreignPath == NULL) {
+      foreignPath = "<unknown>";
+    } else {
+      const char* slash = strrchr(foreignPath, '/');
+      if (slash != NULL) foreignPath = slash + 1;
+    }
+    if (selfPath == NULL) {
+      selfPath = "<unknown>";
+    } else {
+      const char* slash = strrchr(selfPath, '/');
+      if (slash != NULL) selfPath = slash + 1;
+    }
     snprintf(msg, sizeof(msg),
-             "class '%s' from Chapel program %" PRIu64
-             " is not known to Chapel program %" PRIu64,
+             "class '%s' from Chapel program %" PRIu64 " (%s)"
+             " is not known to Chapel program %" PRIu64 " (%s)",
              fqName ? fqName : "<unknown>",
-             (uint64_t) foreign, (uint64_t) self->id);
+             (uint64_t) foreign, foreignPath, (uint64_t) self->id, selfPath);
     const char* filename = chpl_rt_lookup_filename(self, filenameIdx);
     chpl_prg_error(msg, lineno, filename);
   }
