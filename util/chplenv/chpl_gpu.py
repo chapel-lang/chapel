@@ -626,7 +626,7 @@ def _validate_cuda_version_impl():
                 _reportMissingGpuReq(
                     "LLVM versions 23 and newer do not support CUDA 11. "
                     "Your LLVM (CHPL_LLVM={}) version is {}. "
-                    "Use CUDA 12 or newer or LLVM 22 or older.".format(
+                    "Use CUDA 12 or newer, or LLVM 22 or older.".format(
                         llvm, llvm_version
                     ),
                     allowExempt=False,

@@ -154,7 +154,7 @@ The following are further requirements for GPU support:
 
   * We test with LLVM 23. Older versions may work.
 
-    * Note that LLVM versions newer than 23 do not support CUDA 11.
+    * Note that LLVM versions newer than 22 do not support CUDA 11.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
