@@ -1954,6 +1954,13 @@ static void qualifyFunctionCname(FnSymbol* fn) {
     name = std::string(mod->name) + "_" + name;
   }
 
+  // if the name doesn't start with [a-zA-Z_], prepend "CHPL_"
+  // this can really only happen if a filename starts with a non-alphabetic character
+  // and implicit modules are used.
+  if (!isalpha(name[0]) && name[0] != '_') {
+    name = "CHPL_" + name;
+  }
+
   fn->cname = astr(name);
 }
 
