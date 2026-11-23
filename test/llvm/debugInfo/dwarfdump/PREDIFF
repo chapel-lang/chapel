@@ -131,6 +131,7 @@ class Verifier:
                     condition=lambda block: block.tag() != "DW_TAG_subprogram",
                 )
 
+            blocks = pdd.sort_entries(blocks)
             blocks = pdd.deduplicate_blocks(blocks)
 
             # expand blocks back into output

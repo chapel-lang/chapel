@@ -95,6 +95,44 @@ def blocks_sorted(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     return sorted_blocks
 
 
+def sort_entries(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
+    """Normalize attribute order while preserving the existing dump layout."""
+    default_order = (
+        "DW_AT_low_pc",
+        "DW_AT_high_pc",
+        "DW_AT_specification",
+        "DW_AT_linkage_name",
+        "DW_AT_name",
+        "DW_AT_byte_size",
+        "DW_AT_decl_file",
+        "DW_AT_decl_line",
+        "DW_AT_type",
+        "DW_AT_artificial",
+        "DW_AT_declaration",
+        "DW_AT_alignment",
+        "DW_AT_data_member_location",
+        "DW_AT_const_value",
+    )
+    for block in blocks:
+        order = default_order
+        if block.tag() in {
+            "DW_TAG_pointer_type", "DW_TAG_typedef", "DW_TAG_enumeration_type"
+        }:
+            order = ("DW_AT_type", "DW_AT_enum_class") + order
+        elif block.tag() == "DW_TAG_member":
+            order = ("DW_AT_name", "DW_AT_type") + order
+
+        def entry_sort_key(entry):
+            attribute = entry.split()[0]
+            if attribute in order:
+                return False, order.index(attribute), entry
+            return True, 0, entry
+
+        block.entries[1:] = sorted(block.entries[1:], key=entry_sort_key)
+        sort_entries(block.children)
+    return blocks
+
+
 def deduplicate_blocks(blocks: List[DwarfTagBlock]) -> List[DwarfTagBlock]:
     deduped_blocks = []
     seen = set()
