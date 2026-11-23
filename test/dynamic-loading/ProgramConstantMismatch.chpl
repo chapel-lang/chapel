@@ -7,6 +7,13 @@ config param chapelLibraryPath = './lib/libIncompatibleChapelLibrary' +
 config param constant = 'CHPL_CACHE_REMOTE';
 config param expectError = true;
 
+proc skipConstant() {
+  use ChplConfig;
+  if !expectError then return true;
+  if constant == 'CHPL_LAUNCHER' && CHPL_LAUNCHER == 'none' then return true;
+  return false;
+}
+
 proc main() {
   const lib = new dynamicLibraryHelper(chapelLibraryPath);
   const err = lib.err();
@@ -14,10 +21,11 @@ proc main() {
   writeln('Checking constant: ', constant);
 
   if err != nil {
+    // Always write the error message so we can debug more easily.
     writeln(err!.message());
   }
 
-  if !expectError {
+  if skipConstant() {
     assert(err == nil);
     writeln('SKIPPED');
   } else {

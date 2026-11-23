@@ -18,6 +18,11 @@ module ChapelLibraryTestCommon {
     return './lib/libChapelLibrary.' + dynamicLibrary.fileExt;
   }
 
+  inline proc chapelLibraryExtension param {
+    use DynamicLibrary;
+    return dynamicLibrary.fileExt;
+  }
+
   inline proc debugf() {
     extern proc printf(fmt): void;
     printf('\n');
