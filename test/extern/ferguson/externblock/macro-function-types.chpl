@@ -19,6 +19,12 @@ extern {
   #define AUTO_COUNT() macroCount()
   #define AUTO_ID(x) (x)
   #define AUTO_TEXT() "hello"
+  #define AUTO_JOINED_TEXT() ((AUTO_TEXT() " world"))
+  #define OBJECT_TEXT AUTO_JOINED_TEXT()
+  static char autoTextBuffer[] = "buffer";
+  #define AUTO_BUFFER() autoTextBuffer
+  #define AUTO_CAST_TEXT() ((char *)"cast")
+  #define AUTO_CAST_CONST_TEXT() ((const char *)"cast const")
   #define AUTO_NEXT() (++autoMacroState)
   #define AUTO_CONST_KIND(p) _Generic((p), int *: 1, const int *: 2)
   #define AUTO_BUMP(p, x) do { *(p) += (x); autoMacroState += (x); } while (0)
@@ -57,8 +63,24 @@ assert(constP.type == c_ptrConst(c_int) && constP.deref() == 7);
 assert(AUTO_CONST_KIND(c_ptrTo(i)) == 1);
 assert(AUTO_CONST_KIND(c_ptrToConst(i)) == 2);
 var text = AUTO_TEXT();
-assert(text.type == c_ptr(c_char));
+assert(text.type == c_ptrConst(c_char));
 assert(string.createCopyingBuffer(text) == "hello");
+var joinedText = AUTO_JOINED_TEXT();
+assert(joinedText.type == c_ptrConst(c_char));
+assert(string.createCopyingBuffer(joinedText) == "hello world");
+var objectText = OBJECT_TEXT;
+assert(objectText.type == c_ptrConst(c_char));
+assert(string.createCopyingBuffer(objectText) == "hello world");
+var buffer = AUTO_BUFFER();
+assert(buffer.type == c_ptr(c_char));
+buffer[0] = 66:c_char;
+assert(string.createCopyingBuffer(buffer) == "Buffer");
+var castText = AUTO_CAST_TEXT();
+assert(castText.type == c_ptr(c_char));
+assert(string.createCopyingBuffer(castText) == "cast");
+var castConstText = AUTO_CAST_CONST_TEXT();
+assert(castConstText.type == c_ptrConst(c_char));
+assert(string.createCopyingBuffer(castConstText) == "cast const");
 assert(AUTO_NEXT() == 1);
 assert(nextFromAnotherFunction() == 2);
 AUTO_BUMP(p, 3:c_int);
