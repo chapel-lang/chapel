@@ -43,7 +43,7 @@ jobs:
         password: ${{ secrets.github_token }}
     env:
       ARKOUDA_REPO: "Bears-R-Us/arkouda"
-      ARROW_VERSION: "19.0.1"
+      AK_ICONV_VER: 1.19
     timeout-minutes: 90 # usually takes ~45 minutes, double for safety
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +54,7 @@ jobs:
         with:
           create-symlink: true
           key: ccache-${{ github.job }}
+          save: ${{ github.ref == 'refs/heads/main' && env.ARKOUDA_VERSION_INPUT == 'release' }}
       - name: determine version of Arkouda to use
         env:
           GH_TOKEN: ${{ github.token }}
@@ -70,15 +71,7 @@ jobs:
               # Work around pandas incompatibility in release v2026.10.14, fixed in
               # https://github.com/Bears-R-Us/arkouda/pull/5537.
               echo "pandas == 3.0.6" > requirements-hack.txt
-              {
-                echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt"
-                # libiconv 1.17 fails to build with GCC 15 (C23), fixed in
-                # https://github.com/Bears-R-Us/arkouda/pull/5538.
-                echo "AK_ICONV_VER=1.19"
-                # arrow 19 can't be built with newer versions of CMake
-                # https://github.com/Bears-R-Us/arkouda/pull/5539
-                echo "AK_ARROW_VER=25.0.1"
-              } >> "$GITHUB_ENV"
+              echo "AK_PIP_CONSTRAINTS=--constraint $(pwd)/requirements-hack.txt" >> "$GITHUB_ENV"
             fi
           else
             arkouda_version="$ARKOUDA_VERSION_INPUT"
@@ -101,16 +94,21 @@ jobs:
             echo "ARKOUDA_BRANCH=$arkouda_version"
             echo "ARKOUDA_DEP_DIR=$(pwd)/dep"
             echo "ARKOUDA_SKIP_CHECK_DEPS=true"
+            echo "ARKOUDA_ZMQ_PATH=/usr"
+            echo "ARKOUDA_HDF5_PATH=/usr/lib/$(gcc -print-multiarch)/hdf5/serial"
+            echo "ARKOUDA_ARROW_PATH=/usr"
+            echo "ARKOUDA_ICONV_PATH=$(pwd)/dep/libiconv-install"
+            echo "ARKOUDA_IDN2_PATH=/usr"
             echo "ARKOUDA_SHA=$(git rev-parse HEAD)"
           } >> "$GITHUB_ENV"
-      - name: cache Arkouda deps install
-        id: cache-arkouda-deps
+      - name: cache Arkouda libiconv
+        id: cache-arkouda-iconv
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ env.ARKOUDA_DEP_DIR }}
-          key: arkouda-${{ env.ARKOUDA_SHA }}
-      - name: install Arkouda deps (retrying)
-        if: steps.cache-arkouda-deps.outputs.cache-hit != 'true'
+          path: ${{ env.ARKOUDA_ICONV_PATH }}
+          key: arkouda-iconv-${{ env.AK_ICONV_VER }}
+      - name: install Arkouda iconv (retrying)
+        if: steps.cache-arkouda-iconv.outputs.cache-hit != 'true'
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
@@ -126,14 +124,14 @@ jobs:
 
             num_procs=$(util/buildRelease/chpl-make-cpu_count)
             cd arkouda
-            # Download sources serially first before building, as it is flaky and
-            # that'll make it easier to diagnose failures.
-            make deps-download-source ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"} ${AK_ARROW_VER:+"ARROW_VER=$AK_ARROW_VER"}
-            make -j"$num_procs" install-deps ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"} ${AK_ARROW_VER:+"ARROW_VER=$AK_ARROW_VER"}
-      - name: check contents of Arkouda deps install
+            make -j"$num_procs" install-iconv ${AK_ICONV_VER:+"ICONV_VER=$AK_ICONV_VER"}
+      - name: check Arkouda dependencies
         run: |
-          test -d "$ARKOUDA_DEP_DIR"
-          ls -R "$ARKOUDA_DEP_DIR"
+          pkg-config --print-errors --exists arrow parquet libzmq libidn2
+          test -f "$ARKOUDA_HDF5_PATH/include/hdf5_hl.h"
+          test -f "$ARKOUDA_HDF5_PATH/lib/libhdf5_hl.so"
+          test -f "$ARKOUDA_ICONV_PATH/include/iconv.h"
+          test -f "$ARKOUDA_ICONV_PATH/lib/libiconv.so"
       - name: setup Python
         timeout-minutes: ${{ fromJSON(env.APT_INSTALL_TIMEOUT_MINS) }}
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
