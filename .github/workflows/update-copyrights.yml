@@ -3,8 +3,8 @@ name: Update copyright years
 on:
   workflow_dispatch: # Dry run only
   schedule:
-    - cron: '37 15 * * 1' # Weekly dry run (Monday, UTC)
-    - cron: '17 15 1 1 *' # Publish on January 1 (UTC)
+    - cron: '0 16 * * 1' # Weekly dry run (Monday, UTC)
+    - cron: '0 15 1 1 *' # Publish on January 1 (UTC)
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: UTC
-      PUBLISH: ${{ github.event.schedule == '17 15 1 1 *' }}
+      PUBLISH: ${{ github.event.schedule == '0 15 1 1 *' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
