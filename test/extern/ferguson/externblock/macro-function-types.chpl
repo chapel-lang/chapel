@@ -23,6 +23,8 @@ extern {
   #define OBJECT_TEXT AUTO_JOINED_TEXT()
   static char autoTextBuffer[] = "buffer";
   #define AUTO_BUFFER() autoTextBuffer
+  static const char* autoConstTextBuffer = "const buffer";
+  #define AUTO_CONST_BUFFER() autoConstTextBuffer
   #define AUTO_CAST_TEXT() ((char *)"cast")
   #define AUTO_CAST_CONST_TEXT() ((const char *)"cast const")
   #define AUTO_NEXT() (++autoMacroState)
@@ -75,6 +77,9 @@ var buffer = AUTO_BUFFER();
 assert(buffer.type == c_ptr(c_char));
 buffer[0] = 66:c_char;
 assert(string.createCopyingBuffer(buffer) == "Buffer");
+var constBuffer = AUTO_CONST_BUFFER();
+assert(constBuffer.type == c_ptrConst(c_char));
+assert(string.createCopyingBuffer(constBuffer) == "const buffer");
 var castText = AUTO_CAST_TEXT();
 assert(castText.type == c_ptr(c_char));
 assert(string.createCopyingBuffer(castText) == "cast");
