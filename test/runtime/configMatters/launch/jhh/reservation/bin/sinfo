@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 
+import os
 import sys
+import time
 
 def main(argv):
+    if os.getenv("CHPL_TEST_SINFO_LARGE_OUTPUT"):
+        print("256 2")
+        sys.stdout.flush()
+        time.sleep(0.1)
+        sys.stderr.write("x" * 2048)
+        sys.stderr.flush()
+        return
+
     partition = None
     for arg in argv:
         if arg.startswith("--partition"):

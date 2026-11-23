@@ -68,6 +68,8 @@ class SrunTests(unittest.TestCase):
         self.env.pop('CHPL_LAUNCHER_PARTITION', None)
         self.env.pop('CHPL_LAUNCHER_CORES_PER_LOCALE', None)
         self.env.pop('CHPL_LAUNCHER_USE_SBATCH', None)
+        self.env.pop('CHPL_TEST_SBATCH_LARGE_OUTPUT', None)
+        self.env.pop('CHPL_TEST_SINFO_LARGE_OUTPUT', None)
 
     def runCmd(self, cmd):
         output = runCmd(cmd, self.env)
@@ -133,6 +135,26 @@ class SrunTests(unittest.TestCase):
         output = self.runCmd("./hello -nl 1 -v --dry-run")
         self.assertIn('--cpus-per-task=48', output)
         self.assertIn('--partition=bar', output)
+
+    def test_08_large_sbatch_output(self):
+        """Reject utility output that exceeds the version buffer"""
+        if 'CHPL_LAUNCHER_USE_SBATCH' in self.env:
+            self.skipTest("Test requires the interactive launcher")
+        self.env['CHPL_TEST_SBATCH_LARGE_OUTPUT'] = '1'
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            self.runCmd("./hello -nl 1 -v --dry-run")
+        self.assertIn("output exceeds buffer capacity of 255 bytes",
+                      cm.exception.stdout)
+
+    def test_09_large_sinfo_stderr(self):
+        """Drain oversized utility output from both pipes without overflowing"""
+        if 'CHPL_LAUNCHER_USE_SBATCH' in self.env:
+            self.skipTest("Test requires the interactive launcher")
+        self.env['CHPL_TEST_SINFO_LARGE_OUTPUT'] = '1'
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            self.runCmd("./hello -nl 1 -v --dry-run")
+        self.assertIn("output exceeds buffer capacity of 1023 bytes",
+                      cm.exception.stdout)
 
 class SbatchTests(SrunTests):
 

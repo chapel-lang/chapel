@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <signal.h>
 #include "chpl-prginfo.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
@@ -135,29 +136,45 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
   *charsWritten += actuallyWrote;
 }
 //
-// Use this function to run short utility programs that will return less
-//  than 1024 characters of output.  The program must not expect any input.
-//  On success, returns the number of bytes read and the output of the
-//  command in outbuf.  Returns -1 on failure.
+// Use this function to run short utility programs that will return up to 1024
+// bytes of output. The program must not expect any input.
+// outbuflen includes space for a terminating null byte. On success, returns
+// the number of bytes read and the output of the command in outbuf. Returns
+// -1 on failure or if the output does not fit.
 //
 int
 chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
   const int buflen = 1024;
-  char buf[buflen];
-  char *cur;
-  int fdo[2], outfd;
-  int fde[2], errfd;
+  char buf[buflen + 1];
+  char drainBuf[buflen];
+  int pipefds[2];
+  int pipeOpen[2] = {1, 1};
   fd_set set;
   pid_t pid;
   int status;
-  int rv, numRead;
+  int rv, numRead = 0;
+  int outputTooLong = 0;
+  int failed = 0;
+  int maxOutput;
 
+  if (outbuf == NULL || outbuflen <= 0) {
+    chpl_warning("Invalid output buffer passed to chpl_run_utility1K", 0, 0);
+    return -1;
+  }
+  outbuf[0] = '\0';
+  maxOutput = outbuflen - 1;
+  if (maxOutput > buflen)
+    maxOutput = buflen;
+
+  int fdo[2], fde[2];
   if (pipe(fdo) < 0) {
     snprintf(buf, sizeof(buf), "Unable to run '%s' (pipe failed): %s\n",
              command, strerror(errno));
     chpl_internal_error(buf);
   }
   if (pipe(fde) < 0) {
+    close(fdo[0]);
+    close(fdo[1]);
     snprintf(buf, sizeof(buf), "Unable to run '%s' (pipe failed): %s\n",
              command, strerror(errno));
     chpl_internal_error(buf);
@@ -191,71 +208,110 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     snprintf(buf, sizeof(buf), "Unable to run '%s' (fork failed): %s",
             command, strerror(errno));
     chpl_warning(buf, 0, 0);
+    close(fdo[0]);
+    close(fdo[1]);
+    close(fde[0]);
+    close(fde[1]);
     return -1;
   default:
-    outfd = fdo[0];
-    errfd = fde[0];
     close(fdo[1]);
     close(fde[1]);
-    numRead = 0;
-    cur = buf;
-    while (numRead < buflen) {
+    pipefds[0] = fdo[0];
+    pipefds[1] = fde[0];
+    while (pipeOpen[0] || pipeOpen[1]) {
       struct timeval tv = { 1, 0 };
+      int maxfd = -1;
       FD_ZERO(&set);
-      FD_SET(outfd, &set);
-      FD_SET(errfd, &set);
-      select(errfd+1, &set, NULL, NULL, &tv);
-      if (FD_ISSET(outfd, &set)) {
-        rv = read(outfd, cur, buflen);
-        if (rv == 0) {
-          if (waitpid(pid, &status, WNOHANG) == pid)
-            break;
-        } else if (rv > 0) {
-          cur += rv;
-          numRead += rv;
-        } else {
-          snprintf(buf, sizeof(buf), "Unable to run '%s' (read failed): %s",
-                  command, strerror(errno));
-          chpl_warning(buf, 0, 0);
-          return -1;
+      for (int i = 0; i < 2; i++) {
+        if (pipeOpen[i]) {
+          FD_SET(pipefds[i], &set);
+          if (pipefds[i] > maxfd)
+            maxfd = pipefds[i];
         }
       }
-      if (FD_ISSET(errfd, &set)) {
-        rv = read(errfd, cur, buflen);
-        if (rv == 0) {
-          if (waitpid(pid, &status, WNOHANG) == pid)
+      rv = select(maxfd + 1, &set, NULL, NULL, &tv);
+      if (rv < 0) {
+        if (errno == EINTR)
+          continue;
+        snprintf(buf, sizeof(buf), "Unable to run '%s' (select failed): %s",
+                 command, strerror(errno));
+        chpl_warning(buf, 0, 0);
+        failed = 1;
+        break;
+      }
+      if (rv == 0)
+        continue;
+
+      for (int i = 0; i < 2; i++) {
+        if (pipeOpen[i] && FD_ISSET(pipefds[i], &set)) {
+          char *readBuf;
+          size_t readLen;
+          if (numRead < maxOutput) {
+            readBuf = buf + numRead;
+            readLen = maxOutput - numRead;
+          } else {
+            readBuf = drainBuf;
+            readLen = sizeof(drainBuf);
+          }
+          rv = read(pipefds[i], readBuf, readLen);
+          if (rv == 0) {
+            close(pipefds[i]);
+            pipeOpen[i] = 0;
+          } else if (rv > 0) {
+            if (readBuf == drainBuf) {
+              outputTooLong = 1;
+            } else {
+              numRead += rv;
+            }
+          } else if (errno != EINTR) {
+            snprintf(buf, sizeof(buf), "Unable to run '%s' (read failed): %s",
+                     command, strerror(errno));
+            chpl_warning(buf, 0, 0);
+            failed = 1;
             break;
-        } else if (rv > 0) {
-          cur += rv;
-          numRead += rv;
-        } else {
-          snprintf(buf, sizeof(buf), "Unable to run '%s' (read failed): %s",
-                  command, strerror(errno));
-          chpl_warning(buf, 0, 0);
-          return -1;
+          }
         }
       }
+      if (failed)
+        break;
     }
 
-    if (numRead != 0) {
-      if (strstr(buf, "internal error: ") == NULL) {
-        memcpy(outbuf, buf, numRead);
-      } else {
-        // The utility program ran, but failed with an internal error
-        // from child's branch above (dup2 or exevp)
-        buf[numRead] = 0;
-        chpl_warning(buf, 0, 0);
-        return -1;
+    if (failed) {
+      for (int i = 0; i < 2; i++) {
+        if (pipeOpen[i])
+          close(pipefds[i]);
       }
-    } else {
+      kill(pid, SIGTERM);
+    }
+    while (waitpid(pid, &status, 0) < 0) {
+      if (errno == EINTR)
+        continue;
+      snprintf(buf, sizeof(buf), "Unable to run '%s' (waitpid failed): %s",
+               command, strerror(errno));
+      chpl_warning(buf, 0, 0);
+      return -1;
+    }
+
+    if (failed)
+      return -1;
+
+    if (outputTooLong) {
+      snprintf(buf, sizeof(buf),
+               "Unable to run '%s' (output too large)",
+               command);
+      chpl_warning(buf, 0, 0);
+      return -1;
+    }
+
+    if (numRead == 0) {
       snprintf(buf, sizeof(buf), "Unable to run '%s' (no bytes read)",
                command);
       chpl_warning(buf, 0, 0);
       return 0;
     }
 
-    // NOTE: We don't do a waitpid() here, so the program may keep running.
-    //  That is a bad program, and I'm not going to deal with it here.
+    buf[numRead] = '\0';
+    memcpy(outbuf, buf, numRead + 1);
   }
   return numRead;
 }
