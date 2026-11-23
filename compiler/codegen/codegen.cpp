@@ -199,10 +199,14 @@ const char* legalizeName(const char* name) {
       default:
       {
         unsigned char c = *ch;
+        // if char is valid C ident, keep it
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
             (c >= '0' && c <= '9') || c == '_') {
           ret += c;
         } else {
+          // otherwise, normalize to a hex representation
+          // this is an absolute last case fallback, the logic above
+          // should handle most cases.
           const char* hex = "0123456789ABCDEF";
           ret += "_x";
           ret += hex[c >> 4];

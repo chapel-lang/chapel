@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-"$3" --library --dynamic --no-builtin-runtime addOneLib.chpl
+"$3" --library --dynamic --no-builtin-runtime --no-cache-remote addOneLib.chpl
