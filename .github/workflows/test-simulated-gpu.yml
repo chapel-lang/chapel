@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cuda: ["12.9", "13.1", &latest_cuda "13.4"]
+        cuda: ["12.8", "12.9", "13.1", &latest_cuda "13.4"]
         llvm: [&cuda_llvm_version "23"]
         comm: ["none"]
         # TODO: add comm=ofi+mpi for ofi coverage
