@@ -40,10 +40,25 @@
 
 static chpl_rt_prginfo* chpl_prg_root;
 
-// Class id translation caches. 'cid_caches[self]' points to an array indexed
-// by foreign program id, whose elements point to an array indexed by the
-// foreign program's class index holding self's class index (0 if not yet
-// looked up). Element 0 of that array holds its length.
+// Class index translation caches, indexed first by the current program ID
+// and then by the foreign program ID. Each resulting array maps foreign class
+// indices to class indices in the current program.
+//
+// Example: program 1 has translated class index 3 from program 2 to index 5:
+//
+//   cid_caches[1]
+//       |
+//       v
+//   foreign program ID     foreign class index
+//   +---+---+---+---+      +---+---+---+---+---+---+
+//   | 0 | 1 | 2 |...|      | 0 | 1 | 2 | 3 | 4 | 5 |
+//   +---+---+-|-+---+      +---+---+---+---+---+---+
+//             +----------> | 6 | 0 | 0 | 5 | 0 | 0 |
+//                          +---+---+---+---+---+---+
+//
+// The first entry of the class-index array is its length (6); other entries
+// are 0 until looked up. On a cache miss, the runtime finds the class by name
+// in the current program and stores its index for subsequent translations.
 static chpl_atomic_uintptr_t cid_caches[CHPL_CID_MAX_PROGRAMS];
 
 /** Define setters that module code can call to set up program data. */
