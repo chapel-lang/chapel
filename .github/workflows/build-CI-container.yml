@@ -126,8 +126,6 @@ jobs:
           platforms: linux/${{ env.ARCH }}
           tags: ${{ needs.should-build-ci-container.outputs.image }}-${{ env.ARCH }}
           push: true
-          cache-from: type=gha,scope=${{ env.ARCH }}
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=gha,scope={0},mode=max', env.ARCH) || '' }}
       - name: check image LLVM version
         env:
           IMAGE: ${{ needs.should-build-ci-container.outputs.image }}
