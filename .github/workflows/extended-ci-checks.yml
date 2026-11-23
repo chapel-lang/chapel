@@ -176,6 +176,10 @@ jobs:
               export CHPL_LAUNCHER=slurm-gasnetrun_mpi
               export CHPL_COMM_SUBSTRATE=mpi
               export GASNET_QUIET=Y
+              # avoid gasnetrun's '-map-by ppr:1:node', which can't oversubscribe
+              # this is a hack to get oversubscription to work, if we ever
+              # need to support this for users we should do a proper fix
+              export MPIRUN_CMD='mpirun --oversubscribe --bind-to none -mca mpi_yield_when_idle 1 -np %M %P %A MPIRUN_CMD_OK'
             else
               export SLURM_MPI_TYPE=none
             fi
