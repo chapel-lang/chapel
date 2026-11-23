@@ -32,13 +32,13 @@ proc main() {
 // CHECK-NEXT: Breakpoint [[#BREAKPOINT_START:]]
 
 // CHECK: b methodCallsClass.chpl:8
-// CHECK-NEXT: methodCallsClass`methodCallsClass_myClass_toString_chpl
+// CHECK-NEXT: methodCallsClass`{{(toString|methodCallsClass_myClass_toString_chpl)}}
 // CHECK-SAME: methodCallsClass.chpl:8
 // CHECK: b methodCallsClass.chpl:12
-// CHECK-NEXT: methodCallsClass`methodCallsClass_myClass_myMethod_chpl
+// CHECK-NEXT: methodCallsClass`{{(myMethod|methodCallsClass_myClass_myMethod_chpl)}}
 // CHECK-SAME: methodCallsClass.chpl:12
 // CHECK: b methodCallsClass.chpl:15
-// CHECK-NEXT: methodCallsClass`methodCallsClass_myClass_setter_chpl
+// CHECK-NEXT: methodCallsClass`{{(setter|methodCallsClass_myClass_setter_chpl)}}
 // CHECK-SAME: methodCallsClass.chpl:15
 
 // CHECK: stop reason = breakpoint [[#BREAKPOINT_START+2]]
