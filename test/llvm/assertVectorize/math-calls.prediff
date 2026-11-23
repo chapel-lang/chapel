@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 
 TESTNAME=$1
 OUTFILE=$2

@@ -29,6 +29,15 @@ fi
 
 sed -E "s/^(.*Pipeline): '.+'$/\1: '...'/" $OUTFILE > $OUTFILE.tmp
 mv $OUTFILE.tmp $OUTFILE
+
+# filter out -Winvalid-feature-combination
+if grep -q 'invalid-feature-combination' $OUTFILE; then
+  grep -v 'invalid-feature-combination' $OUTFILE > $OUTFILE.tmp
+  mv $OUTFILE.tmp $OUTFILE
+  grep -v 'warning generated' $OUTFILE > $OUTFILE.tmp
+  mv $OUTFILE.tmp $OUTFILE
+fi
+
 if [ -n "$missing" ]; then
   echo "$missing" >> $OUTFILE
 fi
