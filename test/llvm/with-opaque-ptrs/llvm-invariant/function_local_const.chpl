@@ -14,10 +14,10 @@ proc calculate(const ref a: A) {
 
 // CHECK: @f_chpl
 // CHECK: call void @init_chpl{{.*}}(ptr {{[^%]*}}[[NEW_TEMP:%[0-9a-zA-Z_]+]],
-// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[NEW_TEMP]]
-// CHECK: store %A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
-// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[TMP2]]
-// CHECK: store %A_chpl [[TMP3]], ptr [[TMP4:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %function_local_const_A_chpl, ptr [[NEW_TEMP]]
+// CHECK: store %function_local_const_A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %function_local_const_A_chpl, ptr [[TMP2]]
+// CHECK: store %function_local_const_A_chpl [[TMP3]], ptr [[TMP4:%[0-9a-zA-Z_]+]]
 // CHECK: call ptr @llvm.invariant.start.p0(i64 8, ptr [[TMP4]])
 // CHECK: @calculate_chpl
 // CHECK-SAME:[[TMP4]]

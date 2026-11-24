@@ -2,3 +2,6 @@
 
 grep -oE '[a-zA-Z_0-9]+Box_getValue' genCode/1numericModuleName.c | sort | uniq >> $2
 grep -oE '[a-zA-Z_0-9]+_increment' genCode/1numericModuleName.c | sort | uniq >> $2
+sed -nE 's/^} (CHPL_1numericModuleName_(Box|Inner_Nested|Inner_Generic_int64_t))(_chpl)?;$/\1/p' genCode/chpl__header.h | sort >> $2
+sed -nE 's/^typedef struct chpl_(CHPL_1numericModuleName_Inner_GenericClass_int64_t)(_chpl)?[0-9]*_s\* [^;]+;$/\1/p' genCode/chpl__header.h >> $2
+sed -nE 's/^typedef enum \{.*\} (CHPL_1numericModuleName_Inner_Choice)(_chpl)?;$/\1/p' genCode/chpl__header.h >> $2

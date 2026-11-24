@@ -36,7 +36,7 @@ writeln(f(42, 3.14));
 // CHECK-DAG: ![[REAL:[0-9]+]] = !{!"_real64", ![[UNIONS]], i64 0}
 //
 // Record TBAA type descriptor:  reference to each field's type
-// CHECK-DAG: ![[REC:[0-9]+]] = !{!"MyRecord_chpl", ![[INT]], i64 0, ![[REAL]], i64 {{[0-9]+}}}
+// CHECK-DAG: ![[REC:[0-9]+]] = !{!"tbaa_record_MyRecord_chpl", ![[INT]], i64 0, ![[REAL]], i64 {{[0-9]+}}}
 //
 // Now validate those access tags.
 // The int is at offset zero because it is the first field.

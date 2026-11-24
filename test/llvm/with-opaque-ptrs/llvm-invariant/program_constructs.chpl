@@ -12,10 +12,10 @@ proc f(n)
   for i in 1..10
   {
 // CHECK: call {{.*}} @init_chpl{{.*}}(ptr {{[^%]*}}[[NEW_TEMP:%[0-9a-zA-Z_]+]],
-// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[NEW_TEMP]]
-// CHECK: store %A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
-// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[TMP2]]
-// CHECK: store %A_chpl [[TMP3]], ptr [[PTR1:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[NEW_TEMP]]
+// CHECK: store %program_constructs_A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[TMP2]]
+// CHECK: store %program_constructs_A_chpl [[TMP3]], ptr [[PTR1:%[0-9a-zA-Z_]+]]
 // CHECK: call ptr @llvm.invariant.start.p0(i64 8, ptr [[PTR1]])
 // CHECK: getelementptr
 // CHECK-SAME:[[PTR1]]
@@ -25,10 +25,10 @@ proc f(n)
 
   if n < 10 {
 // CHECK: call {{.*}} @init_chpl{{.*}}(ptr {{[^%]*}}[[NEW_TEMP:%[0-9a-zA-Z_]+]],
-// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[NEW_TEMP]]
-// CHECK: store %A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
-// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[TMP2]]
-// CHECK: store %A_chpl [[TMP3]], ptr [[PTR2:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[NEW_TEMP]]
+// CHECK: store %program_constructs_A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[TMP2]]
+// CHECK: store %program_constructs_A_chpl [[TMP3]], ptr [[PTR2:%[0-9a-zA-Z_]+]]
 // CHECK: call ptr @llvm.invariant.start.p0(i64 8, ptr [[PTR2]])
 // CHECK: getelementptr
 // CHECK-SAME:[[PTR2]]
@@ -37,10 +37,10 @@ proc f(n)
   }
   else {
 // CHECK: call {{.*}} @init_chpl{{.*}}(ptr {{[^%]*}}[[NEW_TEMP:%[0-9a-zA-Z_]+]],
-// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[NEW_TEMP]]
-// CHECK: store %A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
-// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %A_chpl, ptr [[TMP2]]
-// CHECK: store %A_chpl [[TMP3]], ptr [[PTR3:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP1:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[NEW_TEMP]]
+// CHECK: store %program_constructs_A_chpl [[TMP1]], ptr [[TMP2:%[0-9a-zA-Z_]+]]
+// CHECK: [[TMP3:%[0-9a-zA-Z_]+]] = load %program_constructs_A_chpl, ptr [[TMP2]]
+// CHECK: store %program_constructs_A_chpl [[TMP3]], ptr [[PTR3:%[0-9a-zA-Z_]+]]
 // CHECK: call ptr @llvm.invariant.start.p0(i64 8, ptr [[PTR3]])
 // CHECK: getelementptr
 // CHECK-SAME:[[PTR3]]
