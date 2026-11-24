@@ -1,1 +1,22 @@
---llvm-print-ir kernel --llvm-print-ir-stage full --fast --no-ieee-float --no-local
+#!/usr/bin/env python3
+
+import os
+
+base = '--llvm-print-ir kernel --llvm-print-ir-stage full --no-ieee-float --no-local'
+modes = ['--fast', '--fast --no-specialize', '--optimize', '--optimize --specialize']
+
+arch = os.environ.get('CHPL_TARGET_ARCH', '')
+if arch in ('arm64', 'aarch64'):
+    ccflags = ['--ccflags=-mtune=neoverse-v2',
+               '--ccflags=-mcpu=generic --ccflags=-mtune=neoverse-v2']
+elif arch == 'x86_64':
+    ccflags = ['--ccflags=-mtune=znver4',
+               '--ccflags=-march=x86-64 --ccflags=-mtune=znver4']
+else:
+    ccflags = []
+
+for mode in modes:
+    print(base + ' ' + mode)
+for flags in ccflags:
+    for mode in ('--fast', '--optimize'):
+        print(base + ' ' + mode + ' ' + flags)

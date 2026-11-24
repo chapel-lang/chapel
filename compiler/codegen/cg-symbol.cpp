@@ -3204,6 +3204,10 @@ void FnSymbol::codegenDef() {
       func->addFnAttr("target-features", TargetFeatures);
     }
 
+    std::string TuneCPU = getClangTuneCPU();
+    if (!TuneCPU.empty())
+      func->addFnAttr("tune-cpu", TuneCPU);
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
     trackLLVMValue(block);

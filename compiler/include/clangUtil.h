@@ -141,6 +141,8 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 
 void checkAdjustedDataLayout();
 
+std::string getClangTuneCPU();
+
 extern fileinfo gAllExternCode;
 extern std::string ggpuFatbinPath;
 
