@@ -423,14 +423,12 @@ static const char* program_only_constant_name_table[] = {
 
 const char*
 chpl_rt_program_only_constant_by_idx(int idx) {
-  int num_program_only_constants = chpl_rt_num_program_only_constants();
-  assert(0 <= idx && idx < num_program_only_constants);
+  assert(0 <= idx && idx < chpl_rt_num_program_only_constants());
   return program_only_constant_name_table[idx];
 }
 
 chpl_bool chpl_rt_program_only_constant_is_invariant(int idx) {
-  int num_program_only_constants = chpl_rt_num_program_only_constants();
-  assert(0 <= idx && idx < num_program_only_constants);
+  assert(0 <= idx && idx < chpl_rt_num_program_only_constants());
 
   program_only_constant_enum e = (program_only_constant_enum) idx;
 
