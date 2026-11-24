@@ -391,7 +391,7 @@ def get_homebrew_gnu_command(name):
     for entry in os.listdir(bin_dir):
         if not entry.startswith(prefix):
             continue
-        version = entry[len(prefix):]
+        version = entry[len(prefix) :]
         if not version.isdigit():
             continue
         path = os.path.join(bin_dir, entry)
