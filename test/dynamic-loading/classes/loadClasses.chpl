@@ -17,7 +17,7 @@ proc main() {
   writeln("Loading Library");
   var lib = DynamicLibrary.load("loadClassesLib", directory=path);
 
-  var producer = DynamicLibrary.load("libarrayProducer", directory=path);
+  var producer = DynamicLibrary.load("arrayProducer", directory=path);
   var makeC = producer.retrieve("makeC", proc(): c_ptr(void));
   var checkAndDeleteC = producer.retrieve("checkAndDeleteC", proc(ptr: c_ptr(void)): void);
   var updateArray = lib.retrieve("updateArray", proc(ptr: c_ptr(void)): void);
