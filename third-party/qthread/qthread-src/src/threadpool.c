@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(__STDC_NO_THREADS__)
+#if defined(__STDC_NO_THREADS__) || !__has_include(<threads.h>)
 #define QPOOL_USE_PTHREADS
 #endif
 

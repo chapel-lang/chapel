@@ -30,6 +30,7 @@ The modifications that we have made to the official Qthreads release are
 as follows:
 
 Prevent CMake from overriding the OSX deployment target
+```
 --- a/third-party/qthread/qthread-src/CMakeLists.txt
 +++ b/third-party/qthread/qthread-src/CMakeLists.txt
 @@ -16,6 +16,11 @@ else()
@@ -45,3 +46,30 @@ Prevent CMake from overriding the OSX deployment target
 
  set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+```
+
+Allow building with GCC on MacOS
+```
+--- a/third-party/qthread/qthread-src/include/qt_macros.h
++++ b/third-party/qthread/qthread-src/include/qt_macros.h
+@@ -3,7 +3,7 @@
+ 
+ // Work around OSX currently refusing to support threads.h
+ #if 201112L <= __STDC_VERSION__ && __STDC_VERSION__ < 202311L
+-#ifndef __STDC_NO_THREADS__
++#if !defined(__STDC_NO_THREADS__) && __has_include(<threads.h>)
+ #include <threads.h>
+ #else
+ #define thread_local _Thread_local
+--- a/third-party/qthread/qthread-src/src/threadpool.c
++++ b/third-party/qthread/qthread-src/src/threadpool.c
+@@ -5,7 +5,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-#if defined(__STDC_NO_THREADS__)
++#if defined(__STDC_NO_THREADS__) || !__has_include(<threads.h>)
+ #define QPOOL_USE_PTHREADS
+ #endif
+ 
+```
