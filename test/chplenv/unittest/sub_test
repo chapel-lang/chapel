@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import unittest
 from pathlib import Path
 
 
 def main():
+    chpl_home = os.environ.get("CHPL_HOME", None)
+    if chpl_home is None:
+        print("CHPL_HOME environment variable is not set")
+        exit(1)
+    sys.path.insert(0, str(Path(chpl_home) / "util" / "chplenv"))
     test_dir = Path(__file__).resolve().parent
-    sys.path.insert(0, str(test_dir.parents[2] / "util" / "chplenv"))
     suite = unittest.defaultTestLoader.discover(str(test_dir))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     if result.wasSuccessful():
