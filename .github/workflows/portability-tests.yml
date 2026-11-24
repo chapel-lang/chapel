@@ -187,7 +187,7 @@ jobs:
         run: |
           echo "release=${BSD_CONFIG#freebsd-}" >> "$GITHUB_OUTPUT"
       - name: test ${{ matrix.bsd_config }} config ${{ matrix.config }}
-        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
+        uses: vmactions/freebsd-vm@811efaaac0668df8bfb8308c3ec997b5ab50037b # v1.6.0
         with:
           release: ${{ steps.release.outputs.release }}
           disable-cache: true
