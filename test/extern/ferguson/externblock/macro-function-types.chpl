@@ -27,8 +27,8 @@ extern {
   #define AUTO_CONST_BUFFER() autoConstTextBuffer
   #define AUTO_CAST_TEXT() ((char *)"cast")
   #define AUTO_CAST_CONST_TEXT() ((const char *)"cast const")
-  #define AUTO_TEXT_OFFSET(n) ("hello" + (n))
-  #define AUTO_TEXT_OFFSET_LEFT(n) ((n) + "hello")
+  #define AUTO_TEXT_OFFSET(n) (&"hello"[0] + (n))
+  #define AUTO_TEXT_OFFSET_LEFT(n) ((n) + &"hello"[0])
   #define AUTO_TEXT_SUBSCRIPT(n) (&"hello"[(n)])
   #define AUTO_TEXT_DEREF() (&*"hello")
   #define AUTO_TEXT_COMMA() ((void)0, "hello")
