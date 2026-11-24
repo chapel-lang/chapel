@@ -2152,6 +2152,11 @@ static void loadModuleFromBitcode() {
   info->module = bitcodeResult.get().release();
 }
 
+std::string getClangTuneCPU() {
+  INT_ASSERT(gGenInfo && gGenInfo->clangInfo && gGenInfo->clangInfo->Clang);
+  return gGenInfo->clangInfo->Clang->getTargetOpts().TuneCPU;
+}
+
 static void setupModule()
 {
   GenInfo* info = gGenInfo;
