@@ -27,6 +27,14 @@ extern {
   #define AUTO_CONST_BUFFER() autoConstTextBuffer
   #define AUTO_CAST_TEXT() ((char *)"cast")
   #define AUTO_CAST_CONST_TEXT() ((const char *)"cast const")
+  #define AUTO_TEXT_OFFSET(n) ("hello" + (n))
+  #define AUTO_TEXT_OFFSET_LEFT(n) ((n) + "hello")
+  #define AUTO_TEXT_SUBSCRIPT(n) (&"hello"[(n)])
+  #define AUTO_TEXT_DEREF() (&*"hello")
+  #define AUTO_TEXT_COMMA() ((void)0, "hello")
+  #define AUTO_TEXT_SELECT(n) ((n) ? "hello" : autoTextBuffer)
+  #define AUTO_BUFFER_OFFSET(n) (autoTextBuffer + (n))
+  #define AUTO_CAST_TEXT_OFFSET(n) (((char *)"cast") + (n))
   #define AUTO_NEXT() (++autoMacroState)
   #define AUTO_CONST_KIND(p) _Generic((p), int *: 1, const int *: 2)
   #define AUTO_BUMP(p, x) do { *(p) += (x); autoMacroState += (x); } while (0)
@@ -86,6 +94,16 @@ assert(string.createCopyingBuffer(castText) == "cast");
 var castConstText = AUTO_CAST_CONST_TEXT();
 assert(castConstText.type == c_ptrConst(c_char));
 assert(string.createCopyingBuffer(castConstText) == "cast const");
+var offsetText = AUTO_TEXT_OFFSET(1:c_int);
+assert(offsetText.type == c_ptrConst(c_char));
+assert(string.createCopyingBuffer(offsetText) == "ello");
+assert(AUTO_TEXT_OFFSET_LEFT(1:c_int).type == c_ptrConst(c_char));
+assert(AUTO_TEXT_SUBSCRIPT(1:c_int).type == c_ptrConst(c_char));
+assert(AUTO_TEXT_DEREF().type == c_ptrConst(c_char));
+assert(AUTO_TEXT_COMMA().type == c_ptrConst(c_char));
+assert(AUTO_TEXT_SELECT(1:c_int).type == c_ptrConst(c_char));
+assert(AUTO_BUFFER_OFFSET(1:c_int).type == c_ptr(c_char));
+assert(AUTO_CAST_TEXT_OFFSET(1:c_int).type == c_ptr(c_char));
 assert(AUTO_NEXT() == 1);
 assert(nextFromAnotherFunction() == 2);
 AUTO_BUMP(p, 3:c_int);

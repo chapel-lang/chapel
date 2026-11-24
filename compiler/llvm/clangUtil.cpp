@@ -3577,10 +3577,42 @@ static bool usesMacroLocalStorage(const clang::Stmt* stmt) {
   return false;
 }
 
+static bool pointsToStringLiteral(const clang::Expr* expr) {
+  expr = expr->IgnoreParenImpCasts();
+  if (llvm::isa<clang::StringLiteral>(expr))
+    return true;
+  if (auto subscript = llvm::dyn_cast<clang::ArraySubscriptExpr>(expr))
+    return pointsToStringLiteral(subscript->getBase());
+  if (auto unary = llvm::dyn_cast<clang::UnaryOperator>(expr))
+    if (unary->getOpcode() == clang::UO_AddrOf ||
+        unary->getOpcode() == clang::UO_Deref)
+      return pointsToStringLiteral(unary->getSubExpr());
+  if (auto binary = llvm::dyn_cast<clang::BinaryOperator>(expr)) {
+    if (binary->getOpcode() == clang::BO_Comma)
+      return pointsToStringLiteral(binary->getRHS());
+    if (binary->isAdditiveOp()) {
+      auto lhs = binary->getLHS();
+      auto rhs = binary->getRHS();
+      if (lhs->getType()->isPointerType() &&
+          rhs->getType()->isIntegerType())
+        return pointsToStringLiteral(lhs);
+      if (binary->getOpcode() == clang::BO_Add &&
+          rhs->getType()->isPointerType() &&
+          lhs->getType()->isIntegerType())
+        return pointsToStringLiteral(rhs);
+    }
+  }
+  if (auto conditional = llvm::dyn_cast<clang::ConditionalOperator>(expr))
+    return pointsToStringLiteral(conditional->getTrueExpr()) ||
+           pointsToStringLiteral(conditional->getFalseExpr());
+  return false;
+}
+
 static std::string macroReturnTypeExpression(const clang::Expr* expr,
                                              const std::string& invocation) {
   // C string literals have non-const array types, but modifying them is undefined.
-  if (llvm::isa<clang::StringLiteral>(expr->IgnoreParenImpCasts()))
+  if ((expr->getType()->isPointerType() || expr->getType()->isArrayType()) &&
+      pointsToStringLiteral(expr))
     return "const __typeof__((" + invocation + ")[0]) *";
 
   std::string typeExpression = "(void)0, (" + invocation + ")";
