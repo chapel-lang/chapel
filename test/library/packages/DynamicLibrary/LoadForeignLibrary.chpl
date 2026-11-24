@@ -37,7 +37,11 @@ proc test3() {
   const lib2 = try! load('TestCLibrary', directory='lib/');
   const lib3 = try! load('TestCLibrary', directory='lib//');
   const lib4 = try! load('TestCLibrary', directory='./');
-  const lib5 = try! load('TestCLibraryToLoad', directory='./', prefix='');
+
+  const suffix = '.so';
+  const lib5 = try! load('TestCLibraryToLoad', directory='./',
+                         prefix='',
+                         suffix=suffix);
 }
 
 proc main() {
