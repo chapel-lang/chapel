@@ -139,12 +139,13 @@ class CudaVersionTests(unittest.TestCase):
             stack.enter_context(
                 patch.object(chpl_gpu.chpl_compiler, "get", return_value="llvm")
             )
-            stack.enter_context(patch.object(chpl_gpu, "warning"))
-            stack.enter_context(
-                patch.object(chpl_gpu, "error", side_effect=ValueError)
-            )
-            with self.assertRaisesRegex(ValueError, "LLVM.*CUDA 11"):
-                chpl_gpu.validate("gpu")
+            warning = stack.enter_context(patch.object(chpl_gpu, "warning"))
+            error = stack.enter_context(patch.object(chpl_gpu, "error"))
+
+            chpl_gpu.validate("gpu")
+            warning.assert_not_called()
+            error.assert_called_once()
+            self.assertRegex(error.call_args.args[0], "LLVM.*CUDA 11")
 
 
 class RocmVersionTests(unittest.TestCase):
