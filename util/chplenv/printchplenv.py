@@ -7,7 +7,6 @@ from functools import partial
 import argparse
 import os
 import re
-import unittest
 from sys import stdout
 import textwrap
 
@@ -880,12 +879,6 @@ def parse_args():
         dest="verify_verbose",
         help=argparse.SUPPRESS,
     )
-    parser.add_argument(
-        "--unit-tests",
-        action="store_true",
-        dest="do_unit_tests",
-        help=argparse.SUPPRESS,
-    )
 
     return parser.parse_args()
 
@@ -899,16 +892,6 @@ def main():
         utils.set_CHPL_DEVELOPER(True)
     if options.nodevel:
         utils.set_CHPL_DEVELOPER(False)
-
-    # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
-    # can find and exit.
-    if options.do_unit_tests:
-        this_dir = os.path.realpath(os.path.dirname(__file__))
-        test_loader = unittest.TestLoader()
-        test_suite = test_loader.discover(this_dir, pattern="*.py")
-        test_runner = unittest.TextTestRunner()
-        test_runner.run(test_suite)
-        exit(1)
 
     # Handle --all flag
     all_content = ["runtime", "launcher", "compiler", "default"]
