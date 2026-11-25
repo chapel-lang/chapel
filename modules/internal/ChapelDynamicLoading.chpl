@@ -643,16 +643,22 @@ module ChapelDynamicLoading {
       assert(_refCount.read() == 0);
       if _closed then return;
 
-      // Execute Chapel module deinitializers at this point.
-      if _needsModuleDeinit then on Locales[0] {
-        var err;
-        const p = loadSymbolLocally('chpl_deinitModules', proc(): void, err);
 
-        if p != nil && err == nil {
-          p();
-        } else {
-          warning('Failed to execute module deinitializers ' +
-                  'for program at: \'' + _path + '\'');
+      // TODO: Remove this workaround, having an issue with class FCFs.
+      if useProcedurePointers {
+
+        // Execute Chapel module deinitializers at this point.
+        if _needsModuleDeinit then on Locales[0] {
+          var err;
+          type T = proc(): void;
+          const p = loadSymbolLocally('chpl_deinitModules', T, err);
+
+          if p != nil && err == nil {
+            p();
+          } else {
+            warning('Failed to execute module deinitializers ' +
+                    'for program at: \'' + _path + '\'');
+          }
         }
       }
 
@@ -787,13 +793,13 @@ module ChapelDynamicLoading {
 
     // Load a symbol locally and return a local procedure pointer.
     proc loadSymbolLocally(sym: string, type t, out err: owned DynLoadError?) {
-      type P = chpl_toExternProcType(chpl_toLocalProcType(t));
-      var ret = __primitive("cast", P, nil);
-
       if !isProcedure(t) || isClass(t) {
         compilerError('The type passed to \'loadSymbol\' must be ' +
                       'a procedure type');
       }
+
+      type P = chpl_toExternProcType(chpl_toLocalProcType(t));
+      var ret = __primitive("cast", P, nil);
 
       if checkForDynamicLoadingErrors(err) then return ret;
 
