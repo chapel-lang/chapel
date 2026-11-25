@@ -649,7 +649,10 @@ module ChapelDynamicLoading {
 
         // Execute Chapel module deinitializers at this point.
         if _needsModuleDeinit then on Locales[0] {
-          var err;
+          // TODO: Split-init'ing this (e.g., 'var err;') causes a problem
+          //       with test/compflags/ferguson/disable-split-init.chpl'
+          //       under the C backend.
+          var err: owned Error?;
           type T = proc(): void;
           const p = loadSymbolLocally('chpl_deinitModules', T, err);
 
