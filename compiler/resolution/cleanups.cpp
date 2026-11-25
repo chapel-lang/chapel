@@ -354,6 +354,10 @@ static void replaceTypeArgsWithFormalTypeTemps() {
       // Replace the formal with a _formal_type_tmp_.
       SET_LINENO(formal);
       VarSymbol* tmp = newTemp("_formal_type_tmp_", formal->type);
+
+      // The temporary is also a type variable.
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+
       fn->insertAtHead(new DefExpr(tmp));
       subSymbol(fn, formal, tmp);
 

@@ -2217,14 +2217,14 @@ static void codegen_header(std::set<const char*> & cnames,
   // VarSymbols and ArgSymbols
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (auto ft = toFunctionType(var->type->getValType())) {
-      if (var->isUsed()) {
+      if (isAlive(var)) {
         fnTypesToCodegen.insert(ft);
       }
     }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (auto ft = toFunctionType(arg->type->getValType())) {
-      if (arg->isUsed()) {
+      if (isAlive(arg)) {
         fnTypesToCodegen.insert(ft);
       }
     }
