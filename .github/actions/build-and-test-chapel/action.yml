@@ -33,6 +33,7 @@ runs:
   using: composite
   steps:
     - name: build and test Chapel
+      id: build-and-test
       shell: ${{ inputs.shell }}
       env:
         CI_SETUP: ${{ inputs.setup }}
@@ -42,6 +43,10 @@ runs:
         CI_PARALLEL: ${{ inputs.parallel }}
         CHPL_NIGHTLY_DO_NOTHING: 1
       run: |
+        failures=.build-and-test-chapel-failures.txt
+        rm -f .build-and-test-chapel.log .build-and-test-chapel.log.summary \
+          "$failures"
+
         echo "::group::set environment"
         source util/setchplenv.bash
         num_procs=$(./util/buildRelease/chpl-make-cpu_count)
@@ -53,15 +58,74 @@ runs:
         echo "::endgroup::"
 
         echo "::group::Build Chapel"
+        build_status=0
         # shellcheck disable=SC2086 # intentionally word split
-        make -j"$num_procs" $CI_MAKE_TARGETS
+        make -j"$num_procs" $CI_MAKE_TARGETS || build_status=$?
         echo "::endgroup::"
+        if [[ $build_status -ne 0 ]]; then
+          message="Chapel build failed (exit code $build_status); tests were not run."
+          echo "::error::$message"
+          printf '%s\n' "$message" > "$failures"
+          exit "$build_status"
+        fi
 
         echo "::group::Run tests"
         parallel_args=""
         if [[ "$CI_PARALLEL" == "true" ]]; then
           parallel_args="--parallel $num_procs"
         fi
+        log_args=(--logfile .build-and-test-chapel.log)
+        test_status=0
         # shellcheck disable=SC2086 # intentionally word split and glob expanded
-        start_test $parallel_args $CI_START_TEST_ARGS $CI_TEST_PATHS
+        start_test $parallel_args $CI_START_TEST_ARGS "${log_args[@]}" $CI_TEST_PATHS \
+          || test_status=$?
         echo "::endgroup::"
+
+        if [[ $test_status -ne 0 ]]; then
+          message="Chapel tests failed (exit code $test_status)."
+          echo "::error::$message"
+          printf '%s\n' "$message" >> "$failures"
+        fi
+
+        if [[ -f .build-and-test-chapel.log ]]; then
+          util/test/print_start_test_log_failures .build-and-test-chapel.log > "$failures"
+          if [[ -s "$failures" ]]; then
+            echo "::group::Output of failed tests"
+            cat "$failures"
+            echo "::endgroup::"
+          fi
+        fi
+        exit "$test_status"
+    - name: add failures to email addendum
+      id: email-addendum
+      if: ${{ !cancelled() && inputs.email-summary == 'true' }}
+      shell: bash -euo pipefail {0}
+      env:
+        FAILURE_EMAIL_ADDENDUM: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+      run: |
+        failures=.build-and-test-chapel-failures.txt
+
+        if [[ -s "$failures" ]]; then
+          if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+            echo >> "$FAILURE_EMAIL_ADDENDUM"
+          fi
+          {
+            echo "Failure details:"
+            echo '````'
+            cat "$failures"
+            echo
+            echo '````'
+          } >> "$FAILURE_EMAIL_ADDENDUM"
+        fi
+        if [[ -s "$FAILURE_EMAIL_ADDENDUM" ]]; then
+          echo "has-addendum=true" >> "$GITHUB_OUTPUT"
+        fi
+    - name: upload failure email addendum
+      if: ${{ !cancelled() && steps.email-addendum.outputs.has-addendum == 'true' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: failure-email-addendum-${{ job.check_run_id }}
+        path: ${{ runner.temp }}/failure-email-addendum-${{ job.check_run_id }}.md
+        overwrite: true
+        if-no-files-found: error
+        retention-days: 3
