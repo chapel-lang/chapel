@@ -126,13 +126,18 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
           sparse-checkout: .
-      - name: generate fallback email body
+      - name: generate fallback email body, subject, and author
         run: |
           cat << EOF > "$EMAIL_BODY_FILENAME"
           Failure encountered generating PR merge email for PR [$PR_NUMBER](https://github.com/${{ github.repository }}/pull/$PR_NUMBER).
 
           Run ID: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
+
+          {
+            echo "TITLE=Error"
+            echo "AUTHOR=Committer"
+          } >> "$GITHUB_ENV"
       - name: get info for PR ${{ env.PR_NUMBER }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
