@@ -143,7 +143,7 @@ class SrunTests(unittest.TestCase):
         self.env['CHPL_TEST_SBATCH_LARGE_OUTPUT'] = '1'
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             self.runCmd("./hello -nl 1 -v --dry-run")
-        self.assertIn("output exceeds buffer capacity of 255 bytes",
+        self.assertIn("Unable to run 'sbatch' (output too large)",
                       cm.exception.stdout)
 
     def test_09_large_sinfo_stderr(self):
@@ -153,7 +153,7 @@ class SrunTests(unittest.TestCase):
         self.env['CHPL_TEST_SINFO_LARGE_OUTPUT'] = '1'
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             self.runCmd("./hello -nl 1 -v --dry-run")
-        self.assertIn("output exceeds buffer capacity of 1023 bytes",
+        self.assertIn("Unable to run 'sbatch' (output too large)",
                       cm.exception.stdout)
 
 class SbatchTests(SrunTests):
