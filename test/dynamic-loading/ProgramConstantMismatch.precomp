@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+srcname="ChapelLibrary.chpl"
+constant=""
+comp_out_tmp="$2"
+comp_out_tmp_no_suffix="${comp_out_tmp%.comp.out.tmp}"
+comp_out_tmp_num="${comp_out_tmp_no_suffix##*.}"
+
+for opt in $compopts; do
+  case "$opt" in
+    -sconstant=*)
+      constant="${opt#-sconstant=}"
+      ;;
+  esac
+done
+
+# Keep in sync with the compopts list in 'ProgramConstantMismatch.compopts'.
+case "$comp_out_tmp_num" in
+  1)
+    # TODO: Libraries should always have a '--launcher' flag of 'none'?
+    constant="CHPL_LAUNCHER"
+    problem_flags=(--launcher=none)
+    ;;
+  2)
+    # TODO: Possible to change in a test?
+    # TODO: Test against symlink.
+    constant="CHPL_THIRD_PARTY"
+    problem_flags=()
+    ;;
+  3)
+    # TODO: Possible to change in a test?
+    # TODO: Test against symlink.
+    constant="CHPL_HOME"
+    problem_flags=()
+    ;;
+  4)
+    constant="CHPL_CACHE_REMOTE"
+    problem_flags=(--no-cache-remote)
+    ;;
+  5)
+    constant="warnUnstable"
+    # By default, there are no warnings, so this gives us a clash.
+    problem_flags=(--warn-unstable)
+    ;;
+  6)
+    # TODO: Possible to change in a test?
+    # TODO: Test against symlink.
+    constant="CHPL_LLVM_BIN_DIR"
+    problem_flags=()
+    ;;
+  7)
+    constant="CHPL_INTERLEAVE_MEM"
+    # By default, we don't interleave memory.
+    problem_flags=(--interleave-memory)
+    ;;
+  8)
+    constant="CHPL_STACK_CHECKS"
+    problem_flags=(--no-stack-checks)
+    ;;
+  "")
+    echo "No '-sconstant' flag was passed in compopts"
+    exit 1
+    ;;
+  *)
+    echo "Unhandled comp_out_tmp: $comp_out_tmp_num" > $comp_out_tmp
+    exit 1
+    ;;
+esac
+
+base_flags=(--library --dynamic --no-builtin-runtime
+            -suseProcedurePointers=true
+            -o IncompatibleChapelLibrary)
+
+problem_flags_str="${problem_flags[*]:-none}"
+
+echo "Constant is: $constant"
+echo "Building dynamic Chapel library with problem flags: $problem_flags_str"
+
+$chpl "${base_flags[@]}" "${problem_flags[@]}" $srcname

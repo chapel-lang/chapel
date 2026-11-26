@@ -21,9 +21,10 @@
 #ifndef E_CONSTANT_RT
   #ifdef LAUNCHER
     // By default, expand to nothing under the launcher.
-    #define E_CONSTANT_RT(name__, type__)
+    #define E_CONSTANT_RT(name__, type__, invariant__)
   #else
-    #define E_CONSTANT_RT(name__, type__) E_CONSTANT(name__, type__)
+    #define E_CONSTANT_RT(name__, type__, invariant__) \
+      E_CONSTANT(name__, type__, invariant__)
   #endif
 #endif
 

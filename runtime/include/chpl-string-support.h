@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-  // A low-level C String, suitable for use with OS support functions &c.
+// A low-level C String, suitable for use with OS support functions &c.
 // c_string behaves like a reference: The caller should not free a returned
 // c_string, and should make a copy to preserve its value e.g. in a structure
 // or global variable.
@@ -84,6 +84,10 @@ c_string string_concat(c_string x, c_string y, int32_t lineno, int32_t filename)
 int string_index_of(c_string x, c_string y);
 c_string string_index(c_string x, int i, int32_t lineno, int32_t filename);
 c_string string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t filename);
+
+void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
+                        const char* format, ...)
+  __attribute__ ((format (printf, 3, 4)));
 
 #ifdef __cplusplus
 }

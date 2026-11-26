@@ -93,48 +93,6 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
   (*largv)[(*largc)++] = (arg);
 }
 
-// Helper for appending arguments to a variable-size command buffer.
-// - Requires cmdBufPtr points to an uninitialized pointer on first call, and
-//   charsWritten is 0.
-// - After exceeding an initial allocated size estimate, each call will allocate
-//   additional memory as needed.
-void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
-                        const char* format, ...) {
-  // Estimate of a buffer size that probably won't require extending, to avoid
-  // reallocations and copying.
-  static const int initialSize = 2048;
-
-  va_list argsForLen, argsForPrint;
-  va_start(argsForLen, format);
-  va_copy(argsForPrint, argsForLen);
-
-  // Allocate buffer to initial size on first call
-  if (*cmdBufPtr == NULL) {
-    assert(*charsWritten == 0);
-    *cmdBufPtr = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
-                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  }
-
-  // Determine additional characters to be written
-  // vsnprintf does not include the space for the null terminator, so plus one
-  const int requiredLength = vsnprintf(NULL, 0, format, argsForLen) + 1;
-  va_end(argsForLen);
-  int newCmdBufSize = *charsWritten + requiredLength;
-
-  // Allocate more memory if needed
-  if (newCmdBufSize >= initialSize) {
-    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newCmdBufSize * sizeof(char),
-                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  }
-
-  char* currentBufEnd = *cmdBufPtr + *charsWritten;
-  int currentBufEndLen = requiredLength;
-
-  // Write the new characters
-  const int actuallyWrote = vsnprintf(currentBufEnd, currentBufEndLen, format, argsForPrint);
-  va_end(argsForPrint);
-  *charsWritten += actuallyWrote;
-}
 //
 // Use this function to run short utility programs that will return up to 1024
 // bytes of output. The program must not expect any input.

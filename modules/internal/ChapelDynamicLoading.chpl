@@ -276,6 +276,9 @@ module ChapelDynamicLoading {
     // Set only when '_close()' is called for the first time.
     var _closed = false;
 
+    // If this is a Chapel program, do its modules need deinitialization?
+    var _needsModuleDeinit = false;
+
     proc init(in path: string, in store: borrowed chpl_BinaryInfoStore) {
       this._path = path;
       this._store = store;
@@ -512,8 +515,34 @@ module ChapelDynamicLoading {
       }
     }
 
-    // TODO: Check for 'CHPL_CACHE_REMOTE'.
+    iter invariantProgramConstants(): c_ptrConst(c_char) {
+      extern 'chpl_rt_num_program_only_constants'
+        proc num_constants(): c_int;
+      extern 'chpl_rt_program_only_constant_by_idx'
+        proc constant_by_idx(idx: c_int): c_ptrConst(c_char);
+      extern 'chpl_rt_program_only_constant_is_invariant'
+        proc is_invariant(idx: c_int): bool;
+
+      for i in 0..<num_constants() {
+        if is_invariant(i) then yield constant_by_idx(i);
+      }
+    }
+
     inline proc _tryCheckIsProgramCompatibleWithRoot(infoPtr) throws {
+      extern 'chpl_rt_program_only_constant_matches_root'
+        proc check_fn(prg: c_ptr(chpl_rt_prginfo),
+                      constant: c_ptrConst(c_char),
+                      out_error_msg: c_ptr(c_ptrConst(c_char))): bool;
+
+      for ptr in invariantProgramConstants() {
+        var error_msg: c_ptrConst(c_char);
+        const matches = check_fn(infoPtr, ptr, c_ptrTo(error_msg));
+
+        if !matches {
+          const msg = string.createAdoptingBuffer(error_msg);
+          throw new DynLoadError(msg);
+        }
+      }
     }
 
     // Determines if this is a Chapel program or not and sets the '_kind'
@@ -587,6 +616,9 @@ module ChapelDynamicLoading {
 
       // Set up the module code.
       _tryInitializeLoadedModules();
+
+      // Indicate that we need modules to be deinitialized.
+      _needsModuleDeinit = true;
     }
 
     // Load a binary given a path.
@@ -610,6 +642,28 @@ module ChapelDynamicLoading {
     proc _close() {
       assert(_refCount.read() == 0);
       if _closed then return;
+
+
+      // TODO: Remove this workaround, having an issue with class FCFs.
+      if useProcedurePointers {
+
+        // Execute Chapel module deinitializers at this point.
+        if _needsModuleDeinit then on Locales[0] {
+          // TODO: Split-init'ing this (e.g., 'var err;') causes a problem
+          //       with test/compflags/ferguson/disable-split-init.chpl'
+          //       under the C backend.
+          var err: owned Error?;
+          type T = proc(): void;
+          const p = loadSymbolLocally('chpl_deinitModules', T, err);
+
+          if p != nil && err == nil {
+            p();
+          } else {
+            warning('Failed to execute module deinitializers ' +
+                    'for program at: \'' + _path + '\'');
+          }
+        }
+      }
 
       on Locales[0] do manage this._lock {
         if !_closed {
@@ -742,13 +796,13 @@ module ChapelDynamicLoading {
 
     // Load a symbol locally and return a local procedure pointer.
     proc loadSymbolLocally(sym: string, type t, out err: owned DynLoadError?) {
-      type P = chpl_toExternProcType(chpl_toLocalProcType(t));
-      var ret = __primitive("cast", P, nil);
-
       if !isProcedure(t) || isClass(t) {
         compilerError('The type passed to \'loadSymbol\' must be ' +
                       'a procedure type');
       }
+
+      type P = chpl_toExternProcType(chpl_toLocalProcType(t));
+      var ret = __primitive("cast", P, nil);
 
       if checkForDynamicLoadingErrors(err) then return ret;
 

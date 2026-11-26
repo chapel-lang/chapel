@@ -57,7 +57,6 @@ module ChapelProgramRegistration {
     }
 
     inline proc ref _callSetter(param name: string, in val) {
-      // Use 'const ref val' to avoid any copies at this time.
       param cname = 'chpl_rt_prginfo_data_entry_set_' + name;
 
       // Setter is in the runtime and knows the number of bytes to copy.

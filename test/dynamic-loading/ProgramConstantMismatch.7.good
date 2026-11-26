@@ -1,0 +1,3 @@
+Checking constant: CHPL_INTERLEAVE_MEM
+the program constant 'CHPL_INTERLEAVE_MEM' in the program loaded at './lib/libIncompatibleChapelLibrary.so' does not match the value contained in the program '<root>'
+
