@@ -1855,7 +1855,9 @@ proc file.size: int throws {
   var err:errorCode = 0;
   var len:int(64) = 0;
   on this._home {
-    err = qio_file_length(this._file_internal, len);
+    var localLen: int(64) = 0;
+    err = qio_file_length(this._file_internal, localLen);
+    len = localLen;
   }
   if err then try ioerror(err, "in file.size");
   return len;
