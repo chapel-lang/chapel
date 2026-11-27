@@ -59,7 +59,7 @@ jobs:
         with:
           persist-credentials: false
       - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.runner }}
@@ -269,7 +269,7 @@ jobs:
         with:
           persist-credentials: false
       - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           create-symlink: true
           key: ${{ github.job }}-${{ matrix.gcc_version }}
@@ -323,7 +323,7 @@ jobs:
         with:
           persist-credentials: false
       - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           create-symlink: true
           # Only the first version on each image with gasnet saves.
@@ -393,7 +393,7 @@ jobs:
         with:
           persist-credentials: false
       - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           create-symlink: true
           key: ccache-${{ github.job }}-${{ matrix.llvm_version }}
@@ -653,7 +653,7 @@ jobs:
         with:
           persist-credentials: false
       - name: set up ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           key: x86-default
           save: false
