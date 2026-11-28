@@ -1,3 +1,9 @@
 42
+7 second
 CHPL_1numericModuleName_Box_getValue
 CHPL_1numericModuleName_increment
+CHPL_1numericModuleName_Box
+CHPL_1numericModuleName_Inner_Generic_int64_t
+CHPL_1numericModuleName_Inner_Nested
+CHPL_1numericModuleName_Inner_GenericClass_int64_t
+CHPL_1numericModuleName_Inner_Choice

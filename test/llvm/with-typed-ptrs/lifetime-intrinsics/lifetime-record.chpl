@@ -8,11 +8,11 @@ record R {}
 
 proc mytest_record() {
   var r = new R();
-  // CHECK: %r_chpl = alloca %R_chpl
-  // CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast %R_chpl* %r_chpl to i8*
+  // CHECK: %r_chpl = alloca %lifetime_HYPHEN_record_R_chpl
+  // CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast %lifetime_HYPHEN_record_R_chpl* %r_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 4, i8* %[[REG1]])
   refidentity(r);
-  // CHECK: %[[REG2:[0-9]+]] = bitcast %R_chpl* %r_chpl to i8*
+  // CHECK: %[[REG2:[0-9]+]] = bitcast %lifetime_HYPHEN_record_R_chpl* %r_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 4, i8* %[[REG2]])
 }
 

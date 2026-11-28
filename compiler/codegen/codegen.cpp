@@ -1921,21 +1921,37 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
-// Name functions Outer_Inner_TypeName_fnName (TypeName only for methods),
-// clashes are handled later
-static void qualifyFunctionCname(FnSymbol* fn) {
-  // leave compiler-chosen cnames alone
-  if (fIdBasedMunging || fn->cname != fn->name || !fn->isRenameable())
-    return;
-
+static bool shouldQualifyCname(Symbol* sym) {
   //
   // Symbols that start with 'chpl_' were presumably named by the
   // implementation (compiler, internal modules, runtime) and
   // sufficiently unique to not require further munging.
   //
-  if (strncmp(fn->cname, "chpl_", 5) == 0) {
-    return;
+  return !fIdBasedMunging && sym->isRenameable() &&
+         strncmp(sym->cname, "chpl_", 5) != 0;
+}
+
+static void qualifyCnameWithModules(Symbol* sym, std::string name) {
+  for (ModuleSymbol* mod = sym->getModule();
+       mod != nullptr && mod != theProgram && mod != rootModule;
+       mod = mod->defPoint->parentSymbol->getModule()) {
+    name = std::string(mod->name) + "_" + name;
   }
+
+  // An implicit module's filename can start with a non-alphabetic character.
+  if (!std::isalpha(static_cast<unsigned char>(name[0])) && name[0] != '_') {
+    name = "CHPL_" + name;
+  }
+
+  sym->cname = astr(name);
+}
+
+// Name functions Outer_Inner_TypeName_fnName (TypeName only for methods),
+// clashes are handled later
+static void qualifyFunctionCname(FnSymbol* fn) {
+  // leave compiler-chosen cnames alone
+  if (fn->cname != fn->name || !shouldQualifyCname(fn))
+    return;
 
   // leave task/on functions alone
   if (fn->hasAnyFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_COBEGIN_OR_COFORALL_BLOCK,
@@ -1958,20 +1974,7 @@ static void qualifyFunctionCname(FnSymbol* fn) {
       name = name + "_" + std::string(at->getRootInstantiation()->symbol->name);
   }
 
-  for (ModuleSymbol* mod = fn->getModule();
-       mod != nullptr && mod != theProgram && mod != rootModule;
-       mod = mod->defPoint->parentSymbol->getModule()) {
-    name = std::string(mod->name) + "_" + name;
-  }
-
-  // if the name doesn't start with [a-zA-Z_], prepend "CHPL_"
-  // this can really only happen if a filename starts with a non-alphabetic character
-  // and implicit modules are used.
-  if (!isalpha(name[0]) && name[0] != '_') {
-    name = "CHPL_" + name;
-  }
-
-  fn->cname = astr(name);
+  qualifyCnameWithModules(fn, name);
 }
 
 static void uniquify_names(std::set<const char*> & cnames,
@@ -1987,6 +1990,10 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block ||
         isFunctionType(ts->type)) {
+      if (shouldQualifyCname(ts)) {
+        // Instantiated types already encode their substitutions in cname.
+        qualifyCnameWithModules(ts, ts->cname);
+      }
       legalizeSymbolName(ts);
       types.push_back(ts);
     }

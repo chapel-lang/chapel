@@ -25,7 +25,7 @@ proc f() {
   cvar = new unmanaged MyClass();
   return cvar;
   // Look for an access of the class pointer, and remember its TBAA access tag.
-  // CHECK: store {{(ptr|%chpl_MyClass_chpl[0-9]*_object\*)}}
+  // CHECK: store {{(ptr|%chpl_tbaa_scalar_MyClass_chpl[0-9]*_object\*)}}
   // CHECK-SAME: !tbaa ![[CLSPTRACC:[0-9]+]]
 }
 
@@ -46,8 +46,8 @@ delete got;
 // CHECK-DAG: ![[CVOIDPTR:[0-9]+]] = !{!"C void ptr", ![[UNIONS]], i64 0}
 //
 // Note that class pointers are scalars.
-// CHECK-DAG: ![[OBJECT:[0-9]+]] = !{!"RootClass_chpl{{[0-9]*}}", ![[CVOIDPTR]], i64 0}
-// CHECK-DAG: ![[CLSPTR:[0-9]+]] = !{!"MyClass_chpl{{[0-9]*}}", ![[OBJECT]], i64 0}
+// CHECK-DAG: ![[OBJECT:[0-9]+]] = !{!"ChapelBase_RootClass_chpl{{[0-9]*}}", ![[CVOIDPTR]], i64 0}
+// CHECK-DAG: ![[CLSPTR:[0-9]+]] = !{!"tbaa_scalar_MyClass_chpl{{[0-9]*}}", ![[OBJECT]], i64 0}
 //
 // Now validate those access tags.
 // Scalar accesses are always at offset zero.

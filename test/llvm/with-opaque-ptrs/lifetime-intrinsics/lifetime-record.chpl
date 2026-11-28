@@ -8,7 +8,7 @@ record R {}
 
 proc mytest_record() {
   var r = new R();
-  // CHECK: %r_chpl = alloca %R_chpl
+  // CHECK: %r_chpl = alloca %lifetime_HYPHEN_record_R_chpl
   // CHECK: call void @llvm.lifetime.start.p0(i64 4, ptr %r_chpl)
   refidentity(r);
   // CHECK: call void @llvm.lifetime.end.p0(i64 4, ptr %r_chpl)

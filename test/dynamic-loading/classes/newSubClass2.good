@@ -1,0 +1,7 @@
+1
+2
+3
+================================================================================
+1
+2
+newSubClass2Lib.chpl:14: error: class 'newSubClass2_C_chpl' from Chapel program 1 (newSubClass2) is not known to Chapel program 2 (libnewSubClass2Lib.dylib)

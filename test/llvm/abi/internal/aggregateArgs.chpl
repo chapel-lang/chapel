@@ -86,15 +86,15 @@ proc takesRecConst(r: R) do return r.a + r.b;
 
 // REF-LABEL: define internal void @aggregateArgs_returnsRec_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
 // REF: ret void
-// VAL-LABEL: define internal %R_chpl @aggregateArgs_returnsRec_chpl(i64 %{{[^)]+}})
-// VAL: ret %R_chpl
+// VAL-LABEL: define internal %aggregateArgs_R_chpl @aggregateArgs_returnsRec_chpl(i64 %{{[^)]+}})
+// VAL: ret %aggregateArgs_R_chpl
 proc returnsRec(a: int) do return new R(a, 0.5);
 
 // CHECK-LABEL: define internal i64 @aggregateArgs_takesOuter_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
 proc takesOuter(in o: Outer) { o.r.a += 100; return o.r.a + o.c; }
 
 // REF-LABEL: define internal void @aggregateArgs_returnsOuter_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-// VAL-LABEL: define internal void @aggregateArgs_returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%Outer_chpl) %{{[^,]+}}, i64 %{{[^)]+}})
+// VAL-LABEL: define internal void @aggregateArgs_returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%aggregateArgs_Outer_chpl) %{{[^,]+}}, i64 %{{[^)]+}})
 // CHECK: ret void
 proc returnsOuter(a: int) do return new Outer(new R(a, 0.5), 1);
 
@@ -112,8 +112,8 @@ proc takesShared(s: shared C) do return s.x;
 
 // REF-LABEL: define internal void @aggregateArgs_returnsShared_chpl(i64 %{{[^,]+}}, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
 // REF: ret void
-// VAL-LABEL: define internal %_shared_C_chpl @aggregateArgs_returnsShared_chpl(i64 %{{[^)]+}})
-// VAL: ret %_shared_C_chpl
+// VAL-LABEL: define internal %SharedObject__shared_C_chpl @aggregateArgs_returnsShared_chpl(i64 %{{[^)]+}})
+// VAL: ret %SharedObject__shared_C_chpl
 proc returnsShared(x: int) do return new shared C(x);
 
 // CHECK-LABEL: define internal double @aggregateArgs_returnsOne_chpl(double %{{[^)]+}})
@@ -166,14 +166,14 @@ proc callAll() {
   writeln(takesNested5(n5), " ", n5.s.a);
 
   // REF: call void @aggregateArgs_returnsRec_chpl(i64 9, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call %R_chpl @aggregateArgs_returnsRec_chpl(i64 9)
+  // VAL: call %aggregateArgs_R_chpl @aggregateArgs_returnsRec_chpl(i64 9)
   var r = returnsRec(9);
   // CHECK: call {{.*}}double @aggregateArgs_takesRec_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   // CHECK: call {{.*}}double @aggregateArgs_takesRecConst_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesRec(r), " ", takesRecConst(r), " ", r.a);
 
   // REF: call void @aggregateArgs_returnsOuter_chpl(i64 10, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call void @aggregateArgs_returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%Outer_chpl) %{{[^,]+}}, i64 10)
+  // VAL: call void @aggregateArgs_returnsOuter_chpl(ptr {{[a-z_ ]*}}sret(%aggregateArgs_Outer_chpl) %{{[^,]+}}, i64 10)
   var o = returnsOuter(10);
   // CHECK: call i64 @aggregateArgs_takesOuter_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesOuter(o), " ", o.r.a);
@@ -185,7 +185,7 @@ proc callAll() {
   writeln(takesOwned(ow));
 
   // REF: call void @aggregateArgs_returnsShared_chpl(i64 12, ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
-  // VAL: call %_shared_C_chpl @aggregateArgs_returnsShared_chpl(i64 12)
+  // VAL: call %SharedObject__shared_C_chpl @aggregateArgs_returnsShared_chpl(i64 12)
   var sh = returnsShared(12);
   // CHECK: call i64 @aggregateArgs_takesShared_chpl(ptr nonnull dereferenceable({{[0-9]+}}) %{{[^)]+}})
   writeln(takesShared(sh), " ", sh.x);
