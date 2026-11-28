@@ -12,14 +12,21 @@ import os
 import sys
 import operator
 from functools import reduce
+import time
+from pathlib import Path
 
 
-if not 'CHPL_HOME' in os.environ:
-    print('CHPL_HOME is not set')
+chpl_home = Path(os.environ.get("CHPL_HOME", ""))
+if not chpl_home.exists():
+    sys.stdout.write("[Error: CHPL_HOME not set or does not exist]\n")
     sys.exit(1)
 
-sys.path.append(os.path.join(os.environ['CHPL_HOME'], 'util', 'chplenv'))
+sys.path.append(str(chpl_home / 'util' / 'chplenv'))
+sys.path.insert(0, str(chpl_home / "util" / "test"))
+import sub_test as sub_test_util
 import printchplenv
+
+sub_test_util.utildir = str(chpl_home / "util")
 
 verbose = False
 skipReason = None
@@ -232,6 +239,7 @@ def getDir(compiler):
     return localdir
 
 def main(argv):
+    sub_test_util.printStartOfTestMsg(time.localtime())
     global verbose
     failfast = False
     if "-f" in argv or "--force" in argv:
@@ -267,6 +275,8 @@ def main(argv):
         runCmd(cmd)
     if verbose:
         print("Running tests")
+    start_time = time.time()
+    sub_test_util.printTestName("reservation")
     prog = unittest.main(argv=argv, failfast=failfast, exit=False)
 
     # Produce output that start_test can parse. To start_test this is a single
@@ -280,6 +290,10 @@ def main(argv):
             print("[Error running tests in %s]" % name)
         else:
             print("[Success matching tests in %s]" % name)
+
+    elapsed = time.time() - start_time
+    sub_test_util.printEndOfTestMsg("reservation", elapsed)
+    sys.stdout.write("[Finished subtest {}]\n".format("reservation"))
 
 if __name__ == '__main__':
     main(sys.argv)
