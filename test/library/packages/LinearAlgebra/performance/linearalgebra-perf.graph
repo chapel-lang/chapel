@@ -45,3 +45,9 @@ files: jacobi-n512.dat, jacobi-n512.dat
 graphkeys: Dense, Sparse
 graphtitle: Jacobi method - solving 512 unknowns - dense and sparse
 ylabel: Time
+
+perfkeys: LinearAlgebra.norm_frob:, LinearAlgebra.norm_l1:, LinearAlgebra.norm_inf:
+files: norm-1000x1000.dat, norm-1000.dat
+graphkeys: MatrixNorm, VectorNorm
+graphtitle: Finding norms of a matrix
+ylabel: Time

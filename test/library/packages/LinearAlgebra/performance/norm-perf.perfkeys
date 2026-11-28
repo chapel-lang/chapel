@@ -1,0 +1,3 @@
+LinearAlgebra.norm_frob:
+LinearAlgebra.norm_l1:
+LinearAlgebra.norm_inf:
