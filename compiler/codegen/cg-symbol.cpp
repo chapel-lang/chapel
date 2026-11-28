@@ -3203,6 +3203,15 @@ void FnSymbol::codegenDef() {
       func->addFnAttr("target-cpu", TargetCPU);
       func->addFnAttr("target-features", TargetFeatures);
     }
+    if (ffloatOpt == 1) {
+      func->addFnAttr("unsafe-fp-math", "true");
+      func->addFnAttr("approx-func-fp-math", "true");
+      func->addFnAttr("denormal-fp-math", "preserve-sign,preserve-sign");
+      func->addFnAttr("no-infs-fp-math", "true");
+      func->addFnAttr("no-nans-fp-math", "true");
+      func->addFnAttr("no-signed-zeros-fp-math", "true");
+      func->addFnAttr("no-trapping-math", "true");
+    }
 
     std::string TuneCPU = getClangTuneCPU();
     if (!TuneCPU.empty())
