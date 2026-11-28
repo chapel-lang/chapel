@@ -1,0 +1,7 @@
+
+demonstrate static method
+calling without an instance
+
+demonstrate ref intent
+original instance {v = 3} (same as old? true)
+new instance {v = 5} (same as old? false)
