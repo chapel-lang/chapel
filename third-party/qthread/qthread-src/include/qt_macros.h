@@ -3,7 +3,7 @@
 
 // Work around OSX currently refusing to support threads.h
 #if 201112L <= __STDC_VERSION__ && __STDC_VERSION__ < 202311L
-#ifndef __STDC_NO_THREADS__
+#if !defined(__STDC_NO_THREADS__) && __has_include(<threads.h>)
 #include <threads.h>
 #else
 #define thread_local _Thread_local

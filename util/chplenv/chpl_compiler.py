@@ -374,6 +374,33 @@ def get_compiler_name_cxx(compiler):
     return "unknown-c++-compiler"
 
 
+# Given 'gcc' or 'g++', return the path to the newest versioned Homebrew
+# variant (e.g. /opt/homebrew/bin/gcc-15), or None if there isn't one
+@memoize
+def get_homebrew_gnu_command(name):
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
+    if not homebrew_prefix:
+        return None
+    bin_dir = os.path.join(homebrew_prefix, "bin")
+    if not os.path.isdir(bin_dir):
+        return None
+
+    best_version = -1
+    best_path = None
+    prefix = name + "-"
+    for entry in os.listdir(bin_dir):
+        if not entry.startswith(prefix):
+            continue
+        version = entry[len(prefix) :]
+        if not version.isdigit():
+            continue
+        path = os.path.join(bin_dir, entry)
+        if int(version) > best_version and os.access(path, os.X_OK):
+            best_version = int(version)
+            best_path = path
+    return best_path
+
+
 def compiler_is_prgenv(compiler_val):
     return compiler_val.startswith("cray-prgenv")
 
@@ -437,6 +464,13 @@ def get_compiler_command(flag, lang):
             if which(newcommand):
                 command[0] = newcommand
                 break
+
+    # on Mac, 'gcc'/'g++' are aliases for Apple clang, so prefer the
+    # versioned Homebrew GCC (e.g. gcc-15/g++-15) if it is installed
+    if compiler_val == "gnu" and chpl_platform.get(flag) == "darwin":
+        brew_command = get_homebrew_gnu_command(command[0])
+        if brew_command:
+            command[0] = brew_command
 
     # Adjust the path in two situations:
     #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang
