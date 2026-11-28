@@ -1,0 +1,3 @@
+issue-21289-3a.chpl:14: warning: an implicit module named 'issue-21289-3a' is being introduced to contain file-scope code
+bar_t
+42
